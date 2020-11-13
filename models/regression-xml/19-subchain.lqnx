@@ -1,0 +1,63 @@
+<?xml version="1.0"?>
+<!-- lqn2xml -o. -->
+<lqn-model name="" description="lqn2xml 6.0 solution for model from: ." xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="/usr/local/share/lqns/lqn.xsd">
+   <solver-params comment="Model 9a" conv_val="1e-05" it_limit="50" underrelax_coeff="0.9" print_int="10"/>
+   <processor name="c0" scheduling="inf">
+      <task name="c0" scheduling="ref">
+         <entry name="c0" type="PH1PH2">
+            <entry-phase-activities>
+               <activity name="c0_1" phase="1" host-demand-mean="1">
+                  <synch-call dest="e0a" calls-mean="1"/>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+      </task>
+   </processor>
+   <processor name="c1" scheduling="inf">
+      <task name="c1" scheduling="ref" multiplicity="5">
+         <entry name="c1" type="PH1PH2">
+            <entry-phase-activities>
+               <activity name="c1_1" phase="1" host-demand-mean="1">
+                  <synch-call dest="e0b" calls-mean="1"/>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+      </task>
+   </processor>
+   <processor name="p0" scheduling="fcfs">
+      <task name="t0" scheduling="inf">
+         <entry name="e0a" type="PH1PH2">
+            <entry-phase-activities>
+               <activity name="e0a_1" phase="1" host-demand-mean="10">
+                  <synch-call dest="e1" calls-mean="1"/>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+         <entry name="e0b" type="PH1PH2">
+            <entry-phase-activities>
+               <activity name="e0b_1" phase="1" host-demand-mean="1">
+                  <synch-call dest="e2" calls-mean="1"/>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+      </task>
+   </processor>
+   <processor name="p1" scheduling="fcfs">
+      <task name="t1" scheduling="fcfs">
+         <entry name="e1" type="PH1PH2">
+            <entry-phase-activities>
+               <activity name="e1_1" phase="1" host-demand-mean="2"/>
+            </entry-phase-activities>
+         </entry>
+      </task>
+   </processor>
+   <processor name="p2" scheduling="fcfs">
+      <task name="t2" scheduling="fcfs">
+         <entry name="e2" type="PH1PH2">
+            <entry-phase-activities>
+               <activity name="e2_1" phase="1" host-demand-mean="2"/>
+            </entry-phase-activities>
+         </entry>
+      </task>
+   </processor>
+</lqn-model>

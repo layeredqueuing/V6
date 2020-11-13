@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<!-- lqn2xml -->
+<lqn-model name="spex" description="lqn2xml 6.0 solution for model from: spex.lqn." xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="/usr/local/share/lqns/lqn.xsd">
+   <solver-params comment="" conv_val="1e-06" it_limit="50" underrelax_coeff="0.9" print_int="0"/>
+   <processor name="client" scheduling="inf">
+      <task name="client" scheduling="ref" multiplicity="$m_client">
+         <entry name="client" type="PH1PH2">
+            <entry-phase-activities>
+               <activity name="client_1" phase="1" host-demand-mean="1">
+                  <synch-call dest="server" calls-mean="$s_server"/>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+      </task>
+   </processor>
+   <processor name="server" scheduling="ps" quantum="0.1">
+      <task name="server" scheduling="fcfs" multiplicity="$m_server">
+         <entry name="server" type="PH1PH2">
+            <entry-phase-activities>
+               <activity name="server_1" phase="1" host-demand-mean="1"/>
+            </entry-phase-activities>
+         </entry>
+      </task>
+   </processor>
+   <lqx><![CDATA[
+m_client = array_create(1, 2, 3);
+_0 = 0;
+_f_client = 0;
+_u_server = 0;
+println_spaced(", ", "$0", "$f_client", "$u_server");
+foreach( $m_client in m_client ) { 
+  for ( $m_server = 1; $m_server <= 3; $m_server = ($m_server + 1)) {
+    $s_server = ($m_server / 2);
+    _0 = (_0 + 1);
+    if (solve()) {
+      _f_client = task("client").throughput;
+      _u_server = task("server").utilization;
+      println_spaced(", ", _0, _f_client, _u_server);
+    } else {
+      println("solver failed: $0=", _0);
+    }
+  }
+}
+]]>
+   </lqx>
+</lqn-model>

@@ -1,0 +1,70 @@
+<?xml version="1.0"?>
+<!-- $Id: 71-fair.lqnx 14040 2020-11-05 00:02:10Z greg $ -->
+<!-- lqn2xml -o71-fair.lqnx -->
+<lqn-model name="../regression/71-fair" description="lqn2xml 6.1 solution for model from: ../regression/71-fair.in." xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="/usr/local/share/lqns/lqn.xsd">
+   <solver-params comment="Fair Queueing Test 1" conv_val="1e-05" it_limit="50" underrelax_coeff="0.9" print_int="10"/>
+   <processor name="client" scheduling="inf">
+      <task name="c0" scheduling="ref" multiplicity="20">
+         <entry name="c0" type="PH1PH2">
+            <entry-phase-activities>
+               <activity name="c0_1" phase="1" host-demand-mean="0.1">
+                  <synch-call dest="s0" calls-mean="1"/>
+                  <synch-call dest="s1" calls-mean="1"/>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+      </task>
+      <task name="c1" scheduling="ref" multiplicity="20">
+         <entry name="c1" type="PH1PH2">
+            <entry-phase-activities>
+               <activity name="c1_1" phase="1" host-demand-mean="0.1">
+                  <synch-call dest="s2" calls-mean="1"/>
+                  <synch-call dest="s3" calls-mean="1"/>
+                  <synch-call dest="s4" calls-mean="1"/>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+      </task>
+   </processor>
+   <processor name="server" scheduling="cfs" quantum="0.1">
+      <group name="g1" share="0.7" cap="0">
+         <task name="s0" scheduling="fcfs">
+            <entry name="s0" type="PH1PH2">
+               <entry-phase-activities>
+                  <activity name="s0_1" phase="1" host-demand-mean="1"/>
+               </entry-phase-activities>
+            </entry>
+         </task>
+         <task name="s1" scheduling="fcfs">
+            <entry name="s1" type="PH1PH2">
+               <entry-phase-activities>
+                  <activity name="s1_1" phase="1" host-demand-mean="1"/>
+               </entry-phase-activities>
+            </entry>
+         </task>
+      </group>
+      <group name="g2" share="0.3" cap="0">
+         <task name="s2" scheduling="fcfs">
+            <entry name="s2" type="PH1PH2">
+               <entry-phase-activities>
+                  <activity name="s2_1" phase="1" host-demand-mean="1"/>
+               </entry-phase-activities>
+            </entry>
+         </task>
+         <task name="s3" scheduling="fcfs">
+            <entry name="s3" type="PH1PH2">
+               <entry-phase-activities>
+                  <activity name="s3_1" phase="1" host-demand-mean="1"/>
+               </entry-phase-activities>
+            </entry>
+         </task>
+         <task name="s4" scheduling="fcfs">
+            <entry name="s4" type="PH1PH2">
+               <entry-phase-activities>
+                  <activity name="s4_1" phase="1" host-demand-mean="1"/>
+               </entry-phase-activities>
+            </entry>
+         </task>
+      </group>
+   </processor>
+</lqn-model>

@@ -1,0 +1,35 @@
+# SRVN Model Description File, for file: $HeadURL: http://rads-svn.sce.carleton.ca/svn/lqn/trunk/models/regression/47-activities.in $
+# 
+# Fowarding from an activity
+# ------------------------------------------------------------------------
+# $Id$
+# ------------------------------------------------------------------------
+
+G "Simplest model - forwarding" 1e-05 50 10 0.5 -1
+
+P 3
+  p p0 f i
+  p p1 f
+  p p2 f
+-1
+
+T 4
+  t t0 r e0 -1 p0
+  t t1 n e1 -1 p1
+  t t2 n e2 -1 p2
+-1
+
+E 4
+# ---------- t0 ----------
+  A e0 a0
+# ---------- t1 ----------
+  s e1 1 -1
+  F e1 e2 1 -1
+# ---------- t2 ----------
+  s e2 1 -1
+-1
+
+A t0
+  s a0 1
+  y a0 e1 1
+-1

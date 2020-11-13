@@ -1,0 +1,704 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- lt-lqns -xml -->
+<lqn-model name="/home/greg/Dropbox/telephoneSwitch" description="lt-lqns 5.10 solution for model from: /home/greg/Dropbox/telephoneSwitch.lqn." xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="/usr/local/share/lqns/lqn.xsd">
+   <solver-params comment="Case Study" conv_val="0.0001" it_limit="200" underrelax_coeff="0.9" print_int="0">
+      <result-general valid="YES" conv-val="6.92014e-05" iterations="23" platform-info="merlin-pc.sce.carleton.ca Linux 4.14.18-200.fc26.x86_64" user-cpu-time="00:00:00.14" system-cpu-time="00:00:00.02" elapsed-time="00:00:00.18" max-rss="6752">
+         <mva-info submodels="11" core="253" step="3145" step-squared="75753" wait="1.32558e+06" wait-squared="2.93566e+10" faults="0"/>
+      </result-general>
+   </solver-params>
+   <processor name="class5Switch_1" scheduling="inf">
+      <result-processor utilization="548.348"/>
+      <task name="class5SwitchT_1" scheduling="ref" multiplicity="1000">
+         <result-task throughput="76.1594" utilization="1000" phase2-utilization="499.8" phase3-utilization="500.2" proc-utilization="548.348"/>
+         <entry name="class5SwitchE_1" type="PH1PH2">
+            <result-entry utilization="1000" throughput="76.1594" squared-coeff-variation="0.679932" proc-utilization="548.348" throughput-bound="136.591"/>
+            <entry-phase-activities>
+               <activity name="class5SwitchE_1_ph2" phase="2" host-demand-mean="3.6">
+                  <result-activity proc-waiting="0" service-time="6.56255" utilization="499.8" service-time-variance="58.5515"/>
+                  <synch-call dest="ss7IpInRelE" calls-mean="1">
+                     <result-call waiting="1.98168"/>
+                  </synch-call>
+               </activity>
+               <activity name="class5SwitchE_1_ph3" phase="3" host-demand-mean="3.6">
+                  <result-activity proc-waiting="0" service-time="6.5678" utilization="500.2" service-time-variance="58.6729"/>
+                  <synch-call dest="ss7IpInIamE" calls-mean="1">
+                     <result-call waiting="1.98168"/>
+                  </synch-call>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+      </task>
+   </processor>
+   <processor name="class5Switch_2" scheduling="inf">
+      <result-processor utilization="7.61592"/>
+      <task name="class5SwitchT_2" scheduling="fcfs" multiplicity="500">
+         <result-task throughput="152.318" utilization="7.61592" phase1-utilization="7.61592" proc-utilization="7.61592"/>
+         <entry name="class5SwitchIAM_2" type="PH1PH2">
+            <result-entry utilization="3.80796" throughput="76.1592" squared-coeff-variation="1" proc-utilization="3.80796" throughput-bound="10000"/>
+            <entry-phase-activities>
+               <activity name="class5SwitchIAM_2_ph1" phase="1" host-demand-mean="0.05">
+                  <result-activity proc-waiting="0" service-time="0.05" utilization="3.80796" service-time-variance="0.0025"/>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+         <entry name="class5SwitchREL_2" type="PH1PH2">
+            <result-entry utilization="3.80796" throughput="76.1592" squared-coeff-variation="1" proc-utilization="3.80796" throughput-bound="10000"/>
+            <entry-phase-activities>
+               <activity name="class5SwitchREL_2_ph1" phase="1" host-demand-mean="0.05">
+                  <result-activity proc-waiting="0" service-time="0.05" utilization="3.80796" service-time-variance="0.0025"/>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+      </task>
+   </processor>
+   <processor name="ss7Ip" scheduling="fcfs">
+      <result-processor utilization="0.00913912"/>
+      <task name="ss7IpInT" scheduling="fcfs" multiplicity="150">
+         <result-task throughput="152.319" utilization="149.805" phase1-utilization="149.805" proc-utilization="0.00456957"/>
+         <entry name="ss7IpInIamE" type="PH1PH2">
+            <result-entry utilization="75.1026" throughput="76.1594" squared-coeff-variation="2.88152" proc-utilization="0.00228478" throughput-bound="2389.3"/>
+            <entry-phase-activities>
+               <activity name="ss7IpInIamE_ph1" phase="1" host-demand-mean="3e-05">
+                  <result-activity proc-waiting="2.73848e-07" service-time="0.986123" utilization="75.1026" service-time-variance="2.8021"/>
+                  <synch-call dest="cocoSetupE_1" calls-mean="1">
+                     <result-call waiting="0.918011"/>
+                  </synch-call>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+         <entry name="ss7IpInRelE" type="PH1PH2">
+            <result-entry utilization="74.7029" throughput="76.1594" squared-coeff-variation="2.89021" proc-utilization="0.00228478" throughput-bound="2571.8"/>
+            <entry-phase-activities>
+               <activity name="ss7IpInRelE_ph1" phase="1" host-demand-mean="3e-05">
+                  <result-activity proc-waiting="2.73848e-07" service-time="0.980875" utilization="74.7029" service-time-variance="2.78072"/>
+                  <synch-call dest="cocoReleaseE_1" calls-mean="1">
+                     <result-call waiting="0.918011"/>
+                  </synch-call>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+      </task>
+      <task name="ss7IpOutT" scheduling="fcfs" multiplicity="150">
+         <result-task throughput="152.318" utilization="7.62052" phase1-utilization="7.62052" proc-utilization="0.00456955"/>
+         <entry name="ss7IpOutIamE" type="PH1PH2">
+            <result-entry utilization="3.81026" throughput="76.1591" squared-coeff-variation="2.99758" proc-utilization="0.00228477" throughput-bound="2998.2"/>
+            <entry-phase-activities>
+               <activity name="ss7IpOutIamE_ph1" phase="1" host-demand-mean="3e-05">
+                  <result-activity proc-waiting="2.60919e-07" service-time="0.0500302" utilization="3.81026" service-time-variance="0.00750302"/>
+                  <synch-call dest="class5SwitchIAM_2" calls-mean="1">
+                     <result-call waiting="0"/>
+                  </synch-call>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+         <entry name="ss7IpOutRelE" type="PH1PH2">
+            <result-entry utilization="3.81026" throughput="76.1591" squared-coeff-variation="2.99758" proc-utilization="0.00228477" throughput-bound="2998.2"/>
+            <entry-phase-activities>
+               <activity name="ss7IpOutRelE_ph1" phase="1" host-demand-mean="3e-05">
+                  <result-activity proc-waiting="2.60919e-07" service-time="0.0500302" utilization="3.81026" service-time-variance="0.00750302"/>
+                  <synch-call dest="class5SwitchREL_2" calls-mean="1">
+                     <result-call waiting="0"/>
+                  </synch-call>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+      </task>
+   </processor>
+   <processor name="h248Ip" scheduling="fcfs">
+      <result-processor utilization="0.0140894"/>
+      <task name="h248IpT" scheduling="fcfs" multiplicity="20">
+         <result-task throughput="380.796" utilization="2.2625" phase1-utilization="2.2625" proc-utilization="0.0140894"/>
+         <entry name="h248IpAddE" type="PH1PH2">
+            <result-entry utilization="1.28493" throughput="152.318" squared-coeff-variation="10.9245" proc-utilization="0.00761591" throughput-bound="3401.36"/>
+            <entry-phase-activities>
+               <activity name="h248IpAddE_ph1" phase="1" host-demand-mean="5e-05">
+                  <result-activity proc-waiting="5.14728e-07" service-time="0.00843584" utilization="1.28493" service-time-variance="0.000777427"/>
+                  <synch-call dest="gwH248AddE_1" calls-mean="0.5">
+                     <result-call waiting="0"/>
+                  </synch-call>
+                  <synch-call dest="gwH248AddE_2" calls-mean="0.5">
+                     <result-call waiting="1.46488e-10"/>
+                  </synch-call>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+         <entry name="h248ModifyE" type="PH1PH2">
+            <result-entry utilization="0.0229865" throughput="76.1591" squared-coeff-variation="3.10913" proc-utilization="0.00190398" throughput-bound="148148"/>
+            <entry-phase-activities>
+               <activity name="h248ModifyE_ph1" phase="1" host-demand-mean="2.5e-05">
+                  <result-activity proc-waiting="5.14728e-07" service-time="0.000301821" utilization="0.0229865" service-time-variance="2.8323e-07"/>
+                  <synch-call dest="gwH248ModifyE_2" calls-mean="1">
+                     <result-call waiting="1.46488e-10"/>
+                  </synch-call>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+         <entry name="h248SubtractE" type="PH1PH2">
+            <result-entry utilization="0.95458" throughput="152.318" squared-coeff-variation="13.3002" proc-utilization="0.00456955" throughput-bound="4975.12"/>
+            <entry-phase-activities>
+               <activity name="h248SubtractE_ph1" phase="1" host-demand-mean="3e-05">
+                  <result-activity proc-waiting="5.14728e-07" service-time="0.00626701" utilization="0.95458" service-time-variance="0.000522369"/>
+                  <synch-call dest="gwH248SubtractE_1" calls-mean="0.5">
+                     <result-call waiting="0"/>
+                  </synch-call>
+                  <synch-call dest="gwH248SubtractE_2" calls-mean="0.5">
+                     <result-call waiting="1.46488e-10"/>
+                  </synch-call>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+      </task>
+   </processor>
+   <processor name="dbServer" scheduling="fcfs">
+      <result-processor utilization="0.0190398"/>
+      <task name="dbServerT" scheduling="fcfs">
+         <result-task throughput="304.637" utilization="0.0190398" phase1-utilization="0.0190398" proc-utilization="0.0190398"/>
+         <entry name="dbServerGetE" type="PH1PH2">
+            <result-entry utilization="0.00380796" throughput="152.318" squared-coeff-variation="1" proc-utilization="0.00380796" throughput-bound="40000"/>
+            <entry-phase-activities>
+               <activity name="dbServerGetE_ph1" phase="1" host-demand-mean="2.5e-05">
+                  <result-activity proc-waiting="0" service-time="2.5e-05" utilization="0.00380796" service-time-variance="6.25e-10"/>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+         <entry name="dbServerSetE" type="PH1PH2">
+            <result-entry utilization="0.0152318" throughput="152.318" squared-coeff-variation="1" proc-utilization="0.0152318" throughput-bound="10000"/>
+            <entry-phase-activities>
+               <activity name="dbServerSetE_ph1" phase="1" host-demand-mean="0.0001">
+                  <result-activity proc-waiting="0" service-time="0.0001" utilization="0.0152318" service-time-variance="1e-08"/>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+      </task>
+   </processor>
+   <processor name="coco_1" scheduling="fcfs">
+      <result-processor utilization="0.0837752"/>
+      <task name="cocoT_1" scheduling="fcfs" multiplicity="10">
+         <result-task throughput="152.319" utilization="9.99612" phase1-utilization="9.97042" phase2-utilization="0.025694" proc-utilization="0.0837752"/>
+         <entry name="cocoSetupE_1" type="PH1PH2">
+            <result-entry utilization="5.1979" throughput="76.1593" squared-coeff-variation="3.12029" proc-utilization="0.0647354" throughput-bound="158.983"/>
+            <entry-phase-activities>
+               <activity name="cocoSetupE_1_ph1" phase="1" host-demand-mean="0.0008">
+                  <result-activity proc-waiting="5.16212e-05" service-time="0.0680818" utilization="5.18506" service-time-variance="0.0145347"/>
+                  <synch-call dest="h248IpAddE" calls-mean="2">
+                     <result-call waiting="0"/>
+                  </synch-call>
+                  <synch-call dest="h248ModifyE" calls-mean="1">
+                     <result-call waiting="2.39589e-10"/>
+                  </synch-call>
+                  <synch-call dest="dbServerGetE" calls-mean="1">
+                     <result-call waiting="1.47921e-06"/>
+                  </synch-call>
+                  <synch-call dest="ss7IpOutIamE" calls-mean="1">
+                     <result-call waiting="4.11532e-13"/>
+                  </synch-call>
+               </activity>
+               <activity name="cocoSetupE_1_ph2" phase="2" host-demand-mean="5e-05">
+                  <result-activity proc-waiting="1.72071e-05" service-time="0.000168686" utilization="0.012847" service-time-variance="4.78949e-08"/>
+                  <synch-call dest="dbServerSetE" calls-mean="1">
+                     <result-call waiting="1.47921e-06"/>
+                  </synch-call>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+         <entry name="cocoReleaseE_1" type="PH1PH2">
+            <result-entry utilization="4.79821" throughput="76.1593" squared-coeff-variation="3.47742" proc-utilization="0.0190398" throughput-bound="171.101"/>
+            <entry-phase-activities>
+               <activity name="cocoReleaseE_1_ph1" phase="1" host-demand-mean="0.0002">
+                  <result-activity proc-waiting="4.30177e-05" service-time="0.0628337" utilization="4.78537" service-time-variance="0.0138029"/>
+                  <synch-call dest="h248SubtractE" calls-mean="2">
+                     <result-call waiting="0"/>
+                  </synch-call>
+                  <synch-call dest="dbServerGetE" calls-mean="1">
+                     <result-call waiting="1.47921e-06"/>
+                  </synch-call>
+                  <synch-call dest="ss7IpOutRelE" calls-mean="1">
+                     <result-call waiting="4.11532e-13"/>
+                  </synch-call>
+               </activity>
+               <activity name="cocoReleaseE_1_ph2" phase="2" host-demand-mean="5e-05">
+                  <result-activity proc-waiting="1.72071e-05" service-time="0.000168686" utilization="0.012847" service-time-variance="4.78949e-08"/>
+                  <synch-call dest="dbServerSetE" calls-mean="1">
+                     <result-call waiting="1.47921e-06"/>
+                  </synch-call>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+      </task>
+   </processor>
+   <processor name="gwControl_1" scheduling="fcfs">
+      <result-processor utilization="0.00913909"/>
+      <task name="gwControlT_1" scheduling="fcfs">
+         <result-task throughput="152.318" utilization="0.173295" phase1-utilization="0.173295" proc-utilization="0.00913909"/>
+         <entry name="gwControlRouteRequestE_1" type="PH1PH2">
+            <result-entry utilization="0.00304636" throughput="76.1591" squared-coeff-variation="1" proc-utilization="0.00304636" throughput-bound="25000"/>
+            <entry-phase-activities>
+               <activity name="gwControlRouteRequestE_1_ph1" phase="1" host-demand-mean="4e-05">
+                  <result-activity proc-waiting="0" service-time="4e-05" utilization="0.00304636" service-time-variance="1.6e-09"/>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+         <entry name="gwControlDisconnectE_1" type="PH1PH2">
+            <result-entry utilization="0.170249" throughput="76.1591" squared-coeff-variation="1.37935" proc-utilization="0.00609272" throughput-bound="480.769"/>
+            <entry-phase-activities>
+               <activity name="gwControlDisconnectE_1_ph1" phase="1" host-demand-mean="8e-05">
+                  <result-activity proc-waiting="0" service-time="0.00223544" utilization="0.170249" service-time-variance="6.89289e-06"/>
+                  <synch-call dest="gwNlcPt2PtSetE_1" calls-mean="1">
+                     <result-call waiting="7.77191e-05"/>
+                  </synch-call>
+                  <synch-call dest="gwIlcPt2PtSetE_1" calls-mean="1">
+                     <result-call waiting="7.77191e-05"/>
+                  </synch-call>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+      </task>
+   </processor>
+   <processor name="gwSvc_1" scheduling="fcfs">
+      <result-processor utilization="0.106623"/>
+      <task name="gwSvcT_1" scheduling="fcfs" multiplicity="20">
+         <result-task throughput="152.318" utilization="1.95757" phase1-utilization="1.94757" phase2-utilization="0.00999231" proc-utilization="0.106623"/>
+         <entry name="gwSvcSetupE_1" type="PH1PH2">
+            <result-entry utilization="1.08912" throughput="76.1591" squared-coeff-variation="1.21834" proc-utilization="0.0647352" throughput-bound="1986.1"/>
+            <entry-phase-activities>
+               <activity name="gwSvcSetupE_1_ph1" phase="1" host-demand-mean="0.0008">
+                  <result-activity proc-waiting="9.36097e-05" service-time="0.014235" utilization="1.08413" service-time-variance="0.000249159"/>
+                  <synch-call dest="gwControlRouteRequestE_1" calls-mean="1">
+                     <result-call waiting="0.000508003"/>
+                  </synch-call>
+                  <synch-call dest="coreSvcSetupE" calls-mean="1">
+                     <result-call waiting="0"/>
+                  </synch-call>
+                  <synch-call dest="gwNlcPt2PtSetE_1" calls-mean="1">
+                     <result-call waiting="0.000156916"/>
+                  </synch-call>
+                  <synch-call dest="gwIlcPt2PtSetE_1" calls-mean="1">
+                     <result-call waiting="0.000156916"/>
+                  </synch-call>
+                  <synch-call dest="coreSvcConnectE" calls-mean="1">
+                     <result-call waiting="1.75031e-10"/>
+                  </synch-call>
+               </activity>
+               <activity name="gwSvcSetupE_1_ph2" phase="2" host-demand-mean="5e-05">
+                  <result-activity proc-waiting="1.56016e-05" service-time="6.56016e-05" utilization="0.00499616" service-time-variance="2.74341e-09"/>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+         <entry name="gwSvcConnectE_1" type="PH1PH2">
+            <result-entry utilization="0" throughput="0" squared-coeff-variation="0.882812" proc-utilization="0" throughput-bound="25000"/>
+            <entry-phase-activities>
+               <activity name="gwSvcConnectE_1_ph1" phase="1" host-demand-mean="0.00075">
+                  <result-activity proc-waiting="0" service-time="0.00075" utilization="0" service-time-variance="5.625e-07"/>
+               </activity>
+               <activity name="gwSvcConnectE_1_ph2" phase="2" host-demand-mean="5e-05">
+                  <result-activity proc-waiting="0" service-time="5e-05" utilization="0" service-time-variance="2.5e-09"/>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+         <entry name="gwSvcReleaseE_1" type="PH1PH2">
+            <result-entry utilization="0.868441" throughput="76.1591" squared-coeff-variation="2.03608" proc-utilization="0.0418875" throughput-bound="2567.39"/>
+            <entry-phase-activities>
+               <activity name="gwSvcReleaseE_1_ph1" phase="1" host-demand-mean="0.0005">
+                  <result-activity proc-waiting="4.68048e-05" service-time="0.0113374" utilization="0.863445" service-time-variance="0.000264746"/>
+                  <synch-call dest="gwControlDisconnectE_1" calls-mean="1">
+                     <result-call waiting="0.000508003"/>
+                  </synch-call>
+                  <synch-call dest="coreSvcReleaseE" calls-mean="1">
+                     <result-call waiting="0"/>
+                  </synch-call>
+               </activity>
+               <activity name="gwSvcReleaseE_1_ph2" phase="2" host-demand-mean="5e-05">
+                  <result-activity proc-waiting="1.56016e-05" service-time="6.56016e-05" utilization="0.00499616" service-time-variance="2.74341e-09"/>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+      </task>
+   </processor>
+   <processor name="gwH248_1" scheduling="fcfs">
+      <result-processor utilization="0.0830134"/>
+      <task name="gwH248T_1" scheduling="fcfs" multiplicity="10">
+         <result-task throughput="152.318" utilization="2.13025" phase1-utilization="2.13025" proc-utilization="0.00304636"/>
+         <entry name="gwH248AddE_1" type="PH1PH2">
+            <result-entry utilization="1.20212" throughput="76.1591" squared-coeff-variation="4.72026" proc-utilization="0.00152318" throughput-bound="922.509"/>
+            <entry-phase-activities>
+               <activity name="gwH248AddE_1_ph1" phase="1" host-demand-mean="2e-05">
+                  <result-activity proc-waiting="4.95624e-05" service-time="0.0157844" utilization="1.20212" service-time-variance="0.00117603"/>
+                  <synch-call dest="gwCacoAddE_1" calls-mean="1">
+                     <result-call waiting="0.000632723"/>
+                  </synch-call>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+         <entry name="gwH248ModifyE_1" type="PH1PH2">
+            <result-entry utilization="0" throughput="0" squared-coeff-variation="2.65289" proc-utilization="0" throughput-bound="90909.1"/>
+            <entry-phase-activities>
+               <activity name="gwH248ModifyE_1_ph1" phase="1" host-demand-mean="1e-05">
+                  <result-activity proc-waiting="0" service-time="0.00011" utilization="0" service-time-variance="3.21e-08"/>
+                  <synch-call dest="gwCacoModifyE_1" calls-mean="1">
+                     <result-call waiting="0"/>
+                  </synch-call>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+         <entry name="gwH248SubtractE_1" type="PH1PH2">
+            <result-entry utilization="0.928128" throughput="76.1591" squared-coeff-variation="5.52904" proc-utilization="0.00152318" throughput-bound="1272.26"/>
+            <entry-phase-activities>
+               <activity name="gwH248SubtractE_1_ph1" phase="1" host-demand-mean="2e-05">
+                  <result-activity proc-waiting="4.95624e-05" service-time="0.0121867" utilization="0.928128" service-time-variance="0.000821149"/>
+                  <synch-call dest="gwCacoSubtractE_1" calls-mean="1">
+                     <result-call waiting="0.000632721"/>
+                  </synch-call>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+      </task>
+      <task name="gwCacoT_1" scheduling="fcfs" multiplicity="4">
+         <result-task throughput="152.318" utilization="2.03749" phase1-utilization="2.02328" phase2-utilization="0.0142066" proc-utilization="0.079967"/>
+         <entry name="gwCacoAddE_1" type="PH1PH2">
+            <result-entry utilization="1.15764" throughput="76.1591" squared-coeff-variation="2.94111" proc-utilization="0.0685432" throughput-bound="366.3"/>
+            <entry-phase-activities>
+               <activity name="gwCacoAddE_1_ph1" phase="1" host-demand-mean="0.0008">
+                  <result-activity proc-waiting="3.65382e-05" service-time="0.0150821" utilization="1.14864" service-time-variance="0.000679534"/>
+                  <synch-call dest="gwSvcSetupE_1" calls-mean="1">
+                     <result-call waiting="1.04924e-05"/>
+                  </synch-call>
+               </activity>
+               <activity name="gwCacoAddE_1_ph2" phase="2" host-demand-mean="0.0001">
+                  <result-activity proc-waiting="1.82691e-05" service-time="0.000118269" utilization="0.00900726" service-time-variance="1.03338e-08"/>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+         <entry name="gwCacoModifyE_1" type="PH1PH2">
+            <result-entry utilization="0" throughput="0" squared-coeff-variation="0.555556" proc-utilization="0" throughput-bound="26666.7"/>
+            <entry-phase-activities>
+               <activity name="gwCacoModifyE_1_ph1" phase="1" host-demand-mean="0.0001">
+                  <result-activity proc-waiting="0" service-time="0.0001" utilization="0" service-time-variance="1e-08"/>
+               </activity>
+               <activity name="gwCacoModifyE_1_ph2" phase="2" host-demand-mean="5e-05">
+                  <result-activity proc-waiting="0" service-time="5e-05" utilization="0" service-time-variance="2.5e-09"/>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+         <entry name="gwCacoSubtractE_1" type="PH1PH2">
+            <result-entry utilization="0.879842" throughput="76.1591" squared-coeff-variation="3.93671" proc-utilization="0.0114239" throughput-bound="506.971"/>
+            <entry-phase-activities>
+               <activity name="gwCacoSubtractE_1_ph1" phase="1" host-demand-mean="0.0001">
+                  <result-activity proc-waiting="3.65382e-05" service-time="0.0114844" utilization="0.874643" service-time-variance="0.000525409"/>
+                  <synch-call dest="gwSvcReleaseE_1" calls-mean="1">
+                     <result-call waiting="1.04926e-05"/>
+                  </synch-call>
+               </activity>
+               <activity name="gwCacoSubtractE_1_ph2" phase="2" host-demand-mean="5e-05">
+                  <result-activity proc-waiting="1.82691e-05" service-time="6.82691e-05" utilization="0.00519931" service-time-variance="2.83376e-09"/>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+      </task>
+   </processor>
+   <processor name="gwNlc_1" scheduling="fcfs">
+      <result-processor utilization="0.152318"/>
+      <task name="gwNlcT_1" scheduling="fcfs">
+         <result-task throughput="152.318" utilization="0.152318" phase1-utilization="0.152318" proc-utilization="0.152318"/>
+         <entry name="gwNlcPt2PtSetE_1" type="PH1PH2">
+            <result-entry utilization="0.152318" throughput="152.318" squared-coeff-variation="1" proc-utilization="0.152318" throughput-bound="1000"/>
+            <entry-phase-activities>
+               <activity name="gwNlcPt2PtSetE_1_ph1" phase="1" host-demand-mean="0.001">
+                  <result-activity proc-waiting="0" service-time="0.001" utilization="0.152318" service-time-variance="1e-06"/>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+      </task>
+   </processor>
+   <processor name="gwIlc_1" scheduling="fcfs">
+      <result-processor utilization="0.152318"/>
+      <task name="gwIlcT_1" scheduling="fcfs">
+         <result-task throughput="152.318" utilization="0.152318" phase1-utilization="0.152318" proc-utilization="0.152318"/>
+         <entry name="gwIlcPt2PtSetE_1" type="PH1PH2">
+            <result-entry utilization="0.152318" throughput="152.318" squared-coeff-variation="1" proc-utilization="0.152318" throughput-bound="1000"/>
+            <entry-phase-activities>
+               <activity name="gwIlcPt2PtSetE_1_ph1" phase="1" host-demand-mean="0.001">
+                  <result-activity proc-waiting="0" service-time="0.001" utilization="0.152318" service-time-variance="1e-06"/>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+      </task>
+   </processor>
+   <processor name="gwControl_2" scheduling="fcfs">
+      <result-processor utilization="0.00913909"/>
+      <task name="gwControlT_2" scheduling="fcfs">
+         <result-task throughput="152.318" utilization="0.180344" phase1-utilization="0.180344" proc-utilization="0.00913909"/>
+         <entry name="gwControlRouteRequestE_2" type="PH1PH2">
+            <result-entry utilization="0.00304636" throughput="76.1591" squared-coeff-variation="1" proc-utilization="0.00304636" throughput-bound="25000"/>
+            <entry-phase-activities>
+               <activity name="gwControlRouteRequestE_2_ph1" phase="1" host-demand-mean="4e-05">
+                  <result-activity proc-waiting="0" service-time="4e-05" utilization="0.00304636" service-time-variance="1.6e-09"/>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+         <entry name="gwControlDisconnectE_2" type="PH1PH2">
+            <result-entry utilization="0.177298" throughput="76.1591" squared-coeff-variation="1.35264" proc-utilization="0.00609272" throughput-bound="480.769"/>
+            <entry-phase-activities>
+               <activity name="gwControlDisconnectE_2_ph1" phase="1" host-demand-mean="8e-05">
+                  <result-activity proc-waiting="0" service-time="0.00232799" utilization="0.177298" service-time-variance="7.3307e-06"/>
+                  <synch-call dest="gwNlcPt2PtSetE_2" calls-mean="1">
+                     <result-call waiting="1.4816e-08"/>
+                  </synch-call>
+                  <synch-call dest="gwIlcPt2PtSetE_2" calls-mean="1">
+                     <result-call waiting="0"/>
+                  </synch-call>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+      </task>
+   </processor>
+   <processor name="gwSvc_2" scheduling="fcfs">
+      <result-processor utilization="0.16755"/>
+      <task name="gwSvcT_2" scheduling="fcfs" multiplicity="20">
+         <result-task throughput="228.477" utilization="0.658122" phase1-utilization="0.630074" phase2-utilization="0.0280481" proc-utilization="0.16755"/>
+         <entry name="gwSvcSetupE_2" type="PH1PH2">
+            <result-entry utilization="0.308498" throughput="76.1591" squared-coeff-variation="0.719945" proc-utilization="0.0647352" throughput-bound="6920.42"/>
+            <entry-phase-activities>
+               <activity name="gwSvcSetupE_2_ph1" phase="1" host-demand-mean="0.0008">
+                  <result-activity proc-waiting="0.000291045" service-time="0.00392795" utilization="0.299149" service-time-variance="1.18052e-05"/>
+                  <synch-call dest="gwControlRouteRequestE_2" calls-mean="1">
+                     <result-call waiting="0.000548914"/>
+                  </synch-call>
+                  <synch-call dest="gwNlcPt2PtSetE_2" calls-mean="1">
+                     <result-call waiting="1.4816e-08"/>
+                  </synch-call>
+                  <synch-call dest="gwIlcPt2PtSetE_2" calls-mean="1">
+                     <result-call waiting="0"/>
+                  </synch-call>
+               </activity>
+               <activity name="gwSvcSetupE_2_ph2" phase="2" host-demand-mean="5e-05">
+                  <result-activity proc-waiting="7.27611e-05" service-time="0.000122761" utilization="0.00934937" service-time-variance="7.79418e-09"/>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+         <entry name="gwSvcConnectE_2" type="PH1PH2">
+            <result-entry utilization="0.0720101" throughput="76.1591" squared-coeff-variation="0.643826" proc-utilization="0.0609272" throughput-bound="25000"/>
+            <entry-phase-activities>
+               <activity name="gwSvcConnectE_2_ph1" phase="1" host-demand-mean="0.00075">
+                  <result-activity proc-waiting="7.27611e-05" service-time="0.000822761" utilization="0.0626607" service-time-variance="5.67794e-07"/>
+               </activity>
+               <activity name="gwSvcConnectE_2_ph2" phase="2" host-demand-mean="5e-05">
+                  <result-activity proc-waiting="7.27611e-05" service-time="0.000122761" utilization="0.00934937" service-time-variance="7.79418e-09"/>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+         <entry name="gwSvcReleaseE_2" type="PH1PH2">
+            <result-entry utilization="0.277614" throughput="76.1591" squared-coeff-variation="2.12616" proc-utilization="0.0418875" throughput-bound="7604.56"/>
+            <entry-phase-activities>
+               <activity name="gwSvcReleaseE_2_ph1" phase="1" host-demand-mean="0.0005">
+                  <result-activity proc-waiting="0.000145522" service-time="0.00352243" utilization="0.268265" service-time-variance="2.82433e-05"/>
+                  <synch-call dest="gwControlDisconnectE_2" calls-mean="1">
+                     <result-call waiting="0.000548914"/>
+                  </synch-call>
+               </activity>
+               <activity name="gwSvcReleaseE_2_ph2" phase="2" host-demand-mean="5e-05">
+                  <result-activity proc-waiting="7.27611e-05" service-time="0.000122761" utilization="0.00934937" service-time-variance="7.79418e-09"/>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+      </task>
+   </processor>
+   <processor name="gwH248_2" scheduling="fcfs">
+      <result-processor utilization="0.0913909"/>
+      <task name="gwH248T_2" scheduling="fcfs" multiplicity="10">
+         <result-task throughput="228.477" utilization="0.117964" phase1-utilization="0.117964" proc-utilization="0.00380795"/>
+         <entry name="gwH248AddE_2" type="PH1PH2">
+            <result-entry utilization="0.0751162" throughput="76.1591" squared-coeff-variation="2.43226" proc-utilization="0.00152318" throughput-bound="12195.1"/>
+            <entry-phase-activities>
+               <activity name="gwH248AddE_2_ph1" phase="1" host-demand-mean="2e-05">
+                  <result-activity proc-waiting="9.85684e-05" service-time="0.000986307" utilization="0.0751162" service-time-variance="2.3661e-06"/>
+                  <synch-call dest="gwCacoAddE_2" calls-mean="1">
+                     <result-call waiting="3.14512e-05"/>
+                  </synch-call>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+         <entry name="gwH248ModifyE_2" type="PH1PH2">
+            <result-entry utilization="0.0210433" throughput="76.1591" squared-coeff-variation="1.51681" proc-utilization="0.000761591" throughput-bound="90909.1"/>
+            <entry-phase-activities>
+               <activity name="gwH248ModifyE_2_ph1" phase="1" host-demand-mean="1e-05">
+                  <result-activity proc-waiting="9.85684e-05" service-time="0.000276307" utilization="0.0210433" service-time-variance="1.15802e-07"/>
+                  <synch-call dest="gwCacoModifyE_2" calls-mean="1">
+                     <result-call waiting="3.14512e-05"/>
+                  </synch-call>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+         <entry name="gwH248SubtractE_2" type="PH1PH2">
+            <result-entry utilization="0.0218048" throughput="76.1591" squared-coeff-variation="1.46932" proc-utilization="0.00152318" throughput-bound="83333.3"/>
+            <entry-phase-activities>
+               <activity name="gwH248SubtractE_2_ph1" phase="1" host-demand-mean="2e-05">
+                  <result-activity proc-waiting="9.85684e-05" service-time="0.000286307" utilization="0.0218048" service-time-variance="1.20442e-07"/>
+                  <synch-call dest="gwCacoSubtractE_2" calls-mean="1">
+                     <result-call waiting="3.14512e-05"/>
+                  </synch-call>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+      </task>
+      <task name="gwCacoT_2" scheduling="fcfs" multiplicity="4">
+         <result-task throughput="228.477" utilization="0.104164" phase1-utilization="0.0844498" phase2-utilization="0.0197146" proc-utilization="0.087583"/>
+         <entry name="gwCacoAddE_2" type="PH1PH2">
+            <result-entry utilization="0.0702624" throughput="76.1591" squared-coeff-variation="0.757962" proc-utilization="0.0647352" throughput-bound="4705.88"/>
+            <entry-phase-activities>
+               <activity name="gwCacoAddE_2_ph1" phase="1" host-demand-mean="0.0008">
+                  <result-activity proc-waiting="3.62869e-05" service-time="0.000836287" utilization="0.0636909" service-time-variance="6.41317e-07"/>
+               </activity>
+               <activity name="gwCacoAddE_2_ph2" phase="2" host-demand-mean="5e-05">
+                  <result-activity proc-waiting="3.62869e-05" service-time="8.62869e-05" utilization="0.00657153" service-time-variance="3.81674e-09"/>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+         <entry name="gwCacoModifyE_2" type="PH1PH2">
+            <result-entry utilization="0.016951" throughput="76.1591" squared-coeff-variation="0.305485" proc-utilization="0.0114239" throughput-bound="26666.7"/>
+            <entry-phase-activities>
+               <activity name="gwCacoModifyE_2_ph1" phase="1" host-demand-mean="0.0001">
+                  <result-activity proc-waiting="3.62869e-05" service-time="0.000136287" utilization="0.0103795" service-time-variance="1.13167e-08"/>
+               </activity>
+               <activity name="gwCacoModifyE_2_ph2" phase="2" host-demand-mean="5e-05">
+                  <result-activity proc-waiting="3.62869e-05" service-time="8.62869e-05" utilization="0.00657153" service-time-variance="3.81674e-09"/>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+         <entry name="gwCacoSubtractE_2" type="PH1PH2">
+            <result-entry utilization="0.016951" throughput="76.1591" squared-coeff-variation="0.305485" proc-utilization="0.0114239" throughput-bound="26666.7"/>
+            <entry-phase-activities>
+               <activity name="gwCacoSubtractE_2_ph1" phase="1" host-demand-mean="0.0001">
+                  <result-activity proc-waiting="3.62869e-05" service-time="0.000136287" utilization="0.0103795" service-time-variance="1.13167e-08"/>
+               </activity>
+               <activity name="gwCacoSubtractE_2_ph2" phase="2" host-demand-mean="5e-05">
+                  <result-activity proc-waiting="3.62869e-05" service-time="8.62869e-05" utilization="0.00657153" service-time-variance="3.81674e-09"/>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+      </task>
+   </processor>
+   <processor name="gwNlc_2" scheduling="fcfs">
+      <result-processor utilization="0.152318"/>
+      <task name="gwNlcT_2" scheduling="fcfs" multiplicity="3">
+         <result-task throughput="152.318" utilization="0.168618" phase1-utilization="0.168618" proc-utilization="0.152318"/>
+         <entry name="gwNlcPt2PtSetE_2" type="PH1PH2">
+            <result-entry utilization="0.168618" throughput="152.318" squared-coeff-variation="0.825357" proc-utilization="0.152318" throughput-bound="3000"/>
+            <entry-phase-activities>
+               <activity name="gwNlcPt2PtSetE_2_ph1" phase="1" host-demand-mean="0.001">
+                  <result-activity proc-waiting="0.00010701" service-time="0.00110701" utilization="0.168618" service-time-variance="1.01145e-06"/>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+      </task>
+   </processor>
+   <processor name="gwIlc_2" scheduling="fcfs">
+      <result-processor utilization="0.152318"/>
+      <task name="gwIlcT_2" scheduling="fcfs" multiplicity="6">
+         <result-task throughput="152.318" utilization="0.17379" phase1-utilization="0.17379" proc-utilization="0.152318"/>
+         <entry name="gwIlcPt2PtSetE_2" type="PH1PH2">
+            <result-entry utilization="0.17379" throughput="152.318" squared-coeff-variation="0.783429" proc-utilization="0.152318" throughput-bound="6000"/>
+            <entry-phase-activities>
+               <activity name="gwIlcPt2PtSetE_2_ph1" phase="1" host-demand-mean="0.001">
+                  <result-activity proc-waiting="0.000140966" service-time="0.00114097" utilization="0.17379" service-time-variance="1.01987e-06"/>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+      </task>
+   </processor>
+   <processor name="coreControl" scheduling="fcfs">
+      <result-processor utilization="0.00913909"/>
+      <task name="coreControlT" scheduling="fcfs">
+         <result-task throughput="152.318" utilization="0.217925" phase1-utilization="0.217925" proc-utilization="0.00913909"/>
+         <entry name="coreControlRouteRequestE" type="PH1PH2">
+            <result-entry utilization="0.00304636" throughput="76.1591" squared-coeff-variation="1" proc-utilization="0.00304636" throughput-bound="25000"/>
+            <entry-phase-activities>
+               <activity name="coreControlRouteRequestE_ph1" phase="1" host-demand-mean="4e-05">
+                  <result-activity proc-waiting="0" service-time="4e-05" utilization="0.00304636" service-time-variance="1.6e-09"/>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+         <entry name="coreControlDisconnectE" type="PH1PH2">
+            <result-entry utilization="0.214879" throughput="76.1591" squared-coeff-variation="1.75782" proc-utilization="0.00609272" throughput-bound="480.769"/>
+            <entry-phase-activities>
+               <activity name="coreControlDisconnectE_ph1" phase="1" host-demand-mean="8e-05">
+                  <result-activity proc-waiting="0" service-time="0.00282145" utilization="0.214879" service-time-variance="1.39932e-05"/>
+                  <synch-call dest="coreNlcPt2PtSetE" calls-mean="2">
+                     <result-call waiting="0"/>
+                  </synch-call>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+      </task>
+   </processor>
+   <processor name="coreSvc" scheduling="fcfs">
+      <result-processor utilization="0.16755"/>
+      <task name="coreSvcT" scheduling="fcfs" multiplicity="125">
+         <result-task throughput="228.477" utilization="1.43274" phase1-utilization="1.41098" phase2-utilization="0.0217571" proc-utilization="0.16755"/>
+         <entry name="coreSvcSetupE" type="PH1PH2">
+            <result-entry utilization="0.67769" throughput="76.1591" squared-coeff-variation="0.858816" proc-utilization="0.0647352" throughput-bound="21815"/>
+            <entry-phase-activities>
+               <activity name="coreSvcSetupE_ph1" phase="1" host-demand-mean="0.0008">
+                  <result-activity proc-waiting="0.000226133" service-time="0.00880312" utilization="0.670438" service-time-variance="6.7997e-05"/>
+                  <synch-call dest="coreControlRouteRequestE" calls-mean="1">
+                     <result-call waiting="0.00105433"/>
+                  </synch-call>
+                  <synch-call dest="coreNlcPt2PtSetE" calls-mean="2">
+                     <result-call waiting="0"/>
+                  </synch-call>
+                  <synch-call dest="gwSvcSetupE_2" calls-mean="1">
+                     <result-call waiting="1.32623e-05"/>
+                  </synch-call>
+               </activity>
+               <activity name="coreSvcSetupE_ph2" phase="2" host-demand-mean="5e-05">
+                  <result-activity proc-waiting="4.52266e-05" service-time="9.52266e-05" utilization="0.00725237" service-time-variance="4.54545e-09"/>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+         <entry name="coreSvcConnectE" type="PH1PH2">
+            <result-entry utilization="0.134931" throughput="76.1591" squared-coeff-variation="1.27884" proc-utilization="0.0609272" throughput-bound="80645.2"/>
+            <entry-phase-activities>
+               <activity name="coreSvcConnectE_ph1" phase="1" host-demand-mean="0.00075">
+                  <result-activity proc-waiting="9.04532e-05" service-time="0.00167648" utilization="0.127679" service-time-variance="4.00964e-06"/>
+                  <synch-call dest="gwSvcConnectE_2" calls-mean="1">
+                     <result-call waiting="1.32626e-05"/>
+                  </synch-call>
+               </activity>
+               <activity name="coreSvcConnectE_ph2" phase="2" host-demand-mean="5e-05">
+                  <result-activity proc-waiting="4.52266e-05" service-time="9.52266e-05" utilization="0.00725237" service-time-variance="4.54545e-09"/>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+         <entry name="coreSvcReleaseE" type="PH1PH2">
+            <result-entry utilization="0.620116" throughput="76.1591" squared-coeff-variation="1.58299" proc-utilization="0.0418875" throughput-bound="23992.3"/>
+            <entry-phase-activities>
+               <activity name="coreSvcReleaseE_ph1" phase="1" host-demand-mean="0.0005">
+                  <result-activity proc-waiting="0.00013568" service-time="0.00804715" utilization="0.612863" service-time-variance="0.000104945"/>
+                  <synch-call dest="coreControlDisconnectE" calls-mean="1">
+                     <result-call waiting="0.00105433"/>
+                  </synch-call>
+                  <synch-call dest="gwSvcReleaseE_2" calls-mean="1">
+                     <result-call waiting="1.32624e-05"/>
+                  </synch-call>
+               </activity>
+               <activity name="coreSvcReleaseE_ph2" phase="2" host-demand-mean="5e-05">
+                  <result-activity proc-waiting="4.52266e-05" service-time="9.52266e-05" utilization="0.00725237" service-time-variance="4.54545e-09"/>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+      </task>
+   </processor>
+   <processor name="coreNlc" scheduling="fcfs">
+      <result-processor utilization="0.304636"/>
+      <task name="coreNlcT" scheduling="fcfs" multiplicity="12">
+         <result-task throughput="304.636" utilization="0.417572" phase1-utilization="0.417572" proc-utilization="0.304636"/>
+         <entry name="coreNlcPt2PtSetE" type="PH1PH2">
+            <result-entry utilization="0.417572" throughput="304.636" squared-coeff-variation="0.605378" proc-utilization="0.304636" throughput-bound="12000"/>
+            <entry-phase-activities>
+               <activity name="coreNlcPt2PtSetE_ph1" phase="1" host-demand-mean="0.001">
+                  <result-activity proc-waiting="0.000370724" service-time="0.00137072" utilization="0.417572" service-time-variance="1.13744e-06"/>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+      </task>
+   </processor>
+</lqn-model>

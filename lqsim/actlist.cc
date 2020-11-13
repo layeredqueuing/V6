@@ -1,0 +1,690 @@
+/************************************************************************/
+/* Copyright the Real-Time and Distributed Systems Group,		*/
+/* Department of Systems and Computer Engineering,			*/
+/* Carleton University, Ottawa, Ontario, Canada. K1S 5B6		*/
+/* 									*/
+/* July 2003								*/
+/************************************************************************/
+
+/*
+ * Activities are arcs in the graph that do work.
+ * Nodes are points in the graph where splits and joins take place.
+ *
+ * $Id: actlist.cc 13879 2020-09-26 02:45:49Z greg $
+ */
+
+#include <sstream>
+#include <deque>
+#include <algorithm>
+#include <parasol.h>
+#include "lqsim.h"
+#include <stdarg.h>
+#include <string.h>
+#include <limits.h>
+#include <assert.h>
+#include <lqio/error.h>
+#include <lqio/input.h>
+#include "model.h"
+#include "activity.h"
+#include "task.h"
+#include "instance.h"
+#include "errmsg.h"
+
+using namespace std;
+  
+static inline int i_max( int a, int b ) { return a > b ? a : b; }
+static void activity_path_error( int, const ActivityList *, std::deque<Activity *>& activity_stack );
+static void activity_cycle_error( int err, const char * task_name, std::deque<Activity *>& activity_stack );
+
+const std::string
+ActivityList::get_name() const
+{
+    std::string buf;
+    std::string sep;
+
+    switch ( get_type() ) {
+    case ACT_OR_FORK_LIST:
+    case ACT_OR_JOIN_LIST:
+	sep += " + ";
+	break;
+    case ACT_AND_FORK_LIST:
+    case ACT_AND_JOIN_LIST:
+	sep += " & ";
+	break;
+    case ACT_LOOP_LIST:
+	sep += " * ";
+	break;
+    }
+    
+    for ( std::vector<Activity *>::const_iterator i = _list.begin(); i != _list.end(); ++i ) {
+	if ( i != _list.begin() ) {
+	    buf += sep;
+	}
+	buf += (*i)->name();
+    }
+    return buf;
+}
+
+
+ActivityList&
+ActivityList::initialize()
+{
+    return *this;
+}
+
+
+AndJoinActivityList::AndJoinActivityList( list_type type, LQIO::DOM::ActivityList * dom )
+    : OutputActivityList(type,dom),
+      _fork(),
+      _source(),
+      _join_type(AndJoinActivityList::JOIN_UNDEFINED),
+      _quorum_count(0),
+      _hist_data(NULL)
+{
+    if ( get_DOM()->hasHistogram() ) {
+	// _hist_data = new Histogram();
+    }
+}
+
+
+AndJoinActivityList::~AndJoinActivityList()
+{
+    if ( _hist_data != NULL ) {
+	delete _hist_data;
+    }
+}
+
+/* ------------------------------------------------------------------------ */
+
+/*
+ * Allocate space for an activity.
+ */
+
+AndJoinActivityList&
+AndJoinActivityList::push_back( Activity * activity )
+{
+    ActivityList::push_back( activity );
+    _fork.push_back( NULL );
+    _source.push_back( NULL );
+    return *this;
+}
+
+OrForkActivityList&
+OrForkActivityList::push_back( Activity * activity )
+{
+    ActivityList::push_back( activity );
+    _prob.push_back( 0.0 );
+    return *this;
+}
+
+AndForkActivityList&
+AndForkActivityList::push_back( Activity * activity )
+{
+    ActivityList::push_back( activity );
+    _visit.push_back( false );
+    return *this;
+}
+
+LoopActivityList&
+LoopActivityList::push_back( Activity * activity )
+{
+    ActivityList::push_back( activity );
+    _count.push_back( 0.0 );
+    return *this;
+}
+
+/* ------------------------------------------------------------------------ */
+
+
+/*
+ * Set parameters from the dom.  Called when instances are being created.
+ */
+
+AndJoinActivityList&
+AndJoinActivityList::configure()
+{
+    _quorum_count = dynamic_cast<const LQIO::DOM::AndJoinActivityList*>(get_DOM())->getQuorumCountValue();
+    if ( !_hist_data && get_DOM()->hasHistogram() ) {
+	_hist_data = new Histogram( get_DOM()->getHistogram() );
+    }
+    return *this;
+}
+
+AndForkActivityList&
+AndForkActivityList::configure()
+{
+    _visit.assign( _list.size(), false );
+    return *this;
+}
+
+OrForkActivityList&
+OrForkActivityList::configure()
+{
+    for ( std::vector<Activity *>::const_iterator i = _list.begin(); i != _list.end(); ++i ) {
+	_prob.at(i - _list.begin()) = get_DOM()->getParameterValue(dynamic_cast<LQIO::DOM::Activity *>((*i)->get_DOM()));
+    }
+    return *this;
+}
+
+LoopActivityList&
+LoopActivityList::configure()
+{
+    _total = 0.0;
+    for ( std::vector<Activity *>::const_iterator i = _list.begin(); i != _list.end(); ++i ) {
+	const double value = get_DOM()->getParameterValue(dynamic_cast<LQIO::DOM::Activity *>((*i)->get_DOM()) );
+	_count.at( i - _list.begin() ) = value;
+	_total += value;
+    }
+    return *this;
+}
+
+/* ------------------------------------------------------------------------ */
+
+/*
+ * Recursively find all children and grand children from `this'.  As
+ * we descend down, we bump the depth.  If our path's cross, we have a
+ * loop and abort.
+ */
+
+double
+OutputActivityList::find_children( std::deque<Activity *>& activity_stack, std::deque<AndForkActivityList *>& fork_stack, const Entry * ep )
+{
+    if ( _next != NULL ) {
+	return _next->find_children( activity_stack, fork_stack, ep );
+    } else {
+	return 0.0;
+    }
+}
+
+
+double
+AndJoinActivityList::find_children( std::deque<Activity *>& activity_stack, std::deque<AndForkActivityList *>& fork_stack, const Entry * ep )
+{
+    Activity * my_activity = activity_stack.back();
+
+    /* Look for the fork on the fork stack */
+    for ( std::vector<Activity *>::iterator i = _list.begin(); i != _list.end(); ++i ) {
+	if ( (*i) == my_activity ) continue;
+	try {
+	    const size_t ix = i - _list.begin();
+
+	    std::deque<AndForkActivityList *>::iterator j = fork_stack.end();
+	    if ( (*i)->_input != NULL ) {
+		j = (*i)->_input->fork_backtrack( fork_stack, *i, *i );
+	    }
+	    
+	    if ( j != fork_stack.end() ) {
+		if ( !set_join_type( JOIN_INTERNAL_FORK_JOIN ) ) {
+		    activity_path_error( LQIO::ERR_JOIN_BAD_PATH, this, activity_stack );
+		} else if ( !_fork.at(ix) || std::find( fork_stack.begin(), fork_stack.end(), _fork[ix] ) != fork_stack.end() ) {
+		    _fork[ix] = *j;
+		    _fork[ix]->set_join( this );
+		}
+		if ( debug_flag ) {
+		    Activity * ap = activity_stack.back();
+		    std::string buf = "And Join: ";
+		    for ( size_t k = 0; k < activity_stack.size(); ++k ) buf += ' ';
+		    buf += ap->name();
+		    buf += ' ';
+		    buf += (*i)->name();
+		    for ( std::deque<AndForkActivityList *>::const_reverse_iterator lp = fork_stack.rbegin(); lp != fork_stack.rend(); ++lp ) {
+			buf += '\n';
+			buf += (*lp)->get_name();
+		    }
+		    fprintf( stddbg, "%s\n", buf.c_str() );
+		}
+	    } else {
+		if ( !set_join_type( JOIN_SYNCHRONIZATION ) ) {
+		    activity_path_error( LQIO::ERR_JOIN_BAD_PATH, this, activity_stack );
+		} else if ( !add_to_join_list( ix, activity_stack.back() ) ) {
+		    activity_path_error( LQIO::ERR_JOIN_BAD_PATH, this, activity_stack );
+		} else {
+		    Server_Task * cp = dynamic_cast<Server_Task *>(ep->task());
+		    cp->set_synchronization_server();
+		}
+	    }
+	}
+	catch ( Activity * ) {
+	    Server_Task * cp = dynamic_cast<Server_Task *>(ep->task());
+	    activity_cycle_error( LQIO::ERR_CYCLE_IN_ACTIVITY_GRAPH, cp->name(), activity_stack );
+	}
+    }
+    return OutputActivityList::find_children( activity_stack, fork_stack, ep );
+}
+
+/* ------------------------------------------------------------------------ */
+
+/*
+ * Recursively find all children and grand children from `this'.  As
+ * we descend down, we bump the depth.  If our path's cross, we have a
+ * loop and abort.
+ */
+
+double
+AndForkActivityList::find_children( std::deque<Activity *>& activity_stack, std::deque<AndForkActivityList *>& fork_stack, const Entry * ep )
+{
+    double sum = 0.0;
+
+    fork_stack.push_back( this );
+    for ( std::vector<Activity *>::iterator i = _list.begin(); i != _list.end(); ++i ) {
+	if ( debug_flag ) {
+	    Activity * ap = activity_stack.back();
+	    std::string buf = "AndFork: ";
+	    for ( size_t k = 0; k < activity_stack.size(); ++k ) buf += ' ';
+	    buf += ap->name();
+	    buf += ' ';
+	    buf += (*i)->name();
+	    fprintf( stddbg, "%s\n", buf.c_str() );
+	}
+	sum += (*i)->find_children( activity_stack, fork_stack, ep );
+    }
+    fork_stack.pop_back();
+    return sum;
+}
+
+double
+ForkActivityList::find_children( std::deque<Activity *>& activity_stack, std::deque<AndForkActivityList *>& fork_stack, const Entry * ep )
+{
+    double sum = 0.0;
+
+    for ( std::vector<Activity *>::iterator i = _list.begin(); i != _list.end(); ++i ) {
+	sum += (*i)->find_children( activity_stack, fork_stack, ep );
+    }
+    return sum;
+}
+
+
+double
+OrForkActivityList::find_children( std::deque<Activity *>& activity_stack, std::deque<AndForkActivityList *>& fork_stack, const Entry * ep )
+{
+    double sum = 0.0;
+    double prob = 0.0;
+
+    for ( std::vector<Activity *>::iterator i = _list.begin(); i != _list.end(); ++i ) {
+	sum += (*i)->find_children( activity_stack, fork_stack, ep );
+	prob += _prob.at(i-_list.begin());
+    }
+    if ( fabs( 1.0 - prob ) > EPSILON ) {
+	Activity * ap = activity_stack.back();
+	const std::string name = get_name();
+	LQIO::solution_error( LQIO::ERR_MISSING_OR_BRANCH, name.c_str(), ap->task()->name(), prob );
+    }
+    return sum;
+}
+
+double
+LoopActivityList::find_children( std::deque<Activity *>& activity_stack, std::deque<AndForkActivityList *>& fork_stack, const Entry * ep )
+{
+    double sum = 0.0;;
+    if ( _exit != NULL ) {
+	sum += _exit->find_children( activity_stack, fork_stack, ep );
+    }
+
+    for ( std::vector<Activity *>::iterator i = _list.begin(); i != _list.end(); ++i ) {
+	std::deque<AndForkActivityList *> branch_stack;
+	sum += (*i)->find_children( activity_stack, branch_stack, ep );
+    }
+    return sum;
+}
+
+
+/*
+ * Add anActivity to the activity list provided it isn't there already
+ * and the slot that it is to go in isn't already occupied.
+ */
+
+bool
+AndJoinActivityList::add_to_join_list( unsigned i, Activity * activity )
+{
+    if ( _source[i] == NULL ) { 
+	_source[i] = activity;
+    } else if ( _source[i] != activity ) {
+	return false;
+    }
+
+    for ( std::vector<Activity *>::const_iterator j = _source.begin(); j != _source.end(); ++j ) {
+	if ( j - _source.begin() != i && *j == activity ) return false;
+    }
+    return true;
+}
+
+/* ------------------------------------------------------------------------ */
+
+/*
+ * Search backwards up activity list looking for a match on forkStack
+ */
+
+std::deque<AndForkActivityList *>::iterator
+OutputActivityList::join_backtrack( std::deque<AndForkActivityList *>& fork_stack, Activity * start_activity )
+{
+    std::deque<AndForkActivityList *>::iterator pos = fork_stack.end();
+
+    size_t depth = 0;
+    for ( std::vector<Activity *>::iterator i = _list.begin(); i != _list.end(); ++i ) {
+	if ( (*i) == start_activity ) throw start_activity;
+	if ( (*i)->_input == NULL ) continue;
+	std::deque<AndForkActivityList *>::iterator temp = (*i)->_input->fork_backtrack( fork_stack, (*i), start_activity );
+	if ( temp != fork_stack.end() && temp - fork_stack.end() > depth ) {
+	    pos = temp;
+	    depth = temp - fork_stack.end();
+	}
+    }
+    return pos;
+}
+
+std::deque<AndForkActivityList *>::iterator 
+InputActivityList::fork_backtrack( std::deque<AndForkActivityList *>& fork_stack, Activity * this_activity, Activity * start_activity )
+{
+    if ( _prev ) {
+	return _prev->join_backtrack( fork_stack, start_activity );
+    } else {
+	return fork_stack.end();
+    }
+    
+}
+
+std::deque<AndForkActivityList *>::iterator 
+AndForkActivityList::fork_backtrack( std::deque<AndForkActivityList *>& fork_stack, Activity * this_activity, Activity * start_activity )
+{
+	
+    /* Tag branch as coming from a join */
+
+    for ( std::vector<Activity *>::iterator i = _list.begin(); i != _list.end(); ++i ) {
+	if ( (*i) == this_activity ) {
+	    _visit.at(i - _list.begin()) = true;
+	}
+    }
+
+    std::deque<AndForkActivityList *>::iterator pos = std::find( fork_stack.begin(), fork_stack.end(), this );
+    if ( get_prev() == NULL || pos != fork_stack.end() ) {
+	return pos;
+    } else {
+	return get_prev()->join_backtrack( fork_stack, start_activity );
+    }
+}
+
+/* ------------------------------------------------------------------------ */
+
+/*
+ * Recursively find all children and grand children from `this'.  We
+ * are looking for replies.  And forks are handled a bit strangely so
+ * that we count things up correctly.  If our path's cross, we have a
+ * loop and abort.
+ */
+
+double
+OutputActivityList::collect( std::deque<Activity *>& activity_stack, ActivityList::Collect& data ) const
+{
+    if ( _next != NULL ) {
+	return _next->collect( activity_stack, data );
+    } else {
+	return 0.0;
+    }
+}
+
+double
+AndJoinActivityList::collect( std::deque<Activity *>& activity_stack, ActivityList::Collect& data ) const
+{
+    /* If it is a sync point... */
+    if ( _join_type == JOIN_SYNCHRONIZATION ) {
+	return OutputActivityList::collect( activity_stack, data );
+    } else {
+	return 0.0;
+    }
+}
+
+double
+ForkActivityList::collect( std::deque<Activity *>& activity_stack, ActivityList::Collect& data ) const
+{
+    double sum = 0.0;
+    unsigned int next_phase = data.phase;
+    
+    for ( std::vector<Activity *>::const_iterator i = _list.begin(); i != _list.end(); ++i ) {
+	ActivityList::Collect branch(data);
+	sum += (*i)->collect( activity_stack, branch );
+	next_phase = i_max( next_phase, branch.phase );
+    }
+
+    data.phase = next_phase;
+    return sum;
+}
+
+double
+AndForkActivityList::collect( std::deque<Activity *>& activity_stack, ActivityList::Collect& data ) const
+{
+    double sum = 0.0;
+    unsigned next_phase = data.phase;
+
+    for ( std::vector<Activity *>::const_iterator i = _list.begin(); i != _list.end(); ++i ) {
+	ActivityList::Collect branch(data);
+	branch.can_reply =  !dynamic_cast<AndJoinActivityList*>(get_join()) || dynamic_cast<AndJoinActivityList*>(get_join())->get_quorum_count() == 0;
+	sum += (*i)->collect( activity_stack, branch );
+	next_phase = i_max( next_phase, branch.phase );
+    }
+    data.phase = next_phase;
+
+    /* Now follow the activities after the join */
+
+    if ( get_join() && get_join()->get_next() ) {
+	sum += get_join()->get_next()->collect( activity_stack, data );
+    } else {
+	/* Flushing */
+	Task * cp = data._e->task();
+	cp->max_phases( next_phase );
+    }
+    return sum;
+}
+
+double
+OrForkActivityList::collect( std::deque<Activity *>& activity_stack, ActivityList::Collect& data ) const
+{
+    double sum = 0.0;
+    unsigned int next_phase = data.phase;
+    for ( std::vector<Activity *>::const_iterator i = _list.begin(); i != _list.end(); ++i ) {
+	ActivityList::Collect branch(data);
+	branch.rate = data.rate * _prob.at(i-_list.begin());
+	sum += (*i)->collect( activity_stack, branch );
+	next_phase = i_max( next_phase, branch.phase );
+    }
+    data.phase = next_phase;
+    return sum;
+}
+
+double
+LoopActivityList::collect( std::deque<Activity *>& activity_stack, ActivityList::Collect& data ) const
+{
+    double sum = 0.0;
+
+    /*
+     * For the branches, set rate = 0, because we want to force an error.
+     * Ignore phase information because it isn't valid
+     */
+
+    for ( std::vector<Activity *>::const_iterator i = _list.begin(); i != _list.end(); ++i ) {
+	ActivityList::Collect branch(data);
+	branch.can_reply = false;
+	sum += (*i)->collect( activity_stack, branch );
+    }
+
+    if ( get_exit() ) {
+	sum += get_exit()->collect( activity_stack, data );
+    }
+
+    return sum;
+}
+
+/* ------------------------------------------------------------------------ */
+
+/*
+ * Randomly shuffle items.
+ */
+
+void
+ActivityList::shuffle()
+{
+    const size_t n = _list.size();
+    for ( size_t i = n; i >= 1; --i ) {
+	size_t k = static_cast<size_t>(drand48() * i);
+	if ( i-1 != k ) {
+	    std::swap( _list[k], _list[i-1] );
+	}
+    }
+}
+
+/*
+ * Check for match
+ */
+
+void
+AndJoinActivityList::join_check()
+{
+    for ( size_t i = 1; i < size(); ++i ) {
+	if ( _fork.at(i) != _fork.front() ) {
+	    std::string src;
+	    std::string dst;
+	    if ( _fork[i] && _fork[i]->get_prev() ) {
+		src = _fork[i]->get_prev()->get_name();
+	    }
+	    if ( get_next() ) {
+		dst = get_next()->get_name();
+	    }
+	    LQIO::solution_error( LQIO::ERR_JOIN_PATH_MISMATCH, "task", dst.c_str(), src.c_str() );
+	}
+    }
+}
+
+
+bool
+AndJoinActivityList::set_join_type( join_type type )
+{
+    if ( _join_type == AndJoinActivityList::JOIN_UNDEFINED ) {
+	_join_type = type;
+	return true;
+    } else {
+	return _join_type == type;
+    }
+}
+
+
+AndJoinActivityList&
+AndJoinActivityList::insertDOMResults()
+{
+    LQIO::DOM::AndJoinActivityList * dom = dynamic_cast<LQIO::DOM::AndJoinActivityList *>(get_DOM());
+    
+    dom->setResultJoinDelay(r_join.mean())
+	.setResultVarianceJoinDelay(r_join_sqr.mean());
+		
+    if ( number_blocks > 1 ) {
+	dom->setResultJoinDelayVariance( r_join.variance())
+	    .setResultVarianceJoinDelayVariance(r_join_sqr.variance());
+    }
+
+    /* Do the fork/join results here */
+    if ( _hist_data ) {
+	_hist_data->insertDOMResults();
+    }
+    return *this;
+}
+
+
+void
+print_activity_connectivity( FILE * output, Activity * ap )
+{
+#if 0
+    unsigned i;
+    ActivityList * op;
+
+    if ( ap->_input ) {
+	if ( ap->_input->prev ) {
+	    op = ap->_input->prev;
+	    fprintf( output, "\toutput from:" );
+	    for ( i = 0; i < op->na; ++i ) {
+		fprintf( output, " %s", op->list[i]->name() );
+	    }
+	    fprintf( output, "\n" );
+	}
+    }
+
+    if ( ap->_output ) {
+	op = ap->_output;
+	if ( op->next ) {
+	    op = ap->_output->next;
+	    fprintf( output, "\tinput to:   " );
+	    for ( i = 0; i < op->na; ++i ) {
+		fprintf( output, " %s", op->list[i]->name() );
+	    }
+	    fprintf( output, "\n" );
+	    switch ( op->type ) {
+	    case ACT_LOOP_LIST:
+		if ( op->u.loop.endlist ) {
+		    fprintf( output, "\tcalls      : %s\n",
+			     op->u.loop.endlist->name() );
+		}
+	    }
+	}
+    }
+#endif
+}
+
+
+
+static void
+activity_cycle_error( int err, const char * task_name, std::deque<Activity *>& activity_stack )
+{
+    std::string buf;
+
+    for ( std::deque<Activity *>::const_reverse_iterator i = activity_stack.rbegin(); i != activity_stack.rend(); ++i ) {
+	if ( i != activity_stack.rbegin() ) {
+	    buf += ", ";
+	}
+	buf += (*i)->name();
+    }
+    LQIO::solution_error( err, task_name, buf.c_str() );
+}
+
+
+static void
+activity_path_error( int err, const ActivityList * list, std::deque<Activity *>& activity_stack )
+{
+    std::string buf2 = list->get_name();
+    Activity * ap = activity_stack.back();
+    std::string buf;
+
+    for ( std::deque<Activity *>::const_reverse_iterator i = activity_stack.rbegin(); i != activity_stack.rend(); ++i ) {
+	if ( i != activity_stack.rbegin() ) {
+	    buf += ", ";
+	}
+	buf += (*i)->name();
+    }
+    LQIO::solution_error( err, buf2.c_str(), ap->task()->name(), buf.c_str() );
+}
+
+/* -------------------- Functions called by parser. --------------------- */
+
+/*
+ * Connect the src and dst lists together.
+ */
+
+static void
+act_connect ( ActivityList * src, ActivityList * dst )
+{
+    if ( dynamic_cast<OutputActivityList *>(src) ) {
+	dynamic_cast<OutputActivityList *>(src)->set_next( dynamic_cast<InputActivityList *>(dst) );
+    }
+    if ( dynamic_cast<InputActivityList *>(dst) ) {
+	dynamic_cast<InputActivityList *>(dst)->set_prev( dynamic_cast<OutputActivityList *>(src) );
+    }
+}
+
+void complete_activity_connections ()
+{
+    /* We stored all the necessary connections and resolved the list identifiers so finalize */
+    std::map<LQIO::DOM::ActivityList*, LQIO::DOM::ActivityList*>::iterator iter;
+    for (iter = Activity::actConnections.begin(); iter != Activity::actConnections.end(); ++iter) {
+	ActivityList* src = Activity::domToNative[iter->first];
+	ActivityList* dst = Activity::domToNative[iter->second];
+	assert(src != NULL && dst != NULL);
+	act_connect(src, dst);
+    }
+}
+
