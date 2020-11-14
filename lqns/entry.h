@@ -160,6 +160,15 @@ public:
 	const unsigned int _k;
     };
     
+    struct add_interlock {
+	add_interlock( const MVASubmodel& submodel, const Task * client, unsigned int k ) : _submodel(submodel), _client(client), _k(k) {}
+	double operator()( double sum, const Entry * entry ) const { return sum + entry->setInterlock( _submodel, _client, _k ); }
+    private:
+	const MVASubmodel& _submodel;
+	const Task * _client;
+	const unsigned int _k;
+    };
+
 protected:
     struct clear_wait {
 	clear_wait( unsigned int submodel ) : _submodel(submodel) {}

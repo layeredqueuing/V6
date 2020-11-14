@@ -476,15 +476,15 @@ Entity::prInterlock( const Task& aClient ) const
 }
 
 
-
 Probability
-Entity::prInterlock( const Task& aClient, const Entry * aClientEntry ) const
+Entity::prInterlock( const Entry * clientEntry ) const
 {
-    const Probability pr = _interlock.interlockedFlow( aClient, aClientEntry );
+    const Probability pr = _interlock.interlockedFlow( clientEntry );
     if ( flags.trace_interlock ) {
-	cout << "Interlock rate: " 
-	     << aClient.name() << "(" << aClient.population() << ") -> " 
-	     << name()         << "(" << population()         << ")  = " << pr << endl;
+	cout << "Interlock rate: ";
+	    const Entity * client = clientEntry->owner();
+	    cout << client->name() << "(" << client->population() << ") -> " 
+		 << name()         << "(" << population()         << ")  = " << pr << endl;
     }
     return pr;
 }
@@ -655,22 +655,16 @@ Entity::setInterlock( const MVASubmodel& submodel ) const
 	setInterlockPr_upper( submodel );
 	return *this;
     }
-
     const std::set<Task *>& clients = submodel.getClients();
     for ( std::set<Task *>::const_iterator client = clients.begin(); client != clients.end(); ++client ) {
 	if ( (*client)->throughput() == 0.0 ) continue;
 
-	const ChainVector& aChain = (*client)->clientChains( submodel.number() );
+	const ChainVector& chain = (*client)->clientChains( submodel.number() );
 
-	for ( unsigned ix = 1; ix <= aChain.size(); ++ix ) {
-	    const unsigned k = aChain[ix];
+	for ( unsigned ix = 1; ix <= chain.size(); ++ix ) {
+	    const unsigned k = chain[ix];
 	    if ( !hasServerChain(k) ) continue;
-	    double ir_c = 0.;
-
-	    for ( std::vector<Entry *>::const_iterator server_entry = entries().begin(); server_entry != entries().end(); ++server_entry  ) {
-		ir_c += (*server_entry)->setInterlock( submodel, *client, k );
-	    }// end while of next server entry
-
+	    const double ir_c = std::accumulate( entries().begin(), entries().end(), 0., Entry::add_interlock( submodel, *client, k ) );
 	    aStation->setChainILRate(0,k,ir_c );	
 	}//end for each client chain k
 

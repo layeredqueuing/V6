@@ -230,7 +230,7 @@ public:
     const Entity& setInterlockRelation( const MVASubmodel& ) const;
 
     Probability prInterlock( const Task& ) const;
-    Probability prInterlock( const Task& aClient, const Entry * aClientEntry ) const;
+    Probability prInterlock( const Entry * aClientEntry ) const;
     Probability prInterlock( const Task& aClient, const Entry * aServerEntry, double& il_rate, bool& moreThanFour ) const;
 
     bool isInterlocked() const { return _interlock.getNsources() > 0; }

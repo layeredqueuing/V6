@@ -190,7 +190,7 @@ public:
     bool hasSingleSource() const;
 
     double interlockedFlow( const Task& viaTask ) const;
-    double interlockedFlow( const Task& viaTask, const Entry * aClientEntry ) const;
+    double interlockedFlow( const Entry * aClientEntry ) const;
     Probability interlockedFlow( const Task& viaTask, const Entry * aServerEntry,  double& il_rate, bool& moreThan4 ) const;
 
     ostream& print( ostream& output ) const;

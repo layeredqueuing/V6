@@ -326,7 +326,7 @@ Interlock::interlockedFlow( const Task& viaTask ) const
  * This method is called each time we generate an MVA model.
  */
 double
-Interlock::interlockedFlow( const Task& viaTask, const Entry * dstEntry ) const
+Interlock::interlockedFlow( const Entry * dstEntry ) const
 {
     if ( getNsources() == 0 || dstEntry->throughput() == 0.0 ) return 0.0;
 
@@ -341,85 +341,13 @@ Interlock::interlockedFlow( const Task& viaTask, const Entry * dstEntry ) const
     double rate = std::min( sum / dstEntry->throughput(), 1.0 );
 
     if ( flags.trace_interlock ) {
-	cout << "Interlock sum=" << sum << ", viaTask: " << viaTask.throughput() <<", IL_rate : "<< rate
-	     << ", threads=" << viaTask.concurrentThreads()  << ", sources=" << getNsources() << endl;
+//	cout << "Interlock sum=" << sum << ", viaTask: " << viaTask.throughput() <<", IL_rate : "<< rate
+//	     << ", threads=" << viaTask.concurrentThreads()  << ", sources=" << getNsources() << endl;
     }
     // return min( sum, dstA->throughput() ) / (viaTask.throughput());
     return rate;
 }
 
-#if IL_USED
-/*
- * Given a set of entries that are branch points, find interlocked flow.
- * Interlock probability is affected by the number of threads of viaTask.
- * This method finds interlock probabilities and interlock rate.
- */
-
-double
-Interlock::interlockedFlow( const Task& viaTask, const Entry * serverEntry, double& il_rate ) const
-{
-    il_rate = 0.0;
-    if ( getNsources() == 0 ) return 0.0;
-
-    double sum_task = 0.0;
-    double sum_pr_il_task = 0.0;
-    double sum_tput = 0.0; 
-
-    const unsigned b = serverEntry->entryId();
-    const std::vector<Entry *>& entries = viaTask.entries();
-    for( std::vector<Entry *>::const_iterator dstA = entries.begin(); dstA != entries.end(); ++dstA ) {
-//	const unsigned a = (*dstA)->entryId();
-
-	if ( (*dstA)->_interlock[b].all == 0.0 || !serverEntry->calledBy( (*dstA) ) ) continue;
-
-	/* Find all flow from the common parent list to viaTask. */
-	std::pair<double,double> sum(0.0,0.0);		/* first=sum, second=pr_il */
-	sum = std::accumulate( commonEntries().begin(), commonEntries().end(), sum, ilrate_flow( *this, *dstA, serverEntry->isProcessorEntry() ) );
-
-	/*find out the rate of the interlocked flows */
-	/* now is in the task level. maybe need to extend to the entry level,*/
-	/* if there are interlocked flows from different common entries*/
-	const double rate = sum.first / (*dstA)->throughput();
-
-	if ( flags.trace_interlock ) {
-	    if (sum.first >0.0)
-		cout << "Interlock sum=" << sum.first << ", viaEntry: " << (*dstA)->throughput() 
-		     <<", IL_rate : "<< rate
-		     <<", Pril : "<< sum.second/rate << endl;
-	}
-	sum_task       +=sum.first;
-	sum_pr_il_task +=sum.second;
-	sum_tput       += (*dstA)->throughput();
-
-    }//while (dstA)
-	
-    /* find out the rate of the interlocked flows */
-    /* now is in the task level. maybe need to extend to the entry level,*/
-    /* if there are interlocked flows from different common entries*/
-
-    if (sum_task==0.0) {
-	if ( flags.trace_interlock ) {
-	    cout << "Interlock, viaTask: " << viaTask.throughput() 
-		 <<", IL_rate : "<< il_rate  << endl;
-	}
-	return 0.;
-    }
-    
-    const double rate = sum_task / sum_tput;
-    sum_pr_il_task /= sum_tput;
-   
-    il_rate = std::min( rate, 1.0 );
-
-    if ( flags.trace_interlock ) {
-	cout << "Interlock sum=" << sum_task << ", viaTask: " << viaTask.throughput() 
-	     <<", IL_rate : "<< il_rate  <<", Pril : "<< sum_pr_il_task
-	     << ", threads=" << viaTask.concurrentThreads()  << ", sources=" << getNsources() << endl;
-    }
-    //return min( sum, viaTask.throughput() ) / (viaTask.throughput() * viaTask.concurrentThreads() * sources  * sources );
-
-    return sum_pr_il_task/rate;
-}
-#endif
 
 
 Probability
@@ -928,42 +856,6 @@ Interlock::flow_dst_src::operator()( double sum, const Entry * srcEntry ) const
     return sum;
 }
 
-
-
-#if IL_USED
-std::pair<double,double>&
-Interlock::ilrate_flow::operator()( std::pair<double,double>& sum, const Entry * srcEntry ) const
-{
-    const unsigned dst = _dstEntry->entryId();
-    if ( srcEntry->_interlock[dst].all <= 0.0 ) return sum;
-    
-    const double src_sum = flow( srcEntry, _dstEntry );
-
-    double m = std::min( static_cast<double>(srcEntry->getMaxCustomers()), static_cast<double>(srcEntry->owner()->population()) ); 
-    if ( _is_processor_entry ) {
-	if ( m > 3 ) {
-	    m += m;
-	} else {
-	    m *= m;
-	}
-    }
-
-    sum.first  += src_sum;
-    sum.second += src_sum / m;
-
-    if ( flags.trace_interlock ) {
-	cout << "  Interlock common E=" << srcEntry->name() << " A=" << _dstEntry->name() 
-	     << " Throughput=" << srcEntry->throughput() 
-	     << ", interlock[" << dst << "]={" << srcEntry->_interlock[dst].all << "," << _ph2
-	     << "}, il_rate=" << src_sum <<", pril=1/"<<m 
-	     << ", sum_IR*PrIL ="<<sum.second<<endl;
-
-	cout<< "server entry: "<<_dstEntry->name()<<" Util ="<<_dstEntry->utilization()<<" , "<<endl;
-    }
-
-    return sum;
-}
-#endif
 
 
 std::pair<double,double>&

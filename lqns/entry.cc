@@ -1450,7 +1450,7 @@ Entry::setInterlock( const MVASubmodel& submodel, const Task * client, unsigned 
 		    if(isCalledBy((*client_entry))){
 		
 			// the interlocked rate of a client entry ;
-			double ir_ce= owner()->prInterlock( *client,  (*client_entry) );
+			double ir_ce= owner()->prInterlock( (*client_entry) );
 			// calculate ILrate base on the via task throughput;
 			double r_et = (*client_entry)->throughput()/client->throughput();
 			if (ir_ce){
