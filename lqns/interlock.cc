@@ -422,13 +422,15 @@ Interlock::interlockedFlow( const Task& viaTask, const Entry * serverEntry, doub
 #endif
 
 
-bool
-Interlock::interlockedFlow( const Task& viaTask, const Entry * serverEntry, double& il_rate, Probability& pr) const
+Probability
+Interlock::interlockedFlow( const Task& viaTask, const Entry * serverEntry, double& il_rate, bool& moreThan3 ) const
 {
     il_rate = 0.0;
-    pr = 0.0;
 
-    if ( getNsources() == 0 ) return false;
+    if ( getNsources() == 0 ) {
+	moreThan3 = false;
+	return 0.0;
+    }
 	
     double sum_task = 0.0;
     double sum_pr_il_task = 0.0;
@@ -472,7 +474,8 @@ Interlock::interlockedFlow( const Task& viaTask, const Entry * serverEntry, doub
 	    cout << "Interlock, viaTask: " << viaTask.throughput() 
 		 <<", IL_rate : "<< il_rate  << endl;
 	}
-	return 0.;
+	moreThan3 = false;
+	return 0.0;
     }
     
     const double rate = sum_task / sum_tput;
@@ -485,8 +488,9 @@ Interlock::interlockedFlow( const Task& viaTask, const Entry * serverEntry, doub
 	     <<", IL_rate : "<< il_rate  <<", Pril : "<< sum_pr_il_task
 	     << ", threads=" << viaTask.concurrentThreads()  << ", sources=" << getNsources() << endl;
     }
-    pr = sum_pr_il_task / rate;
-    return sum_cust > 3;
+
+    moreThan3 = sum_cust > 3;
+    return sum_pr_il_task / rate;
 }
 
 

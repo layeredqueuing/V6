@@ -191,10 +191,7 @@ public:
 
     double interlockedFlow( const Task& viaTask ) const;
     double interlockedFlow( const Task& viaTask, const Entry * aClientEntry ) const;
-#if IL_USED
-    double interlockedFlow( const Task& viaTask, const Entry * aServerEntry,  double& il_rate ) const;
-#endif
-    bool interlockedFlow( const Task& viaTask, const Entry * aServerEntry,  double& il_rate, Probability& pr_il ) const;
+    Probability interlockedFlow( const Task& viaTask, const Entry * aServerEntry,  double& il_rate, bool& moreThan4 ) const;
 
     ostream& print( ostream& output ) const;
     static ostream& printPathTable( ostream& output );

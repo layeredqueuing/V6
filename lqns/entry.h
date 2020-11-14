@@ -363,6 +363,8 @@ public:
 
     unsigned getPhaseNum(const Phase * aPhase) const;
 
+    double setInterlock( const MVASubmodel&, const Task * client, unsigned k ) const;
+
     /* Sanity checks */
 
     bool checkDroppedCalls() const;

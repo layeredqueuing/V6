@@ -231,12 +231,13 @@ public:
 
     Probability prInterlock( const Task& ) const;
     Probability prInterlock( const Task& aClient, const Entry * aClientEntry ) const;
-    bool        prInterlock( const Task& aClient, const Entry * aServerEntry, double& il_rate, Probability& pril ) const;
+    Probability prInterlock( const Task& aClient, const Entry * aServerEntry, double& il_rate, bool& moreThanFour ) const;
 
     bool isInterlocked() const { return _interlock.getNsources() > 0; }
     void setChainILRate(const Task&  aClient, double rate) const;
     void setChainILRate(const Task& aClient, const Entry& viaTaskEntry, double rate) const;
     double getWeight() const { return _weight;}
+    bool hasSingleSource() const { return _interlock.hasSingleSource(); }
 
 private:
     void setInterlockPr_upper( const MVASubmodel& ) const;

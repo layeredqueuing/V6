@@ -1233,7 +1233,7 @@ Task::set_real_customers::operator()( Task * client ) const
 	const unsigned k = chain[ix];
 	if ( !_server->hasServerChain(k) ) continue;
 
-	for ( unsigned e = 0; e <= client->nEntries(); e++ ) {
+	for ( unsigned e = 0; e <= _server->nEntries(); e++ ) {
 	    station->setRealCustomer(e,k,0.0);
 	}
 	std::for_each( client_entries.begin(), client_entries.end(), Entry::set_real_customers( _submodel, _server, k ) );

@@ -1406,6 +1406,124 @@ Entry::set_real_customers::operator()( const Entry * entry ) const
 	}
     }
 }
+
+
+
+double
+Entry::setInterlock( const MVASubmodel& submodel, const Task * client, unsigned k ) const
+{
+    double ir_c = 0.0;
+    Server * station = owner()->serverStation();
+/* -- */	
+    const unsigned e=index();
+    double il_rate=0.0;
+    bool morethan4 = false;
+    Probability pr_il = owner()->prInterlock( *client, this, il_rate, morethan4 );
+    double phase1_alpha =0.0;
+    const std::vector<Entry *>& client_entries = client->entries();
+    
+    if ( pr_il > 0. ) {  // this server entry has interlocked flow coming in;
+	station->setMixFlow(true);
+	/* Sending interlocks*/
+	if( ((station->IL_Relation(e, k, 1, 0)==3)
+	     || (station->IL_Relation(e, k, 1, 0)==4)
+		) && ((pr_il < 0.5) && (pr_il>0.01))){
+	    double m=1.0/pr_il;
+	    if (pr_il >0.3)	
+		pr_il = 1.0 / (m* (m-1));
+	    else
+		pr_il =1.0/(m*(m+1)) ;
+	    station->setChainILRate(e,k,il_rate );
+	    station->setInterlock( e, k, pr_il);
+	}else if (morethan4){
+	    station->setChainILRate(e,k,il_rate );
+	    station->setInterlock( e, k, pr_il );
+	}else{
+	
+	    //cout<<"this: "<< name()<<" pr_il>0"<<endl;
+	    if( owner()->hasSingleSource() ) {
+		double sum_r_et=0. ; //sum of r_et;
+		double sum_ir_se=0.; // the interlocked rate of client chain k to a server entry;
+		double sum_PIL_se =0.; // the interlock probability of a server entry adjusted by interlocked rate;
+
+		for ( std::vector<Entry *>::const_iterator client_entry = client_entries.begin(); client_entry != client_entries.end(); ++client_entry  ) {
+		    if(isCalledBy((*client_entry))){
+		
+			// the interlocked rate of a client entry ;
+			double ir_ce= owner()->prInterlock( *client,  (*client_entry) );
+			// calculate ILrate base on the via task throughput;
+			double r_et = (*client_entry)->throughput()/client->throughput();
+			if (ir_ce){
+			    if ((*client_entry)->hasOvertaking() ){
+				double alpha =(*client_entry)->serviceTimeForPhase(1) /(*client_entry)->serviceTime() ;
+				phase1_alpha+= r_et*alpha;
+			    }
+		
+			    sum_ir_se+= ir_ce * r_et;
+			    double getIlPr=(*client_entry)->getInterlockPr( submodel, owner() );
+			    sum_PIL_se+= ir_ce* r_et* getIlPr;
+			}
+			sum_r_et +=r_et; //sum of r_et;		
+		    }
+		}
+		pr_il=Probability(sum_PIL_se /il_rate);
+		phase1_alpha =1.;
+		//++++++++++++++++++
+
+	    }else{
+		// second phase
+		double sum_lambda=0.;
+		double sum_ph_ratio =0.;
+		double r_et;
+		signed whichphase =0;
+		for ( std::vector<Entry *>::const_iterator client_entry = client_entries.begin(); client_entry != client_entries.end(); ++client_entry  ) {
+		    if(isCalledBy((*client_entry))){
+			r_et = (*client_entry)->throughput()/client->throughput();
+			sum_lambda += r_et;
+			if ((*client_entry)->maxPhase()>1){
+			    sum_ph_ratio +=(*client_entry)->fractionUtilizationTo(this) * r_et;
+			    whichphase = (*client_entry)->callingTo1( this );
+			}
+			if ((*client_entry)->hasOvertaking() ){
+			    double ph2=(*client_entry)->getPhase2( this );
+			    phase1_alpha += r_et *(1-ph2);
+			}
+		    }
+		}
+		if(sum_lambda>0.){
+		    phase1_alpha /=sum_lambda;
+		    sum_ph_ratio /=sum_lambda;
+		    if (sum_ph_ratio >0. && sum_ph_ratio <=1.0 && whichphase >1){
+			station->set_IL_Relation(e, k, 0, 0, sum_ph_ratio );
+			if ( flags.trace_interlock ) {
+			    cout << "set multiphase ratio by Interlock relation: (server entry=" << name()
+				 << ", client task= " << client->name()<< "), IR_Relation( se1="
+				 << e<< ", k1= "<<k << ", se2=0, k2= 0) = "<<  sum_ph_ratio <<endl;
+			}
+		    }
+		} else {
+		    phase1_alpha =1.;
+		}
+	    }
+	    station->setChainILRate(e,k,il_rate );
+	    station->setInterlock( e, k, pr_il );
+	}
+	if ( flags.trace_interlock ) {
+	    cout << "set Interlock prob: server entry="  << name()
+		 << ")->setInterlock( e= " << index()<< ", k= "<<k
+		 << "),PrIL = " <<pr_il <<")"<<endl;
+	    cout << "set Interlock rate: server entry="  << name()
+		 << "--->setChainILRate( e= " << index()<< ", k= "<<k
+		 << ") = " <<  station->chainILRate(e,k) <<endl;
+	}
+	ir_c=1.0;
+    }else{  // this server entry only has non-interlocked flow coming in;
+	station->setChainILRate(e,k,0.0 );
+	station->setInterlock( e, k, 0.0 );
+    }
+    return ir_c;
+}
+
 /*- Interlock -*/
 
 /* --------------------------- Task Entries --------------------------- */
