@@ -776,12 +776,12 @@ Entity::setInterlockRelation( Server * station, const Entry * server_entry_1, co
 	// now:  station->chainILRate( se1,k)>0.
 	if ( client_2->nEntries() > 1 && station->chainILRate( se2, k2 ) > 0. && isType3Sending( server_entry_1, server_entry_2, client_1, client_2 ) ) {
 	    if ( client_2->population() == 1. ) {//  (station->getMaxCustomers(se2, k2) ==1) ){
-		station->set_IL_Relation(se1, k1, se2, k2, 6 );
-		station->set_IL_Relation(se2, k2, se1, k1, 6 );
+		station->set_IL_Relation( se1, k1, se2, k2, 6 );
+		station->set_IL_Relation( se2, k2, se1, k1, 6 );
 	    } else {
 		const double p = 5 + 1.0 / square(client_2->population());
-		station->set_IL_Relation(se1, k1, se2, k2, p );
-		station->set_IL_Relation(se2, k2, se1, k1, p );
+		station->set_IL_Relation( se1, k1, se2, k2, p );
+		station->set_IL_Relation( se2, k2, se1, k1, p );
 	    }
 	    if ( flags.trace_interlock ) {
 		cout << "set Interlock relation: type3 sending (server entry="  << server_entry_1->name()
@@ -801,24 +801,8 @@ Entity::setInterlockRelation( Server * station, const Entry * server_entry_1, co
 void
 Entity::setInterlockPr_upper( const MVASubmodel& submodel ) const
 {
-    Server * station = serverStation();
-
     const std::set<Task *>& clients = submodel.getClients();
-    for ( std::set<Task *>::const_iterator client = clients.begin(); client != clients.end(); ++client ) {
-	if ( (*client)->throughput() == 0.0 ) continue;
-
-	/* there is not interlock via this client task to the server in this submodel. */
-		
-	station->setMixFlow(false);
-
-	const ChainVector& aChain = (*client)->clientChains( submodel.number() );
-	for ( unsigned ix = 1; ix <= aChain.size(); ++ix ) {
-	    const unsigned k = aChain[ix];
-	    if ( !hasServerChain(k) ) continue;
-	    station->setChainILRate( 0, k, 0 );
-	    std::for_each( entries().begin(), entries().end(), Entry::set_interlock_PrUpper( submodel, station, k ) );
-	}
-    }
+    std::for_each( clients.begin(), clients.end(), Task::set_interlock_PrUpper( submodel, serverStation() ) );
 }
 
 /* -------------------------------------------------------------------- */

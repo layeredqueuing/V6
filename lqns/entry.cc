@@ -1510,7 +1510,7 @@ void
 Entry::set_interlock_PrUpper::operator()( const Entry * entry ) const
 {
     /* modify the server service time directly */
-    _station->setChainILRate( entry->index(), _k, 0);
+    _station->setChainILRate( entry->index(), _k, 0 );
 					
     Call * call = entry->getCall(_k); // is unique??
     if ( !call ) return;

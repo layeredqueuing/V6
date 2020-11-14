@@ -104,6 +104,14 @@ public:
 	const Entity * _server;
     };
 
+    struct set_interlock_PrUpper {
+	set_interlock_PrUpper( const MVASubmodel& submodel, Server * station ) : _submodel(submodel), _station(station) {}
+	void operator()( const Task * ) const;
+    private:
+	const MVASubmodel& _submodel;
+	Server * _station;
+    };
+
 public:
     static Task* create( LQIO::DOM::Task* domTask, const std::vector<Entry *>& entries );
 

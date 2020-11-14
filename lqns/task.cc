@@ -1240,6 +1240,24 @@ Task::set_real_customers::operator()( Task * client ) const
     }
 }
 
+
+void
+Task::set_interlock_PrUpper::operator()( const Task * client ) const
+{
+    if ( client->throughput() == 0.0 ) return;
+
+    /* there is not interlock via this client task to the server in this submodel. */
+		
+    _station->setMixFlow(false);
+
+    const ChainVector& chain = client->clientChains( _submodel.number() );
+    for ( unsigned ix = 1; ix <= chain.size(); ++ix ) {
+	const unsigned k = chain[ix];
+	if ( !client->hasServerChain(k) ) continue;
+	_station->setChainILRate( 0, k, 0 );
+	std::for_each( client->entries().begin(), client->entries().end(), Entry::set_interlock_PrUpper( _submodel, _station, k ) );
+    }
+}
 
 /*----------------------------------------------------------------------*/
 /*                       Threads (subthreads)                           */
