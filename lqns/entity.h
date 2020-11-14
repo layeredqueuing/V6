@@ -242,7 +242,7 @@ public:
 private:
     void setInterlockPr_upper( const MVASubmodel& ) const;
     const Entity& setRealCustomers( const MVASubmodel& ) const;
-
+    void setInterlockRelation( Server * station, const Entry * server_entry_1, const Entry * server_entry_2, const Task * client_1, const Task * client_2, unsigned k1, unsigned k2 ) const;
 
     /* Computation */
 public:

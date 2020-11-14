@@ -169,6 +169,15 @@ public:
 	const unsigned int _k;
     };
 
+    struct set_interlock_PrUpper {
+	set_interlock_PrUpper( const MVASubmodel& submodel, Server * station, unsigned int k ) : _submodel(submodel), _station(station), _k(k) {}
+	void operator()( const Entry * entry ) const;
+    private:
+	const MVASubmodel& _submodel;
+	Server * _station;
+	const unsigned int _k;
+    };
+
 private:
     struct add_PrIL_se {
 	add_PrIL_se( const MVASubmodel& submodel, const Entry * serverEntry ) : _submodel(submodel), _serverEntry(serverEntry) {}

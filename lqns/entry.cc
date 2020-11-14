@@ -1503,6 +1503,24 @@ double Entry::add_PrIL_se::operator()( double sum, const Entry * clientEntry ) c
     }
     return sum;
 }
+
+
+
+void
+Entry::set_interlock_PrUpper::operator()( const Entry * entry ) const
+{
+    /* modify the server service time directly */
+    _station->setChainILRate( entry->index(), _k, 0);
+					
+    Call * call = entry->getCall(_k); // is unique??
+    if ( !call ) return;
+    const Probability prob_IL_wait = entry->getILWait( _submodel.number() );
+    if ( prob_IL_wait > 0.005 ) {
+	_station->setInterlock( entry->index(), _k, prob_IL_wait );
+	_station->setIntermediate( true );
+    }
+}
+
 /*- Interlock -*/
 
 /* --------------------------- Task Entries --------------------------- */

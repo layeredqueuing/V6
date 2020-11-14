@@ -682,112 +682,35 @@ Entity::setInterlock( const MVASubmodel& submodel ) const
 const Entity&
 Entity::setInterlockRelation( const MVASubmodel& submodel ) const
 {
-    Server * aStation = serverStation();
+    Server * station = serverStation();
     std::set<Task *> clients;
-    this->getClients( clients );
+    getClients( clients );
 
     for ( std::set<Task *>::const_iterator client_1 = clients.begin(); client_1 != clients.end(); ++client_1 ) {
 	if ( (*client_1)->throughput() == 0.0 ) continue;
-	const ChainVector& aChain = (*client_1)->clientChains( submodel.number() );
+	const ChainVector& chain = (*client_1)->clientChains( submodel.number() );
 
-	for ( unsigned ix = 1; ix <= aChain.size(); ++ix ) {
-	    const unsigned k = aChain[ix];
-	    if ( hasServerChain(k) ) { // may not need;
+	for ( unsigned ix = 1; ix <= chain.size(); ++ix ) {
+	    const unsigned k1 = chain[ix];
+	    if ( !hasServerChain(k1) ) continue;
 	
-		const std::vector<Entry *>& server_entries = entries();
-		for ( std::vector<Entry *>::const_iterator server_entry_1 = server_entries.begin(); server_entry_1 != server_entries.end(); ++server_entry_1 ) {
-		    const unsigned se1 = (*server_entry_1)->index();
-		    if ( aStation->chainILRate( se1,k)>0.){
-			for ( std::set<Task *>::const_iterator client_2 = clients.begin(); client_2 != clients.end(); ++client_2 ) {
-			    if ( (*client_2)->throughput() == 0.0 ) continue;
-			    const ChainVector& aChain2 = (*client_2)->clientChains( submodel.number() );
+	    const std::vector<Entry *>& server_entries = entries();
+	    for ( std::vector<Entry *>::const_iterator server_entry_1 = server_entries.begin(); server_entry_1 != server_entries.end(); ++server_entry_1 ) {
+		const unsigned se1 = (*server_entry_1)->index();
+		if ( station->chainILRate( se1, k1 ) == 0.) continue;
+		for ( std::set<Task *>::const_iterator client_2 = clients.begin(); client_2 != clients.end(); ++client_2 ) {
+		    if ( (*client_2)->throughput() == 0.0 ) continue;
+		    const ChainVector& chain2 = (*client_2)->clientChains( submodel.number() );
 
-			    for ( unsigned ix2 = 1; ix2 <= aChain2.size(); ++ix2 ) {
-				const unsigned k2 = aChain2[ix2];
-				if ( hasServerChain(k2) ) { // may not need;
+		    for ( unsigned ix2 = 1; ix2 <= chain2.size(); ++ix2 ) {
+			const unsigned k2 = chain2[ix2];
+			if ( !hasServerChain(k2) ) continue;
 		
-				    for ( std::vector<Entry *>::const_iterator server_entry_2 = server_entries.begin(); server_entry_2 != server_entries.end(); ++server_entry_2 ) {
-					const unsigned se2 = (*server_entry_2)->index();
-					if ( k == k2 && se1 == se2 ) continue;
-		
-					//if ( aStation->chainILRate( se2,k2)>0.){
-					if (hasCommonEntry( (*server_entry_1), (*server_entry_2), (*client_1), (*client_2) )){
-					    if ( aStation->chainILRate( se2,k2)> 0.){
-						aStation->set_IL_Relation(se1,  k, se2, k2, 1.0);
-			
-						// sending interlocks;
-						if ( k != k2 ) {
-						    std::set<const Entry* > common_entries = getCommonEntries( (*server_entry_1), (*server_entry_2), (*client_1), (*client_2));
-						    int p1=0, p2=0;
-						    for ( std::set<const Entry *>::const_iterator common_entry = common_entries.begin(); common_entry != common_entries.end(); ++common_entry ) {
-							if ((*common_entry)->owner() == (*client_1) && (*common_entry)->owner() != (*client_2)) {
-							    p1=3;
-							} else if ((*common_entry)->owner() != (*client_1) && (*common_entry)->owner() == (*client_2)) {
-							    p2=3;
-							}
-						    }
-						    if (p1==3) {
-							aStation->set_IL_Relation(se1,  k, 1, 0, 3);
-							aStation->set_IL_Relation(se2,  k2, 1, 0, 4);
-						    }
-						    if (p2==3) {
-							aStation->set_IL_Relation(se2,  k2, 1, 0, 3);
-							aStation->set_IL_Relation(se1,  k, 1, 0, 4);
-						    }
-						    if ( flags.trace_interlock && p1==3) {
-							cout << "set sending Interlock relation: (server entry=" << (*server_entry_1)->name()
-							     << ", client task= " << (*client_1)->name()<< "), IR_Relation( se1="
-							     << se1<< ", k1= "<<k << ", se2=" << se2<< ", k2= 0) = 3"  <<endl;
-						    }
-						    if ( flags.trace_interlock && p2==3) {
-							cout << "set sending Interlock relation: (server entry=" << (*server_entry_2)->name()
-							     << ", client task= " << (*client_2)->name()<< "), IR_Relation( se2="
-							     << se2<< ", k= "<<k2 << ", se1=" << se1<< ", k= 0) = 3"  <<endl;
-						    }
-						}
-						//================
-						if ( flags.trace_interlock ) {
-						    cout << "set Interlock relation: (server entry="  << (*server_entry_1)->name()
-							 << ", client task= " << (*client_1)->name()
-							 << "), between (server entry="  << (*server_entry_2)->name()
-							 << ", client task= " << (*client_2)->name()
-							 << "), IR_Relation( se1=" << se1<< ", k1= "<<k
-							 << ", se2=" << se2<< ", k2= "<<k2 << ") = 1"  <<endl;
-	
-						}
-					    }
-					}else{ // have no common entry!
-					    // check whether is a type3 sending interlock.
-					    // now:  aStation->chainILRate( se1,k)>0.
-					    if ( ((*client_2)->nEntries() >1) &&  (aStation->chainILRate( se2,k2) >0.) &&
-						 (isType3Sending( (*server_entry_1), (*server_entry_2), (*client_1), (*client_2))) ){
-						if  ((*client_2)->population() ==1.) {//  (aStation->getMaxCustomers(se2, k2) ==1) ){
-						    aStation->set_IL_Relation(se1,  k, se2, k2, 6);
-						    aStation->set_IL_Relation(se2,  k2, se1, k, 6);
-						}else{
-						    double p= 5 + 1.0/((*client_2)->population() * (*client_2)->population()) ;
-						    aStation->set_IL_Relation(se1,  k, se2, k2, p );
-						    aStation->set_IL_Relation(se2,  k2, se1, k, p);
-						}
-						if ( flags.trace_interlock ) {
-						    cout << "set Interlock relation: type3 sending (server entry="  << (*server_entry_1)->name()
-							 << ", client task= " << (*client_1)->name()<< "), between (server entry="  << (*server_entry_2)->name()
-							 << ", client task= " << (*client_2)->name()<< "), IR_Relation( se1="
-							 << se1<< ", k1= "<<k << ", se2=" << se2<< ", k2= "<<k2
-							 << ") = " << aStation->IL_Relation(se2,  k2, se1, k) <<endl;
-			
-						}
-					    }
-					}
-					//} // end if ( aStation->chainILRate( se2,k2)>0.)
-		
-				    }//end while ((*server_entry_2)= nextEntry2())
-				}
-			    }
-			}//end while(aclient2=nextentry())
+			for ( std::vector<Entry *>::const_iterator server_entry_2 = server_entries.begin(); server_entry_2 != server_entries.end(); ++server_entry_2 ) {
+			    setInterlockRelation( station, *server_entry_1, *server_entry_2, *client_1, *client_2, k1, k2 );					
+			}//end while ((*server_entry_2)= nextEntry2())
 		    }
-	
-		}
+		}//end while(aclient2=nextentry())
 	    }
 	}
     }
@@ -796,9 +719,89 @@ Entity::setInterlockRelation( const MVASubmodel& submodel ) const
 
 
 void
+Entity::setInterlockRelation( Server * station, const Entry * server_entry_1, const Entry * server_entry_2, const Task * client_1, const Task * client_2, unsigned k1, unsigned k2 ) const
+{
+    const unsigned se1 = server_entry_1->index();
+    const unsigned se2 = server_entry_2->index();
+    if ( k1 == k2 && se1 == se2 ) return;
+		
+    //if ( station->chainILRate( se2,k2)>0.){
+    if ( hasCommonEntry( server_entry_1, server_entry_2, client_1, client_2 )){
+	if ( station->chainILRate( se2, k2 ) > 0.) {
+	    station->set_IL_Relation( se1, k1, se2, k2, 1.0 );
+	    if ( k1 == k2 ) return;
+			
+	    // sending interlocks;
+	    
+	    std::set<const Entry* > common_entries = getCommonEntries( server_entry_1, server_entry_2, client_1, client_2);
+	    int p1 = 0, p2 = 0;
+	    for ( std::set<const Entry *>::const_iterator common_entry = common_entries.begin(); common_entry != common_entries.end(); ++common_entry ) {
+		if ((*common_entry)->owner() == client_1 && (*common_entry)->owner() != client_2) {
+		    p1 = 3;
+		} else if ((*common_entry)->owner() != client_1 && (*common_entry)->owner() == client_2) {
+		    p2 = 3;
+		}
+	    }
+	    if ( p1 == 3 ) {
+		station->set_IL_Relation( se1, k1, 1, 0, 3 );
+		station->set_IL_Relation( se2, k2, 1, 0, 4 );
+	    }
+	    if ( p2 == 3 ) {
+		station->set_IL_Relation( se2, k2, 1, 0, 3 );
+		station->set_IL_Relation( se1, k1, 1, 0, 4 );
+	    }
+	    if ( flags.trace_interlock && p1 == 3 ) {
+		cout << "set sending Interlock relation: (server entry=" << server_entry_1->name()
+		     << ", client task= " << client_1->name()<< "), IR_Relation( se1="
+		     << se1<< ", k1= "<<k1 << ", se2=" << se2<< ", k2= 0) = 3"  <<endl;
+	    }
+	    if ( flags.trace_interlock && p2 == 3 ) {
+		cout << "set sending Interlock relation: (server entry=" << server_entry_2->name()
+		     << ", client task= " << client_2->name()<< "), IR_Relation( se2="
+		     << se2<< ", k= "<<k2 << ", se1=" << se1<< ", k= 0) = 3"  <<endl;
+	    }
+	}
+	//================
+	if ( flags.trace_interlock ) {
+	    cout << "set Interlock relation: (server entry="  << server_entry_1->name()
+		 << ", client task= " << client_1->name()
+		 << "), between (server entry="  << server_entry_2->name()
+		 << ", client task= " << client_2->name()
+		 << "), IR_Relation( se1=" << se1<< ", k1= "<<k1
+		 << ", se2=" << se2<< ", k2= "<<k2 << ") = 1"  <<endl;
+	
+	}
+    } else { // have no common entry!
+	// check whether is a type3 sending interlock.
+	// now:  station->chainILRate( se1,k)>0.
+	if ( client_2->nEntries() > 1 && station->chainILRate( se2, k2 ) > 0. && isType3Sending( server_entry_1, server_entry_2, client_1, client_2 ) ) {
+	    if ( client_2->population() == 1. ) {//  (station->getMaxCustomers(se2, k2) ==1) ){
+		station->set_IL_Relation(se1, k1, se2, k2, 6 );
+		station->set_IL_Relation(se2, k2, se1, k1, 6 );
+	    } else {
+		const double p = 5 + 1.0 / square(client_2->population());
+		station->set_IL_Relation(se1, k1, se2, k2, p );
+		station->set_IL_Relation(se2, k2, se1, k1, p );
+	    }
+	    if ( flags.trace_interlock ) {
+		cout << "set Interlock relation: type3 sending (server entry="  << server_entry_1->name()
+		     << ", client task= " << client_1->name()<< "), between (server entry="  << server_entry_2->name()
+		     << ", client task= " << client_2->name()<< "), IR_Relation( se1="
+		     << se1<< ", k1= "<<k1 << ", se2=" << se2<< ", k2= "<<k2
+		     << ") = " << station->IL_Relation( se2, k2, se1, k1 ) <<endl;
+			
+	    }
+	}
+    }
+} // end if ( station->chainILRate( se2,k2)>0.)
+		
+
+
+
+void
 Entity::setInterlockPr_upper( const MVASubmodel& submodel ) const
 {
-    Server * aStation = serverStation();
+    Server * station = serverStation();
 
     const std::set<Task *>& clients = submodel.getClients();
     for ( std::set<Task *>::const_iterator client = clients.begin(); client != clients.end(); ++client ) {
@@ -806,34 +809,14 @@ Entity::setInterlockPr_upper( const MVASubmodel& submodel ) const
 
 	/* there is not interlock via this client task to the server in this submodel. */
 		
-	aStation->setMixFlow(false);
+	station->setMixFlow(false);
 
 	const ChainVector& aChain = (*client)->clientChains( submodel.number() );
 	for ( unsigned ix = 1; ix <= aChain.size(); ++ix ) {
 	    const unsigned k = aChain[ix];
-	    if ( hasServerChain(k) ) {
-		for ( std::vector<Entry *>::const_iterator entry = entries().begin(); entry != entries().end(); ++entry ) {
-
-		    /* modify the server service time directly */
-		    aStation->setChainILRate( 0, k, 0);
-		    aStation->setChainILRate( (*entry)->index(), k, 0);
-					
-		    Call * aCall = (*entry)->getCall(k); // is unique??
-		    if (aCall) {
-			double IL_wait=(*entry)->getILWait(submodel.number());
-			if (IL_wait>0.005 ){
-			    Probability prob= IL_wait;
-			    aStation->setInterlock( (*entry)->index(), k, prob );
-			    aStation->setIntermediate(true);
-			    if ( flags.trace_interlock ) {
-				cout<<"from Client: "<<(*client)->name() <<" to server Entry: "<< (*entry)->name() ;
-				cout<<" through a call( " << aCall->srcEntry()->name() << " , " << aCall->dstEntry()->name()<<")" <<endl;
-				cout << "Along path: interlock prob(e="<<(*entry)->index()<<", k= "<<k <<")= " << prob <<endl;
-			    }
-			}
-		    }
-		}
-	    }
+	    if ( !hasServerChain(k) ) continue;
+	    station->setChainILRate( 0, k, 0 );
+	    std::for_each( entries().begin(), entries().end(), Entry::set_interlock_PrUpper( submodel, station, k ) );
 	}
     }
 }
