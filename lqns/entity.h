@@ -205,7 +205,7 @@ public:
 
     unsigned nEntries() const { return _entries.size(); }
     virtual unsigned nClients() const = 0;
-    const Entity& clients( std::set<Task *>& ) const;
+    const Entity& getClients( std::set<Task *>& ) const;
     double nCustomers( ) const;
     const std::set<const Entry *>& commonEntries() const { return _interlock.commonEntries(); }
     double num_sources( const Task * viaTask, const Entry * serverEntry ) const { return _interlock.numberOfSources( *viaTask, serverEntry ); }

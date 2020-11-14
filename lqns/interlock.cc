@@ -98,7 +98,7 @@ Interlock::findInterlock()
     /* Locate all callers to myServer */
 
     std::set<Task *> myClients;
-    _server.clients( myClients );
+    _server.getClients( myClients );
 
     for ( std::set<Task *>::const_iterator clientA = myClients.begin(); clientA != myClients.end(); ++clientA ) {
 	if ( !(*clientA)->isUsed() ) continue;		/* Ignore this task - not used. */
