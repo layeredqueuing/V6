@@ -159,7 +159,7 @@ public:
 	const Entity * _server;
 	const unsigned int _k;
     };
-    
+
     struct add_interlock {
 	add_interlock( const MVASubmodel& submodel, const Task * client, unsigned int k ) : _submodel(submodel), _client(client), _k(k) {}
 	double operator()( double sum, const Entry * entry ) const { return sum + entry->setInterlock( _submodel, _client, _k ); }
@@ -169,6 +169,15 @@ public:
 	const unsigned int _k;
     };
 
+private:
+    struct add_PrIL_se {
+	add_PrIL_se( const MVASubmodel& submodel, const Entry * serverEntry ) : _submodel(submodel), _serverEntry(serverEntry) {}
+	double operator()( double sum, const Entry * client ) const;
+    private:
+	const MVASubmodel& _submodel;
+	const Entry * _serverEntry;
+    };
+    
 protected:
     struct clear_wait {
 	clear_wait( unsigned int submodel ) : _submodel(submodel) {}
@@ -360,10 +369,8 @@ public:
 
     Call* getCall(const unsigned k ) const;
 
-    double getPhase2(const Entry * serverEntry) const;
-    unsigned callingTo1(const Entry * dst_entry ) const;
+//    double getPhase2(const Entry * serverEntry) const;
     bool hasPath(const Entry * dstEntry) const { return _interlock[dstEntry->entryId()]>0.0;}
-    double fractionUtilizationTo(const Entry * dst_entry ) const;
 
     void saveMaxCustomers(double, bool); 
     void setMaxCustomers(double nCusts) { _maxCusts = nCusts; }
@@ -396,6 +403,8 @@ private:
 
     /* Interlock */
     bool isSendingTask( const MVASubmodel& submodel ) const;
+    unsigned callingTo1(const Entry * dst_entry ) const;
+    double fractionUtilizationTo(const Entry * dst_entry ) const;
 
 protected:
     LQIO::DOM::Entry* _dom;	
