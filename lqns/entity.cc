@@ -781,14 +781,6 @@ Entity::setInterlockRelation( Server * station, const Entry * server_entry_1, co
 	}
     }
 } // end if ( station->chainILRate( se2,k2)>0.)
-		
-
-
-
-void
-Entity::setInterlockPr_upper( const MVASubmodel& submodel ) const
-{
-}
 
 /* -------------------------------------------------------------------- */
 
