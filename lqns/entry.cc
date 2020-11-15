@@ -12,7 +12,7 @@
  * July 2007.
  *
  * ------------------------------------------------------------------------
- * $Id: entry.cc 14098 2020-11-15 14:14:18Z greg $
+ * $Id: entry.cc 14100 2020-11-15 15:58:58Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -2201,3 +2201,17 @@ Entry::get_clients::operator()( const Entry * entry ) const
 {
     _clients = std::accumulate( entry->callerList().begin(), entry->callerList().end(), _clients, Call::add_client );
 }
+
+
+/*
+ * Return all tasks and processors called by this entry.
+ */
+
+void
+Entry::get_servers::operator()( const Entry * entry ) const
+{
+    if ( entry->isActivityEntry() ) return;
+    std::for_each( entry->_phase.begin(), entry->_phase.end(), Phase::get_servers( _servers ) );
+}
+
+

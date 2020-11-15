@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: model.cc 14080 2020-11-11 14:50:20Z greg $
+ * $Id: model.cc 14100 2020-11-15 15:58:58Z greg $
  *
  * Layer-ization of model.  The basic concept is from the reference
  * below.  However, model partioning is more complex than task vs device.
@@ -1459,7 +1459,7 @@ SRVN_Model::assignSubmodel()
 
     /* Build the list of all servers for this model */
 
-    multiset<Entity *,Entity::LT> servers;
+    multiset<Entity *> servers;
     for ( std::set<Task *>::const_iterator task = __task.begin(); task != __task.end(); ++task ) {
 	if ( (*task)->isReferenceTask() || (*task)->submodel() <= 0 ) continue;
 	servers.insert( (*task) );

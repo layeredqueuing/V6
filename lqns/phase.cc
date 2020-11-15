@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: phase.cc 14097 2020-11-15 14:12:41Z greg $
+ * $Id: phase.cc 14100 2020-11-15 15:58:58Z greg $
  *
  * Everything you wanted to know about an phase, but were afraid to ask.
  *
@@ -1759,6 +1759,7 @@ Phase::initProcessor()
     return *this;
 }
 
+
 /* init CFS processor delay entry */
 void
 Phase::initCFSProcessor()
@@ -1790,4 +1791,16 @@ Phase::initCFSProcessor()
     }
 
     _cfs_delay=0.00001;
+}
+
+void
+Phase::get_servers::operator()( const Phase& phase ) const		// For phases
+{
+    _servers = std::accumulate( phase.callList().begin(), phase.callList().end(), _servers, Call::add_server );
+}
+
+void
+Phase::get_servers::operator()( const Phase* phase ) const		// For activities
+{
+    _servers = std::accumulate( phase->callList().begin(), phase->callList().end(), _servers, Call::add_server );
 }

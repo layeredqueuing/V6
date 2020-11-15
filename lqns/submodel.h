@@ -7,7 +7,7 @@
  *
  * June 2007
  *
- * $Id: submodel.h 14063 2020-11-10 03:04:41Z greg $
+ * $Id: submodel.h 14100 2020-11-15 15:58:58Z greg $
  */
 
 #ifndef _SUBMODEL_H
@@ -100,8 +100,8 @@ private:
     static ostream& submodel_header_str( ostream& output, const Submodel& aSubmodel, const unsigned long iterations );
 
 protected:
-    std::set<Task *> _clients;			/* Table of clients 		*/
-    std::set<Entity *,Entity::LT> _servers;	/* Table of servers 		*/
+    std::set<Task *> _clients;		/* Table of clients 		*/
+    std::set<Entity *> _servers;	/* Table of servers 		*/
 
 private:
     unsigned _submodel_number;		/* Submodel number.  Set once.	*/

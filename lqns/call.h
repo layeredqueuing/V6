@@ -10,7 +10,7 @@
  * November, 1994
  * March, 2004
  *
- * $Id: call.h 14094 2020-11-15 12:09:32Z greg $
+ * $Id: call.h 14100 2020-11-15 15:58:58Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -96,6 +96,7 @@ public:
     static double add_forwarding( double sum, const Call * call ) { return sum + call->forward() * call->fanOut(); }
     static double add_IL_queue_length( double sum, const Call * call ) { return call->isAlongILPath() ? sum + call->getQueueLength() : sum; }
     static std::set<Task *>& add_client( std::set<Task *>&, const Call * );
+    static std::set<Entity *>& add_server( std::set<Entity *>&, const Call * );
 
     struct find_call {
 	find_call( const Entry * e, const queryFunc f ) : _e(e), _f(f) {}

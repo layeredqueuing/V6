@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: phase.h 14087 2020-11-12 16:08:59Z greg $
+ * $Id: phase.h 14100 2020-11-15 15:58:58Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -119,6 +119,15 @@ class Phase : public NullPhase {
     friend class Activity;		/* For access to _surrogateDelay 	*/
     friend class RepeatActivityList;	/* For access to _surrogateDelay 	*/
     friend class OrForkActivityList;	/* For access to _surrogateDelay 	*/
+
+public:
+    struct get_servers {
+	get_servers( std::set<Entity *>& servers ) : _servers(servers) {}
+	void operator()( const Phase& phase ) const;
+	void operator()( const Phase* phase ) const;
+    private:
+	std::set<Entity *>& _servers;
+    };
 
 private:
     struct add_weighted_wait {

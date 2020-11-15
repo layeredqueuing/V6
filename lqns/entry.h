@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: entry.h 14096 2020-11-15 13:58:05Z greg $
+ * $Id: entry.h 14100 2020-11-15 15:58:58Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -130,7 +130,6 @@ public:
 	const unsigned _k;
     };
 
-
     /*
      * Used to run f over all entries (and threads).  Each thread has it's own chain.
      */
@@ -151,6 +150,14 @@ public:
 	mutable unsigned int _i;
     };
 
+    struct get_servers {
+	get_servers( std::set<Entity *>& servers ) : _servers(servers) {}
+	void operator()( const Entry * entry ) const;
+    private:
+	std::set<Entity *>& _servers;
+    };
+
+    /*+ interlock +*/
     struct set_real_customers {
 	set_real_customers( const MVASubmodel& submodel, const Entity * server, unsigned int k ) : _submodel(submodel), _server(server),  _k(k) {}
 	void operator()( const Entry * entry ) const;
@@ -177,22 +184,7 @@ public:
 	Server * _station;
 	const unsigned int _k;
     };
-
-private:
-    struct add_PrIL_se {
-	add_PrIL_se( const MVASubmodel& submodel, const Entry * serverEntry ) : _submodel(submodel), _serverEntry(serverEntry) {}
-	double operator()( double sum, const Entry * client ) const;
-    private:
-	const MVASubmodel& _submodel;
-	const Entry * _serverEntry;
-    };
-
-    struct get_clients {
-	get_clients( std::set<Task *>& clients ) : _clients(clients) {}
-	void operator()( const Entry * entry ) const;
-    private:
-	std::set<Task *>& _clients;
-    };
+    /*- interlock -*/
 
 protected:
     struct clear_wait {
@@ -209,6 +201,23 @@ protected:
 	const unsigned int _submodel;
     };
 
+private:
+    struct get_clients {
+	get_clients( std::set<Task *>& clients ) : _clients(clients) {}
+	void operator()( const Entry * entry ) const;
+    private:
+	std::set<Task *>& _clients;
+    };
+
+    /*+ interlock +*/
+    struct add_PrIL_se {
+	add_PrIL_se( const MVASubmodel& submodel, const Entry * serverEntry ) : _submodel(submodel), _serverEntry(serverEntry) {}
+	double operator()( double sum, const Entry * client ) const;
+    private:
+	const MVASubmodel& _submodel;
+	const Entry * _serverEntry;
+    };
+    /*- interlock -*/
 
 public:
     static bool joinsPresent;
@@ -318,6 +327,7 @@ public:
     bool entrySemaphoreTypeOk( const semaphore_entry_type aType );
     unsigned maxPhase() const { return _phase.size(); }
     unsigned concurrentThreads() const;
+    std::set<Entity *>& getServers( const std::set<Entity *>& ) const;	// Called tasks/processors
 
     virtual double waitExcept( const unsigned, const unsigned, const unsigned ) const;	/* For client service times */
     virtual double waitExceptChain( const unsigned, const unsigned, const unsigned ) const; //REP N-R
