@@ -30,15 +30,11 @@
 #include "task.h"
 
 
-#if __cplusplus >= 201103L
 std::map<const Group::status_t,const std::string> Group::state_str = {
     {status_t::RECEIVING,"receiving"},
     {status_t::THROTTLE,"throttle"},
     {status_t::CONTRIBUTING,"contributing"}
 };
-#else
-std::map<const Group::status_t,const std::string> Group::state_str;
-#endif
 
 /* ------------------------ Constructors etc. ------------------------- */
 
@@ -46,14 +42,6 @@ Group::Group( LQIO::DOM::Group* dom, const CFS_Processor * processor )
     : _dom(dom), _tasks(), _processor(processor), _share(0.0)
 { 
     initialize();
-
-#if __cplusplus <201103L
-    if ( state_str.size() == 0 ) {
-	state_str[status_t::RECEIVING] = "receiving";
-	state_str[status_t::RECEIVING] = "throttle";
-	state_str[status_t::RECEIVING] = "contributing";
-    }
-#endif
 }
 
 Group::~Group()
@@ -275,7 +263,7 @@ Group::create( const std::pair<std::string,LQIO::DOM::Group*>& p )
     const std::string& group_name = p.first;
     
     /* Check that no group was added with the existing name */
-    if ( find_if( Model::__group.begin(), Model::__group.end(), EQStr<Group>( group_name ) ) != Model::__group.end() ) {
+    if ( std::any_of( Model::__group.begin(), Model::__group.end(), EQStr<Group>( group_name ) ) ) {
 	LQIO::input_error2( LQIO::ERR_DUPLICATE_SYMBOL, "Group", group_name.c_str() );
 	return;
     } 

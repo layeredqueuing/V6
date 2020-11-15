@@ -49,11 +49,7 @@ public:
 	}
     };
 
-#if __cplusplus >= 201103L
     enum class root_level_t { IS_NON_REFERENCE, IS_REFERENCE, HAS_OPEN_ARRIVALS };
-#else
-    typedef enum { IS_NON_REFERENCE, IS_REFERENCE, HAS_OPEN_ARRIVALS } root_level_t;
-#endif
 
 private:
     struct find_max_depth {
@@ -142,6 +138,7 @@ public:
     virtual Task& initThroughputBound();
     Task& createInterlock();
     virtual Task& initThreads();
+    void resetReplication();
 
     void findParents();
     virtual double countCallers( std::set<Task *>& reject ) const;
@@ -165,7 +162,6 @@ public:
     virtual double thinkTime( const unsigned = 0, const unsigned = 0 ) const;
     virtual unsigned int fanOut( const Entity * ) const;
     virtual unsigned int fanIn( const Task * ) const;
-    void resetReplication();
     Task& addThread( Thread * aThread ) { _threads.push_back(aThread); return *this; }
 
     /* Queries */
@@ -221,7 +217,6 @@ public:
     const Task& modifyParentClientServiceTime( const MVASubmodel& submodel, const Entity * aServer ) const;
     const Task& setMaxCustomers( const MVASubmodel& submodel ) const;
     void setInterlockedFlow( const MVASubmodel& submodel ) const;
-    double computeMaxCustomers( const MVASubmodel& submodel, const Entry * server_entry ) const;
     
     /* DPS */
 
@@ -284,14 +279,15 @@ protected:
 private:
     Task& initReplication( const unsigned );	 	// REP N-R
     double bottleneckStrength() const;
+    void store_activity_service_time ( const char * activity_name, const double service_time );	// quorum.
 
     /* Thread stuff */
 
     double overlapFactor( const unsigned i, const unsigned j ) const;
 
-    void store_activity_service_time ( const char * activity_name, const double service_time );	// quorum.
-
     /* Interlock */
+
+    double computeMaxCustomers( const MVASubmodel& submodel, const Entry * server_entry ) const;
 
 private:
     const Processor * _processor;	/* proc. allocated to task. 	*/

@@ -45,3 +45,6 @@ lqns.pdf:	lqns.ps
 
 lqns.txt:	$(man1_MANS)
 		tbl < $(man1_MANS)  | nroff -man | col -b > lqns.txt
+
+quick:		lqns
+		(cd regression; make quick)

@@ -1156,31 +1156,22 @@ Entry::rateOfUtil() const
 
 
 Entry&
-Entry::updateILWait( const Submodel& aSubmodel, const double relax )
+Entry::updateILWait( const Submodel& submodel, const double relax )
 {
-    const unsigned submodel = aSubmodel.number();
-    if ( submodel == 0 ) throw logic_error( "TaskEntry::updateILWait" );
+    const unsigned n = submodel.number();
+    if ( n == 0 ) throw logic_error( "TaskEntry::updateILWait" );
 
     if ( flags.trace_interlock ) {
 	cout << "***************************************************************** "<<endl ;
-	cout << "IN submodel " << submodel << ", Entry  " << name() << ": " ;
-	cout<< "the old total interlocked wait is "<< _total._interlockedWait[submodel]<<endl;
+	cout << "IN submodel " << n << ", Entry  " << name() << ": " ;
+	cout<< "the old total interlocked wait is "<< _total._interlockedWait[n]<<endl;
 	cout << "the new IL wait of phases are:  " << endl;
     }
-    _total._interlockedWait[submodel]=0.0;
-    for ( Vector<Phase>::iterator phase = _phase.begin(); phase != _phase.end(); ++phase ) {
-	const size_t p = phase - _phase.begin() + 1;
-	if ( !phase->isPresent() && phase->_interlockedWait[submodel] > 0.0 ) {
-	    throw logic_error( "TaskEntry::updateILWait" );
-	}
 
-	_total._interlockedWait[submodel] += phase->_interlockedWait[submodel];
-	if ( flags.trace_interlock ) {
-	    cout << "Phase " << p << ": " << phase->_interlockedWait[submodel] << ". "<<endl ;
-	}
-    }
+    _total._interlockedWait[n] = std::accumulate( _phase.begin(), _phase.end(), 0.0, Phase::add_IL_wait(n) );
+
     if ( flags.trace_interlock ) {
-	cout<< "the new total interlocked wait of the entry "<< _total._interlockedWait[submodel]<<endl;
+	cout<< "the new total interlocked wait of the entry "<< _total._interlockedWait[n]<<endl;
 	cout << "***************************************************************** "<<endl ;
 
     }
@@ -1660,11 +1651,11 @@ Entry::set( const Entry * src, const Activity::Collect& data )
  */
 
 TaskEntry&
-TaskEntry::updateWait( const Submodel& aSubmodel, const double relax )
+TaskEntry::updateWait( const Submodel& submodel, const double relax )
 {
-    const unsigned submodel = aSubmodel.number();
+    const unsigned n = submodel.number();
     // cout<<"in taskentry("<<name()<<")::updatewait(): submodel ="<<submodel<<endl;
-    if ( submodel == 0 ) throw logic_error( "TaskEntry::updateWait" );
+    if ( n == 0 ) throw logic_error( "TaskEntry::updateWait" );
 
     /* Open arrivals first... */
 
@@ -1674,11 +1665,11 @@ TaskEntry::updateWait( const Submodel& aSubmodel, const double relax )
 
     /* Scan calls to other task for matches with submodel. */
 
-    _total._wait[submodel] = 0.0;
+    _total._wait[n] = 0.0;
 
     if ( isActivityEntry() ) {
 
-	std::for_each( _phase.begin(), _phase.end(), clear_wait(submodel) );
+	std::for_each( _phase.begin(), _phase.end(), clear_wait(n) );
 
 	if ( flags.trace_activities ) {
 	    cout << "--- AggreateWait for entry " << name() << " ---" << endl;
@@ -1686,27 +1677,27 @@ TaskEntry::updateWait( const Submodel& aSubmodel, const double relax )
 	std::deque<const Activity *> activityStack;
 	std::deque<Entry *> entryStack;
 	entryStack.push_back( this );
-	Activity::Collect collect( submodel, &Activity::collectWait );
+	Activity::Collect collect( n, &Activity::collectWait );
 	_startActivity->collect( activityStack, entryStack, collect );
 	entryStack.pop_back();
 
 	if ( flags.trace_delta_wait || flags.trace_activities ) {
 	    cout << "--DW--  Entry(with Activities) " << name()
-		 << ", submodel " << submodel << endl;
+		 << ", submodel " << n << endl;
 	    cout << "        Wait=";
 	    for ( Vector<Phase>::const_iterator phase = _phase.begin(); phase != _phase.end(); ++phase ) {
-		cout << phase->_wait[submodel] << " ";
+		cout << phase->_wait[n] << " ";
 	    }
 	    cout << endl;
 	}
 
     } else {
 
-	std::for_each( _phase.begin(), _phase.end(), Exec2<Phase,const Submodel&,double>( &Phase::updateWait, aSubmodel, relax ) );
+	std::for_each( _phase.begin(), _phase.end(), Exec2<Phase,const Submodel&,double>( &Phase::updateWait, submodel, relax ) );
 
     }
 
-    _total._wait[submodel] = std::accumulate( _phase.begin(), _phase.end(), 0.0, add_wait( submodel ) );
+    _total._wait[n] = std::accumulate( _phase.begin(), _phase.end(), 0.0, add_wait( n ) );
 
     return *this;
 }
@@ -1719,7 +1710,7 @@ TaskEntry::updateWait( const Submodel& aSubmodel, const double relax )
  */
 
 double
-TaskEntry::updateWaitReplication( const Submodel& aSubmodel, unsigned & n_delta )
+TaskEntry::updateWaitReplication( const Submodel& submodel, unsigned & n_delta )
 {
     double delta = 0.0;
     if ( isActivityEntry() ) {
@@ -1728,12 +1719,12 @@ TaskEntry::updateWaitReplication( const Submodel& aSubmodel, unsigned & n_delta 
 	std::deque<const Activity *> activityStack;
 	std::deque<Entry *> entryStack;
 	entryStack.push_back( this );
-	Activity::Collect collect( aSubmodel.number(), &Activity::collectReplication );
+	Activity::Collect collect( submodel.number(), &Activity::collectReplication );
 	_startActivity->collect( activityStack, entryStack, collect );
 	entryStack.pop_back();
 
     } else {
-	delta = for_each( _phase.begin(), _phase.end(), ExecSum1<Phase,double,const Submodel&>( &Phase::updateWaitReplication, aSubmodel )).sum();
+	delta = for_each( _phase.begin(), _phase.end(), ExecSum1<Phase,double,const Submodel&>( &Phase::updateWaitReplication, submodel )).sum();
 	n_delta += _phase.size();
     }
     return delta;

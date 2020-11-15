@@ -163,6 +163,14 @@ public:
 	const Entity * _server;
     };
 
+    struct add_weighted_wait {
+	add_weighted_wait( unsigned int submodel, double total ) : _submodel(submodel), _total(total) {}
+	double operator()( double sum, const Call * call ) const { return call->submodel() == _submodel ? sum + call->wait() * call->rendezvous() / _total: sum; }
+    private:
+	const unsigned int _submodel;
+	const double _total;
+    };
+
     struct set_real_customers {
 	set_real_customers( const MVASubmodel& submodel, const Entity * server, unsigned k ) : _submodel(submodel), _server(server), _k(k) {}
 	double operator()( double sum, Call * call ) { return sum + call->setRealCustomers( _submodel, _server, _k ); }

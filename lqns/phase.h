@@ -129,15 +129,14 @@ public:
 	std::set<Entity *>& _servers;
     };
 
-private:
-    struct add_weighted_wait {
-	add_weighted_wait( unsigned int submodel, double total ) : _submodel(submodel), _total(total) {}
-	double operator()( double sum, const Call * call ) const { return call->submodel() == _submodel ? sum + call->wait() * call->rendezvous() / _total: sum; }
+    struct add_IL_wait {
+	add_IL_wait( unsigned int submodel ) : _submodel(submodel) {}
+	double operator()( double sum, const Phase& phase ) { return sum + phase.isPresent() ? phase._interlockedWait[_submodel] : 0.0; }
     private:
 	const unsigned int _submodel;
-	const double _total;
     };
-
+    
+private:
     struct add_utilization_to {
 	add_utilization_to( const Entry * entry ) : _entry(entry) {}
 	double operator()( double sum, const Phase& phase ) const;

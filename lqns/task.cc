@@ -1009,16 +1009,16 @@ Task::computeOvertaking( Entity * server )
  */
 
 Task&
-Task::updateWait( const Submodel& aSubmodel, const double relax )
+Task::updateWait( const Submodel& submodel, const double relax )
 {
     /* Do updateWait for each activity first. */
 
-    for_each( activities().begin(), activities().end(), Exec2<Phase,const Submodel&,double>( &Phase::updateWait, aSubmodel, relax ) );
+    for_each( activities().begin(), activities().end(), Exec2<Phase,const Submodel&,double>( &Phase::updateWait, submodel, relax ) );
 
     /* Entry updateWait for activity entries will update waiting times. */
 
-    for_each( entries().begin(), entries().end(), Exec2<Entry,const Submodel&,double>( &Entry::updateWait, aSubmodel, relax ) );
-    for_each( entries().begin(), entries().end(), Exec2<Entry,const Submodel&,double>( &Entry::updateILWait, aSubmodel, relax ) );
+    for_each( entries().begin(), entries().end(), Exec2<Entry,const Submodel&,double>( &Entry::updateWait, submodel, relax ) );
+    for_each( entries().begin(), entries().end(), Exec2<Entry,const Submodel&,double>( &Entry::updateILWait, submodel, relax ) );
 
     /* Now recompute thread idle times */
 
@@ -1034,16 +1034,16 @@ Task::updateWait( const Submodel& aSubmodel, const double relax )
  */
 
 double
-Task::updateWaitReplication( const Submodel& aSubmodel, unsigned & n_delta )
+Task::updateWaitReplication( const Submodel& submodel, unsigned & n_delta )
 {
     /* Do updateWait for each activity first. */
 
-    double delta = for_each( activities().begin(), activities().end(), ExecSum1<Activity,double,const Submodel&>( &Activity::updateWaitReplication, aSubmodel ) ).sum();
+    double delta = for_each( activities().begin(), activities().end(), ExecSum1<Activity,double,const Submodel&>( &Activity::updateWaitReplication, submodel ) ).sum();
     n_delta += activities().size();
 
     /* Entry updateWait for activity entries will update waiting times. */
 
-    delta += for_each( entries().begin(), entries().end(), ExecSum2<Entry,double,const Submodel&,unsigned&>( &Entry::updateWaitReplication, aSubmodel, n_delta ) ).sum();
+    delta += for_each( entries().begin(), entries().end(), ExecSum2<Entry,double,const Submodel&,unsigned&>( &Entry::updateWaitReplication, submodel, n_delta ) ).sum();
 
     return delta;
 }
@@ -1111,7 +1111,7 @@ Task::setInterlockedFlow( const MVASubmodel& submodel ) const
 }
 
 
-/* !!! Bugs here??? */
+
 double
 Task::computeMaxCustomers( const MVASubmodel& submodel, const Entry * server_entry ) const
 {
@@ -1122,22 +1122,16 @@ Task::computeMaxCustomers( const MVASubmodel& submodel, const Entry * server_ent
 
     /* open arrival client*/
     if ( !hasOpenArrivals() ) {
-	const std::vector<Entry *>& client_entries = entries();
-	for ( std::vector<Entry *>::const_iterator client_entry = client_entries.begin(); client_entry != client_entries.end(); ++client_entry  ) {
-	    if ( server_entry->isCalledBy(*client_entry) ) {
-		n += (*client_entry)->getMaxCustomers() * server->fanIn(this);
-	    }
-	}
-	n = std::min( n, population() * server->fanIn(this) );
+	n = std::min( std::accumulate( entries().begin(), entries().end(), 0.0, Entry::add_max_customers( server_entry ) ), population() )
+	    * server->fanIn(this);
     } else if ( isInfinite() ) {
-#warning Customers at open arrival should be infinite.
 	n = get_infinity();
     }
 
     const ChainVector& chain = clientChains( submodel.number() );
     const unsigned k = chain[1];
-    Server * aStation = server->serverStation();
-    aStation->setMaxCustomers( server_entry->index(), k, n );
+    Server * station = server->serverStation();
+    station->setMaxCustomers( server_entry->index(), k, n );
     return n;
 }
 

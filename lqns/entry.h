@@ -158,6 +158,13 @@ public:
     };
 
     /*+ interlock +*/
+    struct add_max_customers {
+	add_max_customers( const Entry * server_entry ) : _server_entry(server_entry) {}
+	double operator()( double sum, const Entry * entry ) { return _server_entry->isCalledBy(entry) ? sum + entry->getMaxCustomers() : sum; }
+    private:
+	const Entry * _server_entry;
+    };
+    
     struct set_real_customers {
 	set_real_customers( const MVASubmodel& submodel, const Entity * server, unsigned int k ) : _submodel(submodel), _server(server),  _k(k) {}
 	void operator()( const Entry * entry ) const;

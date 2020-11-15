@@ -1153,7 +1153,7 @@ double
 Phase::getTaskWait( unsigned int submodel, const double relax ) //tomari : quorum
 {
     const double totalRendezvous = std::accumulate( callList().begin(), callList().end(), 0.0, Call::add_submodel_rendezvous( submodel ) );
-    return std::accumulate( callList().begin(), callList().end(), 0.0, add_weighted_wait( submodel, totalRendezvous ) );
+    return std::accumulate( callList().begin(), callList().end(), 0.0, Call::add_weighted_wait( submodel, totalRendezvous ) );
 }
 
 

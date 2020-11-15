@@ -306,6 +306,8 @@ Call::srcTask() const
     return dynamic_cast<const Task *>(source->owner());
 }
 
+
+
 double
 Call::interlockPr() const
 {
@@ -315,36 +317,33 @@ Call::interlockPr() const
     if (srcTask()->hasInfinitePopulation()) return 0.0;
 
     double et = elapsedTime();
-    if (et<=0 ) return 0.;
+    if ( et <= 0. ) return 0.;
 	
 
+#warning Bugs here?  division?  Hoist commonn expression.
     // the intermediate server is a multiserver;
-    if (dstEntry()->owner()->population()>1){
-	double r= getMaxCustomers() / (dstEntry()->owner()->population());
-	if (r>=1.0) return 0.;
-	else
-	    return (1./getMaxCustomers() / (dstEntry()->owner()->population()));
+    if ( dstEntry()->owner()->population() > 1 ) {
+	double r = getMaxCustomers() / (dstEntry()->owner()->population());
+	if ( r >= 1.0 ) return 0.;		/* ??? */
+	else return ( 1. / getMaxCustomers() / dstEntry()->owner()->population() );	/* ??? */
     }
  
-    unsigned d= getMaxCustomers()- 1;
-
-    double queue=queueingTime()/et;
+    unsigned d = getMaxCustomers() - 1;
+    double queue = queueingTime() / et;
+    double ql = srcEntry()->getILQueueLength();
+    double upperbound = std::min( 1.0 / getMaxCustomers(), 1.0 );
     //double upperbound=(srcTask()->population()>3)? (1.0/(srcTask()->population()* srcTask()->population())): 1.0/(srcTask()->population()* (srcTask()->population()-1));
-    double ql=srcEntry()->getILQueueLength();
     //double upperbound=1.0/((srcTask()->population()>(ql+1))? (srcTask()->population()-ql):1.0);
     //double upperbound=1.0/(srcTask()->population());
-    double upperbound=1.0/(getMaxCustomers());
 
-    upperbound= (upperbound>1.0)? 1.0: upperbound;
 //		return upperbound; 
     // the case of small queueing time happens when the intermediate server has a low utilization,
     // then the prIL equals to 1/ns.
-    if (queue<0.1){
+    if ( queue < 0.1 ) {
 	if ( flags.trace_interlock ) {
 	    cout <<"queueingTime()="<<queueingTime()<<", et="<<elapsedTime()<<",queueingTime()/et= "<<queue <<", 1/N="<<1.0/getMaxCustomers()<<endl;}
 	return max(upperbound , queue );
 	//return max(1.0/(static_cast<const double>(getMaxCustomers()) ), queue );
-    
     }
 
     /*
@@ -381,11 +380,17 @@ Call::interlockPr() const
     }
     return 0.0;
 }
+
+
+
 int
 Call::diff_population() const
 {
     return srcTask()->population()-dstEntry()->owner()->population();
 }
+
+
+
 double
 Call::elapsedTime() const
 {
