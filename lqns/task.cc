@@ -1146,6 +1146,7 @@ Task::computeMaxCustomers( const MVASubmodel& submodel, const Entry * server_ent
  * The surogate delay only apply to the parent from direct dependents
  */
 
+#warning Bug here?  What about an interlock to the processor???
 
 const Task&
 Task::modifyParentClientServiceTime( const MVASubmodel& submodel, const Entity * server ) const
@@ -1172,21 +1173,10 @@ Task::modifyParentClientServiceTime( const MVASubmodel& submodel, const Entity *
 	for ( unsigned ix = 1; ix <= chain.size(); ++ix ) {
 	    const unsigned k = chain[ix];
 	    for ( unsigned p = 1; p <= (*entry)->maxPhase(); ++p ) {
-		double surrogate =0.;
 		const std::set<Call *>& client_calls = (*entry)->callList(p);
-		for ( std::set<Call *>::const_iterator call = client_calls.begin(); call != client_calls.end(); ++call ) {
-		    const Task * dsttask = dynamic_cast<const Task *> ((*call)->dstTask());
-		    if ( clients.find(const_cast<Task *>(dsttask)) == clients.end() ) continue;
-		    surrogate += (*call)->wait();  // include queueing and all service at lower level;
-		    if ( flags.trace_interlock ) {
-			cout <<"dstTask="<<(*call)->dstTask()->name()<<": (*call)->dstEntry()->elapsedTime()="<< (*call)->dstEntry()->elapsedTime()
-			     <<"  (*call)->elapsedTime()"<< (*call)->elapsedTime()
-			     <<" are they same???"<<endl;
-			cout <<" call->wait()=" <<(*call)->wait()<<endl;
-		    }
-		}
-		if ( surrogate > 0.){
-		    station->setService( e, k, p, surrogate );
+		const double s = std::accumulate( client_calls.begin(), client_calls.end(), 0.0, Call::add_wait_to( clients ) );
+		if ( s > 0.) {
+		    station->setService( e, k, p, s );
 		}
 	    }
 	}

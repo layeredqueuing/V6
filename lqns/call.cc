@@ -811,6 +811,18 @@ Call::add_interlock_pr::operator()( double sum, const Call * call ) const
 #endif
     return sum;
 }
+
+
+double
+Call::add_wait_to::operator()( double sum, const Call * call ) const
+{
+    const Task * dstTask = dynamic_cast<const Task *>(call->dstTask());
+    if ( dstTask != nullptr && _clients.find(const_cast<Task *>(dstTask)) != _clients.end() ) {
+	return sum += call->wait();
+    }
+    return sum;
+}
+
 
 /*----------------------------------------------------------------------*/
 /*                              Task Calls                              */

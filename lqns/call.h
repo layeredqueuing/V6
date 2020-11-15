@@ -148,6 +148,13 @@ public:
 	const unsigned int _submodel;
     };
 
+    struct add_wait_to {
+	add_wait_to( const std::set<Task *>& clients ) : _clients(clients) {}
+	double operator()( double sum, const Call * call ) const;
+    private:
+	const std::set<Task *>& _clients;
+    };
+
     struct add_interlocked_wait {
 	add_interlocked_wait( unsigned int submodel ) : _submodel(submodel) {}
 	double operator()( double sum, const Call * call ) const { return call->submodel() == _submodel && call->isInterlocked()
