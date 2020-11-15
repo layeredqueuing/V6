@@ -650,24 +650,11 @@ Entity::setInterlock( const MVASubmodel& submodel ) const
 	}
     }
 #else
-    Server * aStation = serverStation();
-    if ( !isInterlocked() ) {
-	setInterlockPr_upper( submodel );
-	return *this;
-    }
     const std::set<Task *>& clients = submodel.getClients();
-    for ( std::set<Task *>::const_iterator client = clients.begin(); client != clients.end(); ++client ) {
-	if ( (*client)->throughput() == 0.0 ) continue;
-
-	const ChainVector& chain = (*client)->clientChains( submodel.number() );
-
-	for ( unsigned ix = 1; ix <= chain.size(); ++ix ) {
-	    const unsigned k = chain[ix];
-	    if ( !hasServerChain(k) ) continue;
-	    const double ir_c = std::accumulate( entries().begin(), entries().end(), 0., Entry::add_interlock( submodel, *client, k ) );
-	    aStation->setChainILRate(0,k,ir_c );	
-	}//end for each client chain k
-
+    if ( isInterlocked() ) {
+	std::for_each( clients.begin(), clients.end(), Task::set_interlock( submodel, this ) );
+    } else {
+	std::for_each( clients.begin(), clients.end(), Task::set_interlock_PrUpper( submodel, this ) );
     }
 #endif
     return *this;
@@ -801,8 +788,6 @@ Entity::setInterlockRelation( Server * station, const Entry * server_entry_1, co
 void
 Entity::setInterlockPr_upper( const MVASubmodel& submodel ) const
 {
-    const std::set<Task *>& clients = submodel.getClients();
-    std::for_each( clients.begin(), clients.end(), Task::set_interlock_PrUpper( submodel, serverStation() ) );
 }
 
 /* -------------------------------------------------------------------- */

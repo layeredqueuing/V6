@@ -104,12 +104,20 @@ public:
 	const Entity * _server;
     };
 
+    struct set_interlock {
+ 	set_interlock( const MVASubmodel& submodel, const Entity * server ) : _submodel(submodel), _server(server) {}
+ 	void operator()( const Task * ) const;
+    private:
+ 	const MVASubmodel& _submodel;
+ 	const Entity * _server;
+    };
+    
     struct set_interlock_PrUpper {
-	set_interlock_PrUpper( const MVASubmodel& submodel, Server * station ) : _submodel(submodel), _station(station) {}
+	set_interlock_PrUpper( const MVASubmodel& submodel, const Entity * server ) : _submodel(submodel), _server(server) {}
 	void operator()( const Task * ) const;
     private:
 	const MVASubmodel& _submodel;
-	Server * _station;
+	const Entity * _server;
     };
 
 public:

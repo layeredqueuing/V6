@@ -1225,10 +1225,9 @@ Task::set_real_customers::operator()( Task * client ) const
 {
     if ( client->throughput() == 0.0 ) return;
 
-    const ChainVector& chain = client->clientChains( _submodel.number() );
-    const std::vector<Entry *>& client_entries = client->entries();
     Server * station = _server->serverStation();
     
+    const ChainVector& chain = client->clientChains( _submodel.number() );
     for ( unsigned ix = 1; ix <= chain.size(); ++ix ) {
 	const unsigned k = chain[ix];
 	if ( !_server->hasServerChain(k) ) continue;
@@ -1236,9 +1235,26 @@ Task::set_real_customers::operator()( Task * client ) const
 	for ( unsigned e = 0; e <= _server->nEntries(); e++ ) {
 	    station->setRealCustomer(e,k,0.0);
 	}
-	std::for_each( client_entries.begin(), client_entries.end(), Entry::set_real_customers( _submodel, _server, k ) );
+	std::for_each( client->entries().begin(), client->entries().end(), Entry::set_real_customers( _submodel, _server, k ) );
     }
 }
+
+
+void
+Task::set_interlock::operator()( const Task * client ) const
+{
+    if ( client->throughput() == 0.0 ) return;
+
+    Server * station = _server->serverStation();
+
+    const ChainVector& chain = client->clientChains( _submodel.number() );
+    for ( unsigned ix = 1; ix <= chain.size(); ++ix ) {
+	const unsigned k = chain[ix];
+	if ( !_server->hasServerChain(k) ) continue;
+	station->setChainILRate( 0, k, std::accumulate( _server->entries().begin(), _server->entries().end(), 0., Entry::add_interlock( _submodel, client, k ) ) );
+    }
+}
+
 
 
 void
@@ -1248,14 +1264,15 @@ Task::set_interlock_PrUpper::operator()( const Task * client ) const
 
     /* there is not interlock via this client task to the server in this submodel. */
 		
-    _station->setMixFlow(false);
+    Server * station = _server->serverStation();
+    station->setMixFlow(false);
 
     const ChainVector& chain = client->clientChains( _submodel.number() );
     for ( unsigned ix = 1; ix <= chain.size(); ++ix ) {
 	const unsigned k = chain[ix];
-	if ( !client->hasServerChain(k) ) continue;
-	_station->setChainILRate( 0, k, 0 );
-	std::for_each( client->entries().begin(), client->entries().end(), Entry::set_interlock_PrUpper( _submodel, _station, k ) );
+	if ( !_server->hasServerChain(k) ) continue;
+	station->setChainILRate( 0, k, 0 );
+	std::for_each( _server->entries().begin(), _server->entries().end(), Entry::set_interlock_PrUpper( _submodel, station, k ) );
     }
 }
 
