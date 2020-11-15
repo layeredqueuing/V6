@@ -1,6 +1,6 @@
 /* -*- c++ -*-
  * submodel.C	-- Greg Franks Wed Dec 11 1996
- * $Id: submodel.cc 14096 2020-11-15 13:58:05Z greg $
+ * $Id: submodel.cc 14098 2020-11-15 14:14:18Z greg $
  *
  * MVA submodel creation and solution.  This class is the interface
  * between the input model consisting of processors, tasks, and entries,
@@ -273,7 +273,7 @@ MVASubmodel::build()
 
     closedStnNo = _clients.size() + std::count_if( _servers.begin(), _servers.end(), Predicate<Entity>( &Entity::isInClosedModel ) );
     openStnNo   = std::count_if( _servers.begin(), _servers.end(), Predicate<Entity>( &Entity::isInOpenModel ) );
-    
+
     closedStation.resize(closedStnNo);
     openStation.resize(openStnNo);
 
@@ -684,7 +684,7 @@ MVASubmodel::solve( long iterations, MVACount& MVAStats, const double relax )
 		} else {
 		    openModel->solve();
 		}
-	    } 
+	    }
 	    catch ( const range_error& error ) {
 		if ( Pragma::stopOnMessageLoss() && std::count_if( _servers.begin(), _servers.end(), Predicate<Entity>( &Entity::openModelInfinity ) ) > 0 ) {
 		    throw exception_handled( "MVA::submodel -- open model overflow" );
@@ -935,7 +935,7 @@ CFSSubmodel::solve( long iterations, MVACount& MVAStats, const double relax )
 
 
 
-/* 
+/*
  * DPS for group.  Redistibute share.
  */
 
@@ -950,7 +950,7 @@ CFSSubmodel::redistribute::operator()( Entity * server )
 
     std::for_each( groups.begin(), groups.end(), Exec<Group>( &Group::setSpareStatus ) );
 
-    /* 
+    /*
      * This block is only run once, and after the model has stabilized
      * to the point where the processor uilization is known (set
      * Model::setRunDPS in model.cc).  Check whether need to
@@ -1026,7 +1026,7 @@ CFSSubmodel::redistribute::operator()( Entity * server )
 	}//end if ( available_share > 0. )
     } //end if (need to redistibute)
 
-    /* 
+    /*
      * adjusting group ratio : reduce the extra delay for the receiving groups.
      */
 

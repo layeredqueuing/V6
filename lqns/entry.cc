@@ -12,7 +12,7 @@
  * July 2007.
  *
  * ------------------------------------------------------------------------
- * $Id: entry.cc 14097 2020-11-15 14:12:41Z greg $
+ * $Id: entry.cc 14098 2020-11-15 14:14:18Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -268,8 +268,8 @@ Entry::initThroughputBound()
 
 
 
-/* 
- * Compute overall service time for this entry 
+/*
+ * Compute overall service time for this entry
  */
 
 Entry&
@@ -288,7 +288,7 @@ Entry::initServiceTime()
     _total.setServiceTime( std::accumulate( _phase.begin(), _phase.end(), 0., add_using<Phase>( &Phase::serviceTime ) ) );
     return *this;
 }
-    
+
 
 
 /*
@@ -328,7 +328,7 @@ Entry::createInterlock()		/* Called from task -- initialized calls */
 }
 
 Entry&
-Entry::initInterlock( Interlock::CollectTable& path ) 
+Entry::initInterlock( Interlock::CollectTable& path )
 {
     /*
      * Check for cycles in graph.  Return if found.  Cycle catching
@@ -839,7 +839,6 @@ Entry::sliceTime( const Entry& dst, Slice_Info slice[], double y_xj[] ) const
  *
  *   1. Entry Priority (No Constraints)
  *   2. Open Arrival Rate
- *
  */
 
 Entry&
@@ -857,7 +856,7 @@ Entry::sanityCheckParameters()
 /*
  * If submodel != 0, then we have the mean time for the submodel.
  * Overwise, we have the variance.  Called from actlist for handing
- *  "repeat", and "and", and "or" Forks.
+ * "repeat", and "and", and "or" Forks.
  */
 
 Entry&
@@ -1016,7 +1015,7 @@ Entry::printSubmodelWait( ostream& output, unsigned offset ) const
 	if ( offset ) {
 	    output << setw( offset ) << " ";
 	}
-	output << setw(8-offset) ;
+	output << setw(8-offset);
 	if ( p == 1 ) {
 	    output << name();
 	} else {
@@ -1107,7 +1106,7 @@ Entry::getInterlockedTasks( Interlock::CollectTasks& path ) const
 	found = _startActivity->getInterlockedTasks( path );
     }
     path.pop_back();
-    
+
     if ( found && !headOfPath ) {
 	path.insert( owner() );
     }
@@ -1132,8 +1131,8 @@ Entry::isCalledBy(const Entry * src_entry ) const
 
 
 
-/* 
- * This is called when this entry acts as a server. 
+/*
+ * This is called when this entry acts as a server.
  */
 
 double
@@ -1400,7 +1399,7 @@ Entry::setInterlock( const MVASubmodel& submodel, const Task * client, unsigned 
     double il_rate = 0.0;
     bool moreThan3 = false;
     Probability pr_il = owner()->prInterlock( *client, this, il_rate, moreThan3 );
-    
+
     if ( pr_il > 0. ) {  // this server entry has interlocked flow coming in;
 	station->setMixFlow(true);
 	/* Sending interlocks */
@@ -1422,7 +1421,7 @@ Entry::setInterlock( const MVASubmodel& submodel, const Task * client, unsigned 
 		// the interlock probability of a server entry adjusted by interlocked rate;
 		double sum_PrIL_se = std::accumulate( client_entries.begin(), client_entries.end(), 0.0, add_PrIL_se( submodel, this ) );
 		pr_il = Probability(sum_PrIL_se / il_rate);
-	    }else{
+	    } else {
 		// second phase
 		double sum_lambda=0.;
 		double sum_ph_ratio =0.;
@@ -1438,10 +1437,10 @@ Entry::setInterlock( const MVASubmodel& submodel, const Task * client, unsigned 
 			}
 		    }
 		}
-		if(sum_lambda>0.){
-		    sum_ph_ratio /=sum_lambda;
-		    if (sum_ph_ratio >0. && sum_ph_ratio <=1.0 && whichphase >1){
-			station->set_IL_Relation(e, k, 0, 0, sum_ph_ratio );
+		if ( sum_lambda > 0. ) {
+		    sum_ph_ratio /= sum_lambda;
+		    if ( 0. < sum_ph_ratio && sum_ph_ratio <= 1.0 && whichphase > 1 ) {
+			station->set_IL_Relation( e, k, 0, 0, sum_ph_ratio );
 			if ( flags.trace_interlock ) {
 			    cout << "set multiphase ratio by Interlock relation: (server entry=" << name()
 				 << ", client task= " << client->name()<< "), IR_Relation( se1="
@@ -1461,7 +1460,7 @@ Entry::setInterlock( const MVASubmodel& submodel, const Task * client, unsigned 
 		 << "--->setChainILRate( e= " << index()<< ", k= "<<k
 		 << ") = " <<  station->chainILRate(e,k) <<endl;
 	}
-	ir_c=1.0;
+	ir_c = 1.0;
     } else {  // this server entry only has non-interlocked flow coming in;
 	station->setChainILRate( e, k, 0.0 );
 	station->setInterlock( e, k, 0.0 );
