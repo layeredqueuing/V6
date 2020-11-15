@@ -12,7 +12,7 @@
  * July 2007.
  *
  * ------------------------------------------------------------------------
- * $Id: entry.cc 14096 2020-11-15 13:58:05Z greg $
+ * $Id: entry.cc 14097 2020-11-15 14:12:41Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -831,27 +831,23 @@ Entry::sliceTime( const Entry& dst, Slice_Info slice[], double y_xj[] ) const
 	y_xj[0] += y_xj[p];
     }
 }
-
 
+/*
+ * After we have finished recalculating we need to make sure once again that any of the dynamic
+ * parameters/late-bound parameters are still sane. The ones that could have changed are
+ * checked in the following order:
+ *
+ *   1. Entry Priority (No Constraints)
+ *   2. Open Arrival Rate
+ *
+ */
 
 Entry&
 Entry::sanityCheckParameters()
 {
-    /*
-     * After we have finished recalculating we need to make sure once again that any of the dynamic
-     * parameters/late-bound parameters are still sane. The ones that could have changed are
-     * checked in the following order:
-     *
-     *   1. Entry Priority (No Constraints)
-     *   2. Open Arrival Rate
-     *
-     */
-
     /* Make sure the open arrival rate is sane for the setup */
-    if ( _dom && _dom->hasOpenArrivalRate() ) {
-	if ( owner()->isReferenceTask() ) {
-	    LQIO::input_error2( LQIO::ERR_REFERENCE_TASK_OPEN_ARRIVALS, owner()->name().c_str(), name().c_str() );
-	}
+    if ( _dom && _dom->hasOpenArrivalRate() && owner()->isReferenceTask() ) {
+	LQIO::input_error2( LQIO::ERR_REFERENCE_TASK_OPEN_ARRIVALS, owner()->name().c_str(), name().c_str() );
     }
     return *this;
 }
@@ -1263,21 +1259,6 @@ Entry::getILQueueLength()const
     return std::min( sum, owner()->population() );
 }
 
-
-
-#if 0
-double
-Entry::getPhase2(const Entry * serverEntry) const
-{
-    if ( _interlock[serverEntry->entryId()].all <= 0. ) {
-	return 0.;
-    } else {
-	const double ph2 = (_interlock[serverEntry->entryId()].all - _interlock[serverEntry->entryId()].ph1)
-	    / _interlock[serverEntry->entryId()].all;
-	return ph2 > 0 ? ph2: 0.;
-    }
-}
-#endif
 
 
 unsigned
@@ -2209,7 +2190,7 @@ Entry::find( const string& entry_name )
 {
     std::set<Entry *>::const_iterator nextEntry = find_if( Model::__entry.begin(), Model::__entry.end(), EQStr<Entry>( entry_name ) );
     if ( nextEntry == Model::__entry.end() ) {
-	return 0;
+	return nullptr;
     } else {
 	return *nextEntry;
     }

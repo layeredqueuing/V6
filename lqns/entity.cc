@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: entity.cc 14096 2020-11-15 13:58:05Z greg $
+ * $Id: entity.cc 14097 2020-11-15 14:12:41Z greg $
  *
  * Everything you wanted to know about a task or processor, but were
  * afraid to ask.
@@ -206,7 +206,7 @@ Entity::copies() const
 {
     unsigned int value = 1;
     if ( !getDOM()->isInfinite() ) {
-	try { 
+	try {
 	    value = getDOM()->getCopiesValue();
 	}
 	catch ( const std::domain_error& e ) {
@@ -237,7 +237,7 @@ Entity::replicas() const
 }
 
 
-bool 
+bool
 Entity::isInfinite() const
 {
     return getDOM()->isInfinite();
@@ -315,10 +315,10 @@ Entity::utilization() const
 double
 Entity::saturation() const
 {
-    if ( isInfinite() ) { 
+    if ( isInfinite() ) {
 	return 0.0;
     } else {
-	double value = getDOM()->getCopiesValue(); 
+	double value = getDOM()->getCopiesValue();
 	return utilization() / value;
     }
 }
@@ -346,7 +346,7 @@ Entity::hasOpenArrivals() const
  * Find all tasks that call this task and add them to the argument.
  */
 
-std::set<Task *>& 
+std::set<Task *>&
 Entity::getClients( std::set<Task *>& clients ) const
 {
     std::for_each ( entries().begin(), entries().end(), Entry::get_clients( clients ) );
@@ -354,7 +354,7 @@ Entity::getClients( std::set<Task *>& clients ) const
 }
 
 
-double 
+double
 Entity::nCustomers() const
 {
     std::set<Task *> clients;
@@ -421,7 +421,7 @@ Entity::updateAllWaits( const Vector<Submodel *>& submodels )
  */
 
 Entity&
-Entity::computeVariance() 
+Entity::computeVariance()
 {
     for_each( entries().begin(), entries().end(), Exec<Entry>( &Entry::computeVariance ) );
     return *this;
@@ -460,8 +460,8 @@ Entity::prInterlock( const Task& aClient ) const
 {
     const Probability pr = _interlock.interlockedFlow( aClient ) / population();
     if ( flags.trace_interlock ) {
-	cout << "Interlock: " 
-	     << aClient.name() << "(" << aClient.population() << ") -> " 
+	cout << "Interlock: "
+	     << aClient.name() << "(" << aClient.population() << ") -> "
 	     << name()         << "(" << population()         << ")  = " << pr << endl;
     }
     return pr;
@@ -475,7 +475,7 @@ Entity::prInterlock( const Entry * clientEntry ) const
     if ( flags.trace_interlock ) {
 	cout << "Interlock rate: ";
 	    const Entity * client = clientEntry->owner();
-	    cout << client->name() << "(" << client->population() << ") -> " 
+	    cout << client->name() << "(" << client->population() << ") -> "
 		 << name()         << "(" << population()         << ")  = " << pr << endl;
     }
     return pr;
@@ -489,10 +489,10 @@ Entity::prInterlock( const Task& aClient, const Entry * aServerEntry, double& il
     Probability pril = _interlock.interlockedFlow( aClient, aServerEntry, il_rate, moreThan4 );
     pril /= population();
     if ( flags.trace_interlock ) {
-	cout << "Interlock probability: " 
-	     << aClient.name() << "(" << aClient.population() << ") -> " 
+	cout << "Interlock probability: "
+	     << aClient.name() << "(" << aClient.population() << ") -> "
 	     << name()         << "(" << aServerEntry->name()         << ")  = " << pril << endl;
-	cout << "Interlock rate: (" 
+	cout << "Interlock rate: ("
 	     << aClient.name() << " -> " << name() << ")  = " << il_rate << endl;
     }
     return pril;
@@ -502,7 +502,7 @@ Entity::prInterlock( const Task& aClient, const Entry * aServerEntry, double& il
 /*
  * Return the rate of interlocked flows.
  */
-void 
+void
 Entity::setChainILRate(const Task& aClient, double rate) const
 {
     const ChainVector& chain = aClient.clientChains( submodel() );
@@ -515,8 +515,8 @@ void Entity::set_chain_IL_rate::operator()( unsigned int k ) { if ( _serverChain
 
 
 
-bool 
-Entity::hasILWait() const 
+bool
+Entity::hasILWait() const
 {
     return std::any_of( entries().begin(), entries().end(), Predicate1<Entry,unsigned>( &Entry::hasILWait, submodel() ) );
 }
@@ -615,7 +615,7 @@ Entity::setRealCustomers( const MVASubmodel& submodel ) const
     std::for_each( clients.begin(), clients.end(), Task::set_real_customers( submodel, this ) );
     return *this;
 }
-    
+
 
 const Entity&
 Entity::setInterlock( const MVASubmodel& submodel ) const
@@ -623,7 +623,7 @@ Entity::setInterlock( const MVASubmodel& submodel ) const
 #if THROUGHPUT_INTERLOCK
     Server * station = serverStation();
     const std::set<Task *>& clients = submodel.getClients();
-    
+
     for ( std::set<Task *>::const_iterator client = clients.begin(); client != clients.end(); ++client ) {
 	if ( (*client)->throughput() == 0.0 ) continue;
 
@@ -711,7 +711,7 @@ Entity::setInterlockRelation( Server * station, const Entry * server_entry_1, co
 	    if ( k1 == k2 ) return;
 			
 	    // sending interlocks;
-	    
+	
 	    std::set<const Entry* > common_entries = getCommonEntries( server_entry_1, server_entry_2, client_1, client_2);
 	    int p1 = 0, p2 = 0;
 	    for ( std::set<const Entry *>::const_iterator common_entry = common_entries.begin(); common_entry != common_entries.end(); ++common_entry ) {
@@ -785,7 +785,7 @@ Entity::setInterlockRelation( Server * station, const Entry * server_entry_1, co
 
 
 void
-Entity::setIdleTime( const double relax ) 
+Entity::setIdleTime( const double relax )
 {
     double z;
 
@@ -813,7 +813,7 @@ const Entity&
 Entity::sanityCheck() const
 {
     if ( !isInfinite() && utilization() > copies() * 1.05 ) {
-	LQIO::solution_error( ADV_INVALID_UTILIZATION, utilization(), 
+	LQIO::solution_error( ADV_INVALID_UTILIZATION, utilization(),
 			      getDOM()->getTypeName(),
 			      name().c_str(), copies() );
     }
@@ -993,7 +993,7 @@ Entity::saveServerResults( const MVASubmodel& submodel, double relax )
  */
 
 /* static */ ostream&
-Entity::output_server_chains( ostream& output, const Entity& aServer ) 
+Entity::output_server_chains( ostream& output, const Entity& aServer )
 {
     output << "Chains:" << aServer.serverChains() << endl;
     return output;

@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: interlock.cc 14094 2020-11-15 12:09:32Z greg $
+ * $Id: interlock.cc 14097 2020-11-15 14:12:41Z greg $
  *
  * Call-chain/interlock finder.
  *
@@ -53,11 +53,11 @@ StringNManip trunc( const std::string&, const unsigned );
  * instances.
  */
 
-Interlock::Interlock( const Entity& aServer ) 
+Interlock::Interlock( const Entity& aServer )
     : _commonEntries(),
       _allSourceTasks(),
       _ph2SourceTasks(),
-      _server(aServer), 
+      _server(aServer),
       _sources(0)
 {
 }
@@ -197,14 +197,14 @@ Interlock::isCommonEntry( const Entry * srcA ) const
 }
 
 
-bool 
+bool
 Interlock::via( const Entry* comE, const Entry* serverEntry, const Task* viatask) const
 {
     const unsigned b = serverEntry->entryId();	
     const std::vector<Entry *>& entries = viatask->entries();
     for ( std::vector<Entry *>::const_iterator viaE = entries.begin(); viaE != entries.end(); ++viaE ) {
-	const unsigned a = (*viaE)->entryId(); 
-	if ( comE->_interlock[a].all > 0.0 && (*viaE)->_interlock[b].all > 0.0 ){ 
+	const unsigned a = (*viaE)->entryId();
+	if ( comE->_interlock[a].all > 0.0 && (*viaE)->_interlock[b].all > 0.0 ){
 	    return true;
 	}
     }
@@ -213,7 +213,7 @@ Interlock::via( const Entry* comE, const Entry* serverEntry, const Task* viatask
 
 
 
-bool 
+bool
 Interlock::hasCommonEntry( const Entry* se1, const Task* viatask1 ) const
 {
     for ( std::set<const Entry *>::const_iterator entry = commonEntries().begin(); entry != commonEntries().end(); ++entry ) {
@@ -226,7 +226,7 @@ Interlock::hasCommonEntry( const Entry* se1, const Task* viatask1 ) const
 
 
 
-bool 
+bool
 Interlock::hasCommonEntry( const Entry* se1, const Entry* se2, const Task* viatask1, const Task* viatask2 ) const
 {
     for ( std::set<const Entry *>::const_iterator entry = commonEntries().begin(); entry != commonEntries().end(); ++entry ) {
@@ -237,7 +237,7 @@ Interlock::hasCommonEntry( const Entry* se1, const Entry* se2, const Task* viata
 
 
 
-std::set<const Entry* >  
+std::set<const Entry* >
 Interlock::getCommonEntries( const Entry* se1, const Entry* se2, const Task* viatask1, const Task* viatask2 ) const
 {
     std::set<const Entry* > common_entries;
@@ -265,15 +265,15 @@ Interlock::hasCommonEntry( const Entry& srcA, const Entry& srcC ) const
 
 
 /*
- * Type3 sending interlocks 
+ * Type3 sending interlocks
  *   1. viatask2 is multi-entry client;
  *   2. one of entries is a parent of a sending interlock;
  *   3. the child (viatask1) and the other entries of viatask2 are also interlocked.
- * Especially when the multiplicity of viatask1 and viatask2 is 1, 
+ * Especially when the multiplicity of viatask1 and viatask2 is 1,
  * the customer from viatask1 is not able to see any requsts from any entry of viatask2.
  */
 
-bool  
+bool
 Interlock::isType3Sending( const Entry* se1, const Entry* se2, const Task* viatask1, const Task* viatask2 ) const
 {
     std::set<const Entry* > task1_common_entries;
@@ -301,7 +301,7 @@ Interlock::interlockedFlow( const Task& viaTask ) const
 	sum = std::accumulate( viaTask.entries().begin(), viaTask.entries().end(), sum, flow_src_dst( *this, *srcEntry ) );
     }
 
-    /* 
+    /*
      * Find out the rate of the interlocked flows. Now is in the task
      * level. maybe need to extend to the entry level, if there are
      * interlocked flows from different common entries
@@ -362,7 +362,7 @@ Interlock::interlockedFlow( const Task& viaTask, const Entry * serverEntry, doub
 	
     double sum_task = 0.0;
     double sum_pr_il_task = 0.0;
-    double sum_tput = 0.0; 
+    double sum_tput = 0.0;
     double sum_cust = 0;
     const std::vector<Entry *>& entries = viaTask.entries();
     for ( std::vector<Entry *>::const_iterator dstA = entries.begin(); dstA != entries.end(); ++dstA ) {
@@ -381,7 +381,7 @@ Interlock::interlockedFlow( const Task& viaTask, const Entry * serverEntry, doub
 	double rate = sum.first / dstA_throughput;
 
 	if ( flags.trace_interlock && sum.first > 0.0 ) {
-	    cout << "Interlock sum =" << sum.first << ", viaEntry: " << dstA_throughput 
+	    cout << "Interlock sum =" << sum.first << ", viaEntry: " << dstA_throughput
 		 <<", IL_rate : "<< rate
 		 <<", Pril : "<< sum.second/rate << endl;
 	}
@@ -399,20 +399,20 @@ Interlock::interlockedFlow( const Task& viaTask, const Entry * serverEntry, doub
     if ( sum_task == 0.0 ) {
 	il_rate = 0.0;
 	if ( flags.trace_interlock ) {
-	    cout << "Interlock, viaTask: " << viaTask.throughput() 
+	    cout << "Interlock, viaTask: " << viaTask.throughput()
 		 <<", IL_rate : "<< il_rate  << endl;
 	}
 	moreThan3 = false;
 	return 0.0;
     }
-    
+
     const double rate = sum_task / sum_tput;
     sum_pr_il_task /= sum_tput;
-   
+
     il_rate = std::min( rate, 1.0 );
 
     if ( flags.trace_interlock ) {
-	cout << "Interlock sum=" << sum_task << ", viaTask: " << viaTask.throughput() 
+	cout << "Interlock sum=" << sum_task << ", viaTask: " << viaTask.throughput()
 	     <<", IL_rate : "<< il_rate  <<", Pril : "<< sum_pr_il_task
 	     << ", threads=" << viaTask.concurrentThreads()  << ", sources=" << getNsources() << endl;
     }
@@ -455,7 +455,7 @@ Interlock::numberOfSources( const Task& viaTask, const Entry * aServerEntry) con
 	}
     }
     if ( flags.trace_interlock ) {
-	cout << "Interlock:: count_sources(viaTask= " << viaTask.name() 
+	cout << "Interlock:: count_sources(viaTask= " << viaTask.name()
 	     <<", se= : "<< aServerEntry->name()  <<") = "<< num
 	     << ", while Nsources()=" << getNsources() << endl;
     }
@@ -690,7 +690,7 @@ Interlock::isBranchPoint( const Entry& srcX, const Entry& entryA, const Entry& s
 
 
 /*
- * Go through the interlock list and remove entries from parents 
+ * Go through the interlock list and remove entries from parents
  * See prune above.
  */
 
@@ -782,7 +782,7 @@ Interlock::printPathTable( ostream& output )
     return output;
 }
 
-bool 
+bool
 InterlockInfo::operator==( const InterlockInfo& arg ) const
 {
     return all == arg.all && ph1 == arg.ph1;
@@ -829,8 +829,8 @@ Interlock::flow_src_dst::operator()( double sum, const Entry * dstEntry ) const
 
     if ( flags.trace_interlock ) {
 	const unsigned a = dstEntry->entryId();
-	cout << "  Interlock E=" << _srcEntry->name() << " A=" << dstEntry->name() 
-	     << " Throughput=" << _srcEntry->throughput() 
+	cout << "  Interlock E=" << _srcEntry->name() << " A=" << dstEntry->name()
+	     << " Throughput=" << _srcEntry->throughput()
 	     << ", interlock[" << a << "]={" << _srcEntry->_interlock[a].all << "," << _ph2
 	     << "}, sum=" << sum << endl;
 	cout<< "server entry: "<< dstEntry->name()<<"Util ="<< dstEntry->utilization()<<" , "<<endl;
@@ -846,8 +846,8 @@ Interlock::flow_dst_src::operator()( double sum, const Entry * srcEntry ) const
 
     if ( flags.trace_interlock ) {
 	const unsigned a = _dstEntry->entryId();
-	cout << "  Interlock E=" << srcEntry->name() << " A=" << _dstEntry->name() 
-	     << " Throughput=" << srcEntry->throughput() 
+	cout << "  Interlock E=" << srcEntry->name() << " A=" << _dstEntry->name()
+	     << " Throughput=" << srcEntry->throughput()
 	     << ", interlock[" << a << "]={" << srcEntry->_interlock[a].all << "," << _ph2
 //		 << "} , interlock[" << aa << "]={" << srcEntry->_interlock[aa].all << "," << srcEntry->_interlock[aa].all-srcEntry->_interlock[aa].ph1
 	     << "}, sum=" << sum << endl;
@@ -884,10 +884,10 @@ Interlock::ilrate_pril_flow::operator()( std::pair<double,double>& sum, const En
     sum.second += src_sum / m;
 
     if ( flags.trace_interlock ) {
-	cout << "  Interlock common E=" << srcEntry->name() << " A=" << _dstEntry->name() 
-	     << " Throughput=" << srcEntry->throughput() 
+	cout << "  Interlock common E=" << srcEntry->name() << " A=" << _dstEntry->name()
+	     << " Throughput=" << srcEntry->throughput()
 	     << ", interlock[" << dst << "]={" << srcEntry->_interlock[dst].all << "," << _ph2
-	     << "}, il_rate=" << src_sum <<", pril=1/"<<m 
+	     << "}, il_rate=" << src_sum <<", pril=1/"<<m
 	     << ", sum_IR*PrIL ="<<sum.second<<endl;
 
 	cout << "server entry: " << _dstEntry->name() << " Util =" << _dstEntry->utilization() << " , " << endl;
@@ -897,13 +897,13 @@ Interlock::ilrate_pril_flow::operator()( std::pair<double,double>& sum, const En
 }
 
 
-/* 
- * not quite flow_common::flow() 
+/*
+ * not quite flow_common::flow()
  */
 
 double
 Interlock::ilrate_pril_flow::flow( const Entry * srcEntry, const Entry * dstEntry ) const
-{    
+{
     const unsigned dst = dstEntry->entryId();
     double sum = 0.0;
 
@@ -966,13 +966,13 @@ operator*( const InterlockInfo& multiplicand, double multiplier )
     return product;
 }
 
-bool 
+bool
 operator>( const InterlockInfo& lhs, double rhs )
 {
     return ((lhs.all>rhs) || (lhs.ph1>rhs));
 }
 
-static ostream& trunc_str( ostream& output, const std::string& s, const unsigned n ) 
+static ostream& trunc_str( ostream& output, const std::string& s, const unsigned n )
 {
     if ( s.size() > n ) {
 	output.write( s.c_str(), n );
