@@ -10,7 +10,7 @@
  * November, 1994
  *
  * ------------------------------------------------------------------------
- * $Id: processor.cc 14043 2020-11-05 14:06:12Z greg $
+ * $Id: processor.cc 14096 2020-11-15 13:58:05Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -237,7 +237,7 @@ Processor::hasVariance() const
 	 || isInfinite() ) {
 	return false;
     } else {
-	return find_if( entries().begin(), entries().end(), Predicate<Entry>( &Entry::hasVariance ) ) != entries().end();
+	return std::any_of( entries().begin(), entries().end(), Predicate<Entry>( &Entry::hasVariance ) );
     }
 }
 
