@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: entity.cc 14091 2020-11-13 02:59:17Z greg $
+ * $Id: entity.cc 14094 2020-11-15 12:09:32Z greg $
  *
  * Everything you wanted to know about a task or processor, but were
  * afraid to ask.
@@ -348,19 +348,15 @@ Entity::hasOpenArrivals() const
  */
 
 const Entity&
-Entity::getClients( std::set<Task *>& callingTasks ) const
+Entity::getClients( std::set<Task *>& clients ) const
 {
     for ( std::vector<Entry *>::const_iterator entry = entries().begin(); entry != entries().end(); ++entry ) {
 	const std::set<Call *>& callerList = (*entry)->callerList();
-	for ( std::set<Call *>::const_iterator call = callerList.begin(); call != callerList.end(); ++call ) {
-	    if ( !(*call)->hasForwarding() && (*call)->srcTask()->isUsed() ) {
-		callingTasks.insert(const_cast<Task *>((*call)->srcTask()));
-	    }
-	}
+	clients = std::accumulate( callerList.begin(), callerList.end(), clients, Call::add_client );
     }
-
     return *this;
 }
+
 
 double 
 Entity::nCustomers() const

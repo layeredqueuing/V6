@@ -51,6 +51,7 @@ lqx
 missing
 models/bugs
 petrisrvn
+qnsolver
 srvn_gram.c
 srvn_gram.h
 srvn_gram.output

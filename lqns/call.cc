@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: call.cc 14091 2020-11-13 02:59:17Z greg $
+ * $Id: call.cc 14094 2020-11-15 12:09:32Z greg $
  *
  * Everything you wanted to know about a call to an entry, but were afraid to ask.
  *
@@ -36,6 +36,16 @@ Call::Create::operator()( const LQIO::DOM::Call * call )
 {
     _src->add_call( _p, call );
 }
+
+
+std::set<Task *>& Call::add_client( std::set<Task *>& clients, const Call * call )
+{
+    if ( !call->hasForwarding() && call->srcTask()->isUsed() ) {
+	clients.insert(const_cast<Task *>(call->srcTask()));
+    }
+    return clients;
+}
+
 
 /*----------------------------------------------------------------------*/
 /*                            Generic  Calls                            */

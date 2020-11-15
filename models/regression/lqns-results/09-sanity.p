@@ -1,6 +1,6 @@
 # lqns 6.1
 # lqns --pragma=variance=mol,threads=hyper --parseable 09-sanity.in
-# $Id$
+# $Id: 09-sanity.p 14093 2020-11-15 12:01:03Z greg $
 V y
 C 6.95178e-06
 I 6
