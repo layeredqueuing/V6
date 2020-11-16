@@ -248,7 +248,6 @@ public:
     double elapsedTime() const;
     double queueingTime() const;
     double interlockPr() const ;
-    int diff_population() const;
     virtual const Call& insertDOMResults() const;
     double nrFactor( const Submodel& aSubmodel, const unsigned k ) const;
 

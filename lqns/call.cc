@@ -305,92 +305,6 @@ Call::srcTask() const
 {
     return dynamic_cast<const Task *>(source->owner());
 }
-
-
-
-double
-Call::interlockPr() const
-{
-    if (flags.trace_quorum) {
-	cout <<"\nCall::elapsedTime(): call " << this->srcName() << " to " << dstEntry()->name() << endl;
-    }
-    if (srcTask()->hasInfinitePopulation()) return 0.0;
-
-    double et = elapsedTime();
-    if ( et <= 0. ) return 0.;
-	
-
-#warning Bugs here?  division?  Hoist commonn expression.
-    // the intermediate server is a multiserver;
-    if ( dstEntry()->owner()->population() > 1 ) {
-	double r = getMaxCustomers() / (dstEntry()->owner()->population());
-	if ( r >= 1.0 ) return 0.;		/* ??? */
-	else return ( 1. / getMaxCustomers() / dstEntry()->owner()->population() );	/* ??? */
-    }
- 
-    unsigned d = getMaxCustomers() - 1;
-    double queue = queueingTime() / et;
-    double ql = srcEntry()->getILQueueLength();
-    double upperbound = std::min( 1.0 / getMaxCustomers(), 1.0 );
-    //double upperbound=(srcTask()->population()>3)? (1.0/(srcTask()->population()* srcTask()->population())): 1.0/(srcTask()->population()* (srcTask()->population()-1));
-    //double upperbound=1.0/((srcTask()->population()>(ql+1))? (srcTask()->population()-ql):1.0);
-    //double upperbound=1.0/(srcTask()->population());
-
-//		return upperbound; 
-    // the case of small queueing time happens when the intermediate server has a low utilization,
-    // then the prIL equals to 1/ns.
-    if ( queue < 0.1 ) {
-	if ( flags.trace_interlock ) {
-	    cout <<"queueingTime()="<<queueingTime()<<", et="<<elapsedTime()<<",queueingTime()/et= "<<queue <<", 1/N="<<1.0/getMaxCustomers()<<endl;}
-	return max(upperbound , queue );
-	//return max(1.0/(static_cast<const double>(getMaxCustomers()) ), queue );
-    }
-
-    /*
-      if (double ql=srcEntry->getILQueueLength()){
-      if(aCall->interlockPr() <ql )
-      sum += aCall->interlockPr() /srcEntry->getILQueueLength();
-      }
-    */
-
-    if ( flags.trace_interlock ) {cout << "getMaxCustomers()="<<getMaxCustomers()<<",  dstEntry()->owner()->population()="<< dstEntry()->owner()->population()<<",d="<<d<<endl; }
-    if (et && d>0 ){
-
-	double rot=dstEntry()->rateOfUtil();
-	double t;
-	if (rot==0.)
-	    t=(1- (queueingTime()* getqueueWeight()/et)/d);
-	else
-	    t=(1- (queueingTime()*getqueueWeight()/et)/d);
-	if ( flags.trace_interlock ) {cout <<"queueingTime()="<<queueingTime()<<", et="<<elapsedTime()<<";getqueueWeight()="<<getqueueWeight()<<",t="<<t<<endl;}
-	double tt=1;
-	//for (unsigned i=0; i<d;i++)
-	tt*=t;
-	//	cout<<"t="<<t<<" ,tt="<<tt<<endl;
-
-	//	if (tt>0) return (tt>upperBound)? upperBound: tt;
-	if (ql){
-	    if(tt <ql )
-		tt /=ql;
-	}
-	if (tt>upperbound) return upperbound;
-	else if (tt>0)  return tt;
-	else 
-	    return 0.0;
-    }
-    return 0.0;
-}
-
-
-
-int
-Call::diff_population() const
-{
-    return srcTask()->population()-dstEntry()->owner()->population();
-}
-
-
-
 double
 Call::elapsedTime() const
 {
@@ -776,6 +690,84 @@ Call::getQueueLength( ) const
 {
     return const_cast<Phase *> (source)->throughput() * rendezvous() * _wait;
 }
+
+
+
+
+
+double
+Call::interlockPr() const
+{
+    if (flags.trace_quorum) {
+	cout <<"\nCall::elapsedTime(): call " << this->srcName() << " to " << dstEntry()->name() << endl;
+    }
+    if (srcTask()->hasInfinitePopulation()) return 0.0;
+
+    double et = elapsedTime();
+    if ( et <= 0. ) return 0.;
+	
+
+#warning Bugs here?  division?  Hoist commonn expression.
+    // the intermediate server is a multiserver;
+    if ( dstEntry()->owner()->population() > 1 ) {
+	double r = getMaxCustomers() / (dstEntry()->owner()->population());
+	if ( r >= 1.0 ) return 0.;		/* ??? */
+	else return ( 1. / getMaxCustomers() / dstEntry()->owner()->population() );	/* ??? */
+    }
+ 
+    unsigned d = getMaxCustomers() - 1;
+    double queue = queueingTime() / et;
+    double ql = srcEntry()->getILQueueLength();
+    double upperbound = std::min( 1.0 / getMaxCustomers(), 1.0 );
+    //double upperbound=(srcTask()->population()>3)? (1.0/(srcTask()->population()* srcTask()->population())): 1.0/(srcTask()->population()* (srcTask()->population()-1));
+    //double upperbound=1.0/((srcTask()->population()>(ql+1))? (srcTask()->population()-ql):1.0);
+    //double upperbound=1.0/(srcTask()->population());
+
+//		return upperbound; 
+    // the case of small queueing time happens when the intermediate server has a low utilization,
+    // then the prIL equals to 1/ns.
+    if ( queue < 0.1 ) {
+	if ( flags.trace_interlock ) {
+	    cout <<"queueingTime()="<<queueingTime()<<", et="<<elapsedTime()<<",queueingTime()/et= "<<queue <<", 1/N="<<1.0/getMaxCustomers()<<endl;}
+	return max(upperbound , queue );
+	//return max(1.0/(static_cast<const double>(getMaxCustomers()) ), queue );
+    }
+
+    /*
+      if (double ql=srcEntry->getILQueueLength()){
+      if(aCall->interlockPr() <ql )
+      sum += aCall->interlockPr() /srcEntry->getILQueueLength();
+      }
+    */
+
+    if ( flags.trace_interlock ) {cout << "getMaxCustomers()="<<getMaxCustomers()<<",  dstEntry()->owner()->population()="<< dstEntry()->owner()->population()<<",d="<<d<<endl; }
+    if (et && d>0 ){
+
+	double rot=dstEntry()->rateOfUtil();
+	double t;
+	if (rot==0.)
+	    t=(1- (queueingTime()* getqueueWeight()/et)/d);
+	else
+	    t=(1- (queueingTime()*getqueueWeight()/et)/d);
+	if ( flags.trace_interlock ) {cout <<"queueingTime()="<<queueingTime()<<", et="<<elapsedTime()<<";getqueueWeight()="<<getqueueWeight()<<",t="<<t<<endl;}
+	double tt=1;
+	//for (unsigned i=0; i<d;i++)
+	tt*=t;
+	//	cout<<"t="<<t<<" ,tt="<<tt<<endl;
+
+	//	if (tt>0) return (tt>upperBound)? upperBound: tt;
+	if (ql){
+	    if(tt <ql )
+		tt /=ql;
+	}
+	if (tt>upperbound) return upperbound;
+	else if (tt>0)  return tt;
+	else 
+	    return 0.0;
+    }
+    return 0.0;
+}
+
 
 
 unsigned
