@@ -85,8 +85,8 @@ EXTRA_DIST = $(SRCS) $(SRCS2)
 SUFFIXES = .diff .d .svg .lqxo .lqnx 
 
 .lqnx.lqxo:
-	$(SRVN) $(OPTS) $<
-	@srvndiff $(DIFFOPTS) $@ ../../models/regression/lqns-results/$*.p
+	-@$(SRVN) $(OPTS) $<
+	-@srvndiff $(DIFFOPTS) $@ ../../models/regression/lqns-results/$*.p > /dev/null; if test $$? -ne 0; then echo $< failed; fi
 
 
 .lqnx.d:
@@ -105,7 +105,7 @@ all:
 
 quick:
 	rm -f $(SANITY) $(INTER) $(FAIR)
-	make -k  $(SANITY) $(INTER) $(FAIR)
+	make -k OPTS="$(OPTS) -a" $(SANITY) $(INTER) $(FAIR)
 
 diff:	.files
 	-for i in `cat .files | sed -e 's/\\.lqxo//'`; do make $$i.diff; done
@@ -151,13 +151,13 @@ distclean:	clean
 	$(SRVN) $(OPTS) -a $<
 	@srvndiff $(DIFFOPTS) $@ ../../models/regression/lqns-results/$*.p
 
-71-fair.lqxo: 71-fair.lqnx
-	$(SRVN) $(OPTS) --iteration-limit=100 -a $<
-	@srvndiff $(DIFFOPTS) $@ ../../models/regression/lqns-results/$*.p
+# 71-fair.lqxo: 71-fair.lqnx
+# 	$(SRVN) $(OPTS) --iteration-limit=100 -a $<
+# 	@srvndiff $(DIFFOPTS) $@ ../../models/regression/lqns-results/$*.p
 
-72-fair.lqxo: 72-fair.lqnx
-	$(SRVN) $(OPTS) --iteration-limit=100 -a $<
-	@srvndiff $(DIFFOPTS) $@ ../../models/regression/lqns-results/$*.p
+# 72-fair.lqxo: 72-fair.lqnx
+# 	$(SRVN) $(OPTS) --iteration-limit=100 -a $<
+# 	@srvndiff $(DIFFOPTS) $@ ../../models/regression/lqns-results/$*.p
 
 sanity:	$(SANITY)
 	echo $(SANITY) | tr -s " " "\n" | srvndiff -Q -@- . ../../models/regression/lqns-results

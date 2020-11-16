@@ -526,64 +526,6 @@ Call::saveWait( const unsigned k, const unsigned p, const double )
 	_wait = aStation->W[e][k][p];
     }
 }
-
-void
-Call::saveILWait( const unsigned k, const unsigned p, const double )
-{
-    const Entity * aServer = dstTask();
-    const unsigned e = dstEntry()->index();
-    const Server * aStation = aServer->serverStation();
-
-    double eps=elapsedTime();
-    double diff;
-
-    if ( aStation->nILRate[e][k] > 0 ) {
-	if ( aServer->isProcessor() ) {
-	    diff = _wait * (1- aStation->nILRate[e][k]);  //nILRate[e][k] is calculated differently in the case of FCFS or PS
-	} else {
-	    diff = (_wait-eps) * (1- aStation->nILRate[e][k]);
-	}
-    } else {
-	if ( isinf( _wait ) && isinf( eps ) ) {
-	    diff = 0;
-	} else {
-	    diff = (_wait -eps);
-	}
-    }
-    if ( aStation->IL_Relation(e, k, 1, 0 ) == 4 ) {
-	diff = 0.;
-	return;
-    }
-    // get rid of small numbers
-    if ((diff<0.0005) && (!(eps && (diff/eps)>0.01) )) diff = 0.;
-	
-    diff = (diff>0.0) ? diff* getDOM()->getCallMeanValue() :0.;//?
-
-    if ( isInterlocked () ) {
-	if ( flags.trace_interlock ) {
-	    cout << "Call::saveILWait(): Call( " << srcEntry()->name() << " , " << dstEntry()->name()<<")";
-	    cout<< "has interlocked wait "<<diff <<endl;
-	    cout<< "aStation->nILRate[e][k]="<<aStation->nILRate[e][k]
-		<<", CallMeanValue="<<getDOM()->getCallMeanValue()<<endl;
-	    cout<< "call->elapsedTime() ="<<eps <<", _wait="<<_wait <<",diff="<<diff<<endl;
-	}
-
-	Probability IL_Pr(getInterlockedFlow());
-	//cout<<"IL_Pr="<<IL_Pr<<endl;
-	//const_cast<Phase *> (source)->setILWait (submodel(), diff  ) ;
-	const_cast<Phase *> (source)->addILWait (submodel(), diff * IL_Pr ) ;
-
-    } else if ( isAlongILPath() ) {
-
-	if ( diff ) {
-	    // this queueing time is adjusted!
-	    if(dstEntry()->getILWait(submodel() ))
-		const_cast<Phase *> (source)->addILWait (submodel(), diff ) ;
-	} else {
-	    const_cast<Phase *> (source)->addILWait (submodel(), dstEntry()->getILWait(submodel() )* getDOM()->getCallMeanValue()) ;
-	}
-    }
-}
 
 /************************************************************************/
 /*			      Interlock					*/
@@ -595,6 +537,24 @@ Call::isRealCustomer( const MVASubmodel& submodel, const Entity * server, unsign
 {
     return submodel.number() == this->submodel() && dstTask() == server && hasChain(k);
 }
+
+
+
+double
+Call::getQueueLength( ) const
+{
+    return const_cast<Phase *> (source)->throughput() * rendezvous() * _wait;
+}
+
+
+
+unsigned
+Call::getPhaseNum() const
+{
+    if ( isActivityCall() ) return -1;
+    return srcEntry()->getPhaseNum(srcPhase());
+}
+
 
 
 double
@@ -628,6 +588,7 @@ Call::computeWeight( const MVASubmodel& submodel )
     }
     return _callWeight;
 }
+
 
 
 /* 
@@ -685,13 +646,60 @@ Call::saveQueueWeight( const unsigned k, const unsigned p, const double )
 }
 
 
-double
-Call::getQueueLength( ) const
+
+void
+Call::saveILWait( const unsigned k, const unsigned p, const double )
 {
-    return const_cast<Phase *> (source)->throughput() * rendezvous() * _wait;
+    const Entity * aServer = dstTask();
+    const unsigned e = dstEntry()->index();
+    const Server * aStation = aServer->serverStation();
+
+    double eps=elapsedTime();
+    double diff;
+
+    if ( aStation->nILRate[e][k] > 0 ) {
+	if ( aServer->isProcessor() ) {
+	    diff = _wait * (1- aStation->nILRate[e][k]);  //nILRate[e][k] is calculated differently in the case of FCFS or PS
+	} else {
+	    diff = (_wait-eps) * (1- aStation->nILRate[e][k]);
+	}
+    } else {
+	if ( isinf( _wait ) && isinf( eps ) ) {
+	    diff = 0;
+	} else {
+	    diff = (_wait -eps);
+	}
+    }
+
+    if ( aStation->IL_Relation( e, k, 1, 0 ) == 4 ) return;
+
+    // get rid of small numbers
+    if ((diff<0.0005) && (!(eps && (diff/eps)>0.01) )) diff = 0.;
+	
+    diff = (diff>0.0) ? diff* getDOM()->getCallMeanValue() :0.;//?
+
+    if ( isInterlocked () ) {
+	if ( flags.trace_interlock ) {
+	    cout << "Call::saveILWait(): Call( " << srcEntry()->name() << " , " << dstEntry()->name()<<")";
+	    cout<< "has interlocked wait "<<diff <<endl;
+	    cout<< "aStation->nILRate[e][k]="<<aStation->nILRate[e][k]
+		<<", CallMeanValue="<<getDOM()->getCallMeanValue()<<endl;
+	    cout<< "call->elapsedTime() ="<<eps <<", _wait="<<_wait <<",diff="<<diff<<endl;
+	}
+
+	const Probability IL_Pr(getInterlockedFlow());
+	const_cast<Phase *>(source)->addILWait (submodel(), diff * IL_Pr );
+
+    } else if ( isAlongILPath() ) {
+	
+	// this queueing time is adjusted!
+	if ( diff && dstEntry()->getILWait(submodel()) ) {
+	    const_cast<Phase *>(source)->addILWait(submodel(), diff ) ;
+	} else {
+	    const_cast<Phase *>(source)->addILWait(submodel(), dstEntry()->getILWait(submodel() )* getDOM()->getCallMeanValue()) ;
+	}
+    }
 }
-
-
 
 
 
@@ -768,15 +776,6 @@ Call::interlockPr() const
     return 0.0;
 }
 
-
-
-unsigned
-Call::getPhaseNum() const
-{
-    if (isActivityCall()) return -1;
-    return srcEntry()->getPhaseNum(srcPhase());
-
-}
 
 
 double
