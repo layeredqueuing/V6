@@ -10,7 +10,7 @@
  * November, 1994
  *
  * ------------------------------------------------------------------------
- * $Id: task.cc 14100 2020-11-15 15:58:58Z greg $
+ * $Id: task.cc 14102 2020-11-16 20:16:57Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -1018,7 +1018,7 @@ Task::updateWait( const Submodel& submodel, const double relax )
     /* Entry updateWait for activity entries will update waiting times. */
 
     for_each( entries().begin(), entries().end(), Exec2<Entry,const Submodel&,double>( &Entry::updateWait, submodel, relax ) );
-    for_each( entries().begin(), entries().end(), Exec2<Entry,const Submodel&,double>( &Entry::updateILWait, submodel, relax ) );
+//    for_each( entries().begin(), entries().end(), Exec2<Entry,const Submodel&,double>( &Entry::updateILWait, submodel, relax ) );
 
     /* Now recompute thread idle times */
 

@@ -1,6 +1,6 @@
 /* option.cc -- Greg Franks Wed Oct 12 2005
  *
- * $Id: option.cc 14037 2020-11-04 19:39:56Z greg $
+ * $Id: option.cc 14102 2020-11-16 20:16:57Z greg $
  */
 
 #include <config.h>
@@ -20,7 +20,6 @@
 #include "mva.h"
 #include "pragma.h"
 
-#if __cplusplus >= 201103L
 std::map<const char *, Options::Debug, lt_str> Options::Debug::__table =
 {
     { "all", 	    Debug( &Debug::all,         &Help::debugAll ) },
@@ -38,10 +37,6 @@ std::map<const char *, Options::Debug, lt_str> Options::Debug::__table =
     { "xml",        Debug( &Debug::xml,         &Help::debugXML ) },
     { "lqx",        Debug( &Debug::lqx,         &Help::debugLQX ) }
 };
-#else
-std::map<const char *, Options::Debug, lt_str> Options::Debug::__table;
-#endif
-
 
 
 const char ** Options::Debug::__options = NULL;
@@ -104,25 +99,8 @@ Options::Debug::lqx( const char * )
 /* static */ void
 Options::Debug::initialize()
 {
-    if ( __table.size() ) return;
+    if ( __options != nullptr ) return;
 
-#if __cplusplus < 201103L
-    __table["all"] =        Debug( &Debug::all,         &Help::debugAll );
-    __table["forks"] =      Debug( &Debug::forks,       &Help::debugForks );
-    __table["interlock"] =  Debug( &Debug::interlock,   &Help::debugInterlock );
-    __table["layers"] =     Debug( &Debug::layers,      &Help::debugLayers );
-#if DEBUG_MVA
-    __table["mva"] =	    Debug( &Debug::mva,		&Help::debugMVA );
-#endif
-    __table["overtaking"] = Debug( &Debug::overtaking,  &Help::debugOvertaking );
-    __table["variance"] =   Debug( &Debug::variance,    &Help::debugVariance );
-#if HAVE_LIBGSL
-    __table["quorum"] =     Debug( &Debug::quorum,      &Help::debugQuorum );
-#endif
-    __table["xml"] =        Debug( &Debug::xml,         &Help::debugXML );
-    __table["lqx"] =        Debug( &Debug::lqx,         &Help::debugLQX );
-#endif
-    
     __options = new const char * [__table.size()+1];
 
     unsigned int i = 0;

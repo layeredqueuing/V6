@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: call.cc 14100 2020-11-15 15:58:58Z greg $
+ * $Id: call.cc 14103 2020-11-17 03:27:28Z greg $
  *
  * Everything you wanted to know about a call to an entry, but were afraid to ask.
  *
@@ -616,11 +616,17 @@ Call::setInterlockedFlow( const MVASubmodel& submodel )
     }
 
     if ( flags.trace_interlock ) {
-	cout<<"aCall(srcTask="<<srcTask()->name()
-	    <<", dstentry="<<dstEntry()->name()<<"), num_source="<<num<<", p="<<p<<endl;
-	cout<<"aCall(srcTask="<<srcTask()->name()
-	    <<", dstentry="<<dstEntry()->name()<<"),	aCall->getInterlocked="
-	    << getInterlockedFlow()<<endl;
+	if ( isProcessorCall() ) {
+	    cout<<"aProcessorCall(srcTask="<<srcTask()->name()
+		<<", dstentry="<<dstEntry()->name()<<"),	aCall->getInterlocked="
+		<< getInterlockedFlow()<<endl;
+	} else {
+	    cout<<"aCall(srcTask="<<srcTask()->name()
+		<<", dstentry="<<dstEntry()->name()<<"), num_source="<<num<<", p="<<p<<endl;
+	    cout<<"aCall(srcTask="<<srcTask()->name()
+		<<", dstentry="<<dstEntry()->name()<<"),	aCall->getInterlocked="
+		<< getInterlockedFlow()<<endl;
+	} 
     }
     return *this;
 }
@@ -787,17 +793,17 @@ Call::add_interlock_pr::operator()( double sum, const Call * call ) const
  
     if ( srcTask->population() > 1 ) {
 	if ( srcTask->population() <= dstTask->population() ) {
-	    sum += 1.0 / (srcTask->population() * srcTask->population() );
+	    sum += 1.0 / square(srcTask->population());
 	} else {
 	    sum += call->interlockPr();
 	}
     } else if ( dynamic_cast<const Task *>(dstTask) ) { //how about multiple source??????
 	sum = _server->prInterlock( *dynamic_cast<const Task*>(dstTask) );
     }
-#if 0
-    if ( flags.trace_interlock ) {
-	cout << "getInterlockPr::in submodel " << submodel.number() << ", Call( " << call->srcEntry()->name() << " , " << call->dstEntry()->name()
-	     << ") has interlock prob "<< sum <<" to client Entry "<< name() << endl;
+#if 1
+    if ( flags.trace_interlock ) {	// will need submodel number for X
+	cout << "getInterlockPr::in submodel " << "X" << ", Call( " << call->srcEntry()->name() << " , " << call->dstEntry()->name()
+	     << ") has interlock prob "<< sum <<" to client Entry "<< call->dstEntry()->name() << endl;
     }
 #endif
     return sum;

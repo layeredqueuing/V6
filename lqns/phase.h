@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: phase.h 14100 2020-11-15 15:58:58Z greg $
+ * $Id: phase.h 14104 2020-11-17 03:28:17Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -146,7 +146,7 @@ private:
     
     struct get_interlocked_tasks {
 	get_interlocked_tasks( Interlock::CollectTasks& path ) : _path(path) {}
-	bool operator()( bool rc, const Call * call ) const;
+	bool operator()( bool rc, Call * call ) const;
     private:
 	Interlock::CollectTasks& _path;
     };

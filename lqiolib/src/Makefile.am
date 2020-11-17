@@ -1,7 +1,5 @@
-# $Id: Makefile.am 13831 2020-09-18 12:51:41Z greg $
+# $Id: Makefile.am 14102 2020-11-16 20:16:57Z greg $
 # -------------------------------------------------------------------- [Libtool libsrvnio2]
-
-#AM_CXXFLAGS=-std=c++11
 
 # This project uses Libtool to generate a product
 SUBDIRS = headers/lqio
@@ -50,7 +48,7 @@ liblqio_la_LIBADD += -lexpat
 endif
 
 liblqio_la_CPPFLAGS = -I ../../lqx/libsrc/headers -I headers/lqio
-liblqio_la_CXXFLAGS = -Wall -Wno-unknown-pragmas
+liblqio_la_CXXFLAGS = -std=c++11 -Wall -Wno-unknown-pragmas
 liblqio_la_LDFLAGS =  -no-undefined -version-info 0:1:0
 
 # Force rename of variables.  For FLEX -- should check. :-)

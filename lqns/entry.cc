@@ -12,7 +12,7 @@
  * July 2007.
  *
  * ------------------------------------------------------------------------
- * $Id: entry.cc 14100 2020-11-15 15:58:58Z greg $
+ * $Id: entry.cc 14102 2020-11-16 20:16:57Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -1199,6 +1199,10 @@ Entry::getInterlockPr( const MVASubmodel& submodel, const Entity * server ) cons
     }
     if ( sum == 0.0 ) {
 	sum = 1.0 / owner()->population();
+	if ( flags.trace_interlock ) {
+	    cout << "getInterlockPr(), Sending client Entry "<<name()<<" to the Server:" << server->name();
+	    cout << " has interlock prob :" <<sum<<endl;
+	}
     }
     return  std::min( sum, 1.0 );
 }

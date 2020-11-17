@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: phase.cc 14100 2020-11-15 15:58:58Z greg $
+ * $Id: phase.cc 14104 2020-11-17 03:28:17Z greg $
  *
  * Everything you wanted to know about an phase, but were afraid to ask.
  *
@@ -1297,10 +1297,15 @@ Phase::getInterlockedTasks( Interlock::CollectTasks& path ) const
 
 
 bool
-Phase::get_interlocked_tasks::operator()( bool found, const Call * call ) const
+Phase::get_interlocked_tasks::operator()( bool found, Call * call ) const
 {
     const Entry * entry = call->dstEntry();
-    return (!_path.has_entry( entry ) && entry->getInterlockedTasks( _path )) || found;			/* don't short circuit! */
+    if ( !_path.has_entry( entry ) && entry->getInterlockedTasks( _path )) {
+	call->setInterlockedFlow(0.0);
+	return true;
+    } else {
+	return found;
+    }
 }
 
 

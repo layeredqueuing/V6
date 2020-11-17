@@ -1,7 +1,7 @@
 /* -*- C++ -*-
  * help.h	-- Greg Franks
  *
- * $Id: option.h 14000 2020-10-25 12:50:53Z greg $
+ * $Id: option.h 14102 2020-11-16 20:16:57Z greg $
  */
 
 #ifndef _OPTION_H
@@ -34,7 +34,7 @@ namespace Options
     class Debug : public Option 
     {
     public:
-	Debug() : Option() {}
+	Debug() : Option() { initialize(); }
 	Debug( optionFunc func, Help::help_fptr help ) :  Option(func, false, help) {}
 	
 	static void initialize();

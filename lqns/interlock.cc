@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: interlock.cc 14097 2020-11-15 14:12:41Z greg $
+ * $Id: interlock.cc 14102 2020-11-16 20:16:57Z greg $
  *
  * Call-chain/interlock finder.
  *
@@ -22,6 +22,7 @@
 #include "option.h"
 #include "task.h"
 
+#define DEBUG_INTERLOCK
 bool Interlock::CollectTasks::has_entry(const Entry * entry ) const { return std::find( _entryStack.begin(), _entryStack.end(), entry ) != _entryStack.end(); }
 bool Interlock::CollectTable::has_entry(const Entry * entry ) const { return std::find( _entryStack.begin(), _entryStack.end(), entry ) != _entryStack.end(); }
 bool Interlock::is_via2::operator()( const Entry * entry ) { return entry->owner() == _task2 && !_interlock.via( entry, _entry2, _task2 ); }
@@ -548,6 +549,7 @@ Interlock::findSources()
     /* Useful trivia. */
 
     if ( Options::Debug::interlock() ) {
+	cout << "    Interlocked Tasks: ";
 	for ( std::set<const Entity *>::const_iterator task = interlockedTasks.begin(); task != interlockedTasks.end(); ++task ) {
 	    cout << (*task)->name() << " ";
 	}

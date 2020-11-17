@@ -10,7 +10,7 @@
  * November, 1994
  * March, 2004
  *
- * $Id: call.h 14100 2020-11-15 15:58:58Z greg $
+ * $Id: call.h 14104 2020-11-17 03:28:17Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -278,6 +278,7 @@ public:
 
     bool isInterlocked () const { return _interlockedFlow > 0.0; }
     bool isAlongILPath() const { return _interlockedFlow >= 0.0; }
+    void setInterlockedFlow( double flow ) { _interlockedFlow = flow; }
 
     Call& setInterlockedFlow( const MVASubmodel& submodel );
     void saveQueueWeight( const unsigned k, const unsigned p, const double );
