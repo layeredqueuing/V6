@@ -120,9 +120,30 @@ Options::Debug::exec( const int ix, const char * arg )
     }
 }
 
-std::map<const char *, Options::Trace, lt_str> Options::Trace::__table;
-const char ** Options::Trace::__options = NULL;
+std::map<const char *, Options::Trace, lt_str> Options::Trace::__table =
+{
+    { "activities", 	Trace( &Trace::activities        , false, &Help::traceActivities ) },
+    { "cfs", 	     	Trace( &Trace::cfs		 , false, &Help::traceCFS ) },
+    { "convergence",  	Trace( &Trace::convergence       , true,  &Help::traceConvergence ) },
+    { "customers",    	Trace( &Trace::customers         , false, &Help::traceCustomers ) },
+    { "delta-wait",   	Trace( &Trace::delta_wait        , false, &Help::traceDeltaWait ) },
+    { "forks", 	     	Trace( &Trace::forks             , false, &Help::traceForks ) },
+    { "idle-time",    	Trace( &Trace::idle_time         , false, &Help::traceIdleTime ) },
+    { "interlock",    	Trace( &Trace::interlock         , false, &Help::traceInterlock ) },
+    { "intermediate", 	Trace( &Trace::intermediate      , false, &Help::traceIntermediate ) },
+    { "mva", 	     	Trace( &Trace::mva               , true,  &Help::traceMva ) },
+    { "overtaking",   	Trace( &Trace::overtaking        , false, &Help::traceOvertaking ) },
+//  { "processor",    	Trace( &Trace::processor         , true,  &Help::traceProcessor ) },
+    { "quorum",       	Trace( &Trace::quorum            , false, &Help::traceQuorum ) },
+    { "replication",  	Trace( &Trace::replication       , false, &Help::traceReplication ) },
+//  { "task",         	Trace( &Trace::task              , true,  &Help::traceTask ) },
+    { "throughput",   	Trace( &Trace::throughput        , false, &Help::traceThroughput ) },
+    { "variance",     	Trace( &Trace::variance          , false, &Help::traceVariance ) },
+    { "virtual-entry", 	Trace( &Trace::virtual_entry     , false, &Help::traceVirtualEntry ) },
+    { "wait", 	     	Trace( &Trace::wait              , false, &Help::traceWait ) }
+};
 
+const char ** Options::Trace::__options = NULL;
 
 void
 Options::Trace::activities( const char * arg )
@@ -239,27 +260,7 @@ Options::Trace::customers( const char *arg )
 /* static */ void
 Options::Trace::initialize()
 {
-    if ( __table.size() ) return;
-
-    __table["activities"] =  Trace( &Trace::activities        , false, &Help::traceActivities );
-    __table["cfs"] =	     Trace( &Trace::cfs		      , false, &Help::traceCFS );
-    __table["convergence"] = Trace( &Trace::convergence       , true,  &Help::traceConvergence );
-    __table["customers"] =   Trace( &Trace::customers         , false, &Help::traceCustomers );
-    __table["delta-wait"] =  Trace( &Trace::delta_wait        , false, &Help::traceDeltaWait );
-    __table["forks"] =	     Trace( &Trace::forks             , false, &Help::traceForks );
-    __table["idle-time"] =   Trace( &Trace::idle_time         , false, &Help::traceIdleTime );
-    __table["interlock"] =   Trace( &Trace::interlock         , false, &Help::traceInterlock );
-    __table["intermediate"] =Trace( &Trace::intermediate      , false, &Help::traceIntermediate );
-    __table["mva"] =	     Trace( &Trace::mva               , true,  &Help::traceMva );
-    __table["overtaking"] =  Trace( &Trace::overtaking        , false, &Help::traceOvertaking );
-    __table["quorum"] =      Trace( &Trace::quorum            , false, &Help::traceQuorum );
-    __table["replication"] = Trace( &Trace::replication       , false, &Help::traceReplication );
-    __table["throughput"] =  Trace( &Trace::throughput        , false, &Help::traceThroughput );
-    __table["variance"] =    Trace( &Trace::variance          , false, &Help::traceVariance );
-    __table["virtual-entry"]=Trace( &Trace::virtual_entry     , false, &Help::traceVirtualEntry );
-    __table["wait"] =	     Trace( &Trace::wait              , false, &Help::traceWait );
-//  __table["processor"] =   Trace( &Trace::processor         , true,  &Help::traceProcessor );
-//  __table["task"] =        Trace( &Trace::task              , true,  &Help::traceTask );
+    if ( __options != nullptr ) return;
 
     __options = new const char * [__table.size()+1];
     std::map<const char *, Options::Trace>::const_iterator next_opt;
@@ -281,9 +282,26 @@ Options::Trace::exec( const int ix, const char * arg )
     }
 }
 
-std::map<const char *, Options::Special, lt_str> Options::Special::__table;
-const char ** Options::Special::__options = NULL;
+std::map<const char *, Options::Special, lt_str> Options::Special::__table =
+{
+    { "iteration-limit", 	    Special( &Special::iteration_limit, 	   true,  &Help::specialIterationLimit ) },
+    { "print-interval", 	    Special( &Special::print_interval,    	   true,  &Help::specialPrintInterval ) },
+    { "overtaking", 		    Special( &Special::overtaking,        	   false, &Help::specialOvertaking ) },
+    { "convergence-value", 	    Special( &Special::convergence_value,          true,  &Help::specialConvergenceValue ) },
+    { "single-step", 		    Special( &Special::single_step,		   false, &Help::specialSingleStep ) },
+    { "underrelaxation", 	    Special( &Special::underrelaxation,	           true,  &Help::specialUnderrelaxation ) },
+    { "generate", 	            Special( &Special::generate_queueing_model,    true,  &Help::specialGenerateQueueingModel ) },
+    { "mol-ms-underrelaxation",     Special( &Special::mol_ms_underrelaxation,     true,  &Help::specialMolMSUnderrelaxation ) },
+    { "man",	 		    Special( &Special::make_man,		   true,  &Help::specialMakeMan ) },
+    { "tex", 			    Special( &Special::make_tex,		   true,  &Help::specialMakeTex ) },
+    { "min-steps", 		    Special( &Special::min_steps,                  true,  &Help::specialMinSteps ) },
+#if HAVE_LIBGSL
+    { "ignore-overhanging-threads", Special( &Special::ignore_overhanging_threads, false, &Help::specialIgnoreOverhangingThreads ) },
+#endif
+    { "full-reinitialize", 	    Special( &Special::full_reinitialize,          false, &Help::specialFullReinitialize ) }
+};
 
+const char ** Options::Special::__options = nullptr;
 
 void
 Options::Special::iteration_limit( const char * arg )
@@ -435,21 +453,7 @@ Options::Special::full_reinitialize( const char * )
 /* static */ void
 Options::Special::initialize()
 {
-    if ( __table.size() ) return;
-
-    __table["iteration-limit"] 		  = Special( &Special::iteration_limit, 	   true,  &Help::specialIterationLimit );
-    __table["print-interval"] 		  = Special( &Special::print_interval,    	   true,  &Help::specialPrintInterval );
-    __table["overtaking"] 		  = Special( &Special::overtaking,        	   false, &Help::specialOvertaking );
-    __table["convergence-value"] 	  = Special( &Special::convergence_value,          true,  &Help::specialConvergenceValue );
-    __table["single-step"] 		  = Special( &Special::single_step,		   false, &Help::specialSingleStep );
-    __table["underrelaxation"] 		  = Special( &Special::underrelaxation,	           true,  &Help::specialUnderrelaxation );
-    __table["generate"] 	          = Special( &Special::generate_queueing_model,    true,  &Help::specialGenerateQueueingModel );
-    __table["mol-ms-underrelaxation"] 	  = Special( &Special::mol_ms_underrelaxation,     true,  &Help::specialMolMSUnderrelaxation );
-    __table["man"]	 		  = Special( &Special::make_man,		   true,  &Help::specialMakeMan );
-    __table["tex"] 			  = Special( &Special::make_tex,		   true,  &Help::specialMakeTex );
-    __table["min-steps"] 		  = Special( &Special::min_steps,                  true,  &Help::specialMinSteps );
-    __table["ignore-overhanging-threads"] = Special( &Special::ignore_overhanging_threads, false, &Help::specialIgnoreOverhangingThreads );
-    __table["full-reinitialize"] 	  = Special( &Special::full_reinitialize,          false, &Help::specialFullReinitialize );
+    if ( __options != nullptr ) return;
 
     __options = new const char * [__table.size()+1];
     std::map<const char *, Options::Special>::const_iterator next_opt;

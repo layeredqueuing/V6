@@ -247,7 +247,6 @@ public:
     double wait() const { return _wait; }
     double elapsedTime() const;
     double queueingTime() const;
-    double interlockPr() const ;
     virtual const Call& insertDOMResults() const;
     double nrFactor( const Submodel& aSubmodel, const unsigned k ) const;
 
@@ -300,6 +299,7 @@ private:
     /* Interlock */
     bool isRealCustomer( const MVASubmodel&, const Entity *, unsigned ) const;
     double getInterlockedFlow() const { return std::max( _interlockedFlow, 0.0 ); }
+    double interlockPr() const;
 
 protected:
     const Phase* source;		/* Calling entry.		*/
