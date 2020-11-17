@@ -1,6 +1,6 @@
 /* option.cc -- Greg Franks Wed Oct 12 2005
  *
- * $Id: option.cc 14102 2020-11-16 20:16:57Z greg $
+ * $Id: option.cc 14105 2020-11-17 22:34:26Z greg $
  */
 
 #include <config.h>
