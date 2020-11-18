@@ -9,7 +9,7 @@
  * January 2003
  *
  * ------------------------------------------------------------------------
- * $Id: entry.h 14000 2020-10-25 12:50:53Z greg $
+ * $Id: entry.h 14107 2020-11-18 18:51:51Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -89,7 +89,7 @@ public:
     Entry& owner( const Task * owner ) { _owner = owner; return *this; }
 
     const LQIO::DOM::ExternalVariable & openArrivalRate() const;
-    phase_type phaseTypeFlag( const unsigned p ) const;
+    LQIO::DOM::Phase::Type phaseTypeFlag( const unsigned p ) const;
     const LQIO::DOM::ExternalVariable & Cv_sqr( const unsigned p ) const;
     double Cv_sqr() const;
     bool hasPriority() const;    
@@ -183,7 +183,7 @@ public:
     bool is_w_lock_Entry() const;
     bool is_w_unlock_Entry() const;
 
-    bool entryTypeOk( const LQIO::DOM::Entry::EntryType );
+    bool entryTypeOk( const LQIO::DOM::Entry::Type );
     bool entrySemaphoreTypeOk( const semaphore_entry_type );
     bool entryRWLockTypeOk( const rwlock_entry_type );
     unsigned maxPhase() const { return _maxPhase; }

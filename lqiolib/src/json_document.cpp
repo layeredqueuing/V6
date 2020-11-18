@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: json_document.cpp 13919 2020-10-06 21:34:26Z greg $
+ * $Id: json_document.cpp 14107 2020-11-18 18:51:51Z greg $
  *
  * Read in JSON input files.
  *
@@ -638,7 +638,7 @@ namespace LQIO {
 			    entry = new Entry( &_document, entry_name );
 			    _document.addEntry(entry);            /* Add to global table */
 			    connectEntry( entry, dynamic_cast<Task *>(parent), entry_name );
-			} else if ( entry->getEntryType() == Entry::ENTRY_NOT_DEFINED ) {
+			} else if ( entry->getEntryType() == Entry::Type::NOT_DEFINED ) {
 			    connectEntry( entry, dynamic_cast<Task *>(parent), entry_name );
 			} else {
 			    throw duplicate_symbol( entry_name.c_str() );
@@ -654,12 +654,12 @@ namespace LQIO {
 				assert( task != NULL );
 				Activity * activity = task->getActivity( name.c_str(), true );
 				entry->setStartActivity( activity );
-				_document.db_check_set_entry(entry, entry->getName(), Entry::ENTRY_ACTIVITY);
+				_document.db_check_set_entry(entry, entry->getName(), Entry::Type::ACTIVITY);
 			    } else {
 				invalid_argument( Xstart_activity, i->second.to_str() );
 			    }
 			} else {
-			    _document.db_check_set_entry(entry, entry->getName(), Entry::ENTRY_STANDARD);
+			    _document.db_check_set_entry(entry, entry->getName(), Entry::Type::STANDARD);
 			}
 
 			for (picojson::value::object::const_iterator i = obj.begin(); i != obj.end(); ++i) {
@@ -670,7 +670,7 @@ namespace LQIO {
 			    } else if ( i->second.is<picojson::array>() ) {		/* Phase or forwarding list */
 				if ( attr == Xphase ) {
 				    /* If I have Xphase, then I am a standard entry.  Forwarding is also an array. */
-				    _document.db_check_set_entry(entry, entry->getName(), Entry::ENTRY_STANDARD);
+				    _document.db_check_set_entry(entry, entry->getName(), Entry::Type::STANDARD);
 				}
 				if ( Document::__debugJSON ) Import::beginAttribute( cerr, attr, i->second );
 				const picojson::value::array& arr = i->second.get<picojson::array>();
@@ -898,7 +898,7 @@ namespace LQIO {
 			    if ( _createObjects ) {
 				if ( Document::__debugJSON ) Import::beginAttribute( cerr, i->first, i->second );
 				ActivityList * precedence;
-				if ( j->second.precedence_type() == ActivityList::AND_JOIN_ACTIVITY_LIST ) {
+				if ( j->second.precedence_type() == ActivityList::Type::AND_JOIN ) {
 				    precedence = new AndJoinActivityList( &_document, &task, /* quorum count */ 0 );		// set by Import
 				} else {
 				    precedence = new ActivityList( &_document, &task, j->second.precedence_type() );
@@ -968,7 +968,7 @@ namespace LQIO {
 
 
 	void
-	Json_Document::handleCall( DocumentObject * parent, const picojson::value& value, Call::CallType call_type )
+	Json_Document::handleCall( DocumentObject * parent, const picojson::value& value, Call::Type call_type )
 	{
 	    if ( value.is<picojson::object>() ) {
 		const map<std::string, picojson::value> obj = value.get<picojson::object>();
@@ -1014,7 +1014,7 @@ namespace LQIO {
 			if ( Document::__debugJSON ) Import::beginAttribute( cerr, attr, i->second );
 			std::map<const char *,ImportCall>::const_iterator j = call_table.find(attr.c_str());
 			if ( j == call_table.end() ) {
-			    LQIO::solution_error( LQIO::ERR_UNEXPECTED_ATTRIBUTE, call_type_table[call_type], attr.c_str() );
+			    LQIO::solution_error( LQIO::ERR_UNEXPECTED_ATTRIBUTE, call_type_table.at(call_type).c_str(), attr.c_str() );
 			} else {
 			    j->second( attr, *this, *call, i->second );
 			}
@@ -1022,16 +1022,16 @@ namespace LQIO {
 		    }
 		}
 		catch ( const missing_attribute& attr ) {
-		    LQIO::solution_error( LQIO::ERR_MISSING_ATTRIBUTE, call_type_table[call_type], attr.what() );
+		    LQIO::solution_error( LQIO::ERR_MISSING_ATTRIBUTE, call_type_table.at(call_type).c_str(), attr.what() );
 		}
 		catch ( const std::invalid_argument& arg ) {
-		    LQIO::solution_error( LQIO::ERR_INVALID_ARGUMENT, call_type_table[call_type], arg.what() );
+		    LQIO::solution_error( LQIO::ERR_INVALID_ARGUMENT, call_type_table.at(call_type).c_str(), arg.what() );
 		}
 		catch ( const should_implement& arg ) {
-		    LQIO::solution_error( LQIO::ERR_UNEXPECTED_ATTRIBUTE, call_type_table[call_type], arg.what() );
+		    LQIO::solution_error( LQIO::ERR_UNEXPECTED_ATTRIBUTE, call_type_table.at(call_type).c_str(), arg.what() );
 		}
 	    } else {
-		invalid_argument( call_type_table[call_type], value.to_str() );
+		invalid_argument( call_type_table.at(call_type).c_str(), value.to_str() );
 	    }
 	}
 
@@ -1954,7 +1954,7 @@ namespace LQIO {
 		}
 
 	    case JSON_OBJECT:
-		if ( getCallType() == Call::NULL_CALL ) {
+		if ( getCallType() == Call::Type::NULL_CALL ) {
 		    (input.*getFptr().o)( &entry, value );
 		} else {
 		    (input.*getFptr().ca_t)( &entry, value, getCallType() );		/* For forwarding. */
@@ -1991,7 +1991,7 @@ namespace LQIO {
 		break;
 
 	    case JSON_OBJECT:
-		if ( getCallType() == Call::NULL_CALL ) {
+		if ( getCallType() == Call::Type::NULL_CALL ) {
 		    (input.*getFptr().o)( &phase, value );
 		} else {
 		    (input.*getFptr().ca_t)( &phase, value, getCallType() );		/* For Sync/async calls */
@@ -2000,7 +2000,7 @@ namespace LQIO {
 
 	    case DOM_BOOLEAN:
 		if ( value.is<bool>() ) {
-		    (phase.*getFptr().ph_t)( value.get<bool>() ? PHASE_DETERMINISTIC : PHASE_STOCHASTIC );
+		    (phase.*getFptr().ph_t)( value.get<bool>() ? Phase::Type::DETERMINISTIC : Phase::Type::STOCHASTIC );
 		} else {
 		    invalid_argument( attribute, value.to_str() );
 		}
@@ -2027,7 +2027,7 @@ namespace LQIO {
 
 	    case DOM_BOOLEAN:
 		if ( value.is<bool>() ) {
-		    (phase.*getFptr().ph_t)( value.get<bool>() ? PHASE_DETERMINISTIC : PHASE_STOCHASTIC );
+		    (phase.*getFptr().ph_t)( value.get<bool>() ? Phase::Type::DETERMINISTIC : Phase::Type::STOCHASTIC );
 		} else {
 		    invalid_argument( attribute, value.to_str() );
 		}
@@ -2141,7 +2141,7 @@ namespace LQIO {
 
 	    case DOM_BOOLEAN:
 		if ( value.is<bool>() ) {
-		    (activity.*getFptr().ph_t)( value.get<bool>() ? PHASE_DETERMINISTIC : PHASE_STOCHASTIC );
+		    (activity.*getFptr().ph_t)( value.get<bool>() ? Phase::Type::DETERMINISTIC : Phase::Type::STOCHASTIC );
 		} else {
 		    invalid_argument( attribute, value.to_str() );
 		}
@@ -2867,7 +2867,7 @@ namespace LQIO {
 	    const std::vector<Call *>& forwarding = entry.getForwarding();
 	    if ( forwarding.size() > 0 ) {
 		_output << next_begin_array( Xforwarding );
-		for_each( forwarding.begin(), forwarding.end(), ExportCall( _output, Call::FORWARD, _conf_95 ) );
+		for_each( forwarding.begin(), forwarding.end(), ExportCall( _output, Call::Type::FORWARD, _conf_95 ) );
 		_output << end_array();
 	    }
 
@@ -2963,8 +2963,8 @@ namespace LQIO {
 		}
 		if ( entry.hasPhase( p ) ) {
 		    Phase * phase = entry.getPhase( p );
-		    const phase_type type = (phase->*get)();
-		    _output << (type == PHASE_DETERMINISTIC ? "true" : "false");
+		    const Phase::Type type = (phase->*get)();
+		    _output << (type == Phase::Type::DETERMINISTIC ? "true" : "false");
 		} else {
 		    _output << 0;
 		}
@@ -3138,12 +3138,12 @@ namespace LQIO {
             const std::vector<Call*>& calls = phase.getCalls();
 	    if ( find_if( calls.begin(), calls.end(), has_synch_call ) != calls.end() ) {
 		_output << next_begin_array( Xsynch_call );
-		for_each( calls.begin(), calls.end(), ExportCall( _output, Call::RENDEZVOUS, _conf_95 ) );
+		for_each( calls.begin(), calls.end(), ExportCall( _output, Call::Type::RENDEZVOUS, _conf_95 ) );
 		_output << end_array();
 	    }
 	    if ( find_if( calls.begin(), calls.end(), has_asynch_call ) != calls.end() ) {
 		_output << next_begin_array( Xasynch_call );
-		for_each( calls.begin(), calls.end(), ExportCall( _output, Call::SEND_NO_REPLY, _conf_95 ) );
+		for_each( calls.begin(), calls.end(), ExportCall( _output, Call::Type::SEND_NO_REPLY, _conf_95 ) );
 		_output << end_array();
 	    }
 	}
@@ -3217,7 +3217,7 @@ namespace LQIO {
 
 	    _output << separator()
 		    << begin_object()
-		    << indent() << "\"" << precedence_type_table[join.getListType()] << "\": ";
+		    << indent() << "\"" << precedence_type_table.at(join.getListType()) << "\": ";
 	    const std::vector<const Activity*>& join_list = join.getList();
 	    _output << "[ ";
 	    for ( std::vector<const Activity*>::const_iterator activity = join_list.begin(); activity != join_list.end(); ++activity ) {
@@ -3228,7 +3228,7 @@ namespace LQIO {
 	    }
 	    _output << end_array( true );
 
-	    if ( join.getListType() == ActivityList::AND_JOIN_ACTIVITY_LIST ) {
+	    if ( join.getListType() == ActivityList::Type::AND_JOIN ) {
 		const AndJoinActivityList& and_join = dynamic_cast<const AndJoinActivityList&>(join);
 		const bool quorum = and_join.hasQuorumCount();
 		if ( quorum ) {
@@ -3252,13 +3252,13 @@ namespace LQIO {
 
 	    if ( join.getNext() ) {
 		const ActivityList& fork = *join.getNext();
-		_output << "," << indent() << "\"" << precedence_type_table[fork.getListType()] << "\": [";
+		_output << "," << indent() << "\"" << precedence_type_table.at(fork.getListType()) << "\": [";
 		const std::vector<const Activity*>& fork_list = fork.getList();
 		for ( std::vector<const Activity*>::const_iterator activity = fork_list.begin(); activity != fork_list.end(); ++activity ) {
 		    if ( activity != fork_list.begin() ) {
 			_output << ", ";
 		    }
-		    if ( fork.getListType() == ActivityList::OR_FORK_ACTIVITY_LIST || fork.getListType() == ActivityList::REPEAT_ACTIVITY_LIST ) {
+		    if ( fork.getListType() == ActivityList::Type::OR_FORK || fork.getListType() == ActivityList::Type::REPEAT ) {
 			_output << "{ \"" << (*activity)->getName() << "\": ";
 			ExternalVariable * value = fork.getParameter( *activity );
 			if ( value ) {
@@ -3682,7 +3682,7 @@ namespace LQIO {
 	    entry_table[Xopen_arrival_rate]	= ImportEntry( &Entry::setOpenArrivalRate );
 	    entry_table[Xservice_time]		= ImportEntry( &Phase::setServiceTime );
 	    entry_table[Xthink_time]		= ImportEntry( &Phase::setThinkTime );
-	    entry_table[Xforwarding]		= ImportEntry( &Json_Document::handleCall, Call::FORWARD );
+	    entry_table[Xforwarding]		= ImportEntry( &Json_Document::handleCall, Call::Type::FORWARD );
 	    entry_table[Xhistogram]		= ImportEntry( &Json_Document::handleHistogram );
 	    entry_table[Xmax_service_time]   	= ImportEntry( &Json_Document::handleMaxServiceTime );
 	    entry_table[Xobserve]		= ImportEntry( &Json_Document::handleObservation );	// SPEX
@@ -3696,8 +3696,8 @@ namespace LQIO {
 	    phase_table[Xcoeff_of_var_sq]	= ImportPhase( &Phase::setCoeffOfVariationSquared );
 	    phase_table[Xthink_time]		= ImportPhase( &Phase::setThinkTime );
 	    phase_table[Xdeterministic]		= ImportPhase( &Phase::setPhaseTypeFlag );
-	    phase_table[Xsynch_call]		= ImportPhase( &Json_Document::handleCall, Call::RENDEZVOUS );
-	    phase_table[Xasynch_call]		= ImportPhase( &Json_Document::handleCall, Call::SEND_NO_REPLY );
+	    phase_table[Xsynch_call]		= ImportPhase( &Json_Document::handleCall, Call::Type::RENDEZVOUS );
+	    phase_table[Xasynch_call]		= ImportPhase( &Json_Document::handleCall, Call::Type::SEND_NO_REPLY );
 	    phase_table[Xhistogram]		= ImportPhase( &Json_Document::handleHistogram );
 	    phase_table[Xobserve]		= ImportPhase( &Json_Document::handleObservation );	// SPEX
 	    phase_table[Xresults]		= ImportPhase( &Json_Document::handleResult );
@@ -3719,21 +3719,21 @@ namespace LQIO {
 	    activity_table[Xcoeff_of_var_sq]	= ImportActivity( &Phase::setCoeffOfVariationSquared );
 	    activity_table[Xthink_time]		= ImportActivity( &Phase::setThinkTime );
 	    activity_table[Xdeterministic]	= ImportActivity( &Phase::setPhaseTypeFlag );
-	    activity_table[Xsynch_call]		= ImportActivity( &Json_Document::handleCall, Call::RENDEZVOUS );
-	    activity_table[Xasynch_call]	= ImportActivity( &Json_Document::handleCall, Call::SEND_NO_REPLY );
+	    activity_table[Xsynch_call]		= ImportActivity( &Json_Document::handleCall, Call::Type::RENDEZVOUS );
+	    activity_table[Xasynch_call]	= ImportActivity( &Json_Document::handleCall, Call::Type::SEND_NO_REPLY );
 	    activity_table[Xreply_to]		= ImportActivity( &Json_Document::handleReplyList );
 	    activity_table[Xhistogram]		= ImportActivity( &Json_Document::handleHistogram );
 	    activity_table[Xobserve]		= ImportActivity( &Json_Document::handleObservation );	// SPEX
 	    activity_table[Xresults]		= ImportActivity( &Json_Document::handleResult );
 	    activity_table["#"]			= ImportActivity( &DocumentObject::setComment );
 
-	    precedence_table[Xpre]		= ImportPrecedence(ActivityList::JOIN_ACTIVITY_LIST);
-	    precedence_table[Xpost]		= ImportPrecedence(ActivityList::FORK_ACTIVITY_LIST);
-	    precedence_table[Xand_join]		= ImportPrecedence(ActivityList::AND_JOIN_ACTIVITY_LIST);
-	    precedence_table[Xand_fork]		= ImportPrecedence(ActivityList::AND_FORK_ACTIVITY_LIST);
-	    precedence_table[Xor_join]		= ImportPrecedence(ActivityList::OR_JOIN_ACTIVITY_LIST);
-	    precedence_table[Xor_fork]		= ImportPrecedence(ActivityList::OR_FORK_ACTIVITY_LIST);
-	    precedence_table[Xloop]		= ImportPrecedence(ActivityList::REPEAT_ACTIVITY_LIST);
+	    precedence_table[Xpre]		= ImportPrecedence(ActivityList::Type::JOIN);
+	    precedence_table[Xpost]		= ImportPrecedence(ActivityList::Type::FORK);
+	    precedence_table[Xand_join]		= ImportPrecedence(ActivityList::Type::AND_JOIN);
+	    precedence_table[Xand_fork]		= ImportPrecedence(ActivityList::Type::AND_FORK);
+	    precedence_table[Xor_join]		= ImportPrecedence(ActivityList::Type::OR_JOIN);
+	    precedence_table[Xor_fork]		= ImportPrecedence(ActivityList::Type::OR_FORK);
+	    precedence_table[Xloop]		= ImportPrecedence(ActivityList::Type::REPEAT);
 	    precedence_table[Xquorum]		= ImportPrecedence();
 	    precedence_table[Xresults]	      	= ImportPrecedence();
 	    precedence_table[Xhistogram]	= ImportPrecedence();
@@ -3942,27 +3942,25 @@ namespace LQIO {
         const char * Json_Document::Xwaiting            = "waiting";
         const char * Json_Document::Xwaiting_variance   = "waiting-variance";
 
-	const char * Json_Document::precedence_type_table[ActivityList::REPEAT_ACTIVITY_LIST+1] =
+	const std::map<const ActivityList::Type,const std::string>  Json_Document::precedence_type_table =
 	{
-	    0,
-	    Xpre,
-	    Xpost,
-	    Xand_fork,
-	    Xand_join,
-	    Xor_fork,
-	    Xor_join,
-	    Xloop
+	    { ActivityList::Type::JOIN,    	    Xpre },
+	    { ActivityList::Type::FORK,    	    Xpost },
+	    { ActivityList::Type::AND_FORK,	    Xand_fork },
+	    { ActivityList::Type::AND_JOIN,	    Xand_join },
+	    { ActivityList::Type::OR_FORK, 	    Xor_fork },
+	    { ActivityList::Type::OR_JOIN, 	    Xor_join },
+	    { ActivityList::Type::REPEAT,    	    Xloop }
 	};
 
-	const char * Json_Document::call_type_table[Call::QUASI_RENDEZVOUS+1] =
+	const std::map<const Call::Type,const std::string> Json_Document::call_type_table = 
 	{
-	    0,
-	    Xasynch_call,
-	    Xsynch_call,
-	    Xforwarding,
-	    Xasynch_call,
-	    Xsynch_call
+	    { Call::Type::NULL_CALL, 		"Null" },
+	    { Call::Type::SEND_NO_REPLY,	Json_Document::Xasynch_call },
+	    { Call::Type::RENDEZVOUS,		Json_Document::Xsynch_call },
+	    { Call::Type::FORWARD,		Json_Document::Xforwarding }, 
+	    { Call::Type::QUASI_SEND_NO_REPLY,	Json_Document::Xasynch_call },	// Special (lqsim/petrisrvn)
+	    { Call::Type::QUASI_RENDEZVOUS,	Json_Document::Xsynch_call }  // Special (lqns)
 	};
-
     }
 }

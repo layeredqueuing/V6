@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: entry.h 14101 2020-11-16 15:45:24Z greg $
+ * $Id: entry.h 14106 2020-11-18 14:33:50Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -48,7 +48,6 @@ class MVASubmodel;
 class Task;
 typedef Vector<unsigned> ChainVector;
 
-typedef enum { ENTRY_NOT_DEFINED, STANDARD_ENTRY, ACTIVITY_ENTRY, DEVICE_ENTRY } entry_type;
 typedef enum { NOT_CALLED, RENDEZVOUS_REQUEST, SEND_NO_REPLY_REQUEST, OPEN_ARRIVAL_REQUEST } requesting_type;
 
 /* */
@@ -314,8 +313,8 @@ public:
     virtual bool isTaskEntry() const { return false; }
     virtual bool isVirtualEntry() const { return false; }
     virtual bool isProcessorEntry() const { return false; }
-    bool isActivityEntry() const { return _entryType == ACTIVITY_ENTRY; }
-    bool isStandardEntry() const { return _entryType == STANDARD_ENTRY; }
+    bool isActivityEntry() const { return _entryType == LQIO::DOM::Entry::Type::ACTIVITY; }
+    bool isStandardEntry() const { return _entryType == LQIO::DOM::Entry::Type::STANDARD; }
     bool isSignalEntry() const { return _semaphoreType == SEMAPHORE_SIGNAL; }
     bool isWaitEntry() const { return _semaphoreType == SEMAPHORE_WAIT; }
     bool isInterlocked( const Entry * dstEntry) const { return _interlock[dstEntry->entryId()].all > 0.0; }
@@ -330,7 +329,7 @@ public:
     bool hasOpenArrivals() const { return getDOM()->hasOpenArrivalRate(); }
     bool hasOvertaking() const { return maxPhase() > 1 /*&&( !(owner()->isReferenceTask()))*/; }
 		
-    bool entryTypeOk( const entry_type );
+    bool entryTypeOk( const LQIO::DOM::Entry::Type );
     bool entrySemaphoreTypeOk( const semaphore_entry_type aType );
     unsigned maxPhase() const { return _phase.size(); }
     unsigned concurrentThreads() const;
@@ -451,7 +450,7 @@ protected:
 private:
     const unsigned _entryId;			/* Gobal entry id. (for chain)	*/
     const unsigned short _index;		/* My index (for mva)		*/
-    entry_type _entryType;
+    LQIO::DOM::Entry::Type _entryType;
     semaphore_entry_type _semaphoreType;	/* Extra type information	*/
     requesting_type _calledBy;			/* true if entry referenced.	*/
     double _throughput;				/* Computed throughput.		*/

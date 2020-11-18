@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- *  $Id: json_document.h 13919 2020-10-06 21:34:26Z greg $
+ *  $Id: json_document.h 14107 2020-11-18 18:51:51Z greg $
  *
  *  Created by Greg Franks.
  */
@@ -85,7 +85,7 @@ namespace LQIO {
 	    void handleTaskActivity( DocumentObject *, const picojson::value& );
 	    void handleActivity( DocumentObject *, const picojson::value& );
 	    void handlePrecedence( DocumentObject *, const picojson::value& );
-	    void handleCall( DocumentObject *, const picojson::value&, Call::CallType call_type );
+	    void handleCall( DocumentObject *, const picojson::value&, Call::Type call_type );
 	    void handleReplyList( DocumentObject *, const picojson::value& );
 	    void handleResults( DocumentObject *, const picojson::value& );
 	    void handleGeneralResult( DocumentObject *, const picojson::value& );
@@ -138,7 +138,7 @@ namespace LQIO {
 	    typedef void (Group::*group_extvar_fptr)( ExternalVariable * );
 	    typedef void (Group::*group_proc_fptr)( Processor * );
 	    typedef void (Phase::*phase_extvar_fptr)( ExternalVariable * );
-	    typedef void (Phase::*phase_type_fptr)( phase_type );
+	    typedef void (Phase::*phase_type_fptr)( Phase::Type );
 	    typedef void (Processor::*proc_extvar_fptr)( ExternalVariable * );
 	    typedef void (Task::*task_extvar_fptr)( ExternalVariable * );
 	    typedef void (Task::*task_unsigned_fptr)( unsigned );
@@ -146,7 +146,7 @@ namespace LQIO {
 	    typedef void (Task::*task_proc_fptr)( Processor * );
 	    typedef void (Json_Document::*set_object_fptr)( DocumentObject*, const picojson::value& );
 	    typedef void (Json_Document::*set_docobj_fptr)( Document*, const picojson::value& );
-	    typedef void (Json_Document::*call_type_fptr)( DocumentObject*, const picojson::value&, Call::CallType );
+	    typedef void (Json_Document::*call_type_fptr)( DocumentObject*, const picojson::value&, Call::Type );
 	    typedef void (Json_Document::*task_fan_in_out_fptr)( DocumentObject*, const picojson::value&, fan_in_out_fptr );
 	    typedef DocumentObject& (DocumentObject::*set_result_fptr)( const double );
 	    typedef DocumentObject& (DocumentObject::*set_result_ph_fptr)( unsigned int, const double );
@@ -329,44 +329,44 @@ namespace LQIO {
 	    class ImportEntry : public Import
 	    {
 	    public:
-		ImportEntry() : Import(), _call_type(Call::NULL_CALL) {}
-		ImportEntry( entity_double_fptr f )   	  : Import( f ), _call_type(Call::NULL_CALL) {}
-		ImportEntry( entity_unsigned_fptr f ) 	  : Import( f ), _call_type(Call::NULL_CALL) {}
-		ImportEntry( entry_activity_fptr f )  	  : Import( f ), _call_type(Call::NULL_CALL) {}
-		ImportEntry( entry_extvar_fptr f )    	  : Import( f ), _call_type(Call::NULL_CALL) {}
+		ImportEntry() : Import(), _call_type(Call::Type::NULL_CALL) {}
+		ImportEntry( entity_double_fptr f )   	  : Import( f ), _call_type(Call::Type::NULL_CALL) {}
+		ImportEntry( entity_unsigned_fptr f ) 	  : Import( f ), _call_type(Call::Type::NULL_CALL) {}
+		ImportEntry( entry_activity_fptr f )  	  : Import( f ), _call_type(Call::Type::NULL_CALL) {}
+		ImportEntry( entry_extvar_fptr f )    	  : Import( f ), _call_type(Call::Type::NULL_CALL) {}
 		ImportEntry( obj_string_fptr f )   	  : Import( f ) {}
-		ImportEntry( phase_extvar_fptr f )    	  : Import( f ), _call_type(Call::NULL_CALL) {}
-		ImportEntry( phase_type_fptr f )      	  : Import( f ), _call_type(Call::NULL_CALL) {}
-		ImportEntry( set_object_fptr f )      	  : Import( f ), _call_type(Call::NULL_CALL) {}		/* For results */
-		ImportEntry( call_type_fptr f, Call::CallType t ) : Import( f ), _call_type(t) {}
+		ImportEntry( phase_extvar_fptr f )    	  : Import( f ), _call_type(Call::Type::NULL_CALL) {}
+		ImportEntry( phase_type_fptr f )      	  : Import( f ), _call_type(Call::Type::NULL_CALL) {}
+		ImportEntry( set_object_fptr f )      	  : Import( f ), _call_type(Call::Type::NULL_CALL) {}		/* For results */
+		ImportEntry( call_type_fptr f, Call::Type t ) : Import( f ), _call_type(t) {}
 
 		bool operator()( const char * s1, const char * s2 ) const { return strcasecmp( s1, s2 ) < 0; }
 		void operator()( const std::string& attribute, bool, Json_Document&, Entry&, const picojson::value& ) const;	/* Entry */
 		void operator()( const std::string& attribute, Json_Document&, Phase&, const picojson::value& ) const;		/* Phase */
 
-		Call::CallType getCallType() const { return _call_type; }
+		Call::Type getCallType() const { return _call_type; }
 
 	    private:
-		Call::CallType _call_type;
+		Call::Type _call_type;
 	    };
 
 	    class ImportPhase : public Import
 	    {
 	    public:
-		ImportPhase() : Import(), _call_type(Call::NULL_CALL) {}
+		ImportPhase() : Import(), _call_type(Call::Type::NULL_CALL) {}
 		ImportPhase( obj_string_fptr f )   	  : Import( f ) {}
-		ImportPhase( phase_extvar_fptr f ) 	  : Import( f ), _call_type(Call::NULL_CALL) {}
-		ImportPhase( phase_type_fptr f )   	  : Import( f ), _call_type(Call::NULL_CALL) {}
-		ImportPhase( set_object_fptr f )   	  : Import( f ), _call_type(Call::NULL_CALL) {}		/* For reply list */
-		ImportPhase( call_type_fptr f, Call::CallType t ) : Import( f ), _call_type(t) {}
+		ImportPhase( phase_extvar_fptr f ) 	  : Import( f ), _call_type(Call::Type::NULL_CALL) {}
+		ImportPhase( phase_type_fptr f )   	  : Import( f ), _call_type(Call::Type::NULL_CALL) {}
+		ImportPhase( set_object_fptr f )   	  : Import( f ), _call_type(Call::Type::NULL_CALL) {}		/* For reply list */
+		ImportPhase( call_type_fptr f, Call::Type t ) : Import( f ), _call_type(t) {}
 
 		bool operator()( const char * s1, const char * s2 ) const { return strcasecmp( s1, s2 ) < 0; }
 		void operator()( const std::string& attribute, Json_Document&, Phase&, const picojson::value& ) const;
 
-		Call::CallType getCallType() const { return _call_type; }
+		Call::Type getCallType() const { return _call_type; }
 
 	    private:
-		Call::CallType _call_type;
+		Call::Type _call_type;
 	    };
 
 	    class ImportCall : public Import
@@ -394,35 +394,35 @@ namespace LQIO {
 	    class ImportActivity : public Import
 	    {
 	    public:
-		ImportActivity() : Import(), _call_type(Call::NULL_CALL) {}
+		ImportActivity() : Import(), _call_type(Call::Type::NULL_CALL) {}
 		ImportActivity( obj_string_fptr f )   	  : Import( f ) {}
-		ImportActivity( phase_extvar_fptr f ) 	  : Import( f ), _call_type(Call::NULL_CALL) {}
-		ImportActivity( phase_type_fptr f )   	  : Import( f ), _call_type(Call::NULL_CALL) {}
-		ImportActivity( set_object_fptr f )   	  : Import( f ), _call_type(Call::NULL_CALL) {}		/* For reply list */
-		ImportActivity( call_type_fptr f, Call::CallType t ) : Import( f ), _call_type(t) {}
+		ImportActivity( phase_extvar_fptr f ) 	  : Import( f ), _call_type(Call::Type::NULL_CALL) {}
+		ImportActivity( phase_type_fptr f )   	  : Import( f ), _call_type(Call::Type::NULL_CALL) {}
+		ImportActivity( set_object_fptr f )   	  : Import( f ), _call_type(Call::Type::NULL_CALL) {}		/* For reply list */
+		ImportActivity( call_type_fptr f, Call::Type t ) : Import( f ), _call_type(t) {}
 
 		bool operator()( const char * s1, const char * s2 ) const { return strcasecmp( s1, s2 ) < 0; }
 		void operator()( const std::string& attribute, Json_Document&, Activity&, const picojson::value& ) const;
 
-		Call::CallType getCallType() const { return _call_type; }
+		Call::Type getCallType() const { return _call_type; }
 
 	    private:
-		Call::CallType _call_type;
+		Call::Type _call_type;
 	    };
 
 	    class ImportPrecedence : public Import
 	    {
 	    public:
 		ImportPrecedence() : Import() {}
-		ImportPrecedence( ActivityList::ActivityListType t ) : Import(), _precedence_type(t) {}
+		ImportPrecedence( ActivityList::Type t ) : Import(), _precedence_type(t) {}
 
 		bool operator()( const char * s1, const char * s2 ) const { return strcasecmp( s1, s2 ) < 0; }
 		void operator()( const std::string& attribute, Json_Document&, ActivityList&, const picojson::value& ) const;
 
-		ActivityList::ActivityListType precedence_type() const { return _precedence_type; }
+		ActivityList::ActivityList::Type precedence_type() const { return _precedence_type; }
 
 	    private:
-		ActivityList::ActivityListType _precedence_type;
+		ActivityList::Type _precedence_type;
 	    };
 
 	    class ImportGeneralObservation : public Import
@@ -519,8 +519,8 @@ namespace LQIO {
 	    static std::map<const char*,Json_Document::ImportResult,Json_Document::ImportResult> result_table;
 	    static std::map<const char*,Json_Document::ImportHistogram,Json_Document::ImportHistogram> histogram_table;
 
-	    static const char * precedence_type_table[];
-	    static const char * call_type_table[];
+	    static const std::map<const ActivityList::Type,const std::string>  precedence_type_table;
+	    static const std::map<const Call::Type,const std::string> call_type_table;
 
 	private:
 	    class Export {
@@ -771,7 +771,7 @@ namespace LQIO {
                 typedef double (Call::*double_call_fptr )() const;
                 typedef double (Entry::*double_entry_fptr )( unsigned int ) const;
                 typedef double (Phase::*double_phase_fptr )() const;
-                typedef phase_type (Phase::*phtype_fptr )() const;
+                typedef Phase::Type (Phase::*phtype_fptr )() const;
                 typedef void (ExportEntry::*void_fptr)( const Entry& ) const;
 
 		class EntryResultsManip {
@@ -832,14 +832,14 @@ namespace LQIO {
                 typedef double (Call::*double_call_fptr )() const;
 
 	    public:
-		ExportCall( std::ostream& output, Call::CallType type, const LQIO::ConfidenceIntervals& conf_95 ) : Export( output, conf_95 ), _type(type) {}
+		ExportCall( std::ostream& output, Call::Type type, const LQIO::ConfidenceIntervals& conf_95 ) : Export( output, conf_95 ), _type(type) {}
 		void operator()( const Call * call ) const;
 
 	    private:
 		void print( const char * attribute, const Call& call, double_call_fptr mean, double_call_fptr variance ) const;
 
 	    private:
-		const Call::CallType _type;
+		const Call::Type _type;
 	    };
 
 	    class ExportActivity : public ExportPhaseActivity {

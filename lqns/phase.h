@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: phase.h 14104 2020-11-17 03:28:17Z greg $
+ * $Id: phase.h 14107 2020-11-18 18:51:51Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -197,14 +197,14 @@ public:
 
     /* Instance Variable access */
 	
-    phase_type phaseTypeFlag() const { return _dom ? _dom->getPhaseTypeFlag() : PHASE_STOCHASTIC; }
+    LQIO::DOM::Phase::Type phaseTypeFlag() const { return _dom ? _dom->getPhaseTypeFlag() : LQIO::DOM::Phase::Type::STOCHASTIC; }
     Phase& setEntry( const Entry * entry ) { _entry = entry; return *this; }
     const Entry * entry() const { return _entry; }
     virtual const Entity * owner() const;
     Phase& setPrOvertaking( const Probability& pr_ot ) { _prOvertaking = pr_ot; return *this; }
     const Probability& prOvertaking() const { return _prOvertaking; }
 
-    bool isDeterministic() const { return _dom ? _dom->getPhaseTypeFlag() == PHASE_DETERMINISTIC : false; }
+    bool isDeterministic() const { return _dom ? _dom->getPhaseTypeFlag() == LQIO::DOM::Phase::Type::DETERMINISTIC : false; }
     bool isNonExponential() const { return serviceTime() > 0 && CV_sqr() != 1.0; }
     
     /* Call lists to/from entries. */

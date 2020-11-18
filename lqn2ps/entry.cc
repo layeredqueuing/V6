@@ -8,7 +8,7 @@
  * January 2003
  *
  * ------------------------------------------------------------------------
- * $Id: entry.cc 14000 2020-10-25 12:50:53Z greg $
+ * $Id: entry.cc 14107 2020-11-18 18:51:51Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -283,9 +283,9 @@ Entry::addCall( const unsigned int p, LQIO::DOM::Call* domCall )
     const char* to_entry_name = toDOMEntry->getName().c_str();
 
     /* Make sure this is one of the supported call types */
-    if (domCall->getCallType() != LQIO::DOM::Call::SEND_NO_REPLY &&
-	domCall->getCallType() != LQIO::DOM::Call::RENDEZVOUS &&
-	domCall->getCallType() != LQIO::DOM::Call::NULL_CALL) {
+    if (domCall->getCallType() != LQIO::DOM::Call::Type::SEND_NO_REPLY &&
+	domCall->getCallType() != LQIO::DOM::Call::Type::RENDEZVOUS &&
+	domCall->getCallType() != LQIO::DOM::Call::Type::NULL_CALL) {
 	abort();
     }
 
@@ -296,9 +296,9 @@ Entry::addCall( const unsigned int p, LQIO::DOM::Call* domCall )
     } else if ( this == toEntry ) {
 	LQIO::input_error2( LQIO::ERR_SRC_EQUALS_DST, name().c_str(), to_entry_name );
     } else {
-	if ( domCall->getCallType() == LQIO::DOM::Call::RENDEZVOUS) {
+	if ( domCall->getCallType() == LQIO::DOM::Call::Type::RENDEZVOUS) {
 	    rendezvous( toEntry, p, domCall );
-	} else if ( domCall->getCallType() == LQIO::DOM::Call::SEND_NO_REPLY ) {
+	} else if ( domCall->getCallType() == LQIO::DOM::Call::Type::SEND_NO_REPLY ) {
 	    sendNoReply( toEntry, p, domCall );
 	}
     }
@@ -618,7 +618,7 @@ Entry::forwardingRendezvous( Entry * toEntry, const unsigned p, const double val
 	} else {
 	    /* Make a new call */
 	    dom = new LQIO::DOM::Call( getDOM()->getDocument(),
-				       LQIO::DOM::Call::RENDEZVOUS,
+				       LQIO::DOM::Call::Type::RENDEZVOUS,
 				       const_cast<LQIO::DOM::Phase *>(_phases[p].getDOM()),
 				       const_cast<LQIO::DOM::Entry*>(dynamic_cast<const LQIO::DOM::Entry*>(toEntry->getDOM())),
 				       new LQIO::DOM::ConstantExternalVariable(value) );
@@ -630,11 +630,11 @@ Entry::forwardingRendezvous( Entry * toEntry, const unsigned p, const double val
     }
 }
 
-phase_type
+LQIO::DOM::Phase::Type
 Entry::phaseTypeFlag( const unsigned p ) const
 {
     const std::map<unsigned,Phase>::const_iterator i = _phases.find(p);
-    return i != _phases.end() ? i->second.phaseTypeFlag() : PHASE_STOCHASTIC;
+    return i != _phases.end() ? i->second.phaseTypeFlag() : LQIO::DOM::Phase::Type::STOCHASTIC;
 }
 
 
@@ -765,13 +765,13 @@ Entry::isSelectedIndirectly() const
 bool
 Entry::isActivityEntry() const
 {
-    return dynamic_cast<const LQIO::DOM::Entry *>(getDOM())->getEntryType() == LQIO::DOM::Entry::ENTRY_ACTIVITY;
+    return dynamic_cast<const LQIO::DOM::Entry *>(getDOM())->getEntryType() == LQIO::DOM::Entry::Type::ACTIVITY;
 }
 
 bool
 Entry::isStandardEntry() const
 {
-    return dynamic_cast<const LQIO::DOM::Entry *>(getDOM())->getEntryType() == LQIO::DOM::Entry::ENTRY_STANDARD;
+    return dynamic_cast<const LQIO::DOM::Entry *>(getDOM())->getEntryType() == LQIO::DOM::Entry::Type::STANDARD;
 }
 
 bool
@@ -817,7 +817,7 @@ Entry::is_w_unlock_Entry() const
  */
 
 bool
-Entry::entryTypeOk( const LQIO::DOM::Entry::EntryType aType )
+Entry::entryTypeOk( const LQIO::DOM::Entry::Type aType )
 {
     const LQIO::DOM::Entry * dom = dynamic_cast<const LQIO::DOM::Entry *>(getDOM());
     const bool rc = const_cast<LQIO::DOM::Entry *>(dom)->entryTypeOk( aType );
@@ -1432,7 +1432,7 @@ Entry::aggregate()
 	    _startActivity = nullptr;
 	    myActivityCall = nullptr;
 	    const_cast<LQIO::DOM::Entry *>(dom)->setStartActivity( nullptr );
-	    const_cast<LQIO::DOM::Entry *>(dom)->setEntryType( LQIO::DOM::Entry::ENTRY_STANDARD );
+	    const_cast<LQIO::DOM::Entry *>(dom)->setEntryType( LQIO::DOM::Entry::Type::STANDARD );
 	    break;
 
 	case AGGREGATE_SEQUENCES:
@@ -1447,7 +1447,7 @@ Entry::aggregate()
 
     /* Convert entry if necessary */
 
-    if ( dom->getEntryType() == LQIO::DOM::Entry::ENTRY_STANDARD ) {
+    if ( dom->getEntryType() == LQIO::DOM::Entry::Type::STANDARD ) {
 	_startActivity = 0;
 	if ( myActivityCall ) {
 	    delete myActivityCall;

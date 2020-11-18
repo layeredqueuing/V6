@@ -1,5 +1,5 @@
 /*
- *  $Id: srvn_input.cpp 14000 2020-10-25 12:50:53Z greg $
+ *  $Id: srvn_input.cpp 14107 2020-11-18 18:51:51Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -40,6 +40,7 @@
 #include "error.h"
 #include "glblerr.h"
 #include "filename.h"
+#include "dom_phase.h"
 
 extern "C" {
 struct yy_buffer_state;
@@ -252,15 +253,18 @@ srvn_set_phase_type_flag (void * entry_v, unsigned n_phases, ...)
     LQIO::DOM::Entry* entry = static_cast<LQIO::DOM::Entry*>(entry_v);
     if ( !entry ) return; 
 
-    LQIO::DOM::Document::db_check_set_entry(entry, entry->getName(), LQIO::DOM::Entry::ENTRY_STANDARD);
+    LQIO::DOM::Document::db_check_set_entry(entry, entry->getName(), LQIO::DOM::Entry::Type::STANDARD);
     
     /* Push all the times */
     va_list ap;
     va_start(ap, n_phases);
     for (unsigned int i = 1; i <= n_phases; i++) {
 	LQIO::DOM::Phase* phase = entry->getPhase(i);
-	const phase_type arg = (phase_type)va_arg(ap, int);
-	phase->setPhaseTypeFlag(arg);
+	if ( va_arg(ap, int) == 0 ) {
+	    phase->setPhaseTypeFlag(LQIO::DOM::Phase::Type::DETERMINISTIC);
+	} else {
+	    phase->setPhaseTypeFlag(LQIO::DOM::Phase::Type::STOCHASTIC);
+	}
     }
     
     /* Close the argument list */
@@ -290,7 +294,7 @@ srvn_store_coeff_of_variation (void * entry_v, unsigned n_phases, ...)
     LQIO::DOM::Entry* entry = static_cast<LQIO::DOM::Entry*>(entry_v);
     if ( !entry ) return;
 
-    LQIO::DOM::Document::db_check_set_entry(entry, entry->getName(), LQIO::DOM::Entry::ENTRY_STANDARD);
+    LQIO::DOM::Document::db_check_set_entry(entry, entry->getName(), LQIO::DOM::Entry::Type::STANDARD);
 
     /* Push all the times */
     va_list ap;
@@ -343,7 +347,7 @@ srvn_store_phase_service_time (void * entry_v, unsigned n_phases, ... )
     if ( !entry ) return;
 
     /* Make sure that this is a standard entry */
-    LQIO::DOM::Document::db_check_set_entry(entry, entry->getName(), LQIO::DOM::Entry::ENTRY_STANDARD);
+    LQIO::DOM::Document::db_check_set_entry(entry, entry->getName(), LQIO::DOM::Entry::Type::STANDARD);
     
     /* Push all the times */
     va_list ap;
@@ -367,7 +371,7 @@ srvn_store_phase_think_time ( void * entry_v, unsigned n_phases, ... )
     LQIO::DOM::Entry* entry = static_cast<LQIO::DOM::Entry*>(entry_v);
     if ( !entry ) return;
 
-    LQIO::DOM::Document::db_check_set_entry(entry, entry->getName(), LQIO::DOM::Entry::ENTRY_STANDARD);
+    LQIO::DOM::Document::db_check_set_entry(entry, entry->getName(), LQIO::DOM::Entry::Type::STANDARD);
     
     /* Push all the times */
     va_list ap;
@@ -415,7 +419,7 @@ srvn_store_prob_forward_data ( void * from_entry_v, void * to_entry_v, void * pr
 	name += '_';
 	name += to_entry->getName();
 	call->setName(name);
-    } else if (call->getCallType() != LQIO::DOM::Call::NULL_CALL) {
+    } else if (call->getCallType() != LQIO::DOM::Call::Type::NULL_CALL) {
 	LQIO::input_error2( LQIO::WRN_MULTIPLE_SPECIFICATION );
     }
 }
@@ -434,7 +438,7 @@ srvn_store_rnv_data (void * from_entry_v, void * to_entry_v, unsigned n_phases, 
 	return;
     }
     /* Make sure that this is a standard entry */
-    LQIO::DOM::Document::db_check_set_entry(from_entry, from_entry->getName(), LQIO::DOM::Entry::ENTRY_STANDARD);
+    LQIO::DOM::Document::db_check_set_entry(from_entry, from_entry->getName(), LQIO::DOM::Entry::Type::STANDARD);
     LQIO::DOM::Document::db_check_set_entry(to_entry, to_entry->getName());
     
     /* Push all the times */
@@ -451,19 +455,19 @@ srvn_store_rnv_data (void * from_entry_v, void * to_entry_v, unsigned n_phases, 
         
 	/* Check the existence */
 	if (call == NULL) {
-	    call = new LQIO::DOM::Call(LQIO::DOM::__document, LQIO::DOM::Call::RENDEZVOUS, phase, to_entry, ev);
+	    call = new LQIO::DOM::Call(LQIO::DOM::__document, LQIO::DOM::Call::Type::RENDEZVOUS, phase, to_entry, ev);
 	    phase->addCall( call );
 	    std::string name = phase->getName();
 	    name += '_';
 	    name += to_entry->getName();
 	    call->setName(name);
 	} else {
-	    if (call->getCallType() != LQIO::DOM::Call::NULL_CALL) {
+	    if (call->getCallType() != LQIO::DOM::Call::Type::NULL_CALL) {
 		LQIO::input_error2( LQIO::WRN_MULTIPLE_SPECIFICATION );
 	    }
           
 	    /* Set the new call type and the new mean */
-	    call->setCallType(LQIO::DOM::Call::RENDEZVOUS);
+	    call->setCallType(LQIO::DOM::Call::Type::RENDEZVOUS);
 	    call->setCallMean(ev);
 	}
     }
@@ -486,7 +490,7 @@ srvn_store_snr_data ( void * from_entry_v, void * to_entry_v, unsigned n_phases,
 	return;
     }
     /* Make sure that this is a standard entry */
-    LQIO::DOM::Document::db_check_set_entry(from_entry, from_entry->getName(), LQIO::DOM::Entry::ENTRY_STANDARD);
+    LQIO::DOM::Document::db_check_set_entry(from_entry, from_entry->getName(), LQIO::DOM::Entry::Type::STANDARD);
     LQIO::DOM::Document::db_check_set_entry(to_entry, to_entry->getName());
     
     /* Push all the times */
@@ -503,19 +507,19 @@ srvn_store_snr_data ( void * from_entry_v, void * to_entry_v, unsigned n_phases,
         
 	/* Check the existence */
 	if (call == NULL) {
-	    call = new LQIO::DOM::Call(LQIO::DOM::__document,LQIO::DOM::Call::SEND_NO_REPLY, phase, to_entry, ev);
+	    call = new LQIO::DOM::Call(LQIO::DOM::__document,LQIO::DOM::Call::Type::SEND_NO_REPLY, phase, to_entry, ev);
 	    phase->addCall( call );
 	    std::string name = phase->getName();
 	    name += '_';
 	    name += to_entry->getName();
 	    call->setName(name);
 	} else {
-	    if (call->getCallType() != LQIO::DOM::Call::NULL_CALL) {
+	    if (call->getCallType() != LQIO::DOM::Call::Type::NULL_CALL) {
 		LQIO::input_error2( LQIO::WRN_MULTIPLE_SPECIFICATION );
 	    }
           
 	    /* Set the new call type and the new mean */
-	    call->setCallType(LQIO::DOM::Call::SEND_NO_REPLY);
+	    call->setCallType(LQIO::DOM::Call::Type::SEND_NO_REPLY);
 	    call->setCallMean(ev);
 	}
     }
@@ -529,7 +533,7 @@ srvn_set_start_activity ( void * entry_v, const char * startActivityName )
 {
     LQIO::DOM::Entry* entry = static_cast<LQIO::DOM::Entry *>(entry_v);
     if ( !entry ) return;
-    LQIO::DOM::Document::db_check_set_entry(entry, entry->getName(), LQIO::DOM::Entry::ENTRY_ACTIVITY);
+    LQIO::DOM::Document::db_check_set_entry(entry, entry->getName(), LQIO::DOM::Entry::Type::ACTIVITY);
     LQIO::DOM::Task* task = const_cast<LQIO::DOM::Task*>(entry->getTask());
     LQIO::DOM::Activity* activity = task->getActivity(startActivityName, true);
     entry->setStartActivity(activity);
@@ -692,7 +696,7 @@ srvn_store_activity_rnv_data ( void * activity, void * dst_entry_v, void * calls
     if ( !activity || !dst_entry ) return NULL;
     LQIO::DOM::Document::db_check_set_entry(dst_entry, dst_entry->getName());
     
-    LQIO::DOM::Call* call = new LQIO::DOM::Call(LQIO::DOM::__document, LQIO::DOM::Call::RENDEZVOUS, static_cast<LQIO::DOM::Activity *>(activity), dst_entry,
+    LQIO::DOM::Call* call = new LQIO::DOM::Call(LQIO::DOM::__document, LQIO::DOM::Call::Type::RENDEZVOUS, static_cast<LQIO::DOM::Activity *>(activity), dst_entry,
 						static_cast<LQIO::DOM::ExternalVariable *>(calls));
     static_cast<LQIO::DOM::Activity *>(activity)->addCall(call);
     return call;
@@ -713,7 +717,7 @@ srvn_store_activity_snr_data ( void * activity, void * dst_entry_v, void * calls
     if ( !activity || !dst_entry ) return 0;
     LQIO::DOM::Document::db_check_set_entry(dst_entry, dst_entry->getName());
     
-    LQIO::DOM::Call* call = new LQIO::DOM::Call(LQIO::DOM::__document, LQIO::DOM::Call::SEND_NO_REPLY, static_cast<LQIO::DOM::Activity *>(activity), dst_entry,
+    LQIO::DOM::Call* call = new LQIO::DOM::Call(LQIO::DOM::__document, LQIO::DOM::Call::Type::SEND_NO_REPLY, static_cast<LQIO::DOM::Activity *>(activity), dst_entry,
 						static_cast<LQIO::DOM::ExternalVariable *>(calls));
     static_cast<LQIO::DOM::Activity *>(activity)->addCall(call);
     return call;
@@ -737,7 +741,11 @@ void
 srvn_set_activity_phase_type_flag ( void * activity, const int flag ) 
 {
     if ( !activity ) return;
-    static_cast<LQIO::DOM::Activity *>(activity)->setPhaseTypeFlag(static_cast<const phase_type>(flag));
+    if ( flag == 0 ) {
+	static_cast<LQIO::DOM::Activity *>(activity)->setPhaseTypeFlag(LQIO::DOM::Phase::Type::DETERMINISTIC);
+    } else {
+	static_cast<LQIO::DOM::Activity *>(activity)->setPhaseTypeFlag(LQIO::DOM::Phase::Type::STOCHASTIC);
+    }
 }
 
 void 
@@ -980,7 +988,7 @@ namespace LQIO {
 		input_error2( ERR_IS_START_ACTIVITY, activity->getTask()->getName().c_str(), activity->getName().c_str() );
 	    } else {
 		if (!activityList) {
-		    activityList = new ActivityList(LQIO::DOM::__document,domTask,ActivityList::AND_FORK_ACTIVITY_LIST);
+		    activityList = new ActivityList(LQIO::DOM::__document,domTask,ActivityList::Type::AND_FORK);
 		}
 		activity->inputFrom(activityList);
 		activityList->add(activity);
@@ -1019,7 +1027,7 @@ namespace LQIO {
 	    ActivityList* activityList = NULL;
 
 	    /* Configure the activity */
-	    activityList = new ActivityList(LQIO::DOM::__document,domTask,ActivityList::FORK_ACTIVITY_LIST);
+	    activityList = new ActivityList(LQIO::DOM::__document,domTask,ActivityList::Type::FORK);
 	    activity->inputFrom(activityList);
 	    activityList->add(activity);
 
@@ -1035,7 +1043,7 @@ namespace LQIO {
 	    ActivityList* activityList = NULL;
 
 	    /* Configure the activity */
-	    activityList = new ActivityList(LQIO::DOM::__document,domTask,ActivityList::JOIN_ACTIVITY_LIST);
+	    activityList = new ActivityList(LQIO::DOM::__document,domTask,ActivityList::Type::JOIN);
 	    activity->outputTo(activityList);
 	    activityList->add(activity);
 
@@ -1059,7 +1067,7 @@ namespace LQIO {
 		    input_error2( ERR_IS_START_ACTIVITY, activity->getTask()->getName().c_str(), activity->getName().c_str() );
 		} else {
 		    if (activityList == NULL) {
-			activityList = new ActivityList(LQIO::DOM::__document,domTask,ActivityList::OR_FORK_ACTIVITY_LIST);
+			activityList = new ActivityList(LQIO::DOM::__document,domTask,ActivityList::Type::OR_FORK);
 		    }
 		    activityList->add(activity, probability);
 		    activity->inputFrom(activityList);
@@ -1079,7 +1087,7 @@ namespace LQIO {
 
 	    /* Configure the activity */
 	    if (activityList == NULL) {
-		activityList = new ActivityList(LQIO::DOM::__document,domTask,ActivityList::OR_JOIN_ACTIVITY_LIST);
+		activityList = new ActivityList(LQIO::DOM::__document,domTask,ActivityList::Type::OR_JOIN);
 	    }
 	    activityList->add(activity);
 	    activity->outputTo(activityList);
@@ -1098,7 +1106,7 @@ namespace LQIO {
 
 	    /* Configure the activity */
 	    if (activityList == NULL) {
-		activityList = new ActivityList(LQIO::DOM::__document,domTask,ActivityList::REPEAT_ACTIVITY_LIST);
+		activityList = new ActivityList(LQIO::DOM::__document,domTask,ActivityList::Type::REPEAT);
 	    }
 	    activityList->add(activity, count);
 	    activity->inputFrom(activityList);

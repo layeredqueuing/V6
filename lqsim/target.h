@@ -3,7 +3,7 @@
  * $HeadURL$
  *
  * ------------------------------------------------------------------------
- * $Id: target.h 13831 2020-09-18 12:51:41Z greg $
+ * $Id: target.h 14107 2020-11-18 18:51:51Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -15,6 +15,7 @@
 #include <assert.h>
 #include "result.h"
 #include <lqio/dom_call.h>
+#include <lqio/dom_phase.h>
 
 class Message;
 class Entry;
@@ -100,7 +101,7 @@ private:
     bool alloc_target_info( Entry * to_entry ) ;
 
 private:
-    phase_type _type;			/* 				*/
+    LQIO::DOM::Phase::Type _type;			/* 				*/
 };
 
 

@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- *  $Id: dom_entry.h 13831 2020-09-18 12:51:41Z greg $
+ *  $Id: dom_entry.h 14106 2020-11-18 14:33:50Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -57,14 +57,14 @@ namespace LQIO {
 
 	public:
 
-	    typedef enum EntryType {
-		ENTRY_NOT_DEFINED,
-		ENTRY_STANDARD,
-		ENTRY_ACTIVITY,
-		ENTRY_STANDARD_NOT_DEFINED,
-		ENTRY_ACTIVITY_NOT_DEFINED,
-		ENTRY_DEVICE
-	    } EntryType;
+	    enum class Type {
+		NOT_DEFINED,
+		STANDARD,
+		ACTIVITY,
+		STANDARD_NOT_DEFINED,
+		ACTIVITY_NOT_DEFINED,
+		DEVICE
+	    };
 
 	    /* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- [Structors] -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= */
 
@@ -111,9 +111,9 @@ namespace LQIO {
 
 	    bool isDefined() const;
 	    bool isStandardEntry() const;
-	    bool entryTypeOk(EntryType newType);
-	    const EntryType getEntryType() const;
-	    void setEntryType(EntryType newType);
+	    bool entryTypeOk(Entry::Type newType);
+	    const Entry::Type getEntryType() const;
+	    void setEntryType(Entry::Type newType);
 
 	    virtual bool hasHistogram() const;
 	    virtual bool hasHistogramForPhase( unsigned ) const;
@@ -249,7 +249,7 @@ namespace LQIO {
 
 	    /* Instance variables */
 
-	    EntryType _type;
+	    Entry::Type _type;
 	    std::map<unsigned, Phase*> _phases;
 	    unsigned int _maxPhase;
 	    Task* _task;

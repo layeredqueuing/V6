@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_document.cpp 14028 2020-10-28 15:08:52Z greg $
+ *  $Id: dom_document.cpp 14106 2020-11-18 14:33:50Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -753,11 +753,11 @@ namespace LQIO {
 	}
 	
 	void 
-	Document::db_check_set_entry(Entry* entry, const std::string& entry_name, Entry::EntryType requisiteType)
+	Document::db_check_set_entry(Entry* entry, const std::string& entry_name, Entry::Type requisiteType)
 	{
 	    if ( !entry ) {
 		input_error2( ERR_NOT_DEFINED, entry_name.c_str() );
-	    } else if ( requisiteType != Entry::ENTRY_NOT_DEFINED && !entry->entryTypeOk( requisiteType ) ) {
+	    } else if ( requisiteType != Entry::Type::NOT_DEFINED && !entry->entryTypeOk( requisiteType ) ) {
 		input_error2( ERR_MIXED_ENTRY_TYPES, entry_name.c_str() );
 	    }
 	}

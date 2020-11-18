@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- *  $Id: expat_document.h 14000 2020-10-25 12:50:53Z greg $
+ *  $Id: expat_document.h 14107 2020-11-18 18:51:51Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  */
@@ -308,9 +308,9 @@ namespace LQIO {
 	    Activity * handleTaskActivity( DocumentObject * object, const XML_Char ** attributes );
 	    void handleActivity( Phase * phase, const XML_Char ** attributes );
 	    void handleActivityList( ActivityList * activity_list, const XML_Char ** attributes );
-	    Call * handleActivityCall( DocumentObject *, const XML_Char ** attributes, const Call::CallType call_type );
+	    Call * handleActivityCall( DocumentObject *, const XML_Char ** attributes, const Call::Type call_type );
 	    Call * handleEntryCall( DocumentObject *, const XML_Char ** attributes );
-	    Call * handlePhaseCall( DocumentObject *, const XML_Char ** attributes, const Call::CallType call_type );
+	    Call * handlePhaseCall( DocumentObject *, const XML_Char ** attributes, const Call::Type call_type );
 	 // DecisionPath * handleDecisionPath( DocumentObject * object, const XML_Char ** attributes );
 	    Histogram * handleHistogram( DocumentObject * object, const XML_Char ** attributes );
 
@@ -419,12 +419,12 @@ namespace LQIO {
 
 	    static std::map<const XML_Char,const XML_Char *> escape_table;
 
-	    static std::map<const XML_Char *,ActivityList::ActivityListType,attribute_table_t> precedence_table;
-	    static const XML_Char * precedence_type_table[];
+	    static std::map<const XML_Char *,ActivityList::ActivityList::Type,attribute_table_t> precedence_table;
+	    static std::map<const ActivityList::Type,const XML_Char *> precedence_type_table;
 	    static std::map<const XML_Char *,result_table_t,result_table_t>  result_table;
 	    static std::map<const XML_Char *,observation_table_t,observation_table_t>  observation_table;	/* SPEX */
 	    static std::map<int,const char *> __key_lqx_function_map;			/* Maps srvn_gram.h KEY_XXX to SPEX attribute name */
-	    static call_type_table_t call_type_table[];
+	    static std::map<const Call::Type,const call_type_table_t> call_type_table;
 
 	    static const XML_Char * XMLSchema_instance;
 

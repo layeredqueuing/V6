@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_phase.cpp 13618 2020-06-29 12:53:56Z greg $
+ *  $Id: dom_phase.cpp 14107 2020-11-18 18:51:51Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -22,7 +22,7 @@ namespace LQIO {
 	/* Dummy Phase */
 	Phase::Phase() 
 	    : DocumentObject(), _serviceTime(NULL),
-	      _phaseTypeFlag(PHASE_STOCHASTIC), _entry(nullptr),
+	      _phaseTypeFlag(Type::STOCHASTIC), _entry(nullptr),
 	      _thinkTime(NULL), _coeffOfVariationSq(NULL), _histogram(NULL),
 	      _resultServiceTime(0.0), _resultServiceTimeVariance(0.0),
 	      _resultVarianceServiceTime(0.0), _resultVarianceServiceTimeVariance(0.0),
@@ -35,7 +35,7 @@ namespace LQIO {
 	/* Normal constructor */
 	Phase::Phase(const Document * document,Entry* parentEntry) 
 	    : DocumentObject(document,""), _calls(), _serviceTime(NULL),
-	      _phaseTypeFlag(PHASE_STOCHASTIC), _entry(parentEntry),
+	      _phaseTypeFlag(Type::STOCHASTIC), _entry(parentEntry),
 	      _thinkTime(NULL), _coeffOfVariationSq(NULL), _histogram(NULL),
 	      _resultServiceTime(0.0), _resultServiceTimeVariance(0.0),
 	      _resultVarianceServiceTime(0.0), _resultVarianceServiceTimeVariance(0.0),
@@ -112,13 +112,13 @@ namespace LQIO {
 	    return ExternalVariable::isPresent( getServiceTime(), 0.0 );
 	}
 
-	phase_type Phase::getPhaseTypeFlag() const
+	Phase::Type Phase::getPhaseTypeFlag() const
 	{
 	    /* Returns the PhaseTypeFlags of the Phase */
 	    return _phaseTypeFlag;
 	}
 
-	void Phase::setPhaseTypeFlag(const phase_type phaseTypeFlag)
+	void Phase::setPhaseTypeFlag(const Phase::Type phaseTypeFlag)
 	{
 	    /* Stores the given PhaseTypeFlags of the Phase */
 	    _phaseTypeFlag = phaseTypeFlag;

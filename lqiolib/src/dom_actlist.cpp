@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_actlist.cpp 13602 2020-06-23 02:23:04Z greg $
+ *  $Id: dom_actlist.cpp 14107 2020-11-18 18:51:51Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -17,7 +17,7 @@ namespace LQIO {
 
 	const char * ActivityList::__typeName = "activity_list";
 	
-	ActivityList::ActivityList(const Document * document, const Task * task, ActivityListType type ) 
+	ActivityList::ActivityList(const Document * document, const Task * task, ActivityList::Type type ) 
 	    : DocumentObject(document,""),		/* By default, no name :-) */
 	      _task(task), _list(), _arguments(), _type(type), 
 	      _next(NULL), _prev(NULL),
@@ -34,12 +34,12 @@ namespace LQIO {
 
 	bool ActivityList::isJoinList() const
 	{
-	    return _type == JOIN_ACTIVITY_LIST || _type == AND_JOIN_ACTIVITY_LIST || _type == OR_JOIN_ACTIVITY_LIST;
+	    return _type == Type::JOIN || _type == Type::AND_JOIN || _type == Type::OR_JOIN;
 	}
 
 	bool ActivityList::isForkList() const
 	{
-	    return _type == FORK_ACTIVITY_LIST || _type == AND_FORK_ACTIVITY_LIST || _type == OR_FORK_ACTIVITY_LIST || _type == REPEAT_ACTIVITY_LIST;
+	    return _type == Type::FORK || _type == Type::AND_FORK || _type == Type::OR_FORK || _type == Type::REPEAT;
 	}
 
 	void ActivityList::setTask( const Task * task )
@@ -58,7 +58,7 @@ namespace LQIO {
 	    return *&_list;
 	}
 
-	const ActivityList::ActivityListType ActivityList::getListType() const
+	const ActivityList::Type ActivityList::getListType() const
 	{
 	    return _type;
 	}
@@ -125,7 +125,7 @@ namespace LQIO {
 
 
 	AndJoinActivityList::AndJoinActivityList(const Document * document, const Task * task, ExternalVariable * quorum ) 
-	    : ActivityList(document,task,AND_JOIN_ACTIVITY_LIST), _quorum(quorum), _histogram(0),
+	    : ActivityList(document,task,Type::AND_JOIN), _quorum(quorum), _histogram(0),
 	      _resultJoinDelay(0.0),
 	      _resultJoinDelayVariance(0.0),
 	      _hasResultVarianceJoinDelay(false),

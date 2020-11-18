@@ -1,6 +1,6 @@
 # Makefile for .
 # Copyright (C) 2003 Greg Franks <rgfranks@alumni.uwaterloo.ca>
-# $Id: Makefile.am 14000 2020-10-25 12:50:53Z greg $
+# $Id: Makefile.am 14106 2020-11-18 14:33:50Z greg $
 # ----------------------------------------------------------------------
 ACLOCAL_AMFLAGS=-I ../config
 SUBDIRS		= 
@@ -13,7 +13,7 @@ noinst_HEADERS 	= generate.h help.h lqngen.h randomvar.h
 
 EXTRA_DIST	= lqngen.1 lqn2lqx.1
 
-lqngen_CXXFLAGS = -Wall -Wno-parentheses -Wno-switch -Wno-unknown-pragmas -Wno-overloaded-virtual
+lqngen_CXXFLAGS = -std=c++11 -Wall -Wno-parentheses -Wno-switch -Wno-unknown-pragmas -Wno-overloaded-virtual
 lqngen_LDADD 	= -L../lqiolib/src/.libs -llqio -L../lqx/libsrc/.libs -llqx 
 lqngen_LDFLAGS	= @STATIC@
 

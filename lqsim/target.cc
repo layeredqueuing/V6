@@ -1,7 +1,7 @@
 /* target.cc	-- Greg Franks Tue Jun 23 2009
  *
  * ------------------------------------------------------------------------
- * $Id: target.cc 13831 2020-09-18 12:51:41Z greg $
+ * $Id: target.cc 14107 2020-11-18 18:51:51Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -107,7 +107,7 @@ tar_t::configure()
 	LQIO::solution_error( LQIO::ERR_REFERENCE_TASK_IS_RECEIVER, _entry->task()->name(), _entry->name() );
     } else if ( _type == call ) {
 	_calls = _dom._call->getCallMeanValue();
-	_reply = (_dom._call->getCallType() == LQIO::DOM::Call::RENDEZVOUS || _dom._call->getCallType() == LQIO::DOM::Call::FORWARD);
+	_reply = (_dom._call->getCallType() == LQIO::DOM::Call::Type::RENDEZVOUS || _dom._call->getCallType() == LQIO::DOM::Call::Type::FORWARD);
     } else if ( _type != constant ) {
 	abort();
     }
@@ -270,13 +270,13 @@ Targets::configure( const LQIO::DOM::DocumentObject * dom, bool normalize )
 {
     double sum	= 0.0;
     const char * srcName = (dom != nullptr) ? dom->getName().c_str() : "-";
-    _type = (dynamic_cast<const LQIO::DOM::Phase *>(dom) != nullptr) ? dynamic_cast<const LQIO::DOM::Phase *>(dom)->getPhaseTypeFlag() : PHASE_STOCHASTIC;
+    _type = (dynamic_cast<const LQIO::DOM::Phase *>(dom) != nullptr) ? dynamic_cast<const LQIO::DOM::Phase *>(dom)->getPhaseTypeFlag() : LQIO::DOM::Phase::Type::STOCHASTIC;
     
     for ( std::vector<tar_t>::iterator tp = _target.begin(); tp != _target.end(); ++tp ) {
 	const char * dstName = tp->entry()->name();
 	try {
 	    tp->configure();
-	    if ( _type == PHASE_DETERMINISTIC && tp->calls() != trunc( tp->calls() ) ) throw std::domain_error( "invalid integer" );
+	    if ( _type == LQIO::DOM::Phase::Type::DETERMINISTIC && tp->calls() != trunc( tp->calls() ) ) throw std::domain_error( "invalid integer" );
 	}
 	catch ( const std::domain_error& e ) {
 	    if ( dynamic_cast<const LQIO::DOM::Entry *>(dom) ) {
@@ -300,7 +300,7 @@ Targets::configure( const LQIO::DOM::DocumentObject * dom, bool normalize )
 
     }
 
-    if ( _type != PHASE_DETERMINISTIC ) {
+    if ( _type != LQIO::DOM::Phase::Type::DETERMINISTIC ) {
 	if ( normalize ) {
 	    sum += 1.0;
 	    for ( std::vector<tar_t>::iterator tp = _target.begin(); tp != _target.end(); ++tp ) {
@@ -343,12 +343,12 @@ Targets::entry_to_send_to ( unsigned int&i, unsigned int& j ) const
 
 	switch ( _type ) {
 
-	case PHASE_STOCHASTIC:
+	case LQIO::DOM::Phase::Type::STOCHASTIC:
 	    p = ps_random;
 	    for ( i = 0; i < size() && p >= _target[i]._tprob; i = i + 1 );
 	    break;
 
-	case PHASE_DETERMINISTIC:
+	case LQIO::DOM::Phase::Type::DETERMINISTIC:
 	    j = j + 1;
 	    while ( i < size() && j > _target[i].calls() ) {
 		j = 1;

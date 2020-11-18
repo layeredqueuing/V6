@@ -7,7 +7,7 @@
  * However, to eliminate code here, the spex construction functions will have to save the
  * LQX expressions and then construct the program.
  * ------------------------------------------------------------------------
- * $Id: generate.cc 14000 2020-10-25 12:50:53Z greg $
+ * $Id: generate.cc 14106 2020-11-18 14:33:50Z greg $
  */
 
 #include "lqngen.h"
@@ -483,7 +483,7 @@ Generate::addEntry( const string& name, const RV::Probability& pr_2nd_phase )
 {
     LQIO::DOM::Entry* entry = new LQIO::DOM::Entry( _document, name.c_str() );
     _document->addEntry(entry);
-    _document->db_check_set_entry( entry, name, LQIO::DOM::Entry::ENTRY_STANDARD );
+    _document->db_check_set_entry( entry, name, LQIO::DOM::Entry::Type::STANDARD );
     unsigned int n_phases = 1;
     if ( pr_2nd_phase() != 0.0 ) {
 	n_phases = 2;
@@ -515,7 +515,7 @@ Generate::addCall( LQIO::DOM::Entry * src, LQIO::DOM::Entry * dst, const RV::Pro
     name += '_';
     name += dst->getName();
 
-    LQIO::DOM::Call * call = new LQIO::DOM::Call( _document, LQIO::DOM::Call::RENDEZVOUS, phase, dst );
+    LQIO::DOM::Call * call = new LQIO::DOM::Call( _document, LQIO::DOM::Call::Type::RENDEZVOUS, phase, dst );
     call->setCallMeanValue( 1.0 );
     call->setName( name );
     phase->addCall( call );
@@ -1370,9 +1370,9 @@ Generate::CallVariable::operator()( LQIO::DOM::Call * call ) const
     /* check for var... */
     RV::RandomVariable * rate;
     switch ( call->getCallType() ) {
-    case LQIO::DOM::Call::RENDEZVOUS:	 rate = const_cast<RV::RandomVariable *>(__rendezvous_rate); break;
-    case LQIO::DOM::Call::SEND_NO_REPLY: rate = const_cast<RV::RandomVariable *>(__send_no_reply_rate); break;
-    case LQIO::DOM::Call::FORWARD:       rate = const_cast<RV::RandomVariable *>(__forwarding_probability); break;
+    case LQIO::DOM::Call::Type::RENDEZVOUS:	 rate = const_cast<RV::RandomVariable *>(__rendezvous_rate); break;
+    case LQIO::DOM::Call::Type::SEND_NO_REPLY: rate = const_cast<RV::RandomVariable *>(__send_no_reply_rate); break;
+    case LQIO::DOM::Call::Type::FORWARD:       rate = const_cast<RV::RandomVariable *>(__forwarding_probability); break;
     default: abort();
     }
 
@@ -1383,9 +1383,9 @@ Generate::CallVariable::operator()( LQIO::DOM::Call * call ) const
 	    rate->setMean( to_double( *calls ) );
 	}
 	switch ( call->getCallType() ) {
-	case LQIO::DOM::Call::RENDEZVOUS:    calls = get_rv( "$y_", call->getName(), rate ); break;
-	case LQIO::DOM::Call::SEND_NO_REPLY: calls = get_rv( "$z_", call->getName(), rate ); break;
-	case LQIO::DOM::Call::FORWARD:       calls = get_rv( "$f_", call->getName(), rate ); break;
+	case LQIO::DOM::Call::Type::RENDEZVOUS:    calls = get_rv( "$y_", call->getName(), rate ); break;
+	case LQIO::DOM::Call::Type::SEND_NO_REPLY: calls = get_rv( "$z_", call->getName(), rate ); break;
+	case LQIO::DOM::Call::Type::FORWARD:       calls = get_rv( "$f_", call->getName(), rate ); break;
 	}
 	call->setCallMean( calls );
     }

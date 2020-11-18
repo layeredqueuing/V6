@@ -10,7 +10,7 @@
  * February 1997
  *
  * ------------------------------------------------------------------------
- * $Id: actlist.cc 14000 2020-10-25 12:50:53Z greg $
+ * $Id: actlist.cc 14106 2020-11-18 14:33:50Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -588,7 +588,7 @@ OrForkActivityList::add( Activity * anActivity )
     ForkJoinActivityList::add( anActivity );
 
     Entry * anEntry = new VirtualEntry( anActivity );
-    assert( anEntry->entryTypeOk(ACTIVITY_ENTRY) );
+    assert( anEntry->entryTypeOk(LQIO::DOM::Entry::Type::ACTIVITY) );
     anEntry->setStartActivity( anActivity );
     _entryList.push_back( anEntry );
     assert( _entryList.size() == activityList().size() );
@@ -823,7 +823,7 @@ AndForkActivityList::add( Activity * anActivity )
     ForkJoinActivityList::add( anActivity );
 
     Thread * aThread = new Thread( anActivity, this );
-    assert( aThread->entryTypeOk(ACTIVITY_ENTRY) );
+    assert( aThread->entryTypeOk(LQIO::DOM::Entry::Type::ACTIVITY) );
     aThread->setStartActivity( anActivity );
     _entryList.push_back( aThread );
     assert( _entryList.size() == activityList().size() );
@@ -1726,7 +1726,7 @@ RepeatActivityList::add( Activity * anActivity )
 
 	Entry * anEntry = new VirtualEntry( anActivity );
 	_entryList.push_back(anEntry);
-        assert( anEntry->entryTypeOk(ACTIVITY_ENTRY) );
+        assert( anEntry->entryTypeOk(LQIO::DOM::Entry::Type::ACTIVITY) );
         anEntry->setStartActivity( anActivity );
 
     } else {

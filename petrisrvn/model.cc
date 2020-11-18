@@ -8,7 +8,7 @@
 /************************************************************************/
 
 /*
- * $Id: model.cc 13879 2020-09-26 02:45:49Z greg $
+ * $Id: model.cc 14106 2020-11-18 14:33:50Z greg $
  *
  * Load the SRVN model.
  */
@@ -1400,7 +1400,7 @@ Model::build_open_arrivals ()
 	buf = "OE";
 	buf += dst_entry->name();
 	LQIO::DOM::Entry * pseudo = new LQIO::DOM::Entry( dst_dom->getDocument(), buf.c_str() );
-	pseudo->setEntryType( LQIO::DOM::Entry::ENTRY_STANDARD );
+	pseudo->setEntryType( LQIO::DOM::Entry::Type::STANDARD );
 	LQIO::DOM::Phase* phase = pseudo->getPhase(1);
 	try {
 	    phase->setServiceTimeValue( 1.0 / dst_dom->getOpenArrivalRateValue() );
@@ -1416,7 +1416,7 @@ Model::build_open_arrivals ()
 	a_task->entries.push_back( an_entry );
 
 	LQIO::DOM::ConstantExternalVariable  * var  = new LQIO::DOM::ConstantExternalVariable( 1 );
-	LQIO::DOM::Call * call = new LQIO::DOM::Call( dst_dom->getDocument(), LQIO::DOM::Call::QUASI_SEND_NO_REPLY, phase, dst_dom, var );
+	LQIO::DOM::Call * call = new LQIO::DOM::Call( dst_dom->getDocument(), LQIO::DOM::Call::Type::QUASI_SEND_NO_REPLY, phase, dst_dom, var );
 	phase->addCall( call );
 	an_entry->phase[1].add_call( call );
     }

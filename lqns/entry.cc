@@ -12,7 +12,7 @@
  * July 2007.
  *
  * ------------------------------------------------------------------------
- * $Id: entry.cc 14102 2020-11-16 20:16:57Z greg $
+ * $Id: entry.cc 14106 2020-11-18 14:33:50Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -59,7 +59,7 @@ Entry::Entry( LQIO::DOM::Entry* dom, const unsigned id, const unsigned index )
       _startActivity(NULL),
       _entryId(id),
       _index(index+1),
-      _entryType(ENTRY_NOT_DEFINED),
+      _entryType(LQIO::DOM::Entry::Type::NOT_DEFINED),
       _semaphoreType(dom ? dom->getSemaphoreFlag() : SEMAPHORE_NONE),
       _calledBy(NOT_CALLED),
       _throughput(0.0),
@@ -474,9 +474,9 @@ Entry::hasVariance() const
  */
 
 bool
-Entry::entryTypeOk( const entry_type aType )
+Entry::entryTypeOk( const LQIO::DOM::Entry::Type aType )
 {
-    if ( _entryType == ENTRY_NOT_DEFINED ) {
+    if ( _entryType == LQIO::DOM::Entry::Type::NOT_DEFINED ) {
 	_entryType = aType;
 	return true;
     } else {
@@ -1948,7 +1948,7 @@ VirtualEntry::setStartActivity( Activity * anActivity )
 }
 
 static bool
-map_entry_name( const char * entry_name, Entry * & outEntry, bool receiver, const entry_type aType = ENTRY_NOT_DEFINED )
+map_entry_name( const char * entry_name, Entry * & outEntry, bool receiver, const LQIO::DOM::Entry::Type aType = LQIO::DOM::Entry::Type::NOT_DEFINED )
 {
     bool rc = true;
     outEntry = Entry::find( entry_name );
@@ -1959,7 +1959,7 @@ map_entry_name( const char * entry_name, Entry * & outEntry, bool receiver, cons
     } else if ( receiver && outEntry->isReferenceTaskEntry() ) {
 	LQIO::input_error2( LQIO::ERR_REFERENCE_TASK_IS_RECEIVER, outEntry->owner()->name().c_str(), entry_name );
 	rc = false;
-    } else if ( aType != ENTRY_NOT_DEFINED && !outEntry->entryTypeOk( aType ) ) {
+    } else if ( aType != LQIO::DOM::Entry::Type::NOT_DEFINED && !outEntry->entryTypeOk( aType ) ) {
 	LQIO::input_error2( LQIO::ERR_MIXED_ENTRY_TYPES, entry_name );
     }
 
@@ -2109,7 +2109,7 @@ Entry::create(LQIO::DOM::Entry* dom, unsigned int index )
 	Model::__entry.insert( entry );
 
 	/* Make sure that the entry type is set properly for all entries */
-	if (entry->entryTypeOk(static_cast<const entry_type>(dom->getEntryType())) == false) {
+	if (entry->entryTypeOk(dom->getEntryType()) == false) {
 	    LQIO::input_error2( LQIO::ERR_MIXED_ENTRY_TYPES, entry_name );
 	}
 
@@ -2123,9 +2123,9 @@ void
 Entry::add_call( const unsigned p, const LQIO::DOM::Call* domCall )
 {
     /* Make sure this is one of the supported call types */
-    if (domCall->getCallType() != LQIO::DOM::Call::SEND_NO_REPLY &&
-	domCall->getCallType() != LQIO::DOM::Call::RENDEZVOUS &&
-	domCall->getCallType() != LQIO::DOM::Call::QUASI_RENDEZVOUS) {
+    if (domCall->getCallType() != LQIO::DOM::Call::Type::SEND_NO_REPLY &&
+	domCall->getCallType() != LQIO::DOM::Call::Type::RENDEZVOUS &&
+	domCall->getCallType() != LQIO::DOM::Call::Type::QUASI_RENDEZVOUS) {
 	abort();
     }
 
@@ -2136,12 +2136,12 @@ Entry::add_call( const unsigned p, const LQIO::DOM::Call* domCall )
     Entry * toEntry;
 
     /* Begin by mapping the entry names to their entry types */
-    if ( !entryTypeOk(STANDARD_ENTRY) ) {
+    if ( !entryTypeOk(LQIO::DOM::Entry::Type::STANDARD) ) {
 	LQIO::input_error2( LQIO::ERR_MIXED_ENTRY_TYPES, name().c_str() );
     } else if ( map_entry_name( to_entry_name, toEntry, true ) ) {
-	if ( domCall->getCallType() == LQIO::DOM::Call::RENDEZVOUS) {
+	if ( domCall->getCallType() == LQIO::DOM::Call::Type::RENDEZVOUS) {
 	    rendezvous( toEntry, p, domCall );
-	} else if ( domCall->getCallType() == LQIO::DOM::Call::SEND_NO_REPLY ) {
+	} else if ( domCall->getCallType() == LQIO::DOM::Call::Type::SEND_NO_REPLY ) {
 	    sendNoReply( toEntry, p, domCall );
 	}
     }
@@ -2168,7 +2168,7 @@ set_start_activity (Task* newTask, LQIO::DOM::Entry* theDOMEntry)
     Activity* activity = newTask->findActivity(theDOMEntry->getStartActivity()->getName());
     Entry* realEntry = NULL;
 
-    map_entry_name( theDOMEntry->getName().c_str(), realEntry, false, ACTIVITY_ENTRY );
+    map_entry_name( theDOMEntry->getName().c_str(), realEntry, false, LQIO::DOM::Entry::Type::ACTIVITY );
     realEntry->setStartActivity(activity);
     activity->setEntry(realEntry);
 }

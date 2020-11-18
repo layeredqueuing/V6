@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: call.cc 14105 2020-11-17 22:34:26Z greg $
+ * $Id: call.cc 14107 2020-11-18 18:51:51Z greg $
  *
  * Everything you wanted to know about a call to an entry, but were afraid to ask.
  *
@@ -129,7 +129,7 @@ Call::rendezvous() const
     if ( hasRendezvous() ) {
 	try {
 	    const double value = getDOM()->getCallMeanValue();
-	    if ( srcPhase()->phaseTypeFlag() == PHASE_DETERMINISTIC && value != std::floor( value ) ) throw std::domain_error( "invalid integer" );
+	    if ( srcPhase()->phaseTypeFlag() == LQIO::DOM::Phase::Type::DETERMINISTIC && value != std::floor( value ) ) throw std::domain_error( "invalid integer" );
 	    return value;
 	}
 	catch ( const std::domain_error &e ) {
@@ -152,7 +152,7 @@ Call::sendNoReply() const
     if ( hasSendNoReply() ) {
 	try {
 	    const double value = getDOM()->getCallMeanValue();
-	    if ( srcPhase()->phaseTypeFlag() == PHASE_DETERMINISTIC && value != std::floor( value ) ) throw std::domain_error( "invalid integer" );
+	    if ( srcPhase()->phaseTypeFlag() == LQIO::DOM::Phase::Type::DETERMINISTIC && value != std::floor( value ) ) throw std::domain_error( "invalid integer" );
 	    return value;
 	}
 	catch ( const std::domain_error &e ) {
@@ -172,7 +172,7 @@ Call::sendNoReply() const
 double
 Call::forward() const
 {
-    if ( getDOM() != NULL && getDOM()->getCallType() == LQIO::DOM::Call::FORWARD ) {
+    if ( getDOM() != NULL && getDOM()->getCallType() == LQIO::DOM::Call::Type::FORWARD ) {
 	try {
 	    const double value = getDOM()->getCallMeanValue();
 	    if ( value > 1.0 ) {

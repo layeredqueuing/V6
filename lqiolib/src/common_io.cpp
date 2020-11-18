@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: common_io.cpp 13433 2019-02-04 20:07:09Z greg $
+ * $Id: common_io.cpp 14106 2020-11-18 14:33:50Z greg $
  *
  * Read in XML input files.
  *
@@ -211,7 +211,7 @@ static inline double tv_to_double( struct timeval& tv ) { return (static_cast<do
 	}
 
 	ForPhase::ForPhase()
-	    : _maxPhase(DOM::Phase::MAX_PHASE), _type(DOM::Call::NULL_CALL)
+	    : _maxPhase(DOM::Phase::MAX_PHASE), _type(DOM::Call::Type::NULL_CALL)
 	{
 	    for ( unsigned p = 0; p < DOM::Phase::MAX_PHASE; ++p ) {
 		ia[p] = 0;

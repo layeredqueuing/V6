@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_call.cpp 13602 2020-06-23 02:23:04Z greg $
+ *  $Id: dom_call.cpp 14106 2020-11-18 14:33:50Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -15,7 +15,7 @@ namespace LQIO {
     
 	const char * Call::__typeName = "call";
 
-	Call::Call(const Document * document, const CallType type, Phase* source, Entry* destination, ExternalVariable* callMean ) :
+	Call::Call(const Document * document, const Call::Type type, Phase* source, Entry* destination, ExternalVariable* callMean ) :
 	    DocumentObject(document,""),
 	    _callType(type), _sourceObject(source), _destinationEntry(destination), 
 	    _callMean(callMean), _histogram(0),
@@ -29,7 +29,7 @@ namespace LQIO {
 	/* Special case for forwarding */
 	Call::Call(const Document * document, Entry* source, Entry* destination, ExternalVariable* callMean ) :
 	    DocumentObject(document,""),
-	    _callType(Call::FORWARD), _sourceObject(source), _destinationEntry(destination), 
+	    _callType(Call::Type::FORWARD), _sourceObject(source), _destinationEntry(destination), 
 	    _callMean(callMean), _histogram(0),
 	    _hasResultVarianceWaitingTime(false),
 	    _resultWaitingTime(0.0), _resultWaitingTimeVariance(0.0),
@@ -65,13 +65,13 @@ namespace LQIO {
 
 	/* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- [Input Values] -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */
     
-	const Call::CallType Call::getCallType() const
+	const Call::Type Call::getCallType() const
 	{
 	    /* Returns the CallType of the Call */
 	    return _callType;
 	}
 
-	void Call::setCallType(const Call::CallType callType)
+	void Call::setCallType(const Call::Type callType)
 	{
 	    /* Stores the given CallType of the Call */ 
 	    _callType = callType;

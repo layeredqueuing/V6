@@ -254,13 +254,13 @@ Activity& Activity::add_activity_lists()
 			
 	    /* Add the activity to the appropriate list based on what kind of list we have */
 	    switch ( joinList->getListType() ) {
-	    case LQIO::DOM::ActivityList::JOIN_ACTIVITY_LIST:
+	    case LQIO::DOM::ActivityList::Type::JOIN:
 		localActivityList = nextActivity->act_join_item( joinList );
 		break;
-	    case LQIO::DOM::ActivityList::AND_JOIN_ACTIVITY_LIST:
+	    case LQIO::DOM::ActivityList::Type::AND_JOIN:
 		localActivityList = nextActivity->act_and_join_list( localActivityList, joinList );
 		break;
-	    case LQIO::DOM::ActivityList::OR_JOIN_ACTIVITY_LIST:
+	    case LQIO::DOM::ActivityList::Type::OR_JOIN:
 		localActivityList = nextActivity->act_or_join_list( localActivityList, joinList );
 		break;
 	    default:
@@ -292,16 +292,16 @@ Activity& Activity::add_activity_lists()
 			
 	    /* Add the activity to the appropriate list based on what kind of list we have */
 	    switch ( forkList->getListType() ) {
-	    case LQIO::DOM::ActivityList::FORK_ACTIVITY_LIST:	
+	    case LQIO::DOM::ActivityList::Type::FORK:	
 		localActivityList = nextActivity->act_fork_item( forkList );
 		break;
-	    case LQIO::DOM::ActivityList::AND_FORK_ACTIVITY_LIST:
+	    case LQIO::DOM::ActivityList::Type::AND_FORK:
 		localActivityList = nextActivity->act_and_fork_list( localActivityList, forkList  );
 		break;
-	    case LQIO::DOM::ActivityList::OR_FORK_ACTIVITY_LIST:
+	    case LQIO::DOM::ActivityList::Type::OR_FORK:
 		localActivityList = nextActivity->act_or_fork_list( localActivityList, forkList );
 		break;
-	    case LQIO::DOM::ActivityList::REPEAT_ACTIVITY_LIST:
+	    case LQIO::DOM::ActivityList::Type::REPEAT:
 		localActivityList = nextActivity->act_loop_list( localActivityList, forkList );
 		break;
 	    default:

@@ -9,7 +9,7 @@
 /*
  * Global vars for simulation.
  *
- * $Id: entry.h 13831 2020-09-18 12:51:41Z greg $
+ * $Id: entry.h 14106 2020-11-18 14:33:50Z greg $
  */
 
 #ifndef ENTRY_H
@@ -78,7 +78,7 @@ public:
     
     void add_call( const unsigned int p, LQIO::DOM::Call* domCall );
 
-    virtual bool is_defined() const { return get_DOM()->getEntryType() != LQIO::DOM::Entry::ENTRY_NOT_DEFINED; }
+    virtual bool is_defined() const { return get_DOM()->getEntryType() != LQIO::DOM::Entry::Type::NOT_DEFINED; }
     virtual bool is_regular() const;
     virtual bool is_activity() const;
     virtual bool is_semaphore() const;
@@ -94,7 +94,7 @@ public:
     bool is_rendezvous() const { return _recv == RECEIVE_RENDEZVOUS; }
     bool has_lost_messages() const;
 
-    virtual bool test_and_set( LQIO::DOM::Entry::EntryType );			/* Sets _type too!		*/
+    virtual bool test_and_set( LQIO::DOM::Entry::Type );			/* Sets _type too!		*/
     bool test_and_set_recv( receive_type );
     bool test_and_set_semaphore( semaphore_entry_type );
     bool test_and_set_rwlock( rwlock_entry_type );
@@ -163,7 +163,7 @@ public:
     virtual bool is_w_unlock() const { return false; }
     virtual bool is_w_lock() const { return false; }
 
-    virtual bool test_and_set( LQIO::DOM::Entry::EntryType ) { return true; }
+    virtual bool test_and_set( LQIO::DOM::Entry::Type ) { return true; }
 
     virtual Entry& insertDOMResults();
 

@@ -8,7 +8,7 @@
 /************************************************************************/
 
 /*
- * $Id: petrisrvn.cc 13831 2020-09-18 12:51:41Z greg $
+ * $Id: petrisrvn.cc 14106 2020-11-18 14:33:50Z greg $
  *
  * Generate a Petri-net from an SRVN description.
  *
@@ -271,7 +271,7 @@ main (int argc, char *argv[])
 	    break;
 
 	case 256+'l':
-	    ModLangParserTrace(stderr, "lqx:");
+	    LQIO::DOM::Document::lqx_parser_trace(stderr);
 	    break;
 
 	case 'm':
@@ -299,7 +299,7 @@ main (int argc, char *argv[])
 		open_model_tokens = 3;
 	    } else if ( sscanf( value, "%d", &open_model_tokens ) != 1 || open_model_tokens > OPEN_MODEL_TOKENS*2 ) {
 		(void) fprintf( stderr, "%s: default-open-queue-max=%s is invalid, choose value < %d\n",
-				io_vars.lq_toolname, value ? value : "", OPEN_MODEL_TOKENS*2 );
+				LQIO::io_vars.lq_toolname.c_str(), value ? value : "", OPEN_MODEL_TOKENS*2 );
 		(void) exit( INVALID_ARGUMENT );
 	    }
 	    break;

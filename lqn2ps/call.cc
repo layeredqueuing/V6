@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: call.cc 14000 2020-10-25 12:50:53Z greg $
+ * $Id: call.cc 14107 2020-11-18 18:51:51Z greg $
  *
  * Everything you wanted to know about a call to an entry, but were afraid to ask.
  *
@@ -1106,7 +1106,7 @@ EntryCall::check() const
 		    ss << value << " < " << 0;
 		    throw std::domain_error( ss.str() );
 		}
-		if ( srcEntry()->phaseTypeFlag(p) == PHASE_DETERMINISTIC && value != rint(value) ) throw std::domain_error( "invalid integer" );
+		if ( srcEntry()->phaseTypeFlag(p) == LQIO::DOM::Phase::Type::DETERMINISTIC && value != rint(value) ) throw std::domain_error( "invalid integer" );
 	    }
 	    catch ( const std::domain_error& e ) {
 		LQIO::solution_error( LQIO::ERR_INVALID_CALL_PARAMETER, "entry", srcName().c_str(), "phase", p_str, dstName().c_str(), e.what() );
@@ -1158,7 +1158,7 @@ EntryCall::maxPhase() const
 }
 
 
-phase_type
+LQIO::DOM::Phase::Type
 EntryCall::phaseTypeFlag( const unsigned p ) const 
 { 
     return srcEntry()->phaseTypeFlag(p); 
@@ -1250,7 +1250,7 @@ ActivityCall::check() const
 		ss << value << " < " << 0;
 		throw std::domain_error( ss.str() );
 	    }
-	    if ( srcActivity()->phaseTypeFlag() == PHASE_DETERMINISTIC && value != rint(value) ) throw std::domain_error( "invalid integer" );
+	    if ( srcActivity()->phaseTypeFlag() == LQIO::DOM::Phase::Type::DETERMINISTIC && value != rint(value) ) throw std::domain_error( "invalid integer" );
 	}
 	catch ( const std::domain_error& e ) {
 	    LQIO::solution_error( LQIO::ERR_INVALID_CALL_PARAMETER, "task", srcTask()->name().c_str(), "activity", srcName().c_str(), dstName().c_str(), e.what() );
@@ -1305,7 +1305,7 @@ ActivityCall::setChain( const unsigned k )
 }
 
 
-phase_type
+LQIO::DOM::Phase::Type
 ActivityCall::phaseTypeFlag( const unsigned ) const 
 { 
     return srcActivity()->phaseTypeFlag(); 
@@ -2087,7 +2087,7 @@ format_prologue( ostream& output, const Call& aCall, int p )
 	if ( p != 1 ) {
 	    output << ',';
 	}
-	if ( aCall.phaseTypeFlag(p) == PHASE_DETERMINISTIC ) {
+	if ( aCall.phaseTypeFlag(p) == LQIO::DOM::Phase::Type::DETERMINISTIC ) {
 	    output << "\\fbox{";
 	}
 	break;
@@ -2118,14 +2118,14 @@ format_epilogue( ostream& output, const Call& aCall, int p )
     switch( Flags::print[OUTPUT_FORMAT].value.i ) {
     case FORMAT_EEPIC:
     case FORMAT_PSTEX:
-	if ( aCall.phaseTypeFlag(p) == PHASE_DETERMINISTIC ) {
+	if ( aCall.phaseTypeFlag(p) == LQIO::DOM::Phase::Type::DETERMINISTIC ) {
 	    output << "}";
 	}
 	break;
     case FORMAT_POSTSCRIPT:
     case FORMAT_SVG:
     case FORMAT_FIG:
-	if ( aCall.phaseTypeFlag(p) == PHASE_DETERMINISTIC ) {
+	if ( aCall.phaseTypeFlag(p) == LQIO::DOM::Phase::Type::DETERMINISTIC ) {
 	    output << ":D";
 	}
 	break;

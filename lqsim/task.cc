@@ -10,7 +10,7 @@
 /*
  * Input output processing.
  *
- * $Id: task.cc 14000 2020-10-25 12:50:53Z greg $
+ * $Id: task.cc 14106 2020-11-18 14:33:50Z greg $
  */
 
 #include <iostream>
@@ -260,7 +260,7 @@ Task::set_start_activity( LQIO::DOM::Entry* dom )
     Entry * ep = Entry::find( entry_name );
 	
     if ( !ep ) return;
-    if ( !ep->test_and_set( LQIO::DOM::Entry::ENTRY_ACTIVITY ) ) return;
+    if ( !ep->test_and_set( LQIO::DOM::Entry::Type::ACTIVITY ) ) return;
 
     const LQIO::DOM::Activity * activity_dom = dom->getStartActivity();
     const char * activity_name = activity_dom->getName().c_str();

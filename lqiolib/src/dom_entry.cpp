@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_entry.cpp 13652 2020-07-06 22:25:04Z greg $
+ *  $Id: dom_entry.cpp 14106 2020-11-18 14:33:50Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -23,7 +23,7 @@ namespace LQIO {
 
 	Entry::Entry(const Document * document, const std::string& name ) 
 	    : DocumentObject(document,name),
-	      _type(Entry::ENTRY_NOT_DEFINED), _phases(), 
+	      _type(Entry::Type::NOT_DEFINED), _phases(), 
 	      _maxPhase(0), _task(NULL), _histograms(),
 	      _openArrivalRate(NULL), _entryPriority(NULL),
 	      _semaphoreType(SEMAPHORE_NONE),
@@ -281,42 +281,45 @@ namespace LQIO {
   
 	bool Entry::isDefined() const
 	{
-	    return _type != Entry::ENTRY_NOT_DEFINED 
-		&& _type != Entry::ENTRY_STANDARD_NOT_DEFINED  
-		&& _type != Entry::ENTRY_ACTIVITY_NOT_DEFINED;
+	    return _type != Entry::Type::NOT_DEFINED 
+		&& _type != Entry::Type::STANDARD_NOT_DEFINED  
+		&& _type != Entry::Type::ACTIVITY_NOT_DEFINED;
 	}
 
 
 	bool Entry::isStandardEntry() const
 	{
-	    return _type == Entry::ENTRY_STANDARD_NOT_DEFINED || _type == Entry::ENTRY_STANDARD;
+	    return _type == Entry::Type::STANDARD_NOT_DEFINED || _type == Entry::Type::STANDARD;
 	}
 
-	bool Entry::entryTypeOk(EntryType newType)
+	bool Entry::entryTypeOk(Entry::Type newType)
 	{
-	    static const char * entry_types [] = { "?", "Ph1Ph2", "None", "Ph1Ph2", "None", "?" };
+	    static const std::map<const Entry::Type,const std::string> entry_types = { {Type::NOT_DEFINED, "?"}, {Type::STANDARD, "Ph1Ph2"}, {Type::ACTIVITY, "None"}, {Type::STANDARD_NOT_DEFINED, "Ph1Ph2"}, {Type::ACTIVITY_NOT_DEFINED, "None"}, {Type::DEVICE, "?"} };
 
 	    /* Set the type only if it was undefined to begin with */
-	    if (_type == Entry::ENTRY_NOT_DEFINED 
-		|| (_type == Entry::ENTRY_STANDARD_NOT_DEFINED && newType == Entry::ENTRY_STANDARD)
-		|| (_type == Entry::ENTRY_ACTIVITY_NOT_DEFINED && newType == Entry::ENTRY_ACTIVITY) ) {
+	    if (_type == Entry::Type::NOT_DEFINED 
+		|| (_type == Entry::Type::STANDARD_NOT_DEFINED && newType == Entry::Type::STANDARD)
+		|| (_type == Entry::Type::ACTIVITY_NOT_DEFINED && newType == Entry::Type::ACTIVITY) ) {
 		_type = newType;
 		return true;
-	    } else if ( (_type == Entry::ENTRY_STANDARD_NOT_DEFINED && newType != Entry::ENTRY_STANDARD)
-			|| (_type == Entry::ENTRY_ACTIVITY_NOT_DEFINED && newType != Entry::ENTRY_ACTIVITY) ) {
-		LQIO::solution_error( LQIO::WRN_ENTRY_TYPE_MISMATCH, getName().c_str(), entry_types[_type], entry_types[newType] );
+	    } else if ( (_type == Entry::Type::STANDARD_NOT_DEFINED && newType != Entry::Type::STANDARD)
+			|| (_type == Entry::Type::ACTIVITY_NOT_DEFINED && newType != Entry::Type::ACTIVITY) ) {
+		const std::map<const Entry::Type,const std::string>::const_iterator i = entry_types.find(_type);
+		const std::map<const Entry::Type,const std::string>::const_iterator j = entry_types.find(newType);
+		assert ( i != entry_types.end() && j != entry_types.end() );
+		LQIO::solution_error( LQIO::WRN_ENTRY_TYPE_MISMATCH, getName().c_str(), i->second.c_str(), j->second.c_str() );
 		_type = newType;
 		return true;
 	    }
 	    return _type == newType;
 	}
     
-	void Entry::setEntryType(EntryType newType) 
+	void Entry::setEntryType(Entry::Type newType) 
 	{
 	    _type = newType;
 	}
     
-	const Entry::EntryType Entry::getEntryType() const
+	const Entry::Type Entry::getEntryType() const
 	{
 	    return _type;
 	}

@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- *  $Id: common_io.h 13831 2020-09-18 12:51:41Z greg $
+ *  $Id: common_io.h 14106 2020-11-18 14:33:50Z greg $
  *
  *  Greg Franks
  */
@@ -166,13 +166,13 @@ namespace LQIO {
 		
 	    ForPhase& setMaxPhase( const unsigned mp ) { _maxPhase = mp; return *this; }
 	    const unsigned getMaxPhase() const { return _maxPhase; }
-	    ForPhase& setType( const Call::CallType type ) { _type = type; return *this; }
-	    const Call::CallType getType() const { return _type; }
+	    ForPhase& setType( const Call::Type type ) { _type = type; return *this; }
+	    const Call::Type getType() const { return _type; }
 
 	private:
 	    const Call * ia[Phase::MAX_PHASE];
 	    unsigned _maxPhase;
-	    Call::CallType _type;
+	    Call::Type _type;
 	};
 
 	/*

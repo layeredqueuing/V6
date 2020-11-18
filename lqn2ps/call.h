@@ -10,7 +10,7 @@
  * May 2010
  *
  * ------------------------------------------------------------------------
- * $Id: call.h 14000 2020-10-25 12:50:53Z greg $
+ * $Id: call.h 14107 2020-11-18 18:51:51Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -191,7 +191,7 @@ public:
     Call& forward( const LQIO::DOM::Call * value );
     virtual const LQIO::DOM::ExternalVariable & forward() const;
     virtual Call * addForwardingCall( Entry * toEntry, const double ) = 0;
-    virtual phase_type phaseTypeFlag( const unsigned p ) const = 0;
+    virtual LQIO::DOM::Phase::Type phaseTypeFlag( const unsigned p ) const = 0;
     virtual unsigned fanIn() const;
     virtual unsigned fanOut() const;
 
@@ -277,7 +277,7 @@ public:
     virtual EntryCall& setChain( const unsigned );
 
     virtual unsigned maxPhase() const;
-    virtual phase_type phaseTypeFlag( const unsigned p ) const;
+    virtual LQIO::DOM::Phase::Type phaseTypeFlag( const unsigned p ) const;
 
     virtual Call * addForwardingCall( Entry * toEntry, const double );
 
@@ -325,7 +325,7 @@ public:
     virtual ActivityCall& setChain( const unsigned );
 
     virtual unsigned maxPhase() const { return 1; }
-    virtual phase_type phaseTypeFlag( const unsigned ) const;
+    virtual LQIO::DOM::Phase::Type phaseTypeFlag( const unsigned ) const;
 
     virtual Call * addForwardingCall( Entry * toEntry, const double );
 

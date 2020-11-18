@@ -12,7 +12,7 @@
  *
  * $URL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqsim/entry.cc $
  *
- * $Id: entry.cc 13831 2020-09-18 12:51:41Z greg $
+ * $Id: entry.cc 14106 2020-11-18 14:33:50Z greg $
  */
 
 #include <parasol.h>
@@ -86,7 +86,7 @@ Entry::configure()
 {
     if ( !is_defined() ) {
 	LQIO::solution_error( LQIO::ERR_ENTRY_NOT_SPECIFIED, name() );
-	get_DOM()->setEntryType( LQIO::DOM::Entry::ENTRY_STANDARD );
+	get_DOM()->setEntryType( LQIO::DOM::Entry::Type::STANDARD );
     }
 
     double total_calls = 0.0;
@@ -226,13 +226,13 @@ Entry::initialize()
 bool 
 Entry::is_regular() const
 {
-    return get_DOM()->getEntryType() == LQIO::DOM::Entry::ENTRY_STANDARD;
+    return get_DOM()->getEntryType() == LQIO::DOM::Entry::Type::STANDARD;
 }
 
 bool 
 Entry::is_activity() const
 {
-    return get_DOM()->getEntryType() == LQIO::DOM::Entry::ENTRY_ACTIVITY;
+    return get_DOM()->getEntryType() == LQIO::DOM::Entry::Type::ACTIVITY;
 }
 
 bool Entry::is_semaphore() const
@@ -291,7 +291,7 @@ Entry::has_lost_messages() const
  */
 
 bool
-Entry::test_and_set( LQIO::DOM::Entry::EntryType type )
+Entry::test_and_set( LQIO::DOM::Entry::Type type )
 {
     const bool rc = get_DOM()->entryTypeOk( type );
     if ( !rc ) {
@@ -647,7 +647,7 @@ Entry::add_open_arrival_task()
 
     /* Set up entry information for my arrival rate. */
 
-    from_entry->test_and_set( LQIO::DOM::Entry::ENTRY_STANDARD );
+    from_entry->test_and_set( LQIO::DOM::Entry::Type::STANDARD );
 
     /* Set up a task to handle it */
 
@@ -670,9 +670,9 @@ Entry::add_call( const unsigned int p, LQIO::DOM::Call* domCall )
     const LQIO::DOM::Entry* toDOMEntry = domCall->getDestinationEntry();
 
     /* Make sure this is one of the supported call types */
-    if (domCall->getCallType() != LQIO::DOM::Call::SEND_NO_REPLY && 
-	domCall->getCallType() != LQIO::DOM::Call::RENDEZVOUS &&
-	domCall->getCallType() != LQIO::DOM::Call::QUASI_SEND_NO_REPLY) {
+    if (domCall->getCallType() != LQIO::DOM::Call::Type::SEND_NO_REPLY && 
+	domCall->getCallType() != LQIO::DOM::Call::Type::RENDEZVOUS &&
+	domCall->getCallType() != LQIO::DOM::Call::Type::QUASI_SEND_NO_REPLY) {
 	abort();
     }
 	
@@ -680,9 +680,9 @@ Entry::add_call( const unsigned int p, LQIO::DOM::Call* domCall )
     const char* to_entry_name = toDOMEntry->getName().c_str();
     Entry * to_entry = Entry::find( to_entry_name );
     if ( !to_entry ) return;
-    if ( !test_and_set( LQIO::DOM::Entry::ENTRY_STANDARD ) ) return;
-    if ( domCall->getCallType() == LQIO::DOM::Call::RENDEZVOUS && !to_entry->test_and_set_recv( Entry::RECEIVE_RENDEZVOUS ) ) return;
-    if ( (domCall->getCallType() == LQIO::DOM::Call::SEND_NO_REPLY || domCall->getCallType() == LQIO::DOM::Call::QUASI_SEND_NO_REPLY) && !to_entry->test_and_set_recv( Entry::RECEIVE_SEND_NO_REPLY ) ) return;
+    if ( !test_and_set( LQIO::DOM::Entry::Type::STANDARD ) ) return;
+    if ( domCall->getCallType() == LQIO::DOM::Call::Type::RENDEZVOUS && !to_entry->test_and_set_recv( Entry::RECEIVE_RENDEZVOUS ) ) return;
+    if ( (domCall->getCallType() == LQIO::DOM::Call::Type::SEND_NO_REPLY || domCall->getCallType() == LQIO::DOM::Call::Type::QUASI_SEND_NO_REPLY) && !to_entry->test_and_set_recv( Entry::RECEIVE_SEND_NO_REPLY ) ) return;
 
     _phase.at(p-1)._calls.store_target_info( to_entry, domCall );
 }

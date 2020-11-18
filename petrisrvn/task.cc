@@ -1022,7 +1022,7 @@ OpenTask::get_results( unsigned m )
     Phase& phase = entries[0]->phase[1];
     Call call;
     LQIO::DOM::ConstantExternalVariable value(1.0);
-    LQIO::DOM::Call dom( _document, LQIO::DOM::Call::SEND_NO_REPLY, 0, 0, &value );
+    LQIO::DOM::Call dom( _document, LQIO::DOM::Call::Type::SEND_NO_REPLY, 0, 0, &value );
     call._dom = &dom;
     phase.compute_queueing_delay( call, m, _dst, multiplicity(), &phase );
 }

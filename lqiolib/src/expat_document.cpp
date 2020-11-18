@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: expat_document.cpp 14000 2020-10-25 12:50:53Z greg $
+ * $Id: expat_document.cpp 14107 2020-11-18 18:51:51Z greg $
  *
  * Read in XML input files.
  *
@@ -892,17 +892,17 @@ namespace LQIO {
 
             } else if ( strcasecmp( element, Xsynch_call ) == 0 ) {
                 if ( dynamic_cast<Activity *>(activity) ) {
-                    call = handleActivityCall( activity, attributes, Call::RENDEZVOUS );
+                    call = handleActivityCall( activity, attributes, Call::Type::RENDEZVOUS );
                 } else {
-                    call = handlePhaseCall( activity, attributes, Call::RENDEZVOUS );              // Phase
+                    call = handlePhaseCall( activity, attributes, Call::Type::RENDEZVOUS );              // Phase
                 }
                 _stack.push( parse_stack_t(element,&Expat_Document::startActivityMakingCallType,call) );
 
             } else if ( strcasecmp( element, Xasynch_call ) == 0 ) {
                 if ( dynamic_cast<Activity *>(activity) ) {
-                    call = handleActivityCall( activity, attributes, Call::SEND_NO_REPLY );
+                    call = handleActivityCall( activity, attributes, Call::Type::SEND_NO_REPLY );
                 } else {
-                    call = handlePhaseCall( activity, attributes, Call::SEND_NO_REPLY );
+                    call = handlePhaseCall( activity, attributes, Call::Type::SEND_NO_REPLY );
                 }
                 _stack.push( parse_stack_t(element,&Expat_Document::startActivityMakingCallType,call) );
 
@@ -1039,13 +1039,13 @@ namespace LQIO {
         {
             ActivityList * pre_list = 0;
             ActivityList * post_list = 0;
-            std::map<const XML_Char *,ActivityList::ActivityListType>::const_iterator item = precedence_table.find(element);
+            std::map<const XML_Char *,ActivityList::ActivityList::Type>::const_iterator item = precedence_table.find(element);
             if ( item != precedence_table.end() ) {
                 switch ( item->second ) {
-                case ActivityList::OR_JOIN_ACTIVITY_LIST:
-                case ActivityList::JOIN_ACTIVITY_LIST:
-                case ActivityList::AND_JOIN_ACTIVITY_LIST:
-                    if ( item->second == ActivityList::AND_JOIN_ACTIVITY_LIST ) {
+                case ActivityList::Type::OR_JOIN:
+                case ActivityList::Type::JOIN:
+                case ActivityList::Type::AND_JOIN:
+                    if ( item->second == ActivityList::Type::AND_JOIN ) {
                         pre_list = new AndJoinActivityList( &_document, dynamic_cast<Task *>(task),
 							    getOptionalAttribute(attributes,Xquorum) );
                     } else {
@@ -1062,10 +1062,10 @@ namespace LQIO {
                     }
                     break;
 
-                case ActivityList::OR_FORK_ACTIVITY_LIST:
-                case ActivityList::FORK_ACTIVITY_LIST:
-                case ActivityList::AND_FORK_ACTIVITY_LIST:
-                case ActivityList::REPEAT_ACTIVITY_LIST:
+                case ActivityList::Type::OR_FORK:
+                case ActivityList::Type::FORK:
+                case ActivityList::Type::AND_FORK:
+                case ActivityList::Type::REPEAT:
                     post_list = new ActivityList( &_document, dynamic_cast<Task *>(task), item->second );
                     pre_list = dynamic_cast<ActivityList *>(_stack.top().extra_object);
                     if ( pre_list ) {
@@ -1076,7 +1076,7 @@ namespace LQIO {
                     } else {
                         _stack.push( parse_stack_t(element,&Expat_Document::startActivityListType,post_list,post_list) );
                     }
-                    if ( item->second == ActivityList::REPEAT_ACTIVITY_LIST )  {
+                    if ( item->second == ActivityList::Type::REPEAT )  {
                         /* List end is an attribute */
                         const XML_Char * activity_name = getStringAttribute(attributes,Xend);
                         if ( activity_name ) {
@@ -1100,11 +1100,11 @@ namespace LQIO {
                 handleActivityList( dynamic_cast<ActivityList *>(activity_list), attributes );
                 _stack.push( parse_stack_t(element,&Expat_Document::startNOP,0) );
 
-            } else if ( strcasecmp( element, Xservice_time_distribution ) == 0 && dynamic_cast<ActivityList *>(activity_list)->getListType() == ActivityList::AND_JOIN_ACTIVITY_LIST ) {
+            } else if ( strcasecmp( element, Xservice_time_distribution ) == 0 && dynamic_cast<ActivityList *>(activity_list)->getListType() == ActivityList::Type::AND_JOIN ) {
                 Histogram * histogram = handleHistogram( activity_list, attributes );
 		_stack.push( parse_stack_t(element,&Expat_Document::startOutputDistributionType,histogram) );
 
-            } else if ( strcasecmp( element, Xresult_join_delay ) == 0 && dynamic_cast<ActivityList *>(activity_list)->getListType() == ActivityList::AND_JOIN_ACTIVITY_LIST ) {
+            } else if ( strcasecmp( element, Xresult_join_delay ) == 0 && dynamic_cast<ActivityList *>(activity_list)->getListType() == ActivityList::Type::AND_JOIN ) {
                 handleJoinResults( dynamic_cast<AndJoinActivityList *>(activity_list), attributes );
                 _stack.push( parse_stack_t(element,&Expat_Document::startJoinResultType,activity_list) );
 
@@ -1695,15 +1695,15 @@ namespace LQIO {
                 if ( !entry ) {
                     entry = new Entry( &_document, entry_name );
                     _document.addEntry(entry);            /* Add to global table */
-		} else if ( entry->getEntryType() != LQIO::DOM::Entry::ENTRY_NOT_DEFINED ) {
+		} else if ( entry->getEntryType() != LQIO::DOM::Entry::Type::NOT_DEFINED ) {
 		    throw duplicate_symbol( entry_name );
                 }
 
 		const XML_Char * type = getStringAttribute(attributes,Xtype,"");
 		if ( strcasecmp( type, XNONE ) == 0 ) {
-		    entry->setEntryType( Entry::ENTRY_ACTIVITY_NOT_DEFINED );
+		    entry->setEntryType( Entry::Type::ACTIVITY_NOT_DEFINED );
 		} else if ( strcasecmp( type, XPH1PH2 ) == 0 ) {
-		    entry->setEntryType( Entry::ENTRY_STANDARD_NOT_DEFINED );
+		    entry->setEntryType( Entry::Type::STANDARD_NOT_DEFINED );
 		}
 
 		entry->setEntryPriority( getOptionalAttribute(attributes,Xpriority) );
@@ -1760,7 +1760,7 @@ namespace LQIO {
 
             if ( _createObjects ) {
                 phase->setName( getStringAttribute(attributes,Xname) );
-                _document.db_check_set_entry(dynamic_cast<Entry *>(entry), entry->getName(), DOM::Entry::ENTRY_STANDARD);
+                _document.db_check_set_entry(dynamic_cast<Entry *>(entry), entry->getName(), DOM::Entry::Type::STANDARD);
             }
 
             handleActivity( phase, attributes );
@@ -1783,7 +1783,7 @@ namespace LQIO {
                 const XML_Char * first_entry = getStringAttribute(attributes,Xbound_to_entry,"");
                 if ( strlen(first_entry) > 0 ) {
                     Entry* entry = _document.getEntryByName(first_entry);
-                    _document.db_check_set_entry(entry, first_entry, Entry::ENTRY_ACTIVITY);
+                    _document.db_check_set_entry(entry, first_entry, Entry::Type::ACTIVITY);
                     entry->setStartActivity(activity);
                 }
 
@@ -1810,7 +1810,7 @@ namespace LQIO {
                 }
                 const XML_Char * call_order = getStringAttribute(attributes,Xcall_order,"");
                 if ( strlen(call_order) > 0 ) {
-                    phase->setPhaseTypeFlag(strcasecmp(XDETERMINISTIC, call_order) == 0 ? PHASE_DETERMINISTIC : PHASE_STOCHASTIC);
+                    phase->setPhaseTypeFlag(strcasecmp(XDETERMINISTIC, call_order) == 0 ? Phase::Type::DETERMINISTIC : Phase::Type::STOCHASTIC);
                 }
             }
         }
@@ -1830,25 +1830,25 @@ namespace LQIO {
 
             } else if ( _createObjects ) {
                 switch ( activity_list->getListType() ) {
-                case ActivityList::AND_JOIN_ACTIVITY_LIST:
-                case ActivityList::OR_JOIN_ACTIVITY_LIST:
-                case ActivityList::JOIN_ACTIVITY_LIST:
+                case ActivityList::Type::AND_JOIN:
+                case ActivityList::Type::OR_JOIN:
+                case ActivityList::Type::JOIN:
                     activity_list->add( activity );
                     activity->outputTo( activity_list );
                     break;
 
-                case ActivityList::OR_FORK_ACTIVITY_LIST:
+                case ActivityList::Type::OR_FORK:
                     activity_list->add( activity, getVariableAttribute( attributes, Xprob ) );
                     activity->inputFrom( activity_list );
                     break;
 
-                case ActivityList::FORK_ACTIVITY_LIST:
-                case ActivityList::AND_FORK_ACTIVITY_LIST:
+                case ActivityList::Type::FORK:
+                case ActivityList::Type::AND_FORK:
                     activity_list->add( activity );
                     activity->inputFrom( activity_list );
                     break;
 
-                case ActivityList::REPEAT_ACTIVITY_LIST:
+                case ActivityList::Type::REPEAT:
                     activity_list->add( activity, getVariableAttribute( attributes, Xcount ) );
                     activity->inputFrom( activity_list );
                     break;
@@ -1862,9 +1862,9 @@ namespace LQIO {
         */
 
         Call *
-        Expat_Document::handlePhaseCall( DocumentObject * phase, const XML_Char ** attributes, const Call::CallType call_type )
+        Expat_Document::handlePhaseCall( DocumentObject * phase, const XML_Char ** attributes, const Call::Type call_type )
         {
-	    checkAttributes( call_type == DOM::Call::RENDEZVOUS ? Xsynch_call : Xasynch_call, attributes, call_table );
+	    checkAttributes( call_type == DOM::Call::Type::RENDEZVOUS ? Xsynch_call : Xasynch_call, attributes, call_table );
 
             const XML_Char * dest_entry_name = getStringAttribute(attributes,Xdest);
 	    Phase * from_phase = dynamic_cast<Phase *>(phase);
@@ -1885,8 +1885,8 @@ namespace LQIO {
             if ( _createObjects ) {
                 /* Make sure that this is a standard entry */
                 if ( !from_entry ) internal_error( __FILE__, __LINE__, "missing from entry" );
-                _document.db_check_set_entry(const_cast<Entry *>(from_entry), from_entry->getName(), Entry::ENTRY_STANDARD);
-                _document.db_check_set_entry(to_entry, dest_entry_name, Entry::ENTRY_NOT_DEFINED);
+                _document.db_check_set_entry(const_cast<Entry *>(from_entry), from_entry->getName(), Entry::Type::STANDARD);
+                _document.db_check_set_entry(to_entry, dest_entry_name, Entry::Type::NOT_DEFINED);
 
                 /* Push all the times */
 
@@ -1901,7 +1901,7 @@ namespace LQIO {
 		    call->setName(name);
 		    dynamic_cast<Phase *>(phase)->addCall(call);
                 } else {
-                    if (call->getCallType() != Call::NULL_CALL) {
+                    if (call->getCallType() != Call::Type::NULL_CALL) {
                         input_error2( WRN_MULTIPLE_SPECIFICATION );
                     }
 
@@ -1922,9 +1922,9 @@ namespace LQIO {
         */
 
         Call *
-        Expat_Document::handleActivityCall( DocumentObject * activity, const XML_Char ** attributes, const Call::CallType call_type )
+        Expat_Document::handleActivityCall( DocumentObject * activity, const XML_Char ** attributes, const Call::Type call_type )
         {
-	    checkAttributes( call_type == DOM::Call::RENDEZVOUS ? Xsynch_call : Xasynch_call, attributes, call_table );
+	    checkAttributes( call_type == DOM::Call::Type::RENDEZVOUS ? Xsynch_call : Xasynch_call, attributes, call_table );
 
             const XML_Char * dest_entry_name = getStringAttribute(attributes,Xdest);
 
@@ -1950,7 +1950,7 @@ namespace LQIO {
 		    name += to_entry->getName();
 		    call->setName(name);
                     dynamic_cast<Activity *>(activity)->addCall(call);
-                } else if (call->getCallType() != Call::NULL_CALL) {
+                } else if (call->getCallType() != Call::Type::NULL_CALL) {
                     LQIO::input_error2( LQIO::WRN_MULTIPLE_SPECIFICATION );
                 }
             } else if ( !call ) {
@@ -1987,7 +1987,7 @@ namespace LQIO {
 		    name += to_entry->getName();
 		    call->setName(name);
                     from_entry->addForwardingCall(call);
-                } else if (call->getCallType() != Call::NULL_CALL) {
+                } else if (call->getCallType() != Call::Type::NULL_CALL) {
                     LQIO::input_error2( LQIO::WRN_MULTIPLE_SPECIFICATION );
                 }
             }
@@ -3139,9 +3139,6 @@ namespace LQIO {
         }
 
 
-
-        const XML_Char * Expat_Document::precedence_type_table[ActivityList::REPEAT_ACTIVITY_LIST+1];
-
         void
         Expat_Document::ExportPrecedence::operator()( const ActivityList * activity_list ) const {
 	    /* look for the 'pre' side.  Do the post side based on the pre-side */
@@ -3154,10 +3151,21 @@ namespace LQIO {
 	    _output << _self.end_element( Xprecedence ) << std::endl;
 	}
 
+	std::map<const ActivityList::Type,const XML_Char *> Expat_Document::precedence_type_table =
+	{
+	    { ActivityList::Type::JOIN,     Xpre },
+ 	    { ActivityList::Type::OR_JOIN,  Xpre_or },
+	    { ActivityList::Type::AND_JOIN, Xpre_and },
+	    { ActivityList::Type::FORK,     Xpost },
+	    { ActivityList::Type::OR_FORK,  Xpost_or },
+	    { ActivityList::Type::AND_FORK, Xpost_and },
+	    { ActivityList::Type::REPEAT,   Xpost_loop }
+	};
+
         void
         Expat_Document::exportPrecedence( std::ostream& output, const ActivityList& activity_list ) const
         {
-            output << start_element( precedence_type_table[activity_list.getListType()] );
+            output << start_element( precedence_type_table.at(activity_list.getListType()) );
             const AndJoinActivityList * join_list = dynamic_cast<const AndJoinActivityList *>(&activity_list);
             if ( join_list && hasResults() ) {
                 output  << ">" << std::endl;
@@ -3181,7 +3189,7 @@ namespace LQIO {
                            << "/>" << std::endl;
                 }
                 output << end_element( Xresult_join_delay, has_confidence ) << std::endl;
-            } else if ( activity_list.getListType() == ActivityList::REPEAT_ACTIVITY_LIST ) {
+            } else if ( activity_list.getListType() == ActivityList::Type::REPEAT ) {
                 const std::vector<const Activity*>& list = activity_list.getList();
                 for ( std::vector<const Activity*>::const_iterator next_activity = list.begin(); next_activity != list.end(); ++next_activity ) {
                     const Activity * activity = *next_activity;
@@ -3200,8 +3208,8 @@ namespace LQIO {
                 const ExternalVariable * value = NULL;
 
                 switch ( activity_list.getListType() ) {
-                case ActivityList::REPEAT_ACTIVITY_LIST:
-                case ActivityList::OR_FORK_ACTIVITY_LIST:
+                case ActivityList::Type::REPEAT:
+                case ActivityList::Type::OR_FORK:
                     value = activity_list.getParameter( activity );
                     if ( !value ) continue;             /* usually the end list value for loops */
                     break;
@@ -3212,18 +3220,18 @@ namespace LQIO {
                        << attribute( Xname, activity->getName() );
 
                 switch ( activity_list.getListType() ) {
-                case ActivityList::OR_FORK_ACTIVITY_LIST:
+                case ActivityList::Type::OR_FORK:
                     output << attribute( Xprob, *value );
                     break;
 
-                case ActivityList::REPEAT_ACTIVITY_LIST:
+                case ActivityList::Type::REPEAT:
                     output << attribute( Xcount, *value );
                     break;
 		default: break;
                 }
                 output << "/>" << std::endl;
             }
-            output << end_element( precedence_type_table[activity_list.getListType()] ) << std::endl;
+            output << end_element( precedence_type_table.at(activity_list.getListType()) ) << std::endl;
         }
 
 
@@ -3232,21 +3240,23 @@ namespace LQIO {
          * <synch-call dest="e2" calls-mean="20"/>
          */
 
-        Expat_Document::call_type_table_t Expat_Document::call_type_table[] = {
-            { 0, 0 },
-            { Xasynch_call, Xcalls_mean },
-            { Xsynch_call,  Xcalls_mean },
-            { Xforwarding,  Xprob }
+	std::map<const Call::Type,const Expat_Document::call_type_table_t> Expat_Document::call_type_table =
+	{
+	    { Call::Type::SEND_NO_REPLY, { Xasynch_call, Xcalls_mean } },
+            { Call::Type::RENDEZVOUS, { Xsynch_call,  Xcalls_mean } },
+	    { Call::Type::FORWARD, { Xforwarding,  Xprob } }
         };
 
         void
         Expat_Document::exportCall( std::ostream& output, const Call & call ) const
         {
+	    const std::map<const Call::Type,const Expat_Document::call_type_table_t>::const_iterator call_type = call_type_table.find(call.getCallType());
+	    assert( call_type != call_type_table.end() );
             const bool complex_type = hasResults() || call.hasHistogram() || hasSPEX();
-            output << start_element( call_type_table[call.getCallType()].element, complex_type )
+            output << start_element( call_type->second.element, complex_type )
                    << attribute( Xdest, call.getDestinationEntry()->getName() );
             if ( call.getCallMean() ) {
-                output << attribute( call_type_table[call.getCallType()].attribute, *call.getCallMean() );
+                output << attribute( call_type->second.attribute, *call.getCallMean() );
             }
 
             if ( complex_type ) {
@@ -3295,7 +3305,7 @@ namespace LQIO {
 		}
             }
 
-            output << end_element( call_type_table[call.getCallType()].element, complex_type ) << std::endl;
+            output << end_element( call_type->second.element, complex_type ) << std::endl;
         }
 
 
@@ -3575,21 +3585,13 @@ namespace LQIO {
             processor_table.insert(Xreplication);
             processor_table.insert(Xspeed_factor);
 
-            precedence_table[Xpre] =       ActivityList::JOIN_ACTIVITY_LIST;
-            precedence_table[Xpre_or] =    ActivityList::OR_JOIN_ACTIVITY_LIST;
-            precedence_table[Xpre_and] =   ActivityList::AND_JOIN_ACTIVITY_LIST;
-            precedence_table[Xpost] =      ActivityList::FORK_ACTIVITY_LIST;
-            precedence_table[Xpost_or] =   ActivityList::OR_FORK_ACTIVITY_LIST;
-            precedence_table[Xpost_and] =  ActivityList::AND_FORK_ACTIVITY_LIST;
-            precedence_table[Xpost_loop] = ActivityList::REPEAT_ACTIVITY_LIST;
-
-            precedence_type_table[ActivityList::JOIN_ACTIVITY_LIST] =     Xpre;
-            precedence_type_table[ActivityList::OR_JOIN_ACTIVITY_LIST] =  Xpre_or;
-            precedence_type_table[ActivityList::AND_JOIN_ACTIVITY_LIST] = Xpre_and;
-            precedence_type_table[ActivityList::FORK_ACTIVITY_LIST] =     Xpost;
-            precedence_type_table[ActivityList::OR_FORK_ACTIVITY_LIST] =  Xpost_or;
-            precedence_type_table[ActivityList::AND_FORK_ACTIVITY_LIST] = Xpost_and;
-            precedence_type_table[ActivityList::REPEAT_ACTIVITY_LIST] =   Xpost_loop;
+            precedence_table[Xpre] =       ActivityList::Type::JOIN;
+            precedence_table[Xpre_or] =    ActivityList::Type::OR_JOIN;
+            precedence_table[Xpre_and] =   ActivityList::Type::AND_JOIN;
+            precedence_table[Xpost] =      ActivityList::Type::FORK;
+            precedence_table[Xpost_or] =   ActivityList::Type::OR_FORK;
+            precedence_table[Xpost_and] =  ActivityList::Type::AND_FORK;
+            precedence_table[Xpost_loop] = ActivityList::Type::REPEAT;
 
 	    result_table[Xbottleneck_strength] =	    result_table_t( &DocumentObject::setResultBottleneckStrength,        0 );
             result_table[Xjoin_variance] =                  result_table_t( &DocumentObject::setResultVarianceJoinDelay,         &DocumentObject::setResultVarianceJoinDelayVariance );
@@ -3955,7 +3957,7 @@ namespace LQIO {
 
 
 	std::map<const XML_Char, const XML_Char *> Expat_Document::escape_table;
-        std::map<const XML_Char *,ActivityList::ActivityListType,Expat_Document::attribute_table_t> Expat_Document::precedence_table;
+        std::map<const XML_Char *,ActivityList::ActivityList::Type,Expat_Document::attribute_table_t> Expat_Document::precedence_table;
         std::map<const XML_Char *,Expat_Document::result_table_t,Expat_Document::result_table_t>  Expat_Document::result_table;
         std::map<const XML_Char *,Expat_Document::observation_table_t,Expat_Document::observation_table_t>  Expat_Document::observation_table;	/* SPEX */
         std::set<const XML_Char *,Expat_Document::attribute_table_t> Expat_Document::activity_table;

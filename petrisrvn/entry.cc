@@ -50,7 +50,7 @@ Entry::Entry( LQIO::DOM::Entry * dom, Task * task )
       _n_phases(0),
       _fwd()
 {
-    unsigned n_phases = dom->getEntryType() == LQIO::DOM::Entry::ENTRY_STANDARD ? dom->getMaximumPhase() : 2;
+    unsigned n_phases = dom->getEntryType() == LQIO::DOM::Entry::Type::STANDARD ? dom->getMaximumPhase() : 2;
     for ( unsigned int p = 1; p <= n_phases; ++p ) {
 	phase[p].set_dom( dom->getPhase(p), this );
     }
@@ -142,7 +142,7 @@ double Entry::zz(const Entry* entry) const
 }
 
 bool
-Entry::test_and_set( LQIO::DOM::Entry::EntryType type )
+Entry::test_and_set( LQIO::DOM::Entry::Entry::Type type )
 {
     const bool rc = get_dom()->entryTypeOk( type );
     if ( !rc ) {
@@ -168,13 +168,13 @@ void
 Entry::add_call( const unsigned int p, LQIO::DOM::Call * call )
 {
     /* Make sure this is one of the supported call types */
-    if (call->getCallType() != LQIO::DOM::Call::SEND_NO_REPLY && 
-	call->getCallType() != LQIO::DOM::Call::RENDEZVOUS &&
-	call->getCallType() != LQIO::DOM::Call::QUASI_SEND_NO_REPLY) {
+    if (call->getCallType() != LQIO::DOM::Call::Type::SEND_NO_REPLY && 
+	call->getCallType() != LQIO::DOM::Call::Type::RENDEZVOUS &&
+	call->getCallType() != LQIO::DOM::Call::Type::QUASI_SEND_NO_REPLY) {
 	abort();
     }
 	
-    if ( !test_and_set( LQIO::DOM::Entry::ENTRY_STANDARD ) ) return;
+    if ( !test_and_set( LQIO::DOM::Entry::Type::STANDARD ) ) return;
     phase[p].add_call( call );
 }
 
@@ -182,7 +182,7 @@ Entry::add_call( const unsigned int p, LQIO::DOM::Call * call )
 /* static */ void Entry::add_fwd_call( LQIO::DOM::Call * call ) 
 {
     /* Make sure this is one of the supported call types */
-    if (call->getCallType() != LQIO::DOM::Call::FORWARD) {
+    if (call->getCallType() != LQIO::DOM::Call::Type::FORWARD) {
 	abort();
     }
 

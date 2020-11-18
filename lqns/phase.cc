@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: phase.cc 14104 2020-11-17 03:28:17Z greg $
+ * $Id: phase.cc 14107 2020-11-18 18:51:51Z greg $
  *
  * Everything you wanted to know about an phase, but were afraid to ask.
  *
@@ -457,7 +457,7 @@ Phase::check() const
 
     for_each( callList().begin(), callList().end(), Predicate<Call>( &Call::check ) );
 
-    if ( phaseTypeFlag() == PHASE_STOCHASTIC && CV_sqr() != 1.0 ) {
+    if ( phaseTypeFlag() == LQIO::DOM::Phase::Type::STOCHASTIC && CV_sqr() != 1.0 ) {
 	if ( isActivity() ) {			/* c, phase_flag are incompatible  */
 	    LQIO::solution_error( WRN_COEFFICIENT_OF_VARIATION, "Task", owner()->name().c_str(), getDOM()->getTypeName(), name().c_str() );
 	} else {
@@ -697,7 +697,7 @@ Phase::forwardedRendezvous( const Call * fwdCall, const double value )
 	}
 	Call * aCall = findOrAddFwdCall( toEntry, fwdCall );
 	LQIO::DOM::Phase* aDOM = getDOM();
-	LQIO::DOM::Call* rendezvousCall = new LQIO::DOM::Call( aDOM->getDocument(), LQIO::DOM::Call::RENDEZVOUS,
+	LQIO::DOM::Call* rendezvousCall = new LQIO::DOM::Call( aDOM->getDocument(), LQIO::DOM::Call::Type::RENDEZVOUS,
 							       getDOM(), toEntry->getDOM(),
 							       new LQIO::DOM::ConstantExternalVariable(value));
 	aCall->rendezvous(rendezvousCall);
@@ -1422,7 +1422,7 @@ Phase::recalculateDynamicValues()
 	const LQIO::DOM::Call* callDOM = _processorCall->getDOM();
 	const LQIO::DOM::Document * aDocument = getDOM()->getDocument();
 	if ( callDOM ) delete callDOM;
-	_processorCall->rendezvous( new LQIO::DOM::Call(aDocument, LQIO::DOM::Call::QUASI_RENDEZVOUS,
+	_processorCall->rendezvous( new LQIO::DOM::Call(aDocument, LQIO::DOM::Call::Type::QUASI_RENDEZVOUS,
 							 nullptr, _processorEntry->getDOM(), new LQIO::DOM::ConstantExternalVariable(nCalls)) );
 	/* Recompute dynamic values. */
 		
@@ -1462,7 +1462,7 @@ Phase::computeVariance()
     } else switch ( Pragma::variance() ) {
 
 	case Pragma::MOL_VARIANCE:
-	    if ( phaseTypeFlag() == PHASE_STOCHASTIC ) {
+	    if ( phaseTypeFlag() == LQIO::DOM::Phase::Type::STOCHASTIC ) {
 		_variance =  mol_phase();
 		break;
 	    } else {
@@ -1471,7 +1471,7 @@ Phase::computeVariance()
 	    break;
 
 	case Pragma::STOCHASTIC_VARIANCE:
-	    if ( phaseTypeFlag() == PHASE_STOCHASTIC ) {
+	    if ( phaseTypeFlag() == LQIO::DOM::Phase::Type::STOCHASTIC ) {
 		_variance =  stochastic_phase();
 		break;
 	    } else {
@@ -1480,7 +1480,7 @@ Phase::computeVariance()
 	    break;
 		
 	case Pragma::DEFAULT_VARIANCE:
-	    if ( phaseTypeFlag() == PHASE_STOCHASTIC ) {
+	    if ( phaseTypeFlag() == LQIO::DOM::Phase::Type::STOCHASTIC ) {
 		_variance =  stochastic_phase();
 	    } else {
 		_variance =  deterministic_phase();
@@ -1723,7 +1723,7 @@ Phase::initProcessor()
 	 */	
 
 	_processorCall = newProcessorCall( _processorEntry );
-	LQIO::DOM::Call* processorCallDom = new LQIO::DOM::Call(aDocument, LQIO::DOM::Call::QUASI_RENDEZVOUS,
+	LQIO::DOM::Call* processorCallDom = new LQIO::DOM::Call(aDocument, LQIO::DOM::Call::Type::QUASI_RENDEZVOUS,
 								nullptr, _processorEntry->getDOM(),
 								new LQIO::DOM::ConstantExternalVariable(nCalls));
 	_processorCall->rendezvous( processorCallDom );
@@ -1749,7 +1749,7 @@ Phase::initProcessor()
 	_thinkEntry->initVariance();
 
 	_thinkCall = newProcessorCall( _thinkEntry );
-	LQIO::DOM::Call* thinkCallDom = new LQIO::DOM::Call(aDocument, LQIO::DOM::Call::QUASI_RENDEZVOUS,
+	LQIO::DOM::Call* thinkCallDom = new LQIO::DOM::Call(aDocument, LQIO::DOM::Call::Type::QUASI_RENDEZVOUS,
 							    nullptr, _thinkEntry->getDOM(),
 							    new LQIO::DOM::ConstantExternalVariable(1));
 
@@ -1786,7 +1786,7 @@ Phase::initCFSProcessor()
 	_thinkEntry->initVariance();
 
 	_thinkCall = newProcessorCall( _thinkEntry );
-	LQIO::DOM::Call* thinkCallDom = new LQIO::DOM::Call(aDocument, LQIO::DOM::Call::QUASI_RENDEZVOUS,
+	LQIO::DOM::Call* thinkCallDom = new LQIO::DOM::Call(aDocument, LQIO::DOM::Call::Type::QUASI_RENDEZVOUS,
 							    nullptr, _thinkEntry->getDOM(),
 							    new LQIO::DOM::ConstantExternalVariable(1));
 

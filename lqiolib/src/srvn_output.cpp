@@ -1,5 +1,5 @@
 /*
- *  $Id: srvn_output.cpp 14000 2020-10-25 12:50:53Z greg $
+ *  $Id: srvn_output.cpp 14107 2020-11-18 18:51:51Z greg $
  *
  * Copyright the Real-Time and Distributed Systems Group,
  * Department of Systems and Computer Engineering,
@@ -527,8 +527,8 @@ namespace LQIO {
         for (p = phases.begin(); p != phases.end(); ++p) {
             const DOM::Phase* phase = p->second;
             switch ( phase->getPhaseTypeFlag() ) {
-            case PHASE_DETERMINISTIC: output << setw(__maxDblLen) << "determin"; break;
-            case PHASE_STOCHASTIC:    output << setw(__maxDblLen) << "stochastic"; break;
+            case DOM::Phase::Type::DETERMINISTIC: output << setw(__maxDblLen) << "determin"; break;
+            case DOM::Phase::Type::STOCHASTIC:    output << setw(__maxDblLen) << "stochastic"; break;
             }
         }
         return output;
@@ -674,8 +674,8 @@ namespace LQIO {
     SRVN::ObjectInput::printCallType( ostream& output, const DOM::Call* call )
     {
         switch ( call->getCallType() ) {
-        case DOM::Call::RENDEZVOUS: output << "y"; break;
-        case DOM::Call::SEND_NO_REPLY: output << "z"; break;
+        case DOM::Call::Type::RENDEZVOUS: output << "y"; break;
+        case DOM::Call::Type::SEND_NO_REPLY: output << "z"; break;
         default: abort();
         }
         return output;
@@ -764,7 +764,7 @@ namespace LQIO {
 	if ( document.getResultMaxRSS() > 0 ) {
 	    output << "#!MaxRSS: " << document.getResultMaxRSS() << endl;
 	}
-	const LQIO::DOM::MVAStatistics& mva_info = document.getResultMVAStatistics();
+	const DOM::MVAStatistics& mva_info = document.getResultMVAStatistics();
 	if ( mva_info.getNumberOfSubmodels() > 0 ) {
             output << "#!Solver: "
                    << mva_info.getNumberOfSubmodels() << ' '
@@ -1344,7 +1344,7 @@ namespace LQIO {
 	}
 	_output << newline;
 
-	const LQIO::DOM::MVAStatistics& mva_info = document.getResultMVAStatistics();
+	const DOM::MVAStatistics& mva_info = document.getResultMVAStatistics();
 	if ( mva_info.getNumberOfSubmodels() > 0 ) {
             _output << "    Submodels:  " << mva_info.getNumberOfSubmodels() << newline
                     << "    MVA Core(): " << setw(ObjectOutput::__maxDblLen) << mva_info.getNumberOfCore() << newline
@@ -2084,12 +2084,12 @@ namespace LQIO {
         }
         _output << endl;
 
-        for ( std::map<const std::string, LQIO::DOM::ExternalVariable *>::const_iterator fi = task.getFanIns().begin(); fi != task.getFanIns().end(); ++fi ) {
+        for ( std::map<const std::string, DOM::ExternalVariable *>::const_iterator fi = task.getFanIns().begin(); fi != task.getFanIns().end(); ++fi ) {
             if ( !DOM::Common_IO::is_default_value( fi->second, 1 ) ) {     /* task name, fan in */
                 _output << "  I " << fi->first << " " << task.getName() << " " << Input::print_integer_parameter(fi->second,0) << endl;
             }
         }
-        for ( std::map<const std::string, LQIO::DOM::ExternalVariable *>::const_iterator fo = task.getFanOuts().begin(); fo != task.getFanOuts().end(); ++fo ) {
+        for ( std::map<const std::string, DOM::ExternalVariable *>::const_iterator fo = task.getFanOuts().begin(); fo != task.getFanOuts().end(); ++fo ) {
             if ( !DOM::Common_IO::is_default_value( fo->second, 1 ) ) {
                 _output << "  O " << task.getName() << " " << fo->first << " " << Input::print_integer_parameter(fo->second,0) << endl;
             }
@@ -2376,8 +2376,8 @@ namespace LQIO {
     {
         _output << setw(__maxStrLen) << " " << setw(__maxStrLen-1) << activity.getName() << " ";
         switch (activity.getPhaseTypeFlag()) {
-        case PHASE_DETERMINISTIC: _output << setw(__maxDblLen) << "determin"; break;
-        case PHASE_STOCHASTIC:    _output << setw(__maxDblLen) << "stochastic"; break;
+        case DOM::Phase::Type::DETERMINISTIC: _output << setw(__maxDblLen) << "determin"; break;
+        case DOM::Phase::Type::STOCHASTIC:    _output << setw(__maxDblLen) << "stochastic"; break;
         }
         _output << newline;
     }
@@ -2647,7 +2647,7 @@ namespace LQIO {
         const std::vector<DOM::Call*>& fwds = entry.getForwarding();
         for ( std::vector<DOM::Call*>::const_iterator nextFwd = fwds.begin(); nextFwd != fwds.end(); ++nextFwd ) {
             const DOM::Call * fwd = *nextFwd;
-	    const LQIO::DOM::Entry * dst = fwd->getDestinationEntry();
+	    const DOM::Entry * dst = fwd->getDestinationEntry();
 	    try {
 		_output << "  F " << setw( ObjectInput::__maxEntLen ) << entry.getName()
 			<< " " << setw( ObjectInput::__maxEntLen ) << dst->getName() << number_of_calls( fwd ) << " -1" << endl;
@@ -2675,8 +2675,8 @@ namespace LQIO {
             const DOM::ForPhase& calls_by_phase = next_y->second;
             _output << "  ";
             switch ( calls_by_phase.getType() ) {
-            case DOM::Call::RENDEZVOUS: _output << "y"; break;
-            case DOM::Call::SEND_NO_REPLY: _output << "z"; break;
+            case DOM::Call::Type::RENDEZVOUS: _output << "y"; break;
+            case DOM::Call::Type::SEND_NO_REPLY: _output << "z"; break;
             default: abort();
             }
             _output << " " << setw( ObjectInput::__maxEntLen ) << entry.getName()
@@ -2720,7 +2720,7 @@ namespace LQIO {
 	/* Pad with default values if phase is missing from list */
 	
 	for ( ; _p < p.first; ++_p ) {
-	    (this->*_func)( LQIO::DOM::Phase() );
+	    (this->*_func)( DOM::Phase() );
 	}
         (this->*_func)( *(p.second) );
         _output.flags(oldFlags);
@@ -2859,19 +2859,19 @@ namespace LQIO {
         for ( std::vector<const DOM::Activity*>::const_iterator next_activity = list.begin(); next_activity != list.end(); ++next_activity ) {
             const DOM::Activity * activity = *next_activity;
             switch ( precedence.getListType() ) {
-            case DOM::ActivityList::AND_JOIN_ACTIVITY_LIST:
+            case DOM::ActivityList::Type::AND_JOIN:
                 if ( next_activity != list.begin() ) {
                     _output << " &";
                 }
                 break;
 
-            case DOM::ActivityList::OR_JOIN_ACTIVITY_LIST:
+            case DOM::ActivityList::Type::OR_JOIN:
                 if ( next_activity != list.begin() ) {
                     _output << " +";
                 }
                 break;
 
-            case DOM::ActivityList::JOIN_ACTIVITY_LIST:
+            case DOM::ActivityList::Type::JOIN:
                 break;
 
             default:
@@ -2899,23 +2899,23 @@ namespace LQIO {
 		_pending_reply_activity = activity;
 	    }
             switch ( precedence.getListType() ) {
-            case DOM::ActivityList::AND_FORK_ACTIVITY_LIST:
+            case DOM::ActivityList::Type::AND_FORK:
                 if ( !first ) {
                     _output << " & ";
                 }
                 break;
 
-            case DOM::ActivityList::OR_FORK_ACTIVITY_LIST:
+            case DOM::ActivityList::Type::OR_FORK:
                 if ( !first ) {
                     _output << " + ";
                 }
                 _output << "(" << precedence.getParameterValue( activity ) << ") ";
                 break;
 
-            case DOM::ActivityList::FORK_ACTIVITY_LIST:
+            case DOM::ActivityList::Type::FORK:
                 break;
 
-            case DOM::ActivityList::REPEAT_ACTIVITY_LIST:
+            case DOM::ActivityList::Type::REPEAT:
                 if ( precedence.getParameter( activity ) == NULL ) {
                     end_activity = activity;
                     continue;
@@ -3120,14 +3120,14 @@ namespace LQIO {
     void
     SRVN::ActivityCallInput::print( const DOM::Call* call ) const
     {
-	const LQIO::DOM::Activity * src = dynamic_cast<const LQIO::DOM::Activity *>(call->getSourceObject());
+	const DOM::Activity * src = dynamic_cast<const DOM::Activity *>(call->getSourceObject());
 	assert(src != nullptr );
-	const LQIO::DOM::Entry * dst = call->getDestinationEntry();
+	const DOM::Entry * dst = call->getDestinationEntry();
 	try {
 	    _output << "  " << call_type( call ) << " " << src->getName() << " " << dst->getName() << number_of_calls( call );
 	}
 	catch ( const std::domain_error& e ) {
-	    const LQIO::DOM::Task * task = src->getTask();
+	    const DOM::Task * task = src->getTask();
 	    LQIO::solution_error( LQIO::ERR_INVALID_CALL_PARAMETER,
 				  "task", task->getName().c_str(),
 				  src->getTypeName(), src->getName().c_str(),

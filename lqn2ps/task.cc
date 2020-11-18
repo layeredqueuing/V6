@@ -10,7 +10,7 @@
  * January 2001
  *
  * ------------------------------------------------------------------------
- * $Id: task.cc 14000 2020-10-25 12:50:53Z greg $
+ * $Id: task.cc 14106 2020-11-18 14:33:50Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -488,7 +488,7 @@ Task::addActivity( const Activity& srcActivity, const unsigned replica )
 	Entry *dstEntry = Entry::find_replica( srcActivity.rootEntry()->name(), replica );
 	dstActivity->rootEntry( dstEntry, nullptr );
 	const_cast<LQIO::DOM::Entry *>(dynamic_cast<const LQIO::DOM::Entry *>(dstEntry->getDOM()))->setStartActivity( dstDOM );
-	if (dstEntry->entryTypeOk(LQIO::DOM::Entry::ENTRY_ACTIVITY)) {
+	if (dstEntry->entryTypeOk(LQIO::DOM::Entry::Type::ACTIVITY)) {
 	    dstEntry->setStartActivity(dstActivity);
 	}
     }

@@ -9,7 +9,7 @@
 /*
  * Activities (and phases).
  *
- * $Id: activity.h 13831 2020-09-18 12:51:41Z greg $
+ * $Id: activity.h 14107 2020-11-18 18:51:51Z greg $
  */
 
 #ifndef ACTIVITY_H
@@ -46,7 +46,7 @@ public:
     double cv_sqr() const { return (_dom && _dom->hasCoeffOfVariationSquared()) ? _dom->getCoeffOfVariationSquaredValue() : 1.0; }
     double service() const;
     double think_time() const { return _think_time; }		/* Need to cache _think_time!!! */
-    phase_type type() const { return _dom ? _dom->getPhaseTypeFlag() : PHASE_STOCHASTIC; }
+    LQIO::DOM::Phase::Type type() const { return _dom ? _dom->getPhaseTypeFlag() : LQIO::DOM::Phase::Type::STOCHASTIC; }
 
     bool is_specified() const { return _dom != 0; } 	/* True if some value set.	*/
     bool is_activity() const { return dynamic_cast<LQIO::DOM::Activity *>(_dom) != 0; }
