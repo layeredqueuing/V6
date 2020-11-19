@@ -36,7 +36,7 @@ namespace LQIO {
 	    typedef enum { AUTOMATIC_INPUT, LQN_INPUT, XML_INPUT, JSON_INPUT } input_format;
 
 	private:
-	    typedef enum { SET_FALSE, SET_TRUE, NOT_SET } cached;
+	    enum class cached { SET_FALSE, SET_TRUE, NOT_SET };
 
 	private:
 	    Document& operator=( const Document& );

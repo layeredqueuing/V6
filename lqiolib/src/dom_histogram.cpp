@@ -16,7 +16,7 @@ namespace LQIO {
 
 	const char * Histogram::__typeName = "histogram";
 
-	Histogram::Histogram( const Document * document, histogram_t type, unsigned n_bins, double min, double max ) 
+	Histogram::Histogram( const Document * document, Type type, unsigned n_bins, double min, double max ) 
 	    : DocumentObject( document, "" ),
 	      _n_bins(n_bins), _min(min), _max(max), _bin_size(0), _has_results(false),
 	      _histogram_type(type), _bins()

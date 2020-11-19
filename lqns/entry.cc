@@ -60,7 +60,7 @@ Entry::Entry( LQIO::DOM::Entry* dom, const unsigned id, const unsigned index )
       _entryId(id),
       _index(index+1),
       _entryType(LQIO::DOM::Entry::Type::NOT_DEFINED),
-      _semaphoreType(dom ? dom->getSemaphoreFlag() : SEMAPHORE_NONE),
+      _semaphoreType(dom ? dom->getSemaphoreFlag() : LQIO::DOM::Entry::Semaphore::NONE),
       _calledBy(NOT_CALLED),
       _throughput(0.0),
       _throughputBound(0.0),
@@ -492,9 +492,9 @@ Entry::entryTypeOk( const LQIO::DOM::Entry::Type aType )
  */
 
 bool
-Entry::entrySemaphoreTypeOk( const semaphore_entry_type aType )
+Entry::entrySemaphoreTypeOk( const LQIO::DOM::Entry::Semaphore aType )
 {
-    if ( _semaphoreType == SEMAPHORE_NONE ) {
+    if ( _semaphoreType == LQIO::DOM::Entry::Semaphore::NONE ) {
 	_semaphoreType = aType;
     } else if ( _semaphoreType != aType ) {
 	LQIO::input_error2( LQIO::ERR_MIXED_SEMAPHORE_ENTRY_TYPES, name().c_str() );

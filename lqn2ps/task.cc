@@ -748,10 +748,10 @@ Task::check() const
 	    LQIO::solution_error( LQIO::ERR_ENTRY_COUNT_FOR_TASK, srcName.c_str(), nEntries(), N_SEMAPHORE_ENTRIES );
 	    rc = false;
 	}
-	if ( !((entries().at(0)->isSignalEntry() && entries().at(1)->entrySemaphoreTypeOk(SEMAPHORE_WAIT))
-	       || (entries().at(0)->isWaitEntry() && entries().at(1)->entrySemaphoreTypeOk(SEMAPHORE_SIGNAL))
-	       || (entries().at(1)->isSignalEntry() && entries().at(0)->entrySemaphoreTypeOk(SEMAPHORE_WAIT))
-	       || (entries().at(1)->isWaitEntry() && entries().at(0)->entrySemaphoreTypeOk(SEMAPHORE_SIGNAL))) ) {
+	if ( !((entries().at(0)->isSignalEntry() && entries().at(1)->entrySemaphoreTypeOk(LQIO::DOM::Entry::Semaphore::WAIT))
+	       || (entries().at(0)->isWaitEntry() && entries().at(1)->entrySemaphoreTypeOk(LQIO::DOM::Entry::Semaphore::SIGNAL))
+	       || (entries().at(1)->isSignalEntry() && entries().at(0)->entrySemaphoreTypeOk(LQIO::DOM::Entry::Semaphore::WAIT))
+	       || (entries().at(1)->isWaitEntry() && entries().at(0)->entrySemaphoreTypeOk(LQIO::DOM::Entry::Semaphore::SIGNAL))) ) {
 	    LQIO::solution_error( LQIO::ERR_NO_SEMAPHORE, srcName.c_str() );
 	    rc = false;
 	} else if ( entries().at(0)->isCalled() && !entries().at(1)->isCalled() ) {

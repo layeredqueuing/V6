@@ -315,8 +315,8 @@ public:
     virtual bool isProcessorEntry() const { return false; }
     bool isActivityEntry() const { return _entryType == LQIO::DOM::Entry::Type::ACTIVITY; }
     bool isStandardEntry() const { return _entryType == LQIO::DOM::Entry::Type::STANDARD; }
-    bool isSignalEntry() const { return _semaphoreType == SEMAPHORE_SIGNAL; }
-    bool isWaitEntry() const { return _semaphoreType == SEMAPHORE_WAIT; }
+    bool isSignalEntry() const { return _semaphoreType == LQIO::DOM::Entry::Semaphore::SIGNAL; }
+    bool isWaitEntry() const { return _semaphoreType == LQIO::DOM::Entry::Semaphore::WAIT; }
     bool isInterlocked( const Entry * dstEntry) const { return _interlock[dstEntry->entryId()].all > 0.0; }
     bool isInterlockedFrom( const Entry * srcEntry ) const { return srcEntry->isInterlocked(this); }
     bool isReferenceTaskEntry() const;
@@ -330,7 +330,7 @@ public:
     bool hasOvertaking() const { return maxPhase() > 1 /*&&( !(owner()->isReferenceTask()))*/; }
 		
     bool entryTypeOk( const LQIO::DOM::Entry::Type );
-    bool entrySemaphoreTypeOk( const semaphore_entry_type aType );
+    bool entrySemaphoreTypeOk( const LQIO::DOM::Entry::Semaphore aType );
     unsigned maxPhase() const { return _phase.size(); }
     unsigned concurrentThreads() const;
     std::set<Entity *>& getServers( const std::set<Entity *>& ) const;	// Called tasks/processors
@@ -451,7 +451,7 @@ private:
     const unsigned _entryId;			/* Gobal entry id. (for chain)	*/
     const unsigned short _index;		/* My index (for mva)		*/
     LQIO::DOM::Entry::Type _entryType;
-    semaphore_entry_type _semaphoreType;	/* Extra type information	*/
+    LQIO::DOM::Entry::Semaphore _semaphoreType;	/* Extra type information	*/
     requesting_type _calledBy;			/* true if entry referenced.	*/
     double _throughput;				/* Computed throughput.		*/
     double _throughputBound;			/* Type 1 throughput bound.	*/

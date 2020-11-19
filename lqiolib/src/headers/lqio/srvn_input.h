@@ -47,8 +47,8 @@ extern "C" {
     void srvn_set_histogram(void * entry_v, const unsigned phase, const double min, const double max, const int n_bins );
     void srvn_set_model_parameters(const char *model_comment, void * conv_val, void * it_limit, void * print_int, void * underrelax_coeff);
     void srvn_set_phase_type_flag(void * entry_v, unsigned n_phases, ...);
-    void srvn_set_rwlock_flag( void * entry_v, rwlock_entry_type );
-    void srvn_set_semaphore_flag( void * entry_v, semaphore_entry_type );
+    void srvn_set_rwlock_flag( void * entry_v, int );
+    void srvn_set_semaphore_flag( void * entry_v, int );
     void srvn_set_start_activity( void * entry_v, const char *);
     void srvn_set_proc_multiplicity( void * proc_v, void * );
     void srvn_set_proc_rate( void * proc_v, void * );

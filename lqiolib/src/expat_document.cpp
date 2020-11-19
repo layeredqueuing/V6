@@ -1449,7 +1449,7 @@ namespace LQIO {
                                               getOptionalAttribute(attributes,Xreplication),
                                               group );
                     if ( strcasecmp( tokens, "0" ) == 0 ) {
-                        dynamic_cast<SemaphoreTask *>(task)->setInitialState(SemaphoreTask::INITIALLY_EMPTY);
+                        dynamic_cast<SemaphoreTask *>(task)->setInitialState(SemaphoreTask::InitialState::EMPTY);
                     }
                     /* Otherwise, aliased to multiplicity */
 
@@ -1712,9 +1712,9 @@ namespace LQIO {
                 const XML_Char * semaphore = getStringAttribute(attributes,Xsemaphore,"");
                 if ( strlen(semaphore) > 0 ) {
                     if (strcasecmp(semaphore,Xsignal) == 0 ) {
-                        entry->setSemaphoreFlag(SEMAPHORE_SIGNAL);
+                        entry->setSemaphoreFlag(DOM::Entry::Semaphore::SIGNAL);
                     } else if (strcasecmp(semaphore,Xwait) == 0 )  {
-                        entry->setSemaphoreFlag(SEMAPHORE_WAIT);
+                        entry->setSemaphoreFlag(DOM::Entry::Semaphore::WAIT);
                     } else {
                         internal_error( __FILE__, __LINE__, "handleEntries: <entry name=\"%s\" sempahore=\"%s\">", entry_name, semaphore );
                     }
@@ -1723,13 +1723,13 @@ namespace LQIO {
                 const XML_Char * rwlock = getStringAttribute(attributes,Xrwlock,"");
                 if ( strlen(rwlock) > 0 ) {
                     if (strcasecmp(rwlock,Xr_unlock) == 0 ) {
-                        entry->setRWLockFlag(RWLOCK_R_UNLOCK);
+                        entry->setRWLockFlag(DOM::Entry::RWLock::READ_UNLOCK);
                     } else if (strcasecmp(rwlock,Xr_lock) == 0 ) {
-                        entry->setRWLockFlag(RWLOCK_R_LOCK);
+                        entry->setRWLockFlag(DOM::Entry::RWLock::READ_LOCK);
                     } else if (strcasecmp(rwlock,Xw_unlock) == 0 ) {
-                        entry->setRWLockFlag(RWLOCK_W_UNLOCK);
+                        entry->setRWLockFlag(DOM::Entry::RWLock::WRITE_UNLOCK);
                     } else if (strcasecmp(rwlock,Xw_lock) == 0 ) {
-                        entry->setRWLockFlag(RWLOCK_W_LOCK);
+                        entry->setRWLockFlag(DOM::Entry::RWLock::WRITE_LOCK);
                     } else {
                         internal_error( __FILE__, __LINE__, "handleEntries: <entry name=\"%s\" rwlock=\"%s\">", entry_name, rwlock );
                     }
@@ -1806,7 +1806,7 @@ namespace LQIO {
 		phase->setThinkTime( getOptionalAttribute(attributes,Xthink_time) );
                 const double max_service = getDoubleAttribute(attributes,Xmax_service_time,0.0);
                 if ( max_service > 0 ) {
-                    findOrAddHistogram( phase, LQIO::DOM::Histogram::CONTINUOUS, 0, max_service, max_service );
+                    findOrAddHistogram( phase, LQIO::DOM::Histogram::Type::CONTINUOUS, 0, max_service, max_service );
                 }
                 const XML_Char * call_order = getStringAttribute(attributes,Xcall_order,"");
                 if ( strlen(call_order) > 0 ) {
@@ -2008,13 +2008,13 @@ namespace LQIO {
 		    LQIO::input_error2( LQIO::ERR_UNEXPECTED_ATTRIBUTE, Xhistogram_bin, Xphase );
 		    return NULL;
 		} else {
-		    return findOrAddHistogram( object, phase, Histogram::CONTINUOUS,	/* Special version for entries. */
+		    return findOrAddHistogram( object, phase, Histogram::Type::CONTINUOUS,	/* Special version for entries. */
 					       getLongAttribute(attributes, Xnumber_bins, 10),
 					       getDoubleAttribute(attributes, Xmin),
 					       getDoubleAttribute(attributes, Xmax));
 		}
 	    } else {
-		return findOrAddHistogram( object, Histogram::CONTINUOUS,
+		return findOrAddHistogram( object, Histogram::Type::CONTINUOUS,
 					   getLongAttribute(attributes, Xnumber_bins, 10),
 					   getDoubleAttribute(attributes, Xmin),
 					   getDoubleAttribute(attributes, Xmax));
@@ -2026,7 +2026,7 @@ namespace LQIO {
         {
 	    checkAttributes( Xhistogram_bin, attributes, histogram_table );
 
-            return findOrAddHistogram( object, Histogram::DISCRETE,
+            return findOrAddHistogram( object, Histogram::Type::DISCRETE,
 				       getLongAttribute(attributes, Xnumber_bins,0),	/* default values (for petrisrvn) */
                                        getDoubleAttribute(attributes, Xmin,0),
                                        getDoubleAttribute(attributes, Xmax,0) );
@@ -2147,7 +2147,7 @@ namespace LQIO {
 	}
 
         Histogram *
-        Expat_Document::findOrAddHistogram( DocumentObject * object, Histogram::histogram_t type, unsigned int n_bins, double min, double max )
+        Expat_Document::findOrAddHistogram( DocumentObject * object, Histogram::Type  type, unsigned int n_bins, double min, double max )
         {
             Histogram * histogram = 0;
             if ( _createObjects ) {
@@ -2165,7 +2165,7 @@ namespace LQIO {
 
 
         Histogram *
-        Expat_Document::findOrAddHistogram( DocumentObject * object, unsigned int phase, Histogram::histogram_t type, unsigned int n_bins, double min, double max )
+        Expat_Document::findOrAddHistogram( DocumentObject * object, unsigned int phase, Histogram::Type  type, unsigned int n_bins, double min, double max )
         {
             Histogram * histogram = 0;
             if ( _createObjects ) {
@@ -2663,7 +2663,7 @@ namespace LQIO {
             if ( task.hasReplicas() ) {
                 output << attribute( Xreplication, *task.getReplicas() );
             }
-            if ( task.getSchedulingType() == SCHEDULE_SEMAPHORE && dynamic_cast<const SemaphoreTask&>(task).getInitialState() == SemaphoreTask::INITIALLY_EMPTY ) {
+            if ( task.getSchedulingType() == SCHEDULE_SEMAPHORE && dynamic_cast<const SemaphoreTask&>(task).getInitialState() == SemaphoreTask::InitialState::EMPTY ) {
                 output << attribute( Xinitially, 0.0 );
 
             }else if ( task.getSchedulingType() == SCHEDULE_TIMEOUT || task.getSchedulingType() == SCHEDULE_ABORT  ) {
@@ -2891,16 +2891,16 @@ namespace LQIO {
             }
 
             switch ( entry.getSemaphoreFlag() ) {
-            case SEMAPHORE_SIGNAL: output << attribute( Xsemaphore, Xsignal ); break;
-            case SEMAPHORE_WAIT:   output << attribute( Xsemaphore, Xwait ); break;
+            case DOM::Entry::Semaphore::SIGNAL: output << attribute( Xsemaphore, Xsignal ); break;
+            case DOM::Entry::Semaphore::WAIT:   output << attribute( Xsemaphore, Xwait ); break;
 	    default: break;
             }
 
             switch ( entry.getRWLockFlag() ) {
-            case RWLOCK_R_UNLOCK: output << attribute( Xrwlock, Xr_unlock ); break;
-            case RWLOCK_R_LOCK:   output << attribute( Xrwlock, Xr_lock ); break;
-            case RWLOCK_W_UNLOCK: output << attribute( Xrwlock, Xw_unlock ); break;
-            case RWLOCK_W_LOCK:   output << attribute( Xrwlock, Xw_lock ); break;
+            case DOM::Entry::RWLock::READ_UNLOCK:  output << attribute( Xrwlock, Xr_unlock ); break;
+            case DOM::Entry::RWLock::READ_LOCK:    output << attribute( Xrwlock, Xr_lock ); break;
+            case DOM::Entry::RWLock::WRITE_UNLOCK: output << attribute( Xrwlock, Xw_unlock ); break;
+            case DOM::Entry::RWLock::WRITE_LOCK:   output << attribute( Xrwlock, Xw_lock ); break;
 	    default: break;
             }
 
@@ -3315,7 +3315,7 @@ namespace LQIO {
         {
             if ( histogram.getBins() == 0 ) return;
 	    const bool complex_type = histogram.hasResults();
-	    const XML_Char * element_name = histogram.getHistogramType() == Histogram::CONTINUOUS ? Xservice_time_distribution : Xqueue_length_distribution;
+	    const XML_Char * element_name = histogram.getHistogramType() == Histogram::Type::CONTINUOUS ? Xservice_time_distribution : Xqueue_length_distribution;
 
             output << start_element( element_name, complex_type )
                    << attribute( Xnumber_bins, histogram.getBins() )

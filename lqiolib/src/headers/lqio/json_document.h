@@ -35,7 +35,7 @@ namespace LQIO {
 	    class ImportActivity;
 	    class ImportResult;
 
-	    typedef enum { DOM_NULL, DOM_BOOLEAN, DOM_CLOCK, DOM_DOUBLE, DOM_EXTVAR, DOM_LONG, DOM_UNSIGNED, DOM_STRING, DOM_ACTIVITY, DOM_GROUP, DOM_PROCESSOR, JSON_OBJECT } dom_type;
+	    enum class dom_type { DOM_NULL, BOOLEAN, CLOCK, DOUBLE, DOM_EXTVAR, LONG, UNSIGNED, STRING, DOM_ACTIVITY, DOM_GROUP, DOM_PROCESSOR, JSON_OBJECT };
 	    typedef void (DOM::Task::*fan_in_out_fptr)( const std::string&, ExternalVariable* );
 
 	private:
@@ -200,34 +200,34 @@ namespace LQIO {
 		};
 
 	    public:
-                Import( call_extvar_fptr f )    : _t(DOM_EXTVAR)    { _f.ca_e = f; }
-                Import( call_type_fptr f )      : _t(JSON_OBJECT)   { _f.ca_t = f; }
-                Import( doc_bool_fptr f )       : _t(DOM_BOOLEAN)   { _f.db = f; }
-                Import( doc_double_fptr f )     : _t(DOM_DOUBLE)    { _f.dd = f; }
-                Import( doc_long_fptr f )       : _t(DOM_LONG)      { _f.dl = f; }
-                Import( doc_extvar_fptr f )     : _t(DOM_EXTVAR)    { _f.de = f; }
-                Import( doc_string_fptr f )     : _t(DOM_STRING)    { _f.ds = f; }
-                Import( doc_unsigned_fptr f )   : _t(DOM_UNSIGNED)  { _f.du = f; }
-                Import( entity_double_fptr f )  : _t(DOM_DOUBLE)    { _f.et_d = f; }
-                Import( entity_unsigned_fptr f ): _t(DOM_UNSIGNED)  { _f.et_u = f; }
-                Import( entry_activity_fptr f ) : _t(DOM_ACTIVITY)  { _f.en_a = f; }
-                Import( entry_extvar_fptr f )   : _t(DOM_EXTVAR)    { _f.en_e = f; }
-                Import( group_bool_fptr f )     : _t(DOM_BOOLEAN)   { _f.gr_b = f; }
-                Import( group_extvar_fptr f )   : _t(DOM_EXTVAR)    { _f.gr_e = f; }
-                Import( group_proc_fptr f )     : _t(DOM_PROCESSOR) { _f.gr_p = f; }
-                Import( obj_string_fptr f )     : _t(DOM_STRING)    { _f.os = f; }
-                Import( phase_extvar_fptr f )   : _t(DOM_EXTVAR)    { _f.ph_e = f; }
-                Import( phase_type_fptr f )     : _t(DOM_BOOLEAN)   { _f.ph_t = f; }
-                Import( proc_extvar_fptr f )    : _t(DOM_EXTVAR)    { _f.pr_e = f; }
-                Import( set_docobj_fptr f )     : _t(JSON_OBJECT)   { _f.doc = f; }
-                Import( set_object_fptr f )     : _t(JSON_OBJECT)   { _f.o = f; }
-                Import( set_result_fptr f )     : _t(DOM_DOUBLE)    { _f.re_d = f; }
-                Import( task_extvar_fptr f )    : _t(DOM_EXTVAR)    { _f.ta_e = f; }
-                Import( task_group_fptr f )     : _t(DOM_GROUP)     { _f.ta_g = f; }
-                Import( task_proc_fptr f )      : _t(DOM_PROCESSOR) { _f.ta_p = f; }
-                Import( task_unsigned_fptr f )  : _t(DOM_UNSIGNED)  { _f.ta_u = f; }
-                Import( task_fan_in_out_fptr f ): _t(JSON_OBJECT)   { _f.ta_f = f; }
-                Import() : _t(DOM_NULL) { _f.v = 0; }
+                Import( call_extvar_fptr f )    : _t(dom_type::DOM_EXTVAR)    { _f.ca_e = f; }
+                Import( call_type_fptr f )      : _t(dom_type::JSON_OBJECT)   { _f.ca_t = f; }
+                Import( doc_bool_fptr f )       : _t(dom_type::BOOLEAN)       { _f.db = f; }
+                Import( doc_double_fptr f )     : _t(dom_type::DOUBLE)        { _f.dd = f; }
+                Import( doc_long_fptr f )       : _t(dom_type::LONG)          { _f.dl = f; }
+                Import( doc_extvar_fptr f )     : _t(dom_type::DOM_EXTVAR)    { _f.de = f; }
+                Import( doc_string_fptr f )     : _t(dom_type::STRING)        { _f.ds = f; }
+                Import( doc_unsigned_fptr f )   : _t(dom_type::UNSIGNED)      { _f.du = f; }
+                Import( entity_double_fptr f )  : _t(dom_type::DOUBLE)        { _f.et_d = f; }
+                Import( entity_unsigned_fptr f ): _t(dom_type::UNSIGNED)      { _f.et_u = f; }
+                Import( entry_activity_fptr f ) : _t(dom_type::DOM_ACTIVITY)  { _f.en_a = f; }
+                Import( entry_extvar_fptr f )   : _t(dom_type::DOM_EXTVAR)    { _f.en_e = f; }
+                Import( group_bool_fptr f )     : _t(dom_type::BOOLEAN)       { _f.gr_b = f; }
+                Import( group_extvar_fptr f )   : _t(dom_type::DOM_EXTVAR)    { _f.gr_e = f; }
+                Import( group_proc_fptr f )     : _t(dom_type::DOM_PROCESSOR) { _f.gr_p = f; }
+                Import( obj_string_fptr f )     : _t(dom_type::STRING)        { _f.os = f; }
+                Import( phase_extvar_fptr f )   : _t(dom_type::DOM_EXTVAR)    { _f.ph_e = f; }
+                Import( phase_type_fptr f )     : _t(dom_type::BOOLEAN)       { _f.ph_t = f; }
+                Import( proc_extvar_fptr f )    : _t(dom_type::DOM_EXTVAR)    { _f.pr_e = f; }
+                Import( set_docobj_fptr f )     : _t(dom_type::JSON_OBJECT)   { _f.doc = f; }
+                Import( set_object_fptr f )     : _t(dom_type::JSON_OBJECT)   { _f.o = f; }
+                Import( set_result_fptr f )     : _t(dom_type::DOUBLE)        { _f.re_d = f; }
+                Import( task_extvar_fptr f )    : _t(dom_type::DOM_EXTVAR)    { _f.ta_e = f; }
+                Import( task_group_fptr f )     : _t(dom_type::DOM_GROUP)     { _f.ta_g = f; }
+                Import( task_proc_fptr f )      : _t(dom_type::DOM_PROCESSOR) { _f.ta_p = f; }
+                Import( task_unsigned_fptr f )  : _t(dom_type::UNSIGNED)      { _f.ta_u = f; }
+                Import( task_fan_in_out_fptr f ): _t(dom_type::JSON_OBJECT)   { _f.ta_f = f; }
+                Import() : _t(dom_type::DOM_NULL) { _f.v = nullptr; }
 		virtual ~Import() {}
 
 		dom_type getType() const { return _t; }
@@ -444,7 +444,7 @@ namespace LQIO {
 	    public:
 		ImportGeneralResult() : Import() {}
 		ImportGeneralResult( doc_bool_fptr f )     : Import( f ) {}
-		ImportGeneralResult( doc_double_fptr f, dom_type t=DOM_NULL ) : Import(f) { if ( t != DOM_NULL ) setType( t ); }
+		ImportGeneralResult( doc_double_fptr f, dom_type t=dom_type::DOM_NULL ) : Import(f) { if ( t != dom_type::DOM_NULL ) setType( t ); }
 		ImportGeneralResult( doc_extvar_fptr f )   : Import( f ) {}
 		ImportGeneralResult( doc_long_fptr f )     : Import( f ) {}
 		ImportGeneralResult( doc_string_fptr f )   : Import( f ) {}

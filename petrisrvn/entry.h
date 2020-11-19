@@ -66,7 +66,7 @@ public:
     const char * name() const;
     const Task * task() const { return _task; }
     LQIO::DOM::Entry::Entry::Type type() const { return get_dom()->getEntryType(); }
-    semaphore_entry_type semaphore_type() const { return get_dom()->getSemaphoreFlag(); }
+    LQIO::DOM::Entry::Semaphore semaphore_type() const { return get_dom()->getSemaphoreFlag(); }
     double openArrivalRate() const { return get_dom()->getOpenArrivalRateValue(); }
 
     requesting_type requests() const { return _requests; }

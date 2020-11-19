@@ -103,7 +103,7 @@ Generate::Generate( const LQIO::DOM::Document::input_format output_format, const
     _number_of_tasks_for_layer.resize( _number_of_layers + 1 );
     _task.resize( _number_of_layers + 1 );
     if ( Flags::spex_output ) {
-	LQIO::Spex::initialize_control_parameters();
+	LQIO::Spex::clear();
     }
 }
 

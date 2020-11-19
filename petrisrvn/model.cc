@@ -1005,7 +1005,7 @@ Model::random_queue( double x_pos,		/* x coordinate.		*/
 
 	create_arc( layer_mask, TO_TRANS, q_trans, r_place );
 	/*+ BUG_164 */
-	if ( j->type() == SEMAPHORE && b->semaphore_type() == SEMAPHORE_SIGNAL ) {
+	if ( j->type() == SEMAPHORE && b->semaphore_type() == LQIO::DOM::Entry::Semaphore::SIGNAL ) {
 	    create_arc( layer_mask, TO_TRANS, q_trans, j->LX[b_m] );
 	} else {
 	    create_arc( layer_mask, TO_TRANS, q_trans, j->TX[b_m] );

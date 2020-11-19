@@ -185,7 +185,7 @@ namespace LQIO {
 	    if ( _histogram != NULL ) {
 		_histogram->setTimeExceeded( time );
 	    } else {
-		_histogram = new LQIO::DOM::Histogram( getDocument(), LQIO::DOM::Histogram::CONTINUOUS, 0, time, time );
+		_histogram = new LQIO::DOM::Histogram( getDocument(), Histogram::Type::CONTINUOUS, 0, time, time );
 	    }
 	}
 

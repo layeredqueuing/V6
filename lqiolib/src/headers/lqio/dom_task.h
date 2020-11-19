@@ -29,19 +29,17 @@ namespace LQIO {
 
 	class Task : public Entity {
 	public:
-	    class Count {
+	    class any_of {
 	    protected:
 		typedef bool (LQIO::DOM::Phase::*test_fn)() const;
 		
 	    public:
-		Count( test_fn f ) :  _f(f), _count( 0 ) {}
+		any_of( test_fn f ) : _f(f) {}
 		
-		void operator()( const std::pair<std::string,LQIO::DOM::Task *>& );
-		unsigned int count() const { return _count; }
+		bool operator()( const std::pair<std::string,LQIO::DOM::Task *>& ) const;
 
 	    private:
 		const test_fn _f;
-		unsigned int _count;
 	    };
 
 	    static bool isSemaphoreTask( const std::pair<std::string,LQIO::DOM::Task *>& task ) { return task.second->getSchedulingType() == SCHEDULE_SEMAPHORE; }
@@ -193,10 +191,7 @@ namespace LQIO {
 	class SemaphoreTask : public Task {
 	public:
 	    /* Different types of calls */
-	    typedef enum InitialStateType {
-		INITIALLY_EMPTY,
-		INITIALLY_FULL
-	    } InitialStateType;
+	    enum class InitialState { EMPTY, FULL };
       
 	    SemaphoreTask(const Document * document, const char * name, const std::vector<DOM::Entry *>& entryList, 
 			  const Processor* processor, ExternalVariable* queue_length=NULL, ExternalVariable * priority=NULL, 
@@ -204,8 +199,8 @@ namespace LQIO {
 			  const Group * group=NULL );
 	    SemaphoreTask( const SemaphoreTask& );
 
-	    const InitialStateType getInitialState() const;
-	    void setInitialState(InitialStateType);
+	    const InitialState getInitialState() const;
+	    void setInitialState(InitialState);
 
 	    virtual double getResultHoldingTime() const { return _resultHoldingTime; }
 	    virtual SemaphoreTask& setResultHoldingTime( const double resultHoldingTime ) { _resultHoldingTime = resultHoldingTime; return *this; }
@@ -228,7 +223,7 @@ namespace LQIO {
 	    virtual double getResultMaxServiceTimeExceededVariance() const;
 
 	private:
-	    InitialStateType _initialState;
+	    InitialState _initialState;
 
 	    double _resultHoldingTime;
 	    double _resultHoldingTimeVariance;

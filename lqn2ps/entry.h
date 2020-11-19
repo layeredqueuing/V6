@@ -184,8 +184,8 @@ public:
     bool is_w_unlock_Entry() const;
 
     bool entryTypeOk( const LQIO::DOM::Entry::Type );
-    bool entrySemaphoreTypeOk( const semaphore_entry_type );
-    bool entryRWLockTypeOk( const rwlock_entry_type );
+    bool entrySemaphoreTypeOk( const LQIO::DOM::Entry::Semaphore );
+    bool entryRWLockTypeOk( const LQIO::DOM::Entry::RWLock );
     unsigned maxPhase() const { return _maxPhase; }
 
     unsigned countArcs( const callPredicate = 0 ) const;

@@ -1938,7 +1938,7 @@ namespace LQIO {
         const std::vector<DOM::Entry *>& entries = task.getEntryList();
         DOM::Entry * wait_entry;
         DOM::Entry * signal_entry;
-        if ( entries[0]->getSemaphoreFlag() == SEMAPHORE_SIGNAL ) {
+        if ( entries[0]->getSemaphoreFlag() == DOM::Entry::Semaphore::SIGNAL ) {
             wait_entry = entries[1];
             signal_entry = entries[0];
         } else {
@@ -1989,10 +1989,10 @@ namespace LQIO {
 
         for (int i=0;i<4;i++){
             switch (entries[i]->getRWLockFlag()) {
-            case RWLOCK_R_UNLOCK: r_unlock_entry=entries[i]; break;
-            case RWLOCK_R_LOCK:   r_lock_entry=entries[i]; break;
-            case RWLOCK_W_UNLOCK: w_unlock_entry=entries[i]; break;
-            case RWLOCK_W_LOCK:   w_lock_entry=entries[i]; break;
+            case DOM::Entry::RWLock::READ_UNLOCK:  r_unlock_entry=entries[i]; break;
+            case DOM::Entry::RWLock::READ_LOCK:    r_lock_entry=entries[i]; break;
+            case DOM::Entry::RWLock::WRITE_UNLOCK: w_unlock_entry=entries[i]; break;
+            case DOM::Entry::RWLock::WRITE_LOCK:   w_lock_entry=entries[i]; break;
             default: abort();
             }
         }
@@ -2567,15 +2567,15 @@ namespace LQIO {
         }
 
         switch ( entry.getSemaphoreFlag() ) {
-        case SEMAPHORE_SIGNAL: _output << "  P " << entry.getName() << endl; break;
-        case SEMAPHORE_WAIT:   _output << "  V " << entry.getName() << endl; break;
+        case DOM::Entry::Semaphore::SIGNAL: _output << "  P " << entry.getName() << endl; break;
+        case DOM::Entry::Semaphore::WAIT:   _output << "  V " << entry.getName() << endl; break;
         default: break;
         }
         switch ( entry.getRWLockFlag() ) {
-        case RWLOCK_R_UNLOCK: _output << "  U " << entry.getName() << endl; break;
-        case RWLOCK_R_LOCK:   _output << "  R " << entry.getName() << endl; break;
-        case RWLOCK_W_UNLOCK: _output << "  X " << entry.getName() << endl; break;
-        case RWLOCK_W_LOCK:   _output << "  W " << entry.getName() << endl; break;
+        case DOM::Entry::RWLock::READ_UNLOCK:  _output << "  U " << entry.getName() << endl; break;
+        case DOM::Entry::RWLock::READ_LOCK:    _output << "  R " << entry.getName() << endl; break;
+        case DOM::Entry::RWLock::WRITE_UNLOCK: _output << "  X " << entry.getName() << endl; break;
+        case DOM::Entry::RWLock::WRITE_LOCK:   _output << "  W " << entry.getName() << endl; break;
         default: break;
         }
 
@@ -3241,7 +3241,7 @@ namespace LQIO {
             }
         }
 
-        if ( histogram.getHistogramType() == DOM::Histogram::CONTINUOUS ) {
+        if ( histogram.getHistogramType() == DOM::Histogram::Type::CONTINUOUS ) {
             _output << setw(4) << " " << setw( 17 ) << "<=  bin  <";
         } else {
             _output << "  bin  ";
@@ -3257,7 +3257,7 @@ namespace LQIO {
 
             const double x1 = ( i == 0 ) ? 0 : hist_min + (i-1) * bin_size;
             const streamsize old_precision = _output.precision( 6 );
-            if ( histogram.getHistogramType() == DOM::Histogram::CONTINUOUS ) {
+            if ( histogram.getHistogramType() == DOM::Histogram::Type::CONTINUOUS ) {
                 const double x2 = ( i == limit ) ? __DBL_MAX__ : hist_min + i * bin_size;
                 _output << setw( 4 ) << " ";
                 if ( i == 0 ) {

@@ -60,9 +60,7 @@ typedef enum {
 #define SCHED_RETRY_BIT      (1 << SCHEDULE_RETRY)
 #define SCHED_INF_RETRY_BIT      (1 << SCHEDULE_INF_RETRY)
 
-typedef enum { SEMAPHORE_NONE, SEMAPHORE_SIGNAL, SEMAPHORE_WAIT } semaphore_entry_type;
 typedef enum { DEFAULT_MATHERR, IGNORE_MATHERR, REPORT_MATHERR, ABORT_MATHERR } matherr_type;
-typedef enum { RWLOCK_NONE, RWLOCK_R_UNLOCK, RWLOCK_R_LOCK,RWLOCK_W_UNLOCK,RWLOCK_W_LOCK } rwlock_entry_type;
 
 /* Exit codes -- can be ored */   
 #define NORMAL_TERMINATION      (0)

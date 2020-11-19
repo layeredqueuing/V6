@@ -272,19 +272,29 @@ srvn_set_phase_type_flag (void * entry_v, unsigned n_phases, ...)
 }
 
 void 
-srvn_set_semaphore_flag ( void * entry_v, semaphore_entry_type set )
+srvn_set_semaphore_flag ( void * entry_v, int set )
 {
     LQIO::DOM::Entry* entry = static_cast<LQIO::DOM::Entry*>(entry_v);
     if ( !entry ) return;
-    entry->setSemaphoreFlag(set);
+    switch ( set ) {
+    case 'P': entry->setSemaphoreFlag(LQIO::DOM::Entry::Semaphore::SIGNAL); break;
+    case 'V': entry->setSemaphoreFlag(LQIO::DOM::Entry::Semaphore::WAIT); break;
+    default: abort();
+    }
 }
 
 void 
-srvn_set_rwlock_flag ( void * entry_v, rwlock_entry_type set )
+srvn_set_rwlock_flag ( void * entry_v, int set )
 {
     LQIO::DOM::Entry* entry = static_cast<LQIO::DOM::Entry*>(entry_v);
     if ( !entry ) return;
-    entry->setRWLockFlag(set);
+    switch ( set ) {
+    case 'R': entry->setRWLockFlag(LQIO::DOM::Entry::RWLock::READ_LOCK); break;
+    case 'U': entry->setRWLockFlag(LQIO::DOM::Entry::RWLock::READ_UNLOCK); break;
+    case 'W': entry->setRWLockFlag(LQIO::DOM::Entry::RWLock::WRITE_LOCK); break;
+    case 'X': entry->setRWLockFlag(LQIO::DOM::Entry::RWLock::WRITE_UNLOCK); break;
+    default: abort();
+    }
 }
 
 void 
@@ -639,7 +649,7 @@ srvn_set_task_tokens( void * task_v, int tokens )
     LQIO::DOM::Task * task = static_cast<LQIO::DOM::Task *>(task_v);
     if ( !task ) return;
     if ( tokens == 0 ) {
-	dynamic_cast<LQIO::DOM::SemaphoreTask *>(task)->setInitialState(LQIO::DOM::SemaphoreTask::INITIALLY_EMPTY);
+	dynamic_cast<LQIO::DOM::SemaphoreTask *>(task)->setInitialState(LQIO::DOM::SemaphoreTask::InitialState::EMPTY);
     }
 }
 
@@ -734,7 +744,7 @@ void
 srvn_set_activity_histogram ( void * activity, const double min, const double max, const int n_bins )
 {
     if ( !activity ) return;
-    static_cast<LQIO::DOM::Activity *>(activity)->setHistogram(new LQIO::DOM::Histogram( LQIO::DOM::__document, LQIO::DOM::Histogram::CONTINUOUS, n_bins, min, max ));
+    static_cast<LQIO::DOM::Activity *>(activity)->setHistogram(new LQIO::DOM::Histogram( LQIO::DOM::__document, LQIO::DOM::Histogram::Type::CONTINUOUS, n_bins, min, max ));
 }
 
 void 
@@ -758,9 +768,9 @@ srvn_set_histogram ( void * entry_v, const unsigned phase, const double min, con
     
     /* Grab the phase and store the histogram.  DO NOT Create a phase. */
     if ( entry->hasPhase(phase) ) {
-	entry->getPhase(phase)->setHistogram(new LQIO::DOM::Histogram(LQIO::DOM::__document, LQIO::DOM::Histogram::CONTINUOUS, n_bins, min, max ));
+	entry->getPhase(phase)->setHistogram(new LQIO::DOM::Histogram(LQIO::DOM::__document, LQIO::DOM::Histogram::Type::CONTINUOUS, n_bins, min, max ));
     } else {
-	entry->setHistogramForPhase(phase, new LQIO::DOM::Histogram(LQIO::DOM::__document, LQIO::DOM::Histogram::CONTINUOUS, n_bins, min, max ));
+	entry->setHistogramForPhase(phase, new LQIO::DOM::Histogram(LQIO::DOM::__document, LQIO::DOM::Histogram::Type::CONTINUOUS, n_bins, min, max ));
     }
 }
 

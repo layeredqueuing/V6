@@ -322,8 +322,8 @@ namespace LQIO {
 	    void handleJoinResults95( AndJoinActivityList *, const XML_Char ** attributes );
 	    void handleSPEXObservation( DocumentObject *, const XML_Char ** attributes, unsigned int = 0 );
 	    void handleSPEXObservation95( DocumentObject *, const XML_Char ** attributes );
-	    Histogram * findOrAddHistogram( DocumentObject * object, Histogram::histogram_t type, unsigned int n_bins, double min, double max );
-	    Histogram * findOrAddHistogram( DocumentObject * object, unsigned int phase, Histogram::histogram_t type, unsigned int n_bins, double min, double max );
+	    Histogram * findOrAddHistogram( DocumentObject * object, Histogram::Type type, unsigned int n_bins, double min, double max );
+	    Histogram * findOrAddHistogram( DocumentObject * object, unsigned int phase, Histogram::Type type, unsigned int n_bins, double min, double max );
 
 	    bool checkAttributes( const XML_Char * element, const XML_Char ** attributes, std::set<const XML_Char *,Expat_Document::attribute_table_t>& table ) const;
 

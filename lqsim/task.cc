@@ -925,14 +925,14 @@ Semaphore_Task::create_instance()
     if ( n_entries() != N_SEMAPHORE_ENTRIES ) {
 	LQIO::solution_error( LQIO::ERR_ENTRY_COUNT_FOR_TASK, name(), n_entries(), N_SEMAPHORE_ENTRIES );
     } else if ( _entry[0]->is_signal() ) {
-	if ( !_entry[1]->test_and_set_semaphore( SEMAPHORE_WAIT ) ) {
+	if ( !_entry[1]->test_and_set_semaphore( LQIO::DOM::Entry::Semaphore::WAIT ) ) {
 	    LQIO::solution_error( LQIO::ERR_MIXED_SEMAPHORE_ENTRY_TYPES, name() );
 	}
 	if ( !_entry[1]->test_and_set_recv( Entry::RECEIVE_RENDEZVOUS ) ) {
 	    LQIO::solution_error( LQIO::ERR_ASYNC_REQUEST_TO_WAIT, _entry[1]->name() );
 	}
     } else if ( _entry[0]->is_wait() ) {
-	if ( !_entry[1]->test_and_set_semaphore( SEMAPHORE_SIGNAL ) ) {
+	if ( !_entry[1]->test_and_set_semaphore( LQIO::DOM::Entry::Semaphore::SIGNAL ) ) {
 	    LQIO::solution_error( LQIO::ERR_MIXED_SEMAPHORE_ENTRY_TYPES, name() );
 	}
 	if ( !_entry[0]->test_and_set_recv( Entry::RECEIVE_RENDEZVOUS ) ) {
@@ -1075,7 +1075,7 @@ ReadWriteLock_Task::create_instance()
 	}
     }
     //test reader lock entry
-    if ( !_entry[E[1]]->test_and_set_rwlock( RWLOCK_R_LOCK ) ) {
+    if ( !_entry[E[1]]->test_and_set_rwlock( LQIO::DOM::Entry::RWLock::READ_LOCK ) ) {
 	LQIO::solution_error( LQIO::ERR_MIXED_RWLOCK_ENTRY_TYPES, name() );
     }
     if ( !_entry[E[1]]->test_and_set_recv( Entry::RECEIVE_RENDEZVOUS ) ) {
@@ -1083,12 +1083,12 @@ ReadWriteLock_Task::create_instance()
     }
 	 
     //test reader unlock entry
-    if ( !_entry[E[0]]->test_and_set_rwlock( RWLOCK_R_UNLOCK ) ) {
+    if ( !_entry[E[0]]->test_and_set_rwlock( LQIO::DOM::Entry::RWLock::READ_UNLOCK ) ) {
 	LQIO::solution_error( LQIO::ERR_MIXED_RWLOCK_ENTRY_TYPES, name() );
     }
 
     //test writer lock entry
-    if ( !_entry[E[3]]->test_and_set_rwlock( RWLOCK_W_LOCK ) ) {
+    if ( !_entry[E[3]]->test_and_set_rwlock( LQIO::DOM::Entry::RWLock::WRITE_LOCK ) ) {
 	LQIO::solution_error( LQIO::ERR_MIXED_RWLOCK_ENTRY_TYPES, name() );
     }
     if ( !_entry[E[3]]->test_and_set_recv( Entry::RECEIVE_RENDEZVOUS ) ) {
@@ -1096,7 +1096,7 @@ ReadWriteLock_Task::create_instance()
     }
 
     //test writer unlock entry
-    if ( !_entry[E[2]]->test_and_set_rwlock( RWLOCK_W_UNLOCK ) ) {
+    if ( !_entry[E[2]]->test_and_set_rwlock( LQIO::DOM::Entry::RWLock::WRITE_UNLOCK ) ) {
 	LQIO::solution_error( LQIO::ERR_MIXED_RWLOCK_ENTRY_TYPES, name() );
     }
 

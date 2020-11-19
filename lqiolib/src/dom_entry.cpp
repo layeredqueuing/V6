@@ -26,8 +26,8 @@ namespace LQIO {
 	      _type(Entry::Type::NOT_DEFINED), _phases(), 
 	      _maxPhase(0), _task(NULL), _histograms(),
 	      _openArrivalRate(NULL), _entryPriority(NULL),
-	      _semaphoreType(SEMAPHORE_NONE),
-	      _rwlockType(RWLOCK_NONE),
+	      _semaphoreType(Semaphore::NONE),
+	      _rwlockType(RWLock::NONE),
 	      _forwarding(),
 	      _startActivity(NULL),
 	      _resultWaitingTime(0.0), _resultWaitingTimeVariance(0.0),
@@ -232,10 +232,10 @@ namespace LQIO {
 	    return _entryPriority != NULL;
 	}
     
-	bool Entry::entrySemaphoreTypeOk(semaphore_entry_type newType)
+	bool Entry::entrySemaphoreTypeOk(Semaphore newType)
 	{
 	    /* Set the type only if it was undefined to begin with */
-	    if (_semaphoreType == SEMAPHORE_NONE ) {
+	    if (_semaphoreType == Entry::Semaphore::NONE ) {
 		_semaphoreType = newType;
 		return true;
 	    }
@@ -243,22 +243,22 @@ namespace LQIO {
 	    return _semaphoreType == newType;
 	}
 
-	void Entry::setSemaphoreFlag(semaphore_entry_type set)
+	void Entry::setSemaphoreFlag(Semaphore set)
 	{
 	    /* Set the semaphore flag */
 	    _semaphoreType = set;
 	}
     
-	semaphore_entry_type Entry::getSemaphoreFlag() const
+	Entry::Semaphore Entry::getSemaphoreFlag() const
 	{
 	    /* Return the semaphore type */
 	    return _semaphoreType;
 	}
     
-	bool Entry::entryRWLockTypeOk(rwlock_entry_type newType)
+	bool Entry::entryRWLockTypeOk(RWLock newType)
 	{
 	    /* Set the type only if it was undefined to begin with */
-	    if (_rwlockType == RWLOCK_NONE ) {
+	    if (_rwlockType == RWLock::NONE ) {
 		_rwlockType = newType;
 		return true;
 	    }
@@ -266,13 +266,13 @@ namespace LQIO {
 	    return _rwlockType == newType;
 	}
 
-	void Entry::setRWLockFlag(rwlock_entry_type set)
+	void Entry::setRWLockFlag(RWLock set)
 	{
 	    /* Set the rwlock flag */
 	    _rwlockType = set;
 	}
     
-	rwlock_entry_type Entry::getRWLockFlag() const
+	Entry::RWLock Entry::getRWLockFlag() const
 	{
 	    /* Return the rwlock type */
 	    return _rwlockType;
@@ -896,11 +896,14 @@ namespace LQIO {
  
 	/* ------------------------------------------------------------------------ */
 
-	Entry::Count& Entry::Count::operator()( const LQIO::DOM::Entry * e ) 
+	/* 
+	 * Return true if any phase satisfies the predicate _f.
+	 */
+	
+	bool Entry::any_of::operator()( const LQIO::DOM::Entry * e ) const
 	{
 	    const std::map<unsigned, Phase*>& phases = e->getPhaseList();
-	    _count += std::count_if( phases.begin(), phases.end(), LQIO::DOM::Entry::Predicate<LQIO::DOM::Phase>( _f ) );
-	    return *this;
+	    return std::any_of( phases.begin(), phases.end(), LQIO::DOM::Entry::Predicate<LQIO::DOM::Phase>( _f ) );
 	}
     }
 }

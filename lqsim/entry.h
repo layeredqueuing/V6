@@ -96,8 +96,8 @@ public:
 
     virtual bool test_and_set( LQIO::DOM::Entry::Type );			/* Sets _type too!		*/
     bool test_and_set_recv( receive_type );
-    bool test_and_set_semaphore( semaphore_entry_type );
-    bool test_and_set_rwlock( rwlock_entry_type );
+    bool test_and_set_semaphore( LQIO::DOM::Entry::Semaphore );
+    bool test_and_set_rwlock( LQIO::DOM::Entry::RWLock );
 
     Entry& set_DOM( unsigned ph, LQIO::DOM::Phase* phaseInfo );
     LQIO::DOM::Entry * get_DOM() const { return _dom; }

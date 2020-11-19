@@ -266,9 +266,9 @@ Entry::check (void)
 
     const_cast<Task *>(task())->set_n_phases( n_phases() );
 
-    if ( semaphore_type() != SEMAPHORE_NONE && task()->type() != SEMAPHORE ) {
+    if ( semaphore_type() != LQIO::DOM::Entry::Semaphore::NONE && task()->type() != SEMAPHORE ) {
 	solution_error( LQIO::ERR_NOT_SEMAPHORE_TASK, task()->name(),
-			(semaphore_type() == SEMAPHORE_SIGNAL ? "signal" : "wait"),
+			(semaphore_type() == LQIO::DOM::Entry::Semaphore::SIGNAL ? "signal" : "wait"),
 			name() );
     }
 
@@ -332,7 +332,7 @@ Entry::transmorgrify( double base_x_pos, double base_y_pos, unsigned ix_e, struc
 	    }
 	    /*+ BUG_164 */
 	    if ( d_place ) {
-		if ( task()->type() == SEMAPHORE && semaphore_type() == SEMAPHORE_WAIT ) {
+		if ( task()->type() == SEMAPHORE && semaphore_type() == LQIO::DOM::Entry::Semaphore::WAIT ) {
 		    create_arc( layer_mask, TO_PLACE, phase[n_phases()].doneX[m], task()->LX[m] );
 		} else {
 		    create_arc( layer_mask, TO_PLACE, phase[n_phases()].doneX[m], d_place );

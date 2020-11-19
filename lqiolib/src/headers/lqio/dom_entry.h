@@ -24,19 +24,17 @@ namespace LQIO {
 
 	class Entry : public DocumentObject {
 	public:
-	    class Count {
+	    class any_of {
 	    protected:
 		typedef bool (LQIO::DOM::Phase::*test_fn)() const;
 		
 	    public:
-		Count( test_fn f ) :  _f(f), _count( 0 ) {}
+		any_of( test_fn f ) : _f(f) {}
 		
-		Count& operator()( const LQIO::DOM::Entry * );
-		unsigned int count() const { return _count; }
+		bool operator()( const LQIO::DOM::Entry * ) const;
 
 	    private:
 		const test_fn _f;
-		unsigned int _count;
 	    };
 
 	    template <class Type> class Predicate {
@@ -57,14 +55,9 @@ namespace LQIO {
 
 	public:
 
-	    enum class Type {
-		NOT_DEFINED,
-		STANDARD,
-		ACTIVITY,
-		STANDARD_NOT_DEFINED,
-		ACTIVITY_NOT_DEFINED,
-		DEVICE
-	    };
+	    enum class Type { NOT_DEFINED, STANDARD, ACTIVITY, STANDARD_NOT_DEFINED, ACTIVITY_NOT_DEFINED, DEVICE };
+	    enum class Semaphore { NONE, SIGNAL, WAIT };
+	    enum class RWLock { NONE, READ_UNLOCK, READ_LOCK, WRITE_UNLOCK, WRITE_LOCK };
 
 	    /* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- [Structors] -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= */
 
@@ -101,13 +94,13 @@ namespace LQIO {
 	    int getEntryPriorityValue() const;
 	    bool hasEntryPriority() const;
 
-	    bool entrySemaphoreTypeOk(semaphore_entry_type newType);
-	    void setSemaphoreFlag(semaphore_entry_type set);
-	    semaphore_entry_type getSemaphoreFlag() const;
+	    bool entrySemaphoreTypeOk(Entry::Semaphore);
+	    void setSemaphoreFlag(Entry::Semaphore);
+	    Entry::Semaphore getSemaphoreFlag() const;
 
-	    bool entryRWLockTypeOk(rwlock_entry_type newType);
-	    void setRWLockFlag(rwlock_entry_type set);
-	    rwlock_entry_type getRWLockFlag() const;
+	    bool entryRWLockTypeOk(RWLock newType);
+	    void setRWLockFlag(RWLock set);
+	    RWLock getRWLockFlag() const;
 
 	    bool isDefined() const;
 	    bool isStandardEntry() const;
@@ -258,8 +251,8 @@ namespace LQIO {
 	    /* Additional Entry Parameters */
 	    ExternalVariable* _openArrivalRate;
 	    ExternalVariable* _entryPriority;
-	    semaphore_entry_type _semaphoreType;
-	    rwlock_entry_type _rwlockType;
+	    Semaphore _semaphoreType;
+	    RWLock _rwlockType;
 	    std::vector<Call *> _forwarding;
 
 	    /* Variables for Activities */

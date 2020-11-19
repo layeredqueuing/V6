@@ -2317,10 +2317,10 @@ bool
 SemaphoreTask::check() const
 {
     if ( nEntries() == 2 ) {
-	if ( !((entryAt(1)->isSignalEntry() && entryAt(2)->entrySemaphoreTypeOk(SEMAPHORE_WAIT))
-	       || (entryAt(1)->isWaitEntry() && entryAt(2)->entrySemaphoreTypeOk(SEMAPHORE_SIGNAL))
-	       || (entryAt(2)->isSignalEntry() && entryAt(1)->entrySemaphoreTypeOk(SEMAPHORE_WAIT))
-	       || (entryAt(2)->isWaitEntry() && entryAt(1)->entrySemaphoreTypeOk(SEMAPHORE_SIGNAL))) ) {
+	if ( !((entryAt(1)->isSignalEntry() && entryAt(2)->entrySemaphoreTypeOk(LQIO::DOM::Entry::Semaphore::WAIT))
+	       || (entryAt(1)->isWaitEntry() && entryAt(2)->entrySemaphoreTypeOk(LQIO::DOM::Entry::Semaphore::SIGNAL))
+	       || (entryAt(2)->isSignalEntry() && entryAt(1)->entrySemaphoreTypeOk(LQIO::DOM::Entry::Semaphore::WAIT))
+	       || (entryAt(2)->isWaitEntry() && entryAt(1)->entrySemaphoreTypeOk(LQIO::DOM::Entry::Semaphore::SIGNAL))) ) {
 	    LQIO::solution_error( LQIO::ERR_NO_SEMAPHORE, name().c_str() );
 	}
     } else {

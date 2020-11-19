@@ -237,47 +237,47 @@ Entry::is_activity() const
 
 bool Entry::is_semaphore() const
 {
-    return get_DOM()->getSemaphoreFlag() != SEMAPHORE_NONE;
+    return get_DOM()->getSemaphoreFlag() != LQIO::DOM::Entry::Semaphore::NONE;
 }
 
 bool Entry::is_signal() const
 { 
-    return get_DOM()->getSemaphoreFlag() == SEMAPHORE_SIGNAL;
+    return get_DOM()->getSemaphoreFlag() == LQIO::DOM::Entry::Semaphore::SIGNAL;
 }
 
 bool Entry::is_wait() const
 { 
-    return get_DOM()->getSemaphoreFlag() == SEMAPHORE_WAIT;
+    return get_DOM()->getSemaphoreFlag() == LQIO::DOM::Entry::Semaphore::WAIT;
 }
 
 bool 
 Entry::is_rwlock() const
 {
-    return get_DOM()->getRWLockFlag() != RWLOCK_NONE;
+    return get_DOM()->getRWLockFlag() != LQIO::DOM::Entry::RWLock::NONE;
 }
 
 bool 
 Entry::is_r_unlock() const
 {
-    return get_DOM()->getRWLockFlag() == RWLOCK_R_UNLOCK;
+    return get_DOM()->getRWLockFlag() == LQIO::DOM::Entry::RWLock::READ_UNLOCK;
 }
 
 bool 
 Entry::is_r_lock() const
 {
-    return get_DOM()->getRWLockFlag() == RWLOCK_R_LOCK;
+    return get_DOM()->getRWLockFlag() == LQIO::DOM::Entry::RWLock::READ_LOCK;
 }
 
 bool 
 Entry::is_w_unlock() const
 {
-    return get_DOM()->getRWLockFlag() == RWLOCK_W_UNLOCK;
+    return get_DOM()->getRWLockFlag() == LQIO::DOM::Entry::RWLock::WRITE_UNLOCK;
 }
 
 bool 
 Entry::is_w_lock() const
 {
-    return get_DOM()->getRWLockFlag() == RWLOCK_W_LOCK;
+    return get_DOM()->getRWLockFlag() == LQIO::DOM::Entry::RWLock::WRITE_LOCK;
 }
 
 bool
@@ -313,7 +313,7 @@ Entry::test_and_set_recv( receive_type recv )
 }
 
 bool
-Entry::test_and_set_semaphore( semaphore_entry_type sema ) 
+Entry::test_and_set_semaphore( LQIO::DOM::Entry::Semaphore sema ) 
 {
     const bool rc = get_DOM()->entrySemaphoreTypeOk( sema );
     if ( !rc ) {
@@ -323,7 +323,7 @@ Entry::test_and_set_semaphore( semaphore_entry_type sema )
 }
 
 bool
-Entry::test_and_set_rwlock( rwlock_entry_type rw ) 
+Entry::test_and_set_rwlock( LQIO::DOM::Entry::RWLock rw ) 
 {
     const bool rc = get_DOM()->entryRWLockTypeOk( rw );
     if ( !rc ) {

@@ -777,37 +777,37 @@ Entry::isStandardEntry() const
 bool
 Entry::isSignalEntry() const
 {
-    return dynamic_cast<const LQIO::DOM::Entry *>(getDOM())->getSemaphoreFlag() == SEMAPHORE_SIGNAL;
+    return dynamic_cast<const LQIO::DOM::Entry *>(getDOM())->getSemaphoreFlag() == LQIO::DOM::Entry::Semaphore::SIGNAL;
 }
 
 bool
 Entry::isWaitEntry() const
 {
-    return dynamic_cast<const LQIO::DOM::Entry *>(getDOM())->getSemaphoreFlag() == SEMAPHORE_WAIT;
+    return dynamic_cast<const LQIO::DOM::Entry *>(getDOM())->getSemaphoreFlag() == LQIO::DOM::Entry::Semaphore::WAIT;
 }
 
 bool
 Entry::is_r_lock_Entry() const
 {
-    return dynamic_cast<const LQIO::DOM::Entry *>(getDOM())->getRWLockFlag() == RWLOCK_R_LOCK;
+    return dynamic_cast<const LQIO::DOM::Entry *>(getDOM())->getRWLockFlag() == LQIO::DOM::Entry::RWLock::READ_LOCK;
 }
 
 bool
 Entry::is_r_unlock_Entry() const
 {
-    return dynamic_cast<const LQIO::DOM::Entry *>(getDOM())->getRWLockFlag() == RWLOCK_R_UNLOCK;
+    return dynamic_cast<const LQIO::DOM::Entry *>(getDOM())->getRWLockFlag() == LQIO::DOM::Entry::RWLock::READ_UNLOCK;
 }
 
 bool
 Entry::is_w_lock_Entry() const
 {
-    return dynamic_cast<const LQIO::DOM::Entry *>(getDOM())->getRWLockFlag() == RWLOCK_W_LOCK;
+    return dynamic_cast<const LQIO::DOM::Entry *>(getDOM())->getRWLockFlag() == LQIO::DOM::Entry::RWLock::WRITE_LOCK;
 }
 
 bool
 Entry::is_w_unlock_Entry() const
 {
-    return dynamic_cast<const LQIO::DOM::Entry *>(getDOM())->getRWLockFlag() == RWLOCK_W_UNLOCK;
+    return dynamic_cast<const LQIO::DOM::Entry *>(getDOM())->getRWLockFlag() == LQIO::DOM::Entry::RWLock::WRITE_UNLOCK;
 }
 
 
@@ -834,7 +834,7 @@ Entry::entryTypeOk( const LQIO::DOM::Entry::Type aType )
  */
 
 bool
-Entry::entrySemaphoreTypeOk( const semaphore_entry_type aType )
+Entry::entrySemaphoreTypeOk( const LQIO::DOM::Entry::Semaphore aType )
 {
     const LQIO::DOM::Entry * dom = dynamic_cast<const LQIO::DOM::Entry *>(getDOM());
     const bool rc = const_cast<LQIO::DOM::Entry *>(dom)->entrySemaphoreTypeOk( aType );
@@ -845,7 +845,7 @@ Entry::entrySemaphoreTypeOk( const semaphore_entry_type aType )
 }
 
 bool
-Entry::entryRWLockTypeOk( const rwlock_entry_type aType )
+Entry::entryRWLockTypeOk( const LQIO::DOM::Entry::RWLock aType )
 {
     const LQIO::DOM::Entry * dom = dynamic_cast<const LQIO::DOM::Entry *>(getDOM());
     const bool rc = const_cast<LQIO::DOM::Entry *>(dom)->entryRWLockTypeOk( aType );

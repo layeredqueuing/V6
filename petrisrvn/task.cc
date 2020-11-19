@@ -278,12 +278,12 @@ Task::check()
 	if ( n_entries() != N_SEMAPHORE_ENTRIES ) {
 	    solution_error( LQIO::ERR_ENTRY_COUNT_FOR_TASK, name(), n_entries(), N_SEMAPHORE_ENTRIES );
 	}
-	if ( entries[0]->semaphore_type() == SEMAPHORE_SIGNAL ) {
-	    if ( entries[1]->semaphore_type() != SEMAPHORE_WAIT ) {
+	if ( entries[0]->semaphore_type() == LQIO::DOM::Entry::Semaphore::SIGNAL ) {
+	    if ( entries[1]->semaphore_type() != LQIO::DOM::Entry::Semaphore::WAIT ) {
 		solution_error( LQIO::ERR_MIXED_SEMAPHORE_ENTRY_TYPES, name() );
 	    }
-	} else if ( entries[0]->semaphore_type() == SEMAPHORE_WAIT ) {
-	    if ( entries[1]->semaphore_type() != SEMAPHORE_SIGNAL ) {
+	} else if ( entries[0]->semaphore_type() == LQIO::DOM::Entry::Semaphore::WAIT ) {
+	    if ( entries[1]->semaphore_type() != LQIO::DOM::Entry::Semaphore::SIGNAL ) {
 		solution_error( LQIO::ERR_MIXED_SEMAPHORE_ENTRY_TYPES, name() );
 	    }
 	} else {

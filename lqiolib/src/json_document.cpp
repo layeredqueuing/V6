@@ -676,7 +676,7 @@ namespace LQIO {
 				const picojson::value::array& arr = i->second.get<picojson::array>();
 				unsigned int p_j = 0;		/* Dest array index */
 				for (picojson::value::array::const_iterator x = arr.begin(); x != arr.end(); ++x ) {
-				    if ( j->second.getType() == JSON_OBJECT ) {
+				    if ( j->second.getType() == dom_type::JSON_OBJECT ) {
 					j->second(attr,true,*this,*entry,*x);					/* Handle array of attributes such as calls or phases */
 				    } else {
 					p_j += 1;
@@ -1239,7 +1239,7 @@ namespace LQIO {
 		const map<std::string, picojson::value> obj = value.get<picojson::object>();
 		try {
 		    Histogram * hist = new Histogram( &_document,
-						      Histogram::CONTINUOUS,
+						      Histogram::Type::CONTINUOUS,
 						      get_long_attribute( Xnumber_bins, obj ),
 						      get_double_attribute( Xmin, obj ),
 						      get_double_attribute( Xmax, obj ) );
@@ -1261,7 +1261,7 @@ namespace LQIO {
 				    handleHistogramBin( hist, n, *x );		/* Need the bin :-( */
 				    if ( Document::__debugJSON ) Import::endAttribute( cerr, *x );
 				}
-			    } else if ( j->second.getType() != DOM_NULL ) {
+			    } else if ( j->second.getType() != dom_type::DOM_NULL ) {
 				invalid_argument( Xhistogram, value.to_str() );
 			    }
 			    if ( Document::__debugJSON ) Import::endAttribute( cerr, attr, i->second );
@@ -1279,7 +1279,7 @@ namespace LQIO {
 		}
 	    } else if ( value.is<double>() ) {
 		/* For prob_exceed_max */
-		Histogram * hist = new Histogram( &_document, Histogram::CONTINUOUS, 0, value.get<double>(), value.get<double>() );
+		Histogram * hist = new Histogram( &_document, Histogram::Type::CONTINUOUS, 0, value.get<double>(), value.get<double>() );
 		parent->setHistogram( hist );
 	    } else {
 		invalid_argument( Xhistogram, value.to_str() );
@@ -1335,7 +1335,7 @@ namespace LQIO {
 		try {
 		    double service_time = get_double_attribute( Xmax_service_time, obj );
 		    Histogram * hist = new Histogram( &_document,
-						      Histogram::CONTINUOUS,
+						      Histogram::Type::CONTINUOUS,
 						      0,
 						      service_time,
 						      service_time );
@@ -1358,7 +1358,7 @@ namespace LQIO {
 				    handleHistogramBin( hist, n, *x );		/* Need the bin :-( */
 				    if ( Document::__debugJSON ) Import::endAttribute( cerr, *x );
 				}
-			    } else if ( j->second.getType() != DOM_NULL ) {
+			    } else if ( j->second.getType() != dom_type::DOM_NULL ) {
 				invalid_argument( Xmax_service_time, value.to_str() );
 			    }
 			    if ( Document::__debugJSON ) Import::endAttribute( cerr, attr, i->second );
@@ -1633,7 +1633,7 @@ namespace LQIO {
 	    if ( Document::__debugJSON ) cerr << begin_attribute( attribute, value );
 
 	    switch ( getType() ) {
-	    case JSON_OBJECT:
+	    case dom_type::JSON_OBJECT:
 		if ( value.is<picojson::object>() || value.is<picojson::array>() || value.is<std::string>() ) {
 		    (document.*getFptr().o)( 0, value );
 		} else {
@@ -1641,7 +1641,7 @@ namespace LQIO {
 		}
 		break;
 
-	    case DOM_NULL:
+	    case dom_type::DOM_NULL:
 		break;
 
 	    default:
@@ -1662,7 +1662,7 @@ namespace LQIO {
 	    if ( Document::__debugJSON ) cerr << begin_attribute( attribute, value );
 
 	    switch ( getType()  ) {
-	    case DOM_EXTVAR:
+	    case dom_type::DOM_EXTVAR:
 		if ( value.is<std::string>() ) {
 		    const std::string& str = value.get<std::string>();
 		    if ( str[0] == '$' ) {
@@ -1678,7 +1678,7 @@ namespace LQIO {
 		}
 		break;
 
-	    case DOM_UNSIGNED:
+	    case dom_type::UNSIGNED:
 		if ( value.is<double>() ) {
 		    (document.*getFptr().du)( static_cast<unsigned int>(value.get<double>()) );
 		} else {
@@ -1686,7 +1686,7 @@ namespace LQIO {
 		}
 		break;
 
-	    case DOM_STRING:
+	    case dom_type::STRING:
 		if ( value.is<std::string>() ) {
 		    (document.*getFptr().ds)( value.get<std::string>() );
 		} else {
@@ -1694,7 +1694,7 @@ namespace LQIO {
 		}
 		break;
 
-	    case JSON_OBJECT:
+	    case dom_type::JSON_OBJECT:
 		if ( value.is<picojson::object>() || value.is<picojson::array>() ) {
 		    (input.*getFptr().o)( nullptr, value );
 		} else {
@@ -1720,11 +1720,11 @@ namespace LQIO {
 	    if ( Document::__debugJSON ) cerr << begin_attribute( attribute, value );
 
 	    switch ( getType() ) {
-	    case DOM_EXTVAR:
+	    case dom_type::DOM_EXTVAR:
 		(processor.*getFptr().pr_e)( input.get_external_variable( value ) );
 		break;
 
-	    case DOM_UNSIGNED:
+	    case dom_type::UNSIGNED:
 		if ( value.is<double>() ) {
 		    (processor.*getFptr().et_u)( static_cast<unsigned int>(value.get<double>()) );
 		} else {
@@ -1732,7 +1732,7 @@ namespace LQIO {
 		}
 		break;
 
-	    case DOM_DOUBLE:
+	    case dom_type::DOUBLE:
 		if ( value.is<double>() ) {
 		    (processor.*getFptr().et_d)( value.get<double>() );
 		} else {
@@ -1740,7 +1740,7 @@ namespace LQIO {
 		}
 		break;
 
-	    case JSON_OBJECT:
+	    case dom_type::JSON_OBJECT:
 		if ( value.is<picojson::object>() || value.is<picojson::array>() ) {
 		    (input.*getFptr().o)( &processor, value );
 		} else {
@@ -1748,14 +1748,14 @@ namespace LQIO {
 		}
 		break;
 
-	    case DOM_STRING:
+	    case dom_type::STRING:
 		if ( value.is<std::string>() ) {
 		    (processor.*getFptr().os)( value.get<std::string>() );
 		} else {
 		    invalid_argument( attribute, value.to_str() );
 		}
 
-	    case DOM_NULL:
+	    case dom_type::DOM_NULL:
 		break;
 
 	    default:
@@ -1776,11 +1776,11 @@ namespace LQIO {
 	{
 	    if ( Document::__debugJSON ) cerr << begin_attribute( attribute, value );
 	    switch ( getType() ) {
-	    case DOM_EXTVAR:
+	    case dom_type::DOM_EXTVAR:
 		(group.*getFptr().gr_e)( input.get_external_variable( value ) );
 		break;
 
-	    case DOM_BOOLEAN:
+	    case dom_type::BOOLEAN:
 		if ( value.is<bool>() ) {
 		    (group.*getFptr().gr_b)( value.get<bool>() );
 		} else if ( value.is<std::string>() && ::strcasecmp( value.get<std::string>().c_str(), "true" ) == 0 ) {
@@ -1792,7 +1792,7 @@ namespace LQIO {
 		}
 		break;
 
-	    case JSON_OBJECT:
+	    case dom_type::JSON_OBJECT:
 		if ( value.is<picojson::object>() || value.is<picojson::array>() ) {
 		    (input.*getFptr().o)( &group, value );
 		} else {
@@ -1800,14 +1800,14 @@ namespace LQIO {
 		}
 		break;
 
-	    case DOM_STRING:
+	    case dom_type::STRING:
 		if ( value.is<std::string>() ) {
 		    (group.*getFptr().os)( value.get<std::string>() );
 		} else {
 		    invalid_argument( attribute, value.to_str() );
 		}
 
-	    case DOM_PROCESSOR:
+	    case dom_type::DOM_PROCESSOR:
 		if ( value.is<std::string>() ) {
 		    Processor * processor = input.getDocument().getProcessorByName( value.get<std::string>().c_str() );
 		    if ( processor ) {
@@ -1819,7 +1819,7 @@ namespace LQIO {
 		    invalid_argument( attribute, value.to_str() );
 		}
 
-	    case DOM_NULL:
+	    case dom_type::DOM_NULL:
 		break;
 
 	    default:
@@ -1839,11 +1839,11 @@ namespace LQIO {
 	    if ( Document::__debugJSON ) cerr << begin_attribute( attribute, value );
 
 	    switch ( getType() ) {
-	    case DOM_EXTVAR:
+	    case dom_type::DOM_EXTVAR:
 		(task.*getFptr().ta_e)( input.get_external_variable( value ) );
 		break;
 
-	    case DOM_UNSIGNED:
+	    case dom_type::UNSIGNED:
 		if ( value.is<double>() ) {
 		    (task.*getFptr().ta_u)( static_cast<unsigned int>(value.get<double>()) );
 		} else {
@@ -1851,7 +1851,7 @@ namespace LQIO {
 		}
 		break;
 
-	    case JSON_OBJECT:
+	    case dom_type::JSON_OBJECT:
 		if ( value.is<picojson::object>() || value.is<picojson::array>() ) {
 		    if ( getGptr() ) {
 			(input.*getFptr().ta_f)( &task, value, getGptr() );
@@ -1863,14 +1863,14 @@ namespace LQIO {
 		}
 		break;
 
-	    case DOM_STRING:
+	    case dom_type::STRING:
 		if ( value.is<std::string>() ) {
 		    (task.*getFptr().os)( value.get<std::string>() );
 		} else {
 		    invalid_argument( attribute, value.to_str() );
 		}
 
-	    case DOM_GROUP:
+	    case dom_type::DOM_GROUP:
 		if ( value.is<std::string>() ) {
 		    Group * group = input.getDocument().getGroupByName( value.get<std::string>().c_str() );
 		    if ( group ) {
@@ -1884,7 +1884,7 @@ namespace LQIO {
 		}
 		break;
 
-	    case DOM_PROCESSOR:
+	    case dom_type::DOM_PROCESSOR:
 		if ( value.is<std::string>() ) {
 		    Processor * processor = input.getDocument().getProcessorByName( value.get<std::string>().c_str() );
 		    if ( processor ) {
@@ -1898,7 +1898,7 @@ namespace LQIO {
 		}
 		break;
 
-	    case DOM_NULL:
+	    case dom_type::DOM_NULL:
 		break;
 
 	    default:
@@ -1926,7 +1926,7 @@ namespace LQIO {
 	    }
 
 	    switch ( getType() ) {
-	    case DOM_ACTIVITY:
+	    case dom_type::DOM_ACTIVITY:
 		if ( value.is<std::string>() ) {
 		    /* Activity name... we have to find it. */
 		    Task * task = const_cast<Task *>(entry.getTask());
@@ -1939,21 +1939,21 @@ namespace LQIO {
 		    invalid_argument( attribute, value.to_str() );
 		}
 
-	    case DOM_EXTVAR:
+	    case dom_type::DOM_EXTVAR:
 		(entry.*getFptr().en_e)( input.get_external_variable( value ) );
 		break;
 
-	    case DOM_NULL:
+	    case dom_type::DOM_NULL:
 		break;
 
-	    case DOM_STRING:
+	    case dom_type::STRING:
 		if ( value.is<std::string>() ) {
 		    (entry.*getFptr().os)( value.get<std::string>() );
 		} else {
 		    invalid_argument( attribute, value.to_str() );
 		}
 
-	    case JSON_OBJECT:
+	    case dom_type::JSON_OBJECT:
 		if ( getCallType() == Call::Type::NULL_CALL ) {
 		    (input.*getFptr().o)( &entry, value );
 		} else {
@@ -1986,11 +1986,11 @@ namespace LQIO {
 	    if ( Document::__debugJSON ) Import::beginAttribute( cerr, value );
 
 	    switch ( getType() ) {
-	    case DOM_EXTVAR:
+	    case dom_type::DOM_EXTVAR:
 		(phase.*getFptr().ph_e)( input.get_external_variable( value ) );
 		break;
 
-	    case JSON_OBJECT:
+	    case dom_type::JSON_OBJECT:
 		if ( getCallType() == Call::Type::NULL_CALL ) {
 		    (input.*getFptr().o)( &phase, value );
 		} else {
@@ -1998,7 +1998,7 @@ namespace LQIO {
 		}
 		break;
 
-	    case DOM_BOOLEAN:
+	    case dom_type::BOOLEAN:
 		if ( value.is<bool>() ) {
 		    (phase.*getFptr().ph_t)( value.get<bool>() ? Phase::Type::DETERMINISTIC : Phase::Type::STOCHASTIC );
 		} else {
@@ -2021,11 +2021,11 @@ namespace LQIO {
 	    if ( Document::__debugJSON ) cerr << begin_attribute( attribute, value );
 
 	    switch ( getType() ) {
-	    case DOM_EXTVAR:
+	    case dom_type::DOM_EXTVAR:
 		(phase.*getFptr().ph_e)( input.get_external_variable( value ) );
 		break;
 
-	    case DOM_BOOLEAN:
+	    case dom_type::BOOLEAN:
 		if ( value.is<bool>() ) {
 		    (phase.*getFptr().ph_t)( value.get<bool>() ? Phase::Type::DETERMINISTIC : Phase::Type::STOCHASTIC );
 		} else {
@@ -2033,18 +2033,18 @@ namespace LQIO {
 		}
 		break;
 
-	    case JSON_OBJECT:
+	    case dom_type::JSON_OBJECT:
 		(input.*getFptr().ca_t)( &phase, value, getCallType() );
 		break;
 
-	    case DOM_STRING:
+	    case dom_type::STRING:
 		if ( value.is<std::string>() ) {
 		    (phase.*getFptr().os)( value.get<std::string>() );
 		} else {
 		    invalid_argument( attribute, value.to_str() );
 		}
 
-	    case DOM_NULL:
+	    case dom_type::DOM_NULL:
 		break;
 
 	    default:
@@ -2066,14 +2066,14 @@ namespace LQIO {
 	    if ( Document::__debugJSON ) Import::beginAttribute( cerr, value );
 
 	    switch ( getType() ) {
-	    case DOM_EXTVAR:
+	    case dom_type::DOM_EXTVAR:
 		(call.*getFptr().ca_e)( input.get_external_variable( value ) );
 		break;
 
-	    case DOM_NULL:
+	    case dom_type::DOM_NULL:
 		break;
 
-	    case JSON_OBJECT:
+	    case dom_type::JSON_OBJECT:
 		(input.*getFptr().o)( &call, value );
 		break;
 
@@ -2094,11 +2094,11 @@ namespace LQIO {
 	{
 	    if ( Document::__debugJSON ) cerr << begin_attribute( attribute, value );
 	    switch ( getType() ) {
-	    case JSON_OBJECT:
+	    case dom_type::JSON_OBJECT:
 		(input.*getFptr().o)( &entry, value );
 		break;
 
-	    case DOM_NULL:
+	    case dom_type::DOM_NULL:
 		break;
 
 	    default:
@@ -2114,13 +2114,13 @@ namespace LQIO {
 	{
 	    if ( Document::__debugJSON ) cerr << begin_attribute( attribute, value );
 	    switch ( getType() ) {
-	    case JSON_OBJECT:
+	    case dom_type::JSON_OBJECT:
 		if ( value.is<picojson::object>() || value.is<picojson::array>() ) {
 		    (input.*getFptr().o)( task, value );
 		}
 		break;
 
-	    case DOM_NULL:
+	    case dom_type::DOM_NULL:
 		break;
 
 	    default:
@@ -2135,11 +2135,11 @@ namespace LQIO {
 	    if ( Document::__debugJSON ) cerr << begin_attribute( attribute, value );
 
 	    switch ( getType() ) {
-	    case DOM_EXTVAR:
+	    case dom_type::DOM_EXTVAR:
 		(activity.*getFptr().ph_e)( input.get_external_variable( value ) );
 		break;
 
-	    case DOM_BOOLEAN:
+	    case dom_type::BOOLEAN:
 		if ( value.is<bool>() ) {
 		    (activity.*getFptr().ph_t)( value.get<bool>() ? Phase::Type::DETERMINISTIC : Phase::Type::STOCHASTIC );
 		} else {
@@ -2147,18 +2147,18 @@ namespace LQIO {
 		}
 		break;
 
-	    case JSON_OBJECT:
+	    case dom_type::JSON_OBJECT:
 		(input.*getFptr().ca_t)( &activity, value, getCallType() );
 		break;
 
-	    case DOM_STRING:
+	    case dom_type::STRING:
 		if ( value.is<std::string>() ) {
 		    (activity.*getFptr().os)( value.get<std::string>() );
 		} else {
 		    invalid_argument( attribute, value.to_str() );
 		}
 
-	    case DOM_NULL:
+	    case dom_type::DOM_NULL:
 		break;
 
 	    default:
@@ -2327,7 +2327,7 @@ namespace LQIO {
 	    double secs  = 0;
 
 	    switch ( getType() ) {
-	    case DOM_BOOLEAN:
+	    case dom_type::BOOLEAN:
 		if ( value.is<bool>() ) {
 		    (document.*getFptr().db)( value.get<bool>() );
 		} else {
@@ -2335,7 +2335,7 @@ namespace LQIO {
 		}
 		break;
 
-	    case DOM_CLOCK:
+	    case dom_type::CLOCK:
 		if ( value.is<std::string>() && ::sscanf( value.get<std::string>().c_str(), "%ld:%ld:%lf", &hrs, &mins, &secs ) == 3 ) {
 		    (document.*getFptr().dc)( hrs * 3600 + mins * 60 + secs );
 		} else {
@@ -2343,7 +2343,7 @@ namespace LQIO {
 		}
 		break;
 
-	    case DOM_DOUBLE:
+	    case dom_type::DOUBLE:
 		if ( value.is<double>() ) {
 		    (document.*getFptr().dd)( value.get<double>() );
 		} else {
@@ -2351,7 +2351,7 @@ namespace LQIO {
 		}
 		break;
 
-	    case DOM_UNSIGNED:
+	    case dom_type::UNSIGNED:
 		if ( value.is<double>() ) {
 		    (document.*getFptr().du)( static_cast<unsigned int>(value.get<double>()) );
 		} else {
@@ -2359,7 +2359,7 @@ namespace LQIO {
 		}
 		break;
 
-	    case DOM_STRING:
+	    case dom_type::STRING:
 		if ( value.is<string>() ) {
 		    (document.*getFptr().ds)( value.get<string>() );
 		} else {
@@ -2367,7 +2367,7 @@ namespace LQIO {
 		}
 		break;
 
-	    case JSON_OBJECT:
+	    case dom_type::JSON_OBJECT:
 		if ( value.is<picojson::object>() ) {
 		    (input.*getFptr().doc)( &document, value );
 		} else {
@@ -2375,7 +2375,7 @@ namespace LQIO {
 		}
 		break;
 
-	    case DOM_NULL:
+	    case dom_type::DOM_NULL:
 		break;
 
 	    default:
@@ -2389,7 +2389,7 @@ namespace LQIO {
 	Json_Document::ImportResult::operator()( const std::string& attribute, Json_Document& input, DocumentObject& dom_obj, const picojson::value& value ) const
 	{
 	    if ( Document::__debugJSON ) cerr << begin_attribute( attribute, value );
-	    if ( value.is<double>() && getType() == DOM_DOUBLE ) {
+	    if ( value.is<double>() && getType() == dom_type::DOUBLE ) {
 		(dom_obj.*getFptr().re_d)( value.get<double>() );
 	    } else if ( value.is<picojson::array>() ) {		/* phase results */
 		/* List of results (except for phases!) */
@@ -2435,13 +2435,13 @@ namespace LQIO {
 	{
 	    if ( Document::__debugJSON ) cerr << begin_attribute( attribute, value );
 	    switch ( getType() ) {
-	    case JSON_OBJECT:		/* Bin number */
+	    case dom_type::JSON_OBJECT:		/* Bin number */
 		if ( value.is<picojson::object>() || value.is<picojson::array>() ) {
 		    (input.*getFptr().o)( &hist, value );  // handle bin.
 		}
 		break;
 
-	    case DOM_NULL:
+	    case dom_type::DOM_NULL:
 		break;
 
 	    default:
@@ -2724,7 +2724,7 @@ namespace LQIO {
             if ( task.hasQueueLength() ) {
                 _output << next_attribute( Xqueue_length, *task.getQueueLength() );
             }
-            if ( task.getSchedulingType() == SCHEDULE_SEMAPHORE && dynamic_cast<const SemaphoreTask&>(task).getInitialState() == SemaphoreTask::INITIALLY_EMPTY ) {
+            if ( task.getSchedulingType() == SCHEDULE_SEMAPHORE && dynamic_cast<const SemaphoreTask&>(task).getInitialState() == SemaphoreTask::InitialState::EMPTY ) {
                 _output << next_attribute( Xinitially, 0.0 );
             }
 	    if ( task.hasHistogram() ) {
@@ -2851,16 +2851,16 @@ namespace LQIO {
 	    }
 
 	    switch ( entry.getSemaphoreFlag() ) {
-	    case SEMAPHORE_SIGNAL: _output << next_attribute( Xsemaphore, Xsignal ); break;
-	    case SEMAPHORE_WAIT:   _output << next_attribute( Xsemaphore, Xwait ); break;
+	    case Entry::Semaphore::SIGNAL: _output << next_attribute( Xsemaphore, Xsignal ); break;
+	    case Entry::Semaphore::WAIT:   _output << next_attribute( Xsemaphore, Xwait ); break;
 	    default: break;
 	    }
 
 	    switch ( entry.getRWLockFlag() ) {
-	    case RWLOCK_R_UNLOCK: _output << next_attribute( Xrwlock, Xr_unlock ); break;
-	    case RWLOCK_R_LOCK:   _output << next_attribute( Xrwlock, Xr_lock ); break;
-	    case RWLOCK_W_UNLOCK: _output << next_attribute( Xrwlock, Xw_unlock ); break;
-	    case RWLOCK_W_LOCK:   _output << next_attribute( Xrwlock, Xw_lock ); break;
+	    case Entry::RWLock::READ_UNLOCK:  _output << next_attribute( Xrwlock, Xr_unlock ); break;
+	    case Entry::RWLock::READ_LOCK:    _output << next_attribute( Xrwlock, Xr_lock ); break;
+	    case Entry::RWLock::WRITE_UNLOCK: _output << next_attribute( Xrwlock, Xw_unlock ); break;
+	    case Entry::RWLock::WRITE_LOCK:   _output << next_attribute( Xrwlock, Xw_lock ); break;
 	    default: break;
 	    }
 
@@ -3764,14 +3764,14 @@ namespace LQIO {
 	    observation_table[Xphase]		    	= ImportObservation();
 
 	    general_result_table[Xconv_val_result]  = ImportGeneralResult( &Document::setResultConvergenceValue );
-	    general_result_table[Xelapsed_time]     = ImportGeneralResult( &Document::setResultElapsedTime, DOM_CLOCK );
+	    general_result_table[Xelapsed_time]     = ImportGeneralResult( &Document::setResultElapsedTime, dom_type::CLOCK );
 	    general_result_table[Xiterations]	    = ImportGeneralResult( &Document::setResultIterations );
 	    general_result_table[Xmax_rss]          = ImportGeneralResult( &Document::setResultMaxRSS );
 	    general_result_table[Xmva_info]	    = ImportGeneralResult( &Json_Document::handleMvaInfo );
 	    general_result_table[Xplatform_info]    = ImportGeneralResult( &Document::setResultPlatformInformation );
 	    general_result_table[Xsolver_info]	    = ImportGeneralResult( &Document::setResultSolverInformation );
-	    general_result_table[Xsystem_cpu_time]  = ImportGeneralResult( &Document::setResultSysTime, DOM_CLOCK );
-	    general_result_table[Xuser_cpu_time]    = ImportGeneralResult( &Document::setResultUserTime, DOM_CLOCK );
+	    general_result_table[Xsystem_cpu_time]  = ImportGeneralResult( &Document::setResultSysTime, dom_type::CLOCK );
+	    general_result_table[Xuser_cpu_time]    = ImportGeneralResult( &Document::setResultUserTime, dom_type::CLOCK );
 	    general_result_table[Xvalid]      	    = ImportGeneralResult( &Document::setResultValid );
 
 	    result_table[Xbottleneck_strength]	    = ImportResult( &DocumentObject::setResultBottleneckStrength );

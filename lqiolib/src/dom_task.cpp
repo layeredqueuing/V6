@@ -568,13 +568,16 @@ namespace LQIO {
 
 	/* ------------------------------------------------------------------------ */
 
-	void Task::Count::operator()( const std::pair<std::string,LQIO::DOM::Task *>& t )
+	/* 
+	 * Return true if any phase or activity satisties the predicate _f.
+	 */
+	
+	bool Task::any_of::operator()( const std::pair<std::string,LQIO::DOM::Task *>& t ) const
 	{
 	    const std::vector<Entry*>& entries = t.second->getEntryList();
-	    _count += for_each( entries.begin(), entries.end(), LQIO::DOM::Entry::Count( _f ) ).count();
-	
 	    const std::map<std::string,Activity*>&  activities = t.second->getActivities();
-	    _count += std::count_if( activities.begin(), activities.end(), LQIO::DOM::DocumentObject::Predicate<LQIO::DOM::Activity>( _f ) );
+	    return std::any_of( entries.begin(), entries.end(), LQIO::DOM::Entry::any_of( _f ) )
+		|| std::any_of( activities.begin(), activities.end(), LQIO::DOM::DocumentObject::Predicate<LQIO::DOM::Activity>( _f ) );
 	}
 
 	/* ------------------------------------------------------------------------ */
@@ -585,7 +588,7 @@ namespace LQIO {
 				     const Group * group)
 	    : Task(document, name, SCHEDULE_SEMAPHORE, entryList, processor, queue_length, priority,
 		   n_copies, n_replicas, group ),
-	      _initialState(INITIALLY_FULL),
+	      _initialState(InitialState::FULL),
 	      _resultHoldingTime(0.),
 	      _resultHoldingTimeVariance(0.),
 	      _resultVarianceHoldingTime(0.),
@@ -595,13 +598,13 @@ namespace LQIO {
 	{
 	}
 
-	void SemaphoreTask::setInitialState(InitialStateType state)
+	void SemaphoreTask::setInitialState(InitialState state)
 	{
 	    /* Set the number of initialTokens */
 	    _initialState = state;
 	}
 
-	const SemaphoreTask::InitialStateType SemaphoreTask::getInitialState() const
+	const SemaphoreTask::InitialState SemaphoreTask::getInitialState() const
 	{
 	    return _initialState;
 	}

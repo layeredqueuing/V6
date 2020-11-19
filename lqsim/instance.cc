@@ -473,7 +473,7 @@ srn_semaphore::run()
 
     /* Create tokens */
 
-    const bool count_down = dynamic_cast<LQIO::DOM::RWLockTask *>(cp->getDOM()) || dynamic_cast<LQIO::DOM::SemaphoreTask *>(cp->getDOM())->getInitialState() == LQIO::DOM::SemaphoreTask::INITIALLY_FULL;
+    const bool count_down = dynamic_cast<LQIO::DOM::RWLockTask *>(cp->getDOM()) || dynamic_cast<LQIO::DOM::SemaphoreTask *>(cp->getDOM())->getInitialState() == LQIO::DOM::SemaphoreTask::InitialState::FULL;
     for ( unsigned i = 0; i < cp->multiplicity(); ++i ) {
 	Instance * task;
 	if ( count_down ) {
