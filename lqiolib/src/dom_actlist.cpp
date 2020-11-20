@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_actlist.cpp 14107 2020-11-18 18:51:51Z greg $
+ *  $Id: dom_actlist.cpp 14111 2020-11-20 16:30:03Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -20,7 +20,7 @@ namespace LQIO {
 	ActivityList::ActivityList(const Document * document, const Task * task, ActivityList::Type type ) 
 	    : DocumentObject(document,""),		/* By default, no name :-) */
 	      _task(task), _list(), _arguments(), _type(type), 
-	      _next(NULL), _prev(NULL),
+	      _next(nullptr), _prev(nullptr),
 	      _processed(false)
 	{
 	    if ( task != nullptr ) {
@@ -156,7 +156,7 @@ namespace LQIO {
 	AndJoinActivityList& AndJoinActivityList::setQuorumCountValue(const unsigned value)
 	{
 	    /* Store the value into the ExtVar */
-	    if (_quorum == NULL) {
+	    if (_quorum == nullptr) {
 		_quorum = new ConstantExternalVariable(value);
 	    } else {
 		_quorum->set(value);

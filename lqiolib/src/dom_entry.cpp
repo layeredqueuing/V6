@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_entry.cpp 14108 2020-11-19 17:15:02Z greg $
+ *  $Id: dom_entry.cpp 14111 2020-11-20 16:30:03Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -24,12 +24,12 @@ namespace LQIO {
 	Entry::Entry(const Document * document, const std::string& name ) 
 	    : DocumentObject(document,name),
 	      _type(Entry::Type::NOT_DEFINED), _phases(), 
-	      _maxPhase(0), _task(NULL), _histograms(),
-	      _openArrivalRate(NULL), _entryPriority(NULL),
+	      _maxPhase(0), _task(nullptr), _histograms(),
+	      _openArrivalRate(nullptr), _entryPriority(nullptr),
 	      _semaphoreType(Semaphore::NONE),
 	      _rwlockType(RWLock::NONE),
 	      _forwarding(),
-	      _startActivity(NULL),
+	      _startActivity(nullptr),
 	      _resultWaitingTime(0.0), _resultWaitingTimeVariance(0.0),
 	      _resultPhasePProcessorWaiting(), _resultPhasePProcessorWaitingVariance(),
 	      _resultPhasePServiceTime(), _resultPhasePServiceTimeVariance(),
@@ -47,10 +47,10 @@ namespace LQIO {
 	Entry::Entry( const Entry& src ) 
 	    : DocumentObject( src ),
 	      _type(src._type), _phases(),
-	      _maxPhase(src._maxPhase), _task(NULL), _histograms(),
+	      _maxPhase(src._maxPhase), _task(nullptr), _histograms(),
 	      _openArrivalRate(src._openArrivalRate), _entryPriority(src._entryPriority),
 	      _semaphoreType(src._semaphoreType), _rwlockType(src._rwlockType), _forwarding(src._forwarding),
-	      _startActivity(NULL),
+	      _startActivity(nullptr),
 	      _resultWaitingTime(0.0), _resultWaitingTimeVariance(0.0),
 	      _resultPhasePProcessorWaiting(), _resultPhasePProcessorWaitingVariance(),
 	      _resultPhasePServiceTime(), _resultPhasePServiceTimeVariance(),
@@ -136,7 +136,7 @@ namespace LQIO {
       
 	    std::map<unsigned, Phase*>::const_iterator phase = _phases.find(p);
 	    if ( phase == _phases.end() ) {
-		return  0;
+		return nullptr;
 	    } else {
 		return phase->second;
 	    }
@@ -190,7 +190,7 @@ namespace LQIO {
 	    if (hasPhase(phase)) {
 		return getPhase(phase)->getCallToTarget(target);
 	    } else {
-		return NULL;
+		return nullptr;
 	    }
 	}
     
@@ -229,7 +229,7 @@ namespace LQIO {
 	bool Entry::hasEntryPriority() const
 	{
 	    /* Find out whether a value was set */
-	    return _entryPriority != NULL;
+	    return _entryPriority != nullptr;
 	}
     
 	bool Entry::entrySemaphoreTypeOk(Semaphore newType)
@@ -326,11 +326,8 @@ namespace LQIO {
     
 	bool Entry::hasHistogram() const 
 	{
-	    if ( std::find_if( _phases.begin(), _phases.end(), LQIO::DOM::Entry::Predicate<LQIO::DOM::Phase>( &LQIO::DOM::Phase::hasHistogram ) ) != _phases.end() ) {
-		return true;
-	    }
-	    /* Bug 668 - check for histogram at entry level (activity entry) */
-	    return std::find_if( _histograms.begin(),  _histograms.end(), LQIO::DOM::Entry::Predicate<LQIO::DOM::Histogram>( &LQIO::DOM::Histogram::isHistogram ) ) != _histograms.end();
+	    return std::any_of( _phases.begin(), _phases.end(), Predicate<LQIO::DOM::Phase>( &LQIO::DOM::Phase::hasHistogram ) )
+		|| std::any_of( _histograms.begin(),  _histograms.end(), Predicate<LQIO::DOM::Histogram>( &LQIO::DOM::Histogram::isHistogram ) );
 	}
 
 	bool Entry::hasHistogramForPhase( unsigned p) const
@@ -355,7 +352,7 @@ namespace LQIO {
 		    return histogram->second;
 		}
 	    }
-	    return  0;
+	    return nullptr;
 	}
 
 	void Entry::setHistogramForPhase( unsigned p, Histogram* histogram )
@@ -370,10 +367,8 @@ namespace LQIO {
 
 	bool Entry::hasMaxServiceTimeExceeded() const 
  	{
-	    if ( std::find_if( _phases.begin(), _phases.end(), LQIO::DOM::Entry::Predicate<LQIO::DOM::Phase>( &LQIO::DOM::Phase::hasMaxServiceTimeExceeded ) ) != _phases.end() ) {
-		return true;
-	    }
-	    return std::find_if( _histograms.begin(),  _histograms.end(), Predicate<LQIO::DOM::Histogram>( &LQIO::DOM::Histogram::isTimeExceeded ) ) != _histograms.end();
+	    return std::any_of( _phases.begin(), _phases.end(), LQIO::DOM::Entry::Predicate<LQIO::DOM::Phase>( &LQIO::DOM::Phase::hasMaxServiceTimeExceeded ) )
+		|| std::any_of( _histograms.begin(),  _histograms.end(), Predicate<LQIO::DOM::Histogram>( &LQIO::DOM::Histogram::isTimeExceeded ) );
  	}
 
 
@@ -406,7 +401,7 @@ namespace LQIO {
 	    std::vector<Call*>::const_iterator iter = std::find_if( _forwarding.begin(), _forwarding.end(), Call::eqDestEntry(entry) );
 	    if ( iter != _forwarding.end() ) return *iter;
 
-	    return NULL;
+	    return nullptr;
 	}
 
 	bool Entry::hasForwarding() const
@@ -436,17 +431,17 @@ namespace LQIO {
     
 	const bool Entry::hasThinkTime() const
 	{
-	    return std::find_if( _phases.begin(), _phases.end(), LQIO::DOM::Entry::Predicate<LQIO::DOM::Phase>( &LQIO::DOM::Phase::hasThinkTime ) ) != _phases.end();
+ 	    return std::any_of( _phases.begin(), _phases.end(), LQIO::DOM::Entry::Predicate<LQIO::DOM::Phase>( &LQIO::DOM::Phase::hasThinkTime ) );
 	}
 
 	const bool Entry::hasDeterministicPhases() const
 	{
-	    return std::find_if( _phases.begin(), _phases.end(), LQIO::DOM::Entry::Predicate<LQIO::DOM::Phase>( &LQIO::DOM::Phase::hasDeterministicCalls ) ) != _phases.end();
+	    return std::any_of( _phases.begin(), _phases.end(), LQIO::DOM::Entry::Predicate<LQIO::DOM::Phase>( &LQIO::DOM::Phase::hasDeterministicCalls ) );
 	}
 	    
 	const bool Entry::hasNonExponentialPhases() const
 	{
-	    return std::find_if( _phases.begin(), _phases.end(), LQIO::DOM::Entry::Predicate<LQIO::DOM::Phase>( &LQIO::DOM::Phase::isNonExponential ) ) != _phases.end();
+	    return std::any_of( _phases.begin(), _phases.end(), LQIO::DOM::Entry::Predicate<LQIO::DOM::Phase>( &LQIO::DOM::Phase::isNonExponential ) );
 	}
 
 	/* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- [Result Values] -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= */
@@ -847,7 +842,7 @@ namespace LQIO {
 		    }
 		}
 	    }
-	    return 0;
+	    return 0.;
 	}
 
 	double Entry::getResultPhasePMaxServiceTimeExceededVariance( unsigned p ) const

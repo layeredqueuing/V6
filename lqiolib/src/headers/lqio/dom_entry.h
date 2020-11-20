@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- *  $Id: dom_entry.h 14108 2020-11-19 17:15:02Z greg $
+ *  $Id: dom_entry.h 14111 2020-11-20 16:30:03Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -37,16 +37,13 @@ namespace LQIO {
 		const test_fn _f;
 	    };
 
-	    template <class Type> class Predicate {
-		typedef bool (Type::*test_fn)() const;
-
-	    public:
-		Predicate<Type>( const test_fn f ) : _f(f) {}
-//		bool operator()( const Type * object ) const { return (object->*_f)(); }
-		bool operator()( const std::pair<unsigned, Type *>& object ) const { return (object.second->*_f)(); }
-	    
+	    struct add_phase_using {
+		typedef double (Entry::*fp)( unsigned int p ) const;
+		add_phase_using( fp f, unsigned int p ) : _f(f), _p(p) {}
+		double operator()( double sum, const Entry * object ) { return sum + (object->*_f)(_p); }
 	    private:
-		const test_fn _f;
+		const fp _f;
+		const unsigned int _p;
 	    };
 
 	private:

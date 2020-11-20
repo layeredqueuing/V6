@@ -1,20 +1,21 @@
 /*
- *  $Id: dom_task.cpp 14108 2020-11-19 17:15:02Z greg $
+ *  $Id: dom_task.cpp 14111 2020-11-20 16:30:03Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
  *
  */
 
+#include <cassert>
+#include <algorithm>
+#include <numeric>
+#include <iostream>
+#include <cmath>
 #include "dom_document.h"
 #include "dom_task.h"
 #include "dom_entry.h"
 #include "dom_histogram.h"
 #include "dom_extvar.h"
-#include <cassert>
-#include <iostream>
-#include <cmath>
-#include <algorithm>
 
 namespace LQIO {
     namespace DOM {
@@ -29,7 +30,7 @@ namespace LQIO {
 	      _queueLength(queue_length),
 	      _processor(const_cast<Processor*>(processor)),
 	      _priority(priority),
-	      _thinkTime(NULL),
+	      _thinkTime(nullptr),
 	      _group(const_cast<Group *>(group)),
 	      _activities(), _precedences(),
 	      _fanOut(), _fanIn(),
@@ -104,7 +105,7 @@ namespace LQIO {
 
 	void Task::setQueueLengthValue( const unsigned int value )
 	{
-	    if ( _queueLength == NULL ) {
+	    if ( _queueLength == nullptr ) {
 		_queueLength = new ConstantExternalVariable(value);
 	    } else {
 		_queueLength->set(value);
@@ -139,7 +140,7 @@ namespace LQIO {
 
 	void Task::setPriorityValue( int value )
 	{
-	    if ( _priority == NULL ) {
+	    if ( _priority == nullptr ) {
 		_priority = new ConstantExternalVariable(value);
 	    } else {
 		_priority->set(value);
@@ -163,7 +164,7 @@ namespace LQIO {
 
 	void Task::setThinkTimeValue( double value )
 	{
-	    if ( _thinkTime == NULL ) {
+	    if ( _thinkTime == nullptr ) {
 		_thinkTime = new ConstantExternalVariable(value);
 	    } else {
 		_thinkTime->set(value);
@@ -202,7 +203,7 @@ namespace LQIO {
 
 	void Task::setFanOutValue( const std::string& task, unsigned int value )
 	{
-	    if ( _fanOut[task] == NULL ) {
+	    if ( _fanOut[task] == nullptr ) {
 		_fanOut[task] = new ConstantExternalVariable(value);
 	    } else {
 		_fanOut[task]->set(value);
@@ -215,7 +216,7 @@ namespace LQIO {
 	    if ( fanOut != _fanOut.end() ) {
 		return fanOut->second;
 	    } else {
-		return NULL;
+		return nullptr;
 	    }
 	}
 
@@ -238,7 +239,7 @@ namespace LQIO {
 
 	void Task::setFanInValue( const std::string& task, unsigned int value )
 	{
-	    if ( _fanIn[task] == NULL ) {
+	    if ( _fanIn[task] == nullptr ) {
 		_fanIn[task] = new ConstantExternalVariable(value);
 	    } else {
 		_fanIn[task]->set(value);
@@ -251,7 +252,7 @@ namespace LQIO {
 	    if ( fanIn != _fanIn.end() ) {
 		return fanIn->second;
 	    } else {
-		return NULL;
+		return nullptr;
 	    }
 	}
 
@@ -273,7 +274,7 @@ namespace LQIO {
 	    if ( activity != _activities.end()) {
 		return activity->second;
 	    } else {
-		return NULL;
+		return nullptr;
 	    }
 	}
 
@@ -284,7 +285,7 @@ namespace LQIO {
 	    if ( activity != _activities.end()) {
 		return activity->second;
 	    } else if (create == false) {
-		return NULL;
+		return nullptr;
 	    }
 
 	    const_cast<Document *>(getDocument())->setMaximumPhase(1);	/* Set max phase for output */
@@ -433,12 +434,12 @@ namespace LQIO {
 	double Task::computeResultUtilization()
 	{
 	    if ( getResultUtilization() == 0 || _entryList.size() == 1 ) {
-		setResultUtilization( for_each( _entryList.begin(), _entryList.end(), ConstSum<Entry>( &Entry::getResultUtilization ) ).sum() );
-		setResultUtilizationVariance( for_each( _entryList.begin(), _entryList.end(), ConstSum<Entry>( &Entry::getResultUtilizationVariance ) ).sum() );
+		setResultUtilization( std::accumulate( _entryList.begin(), _entryList.end(), 0.0, add_using_const<Entry>( &Entry::getResultUtilization ) ) );
+		setResultUtilizationVariance( std::accumulate( _entryList.begin(), _entryList.end(), 0.0, add_using_const<Entry>( &Entry::getResultUtilizationVariance ) ) );
 
 		for ( unsigned int p = 1; p <= Phase::MAX_PHASE; ++p ) {
-		    setResultPhasePUtilization( p, for_each( _entryList.begin(), _entryList.end(), ConstSumP<Entry>( &Entry::getResultPhasePUtilization, p ) ).sum() );
-		    setResultPhasePUtilizationVariance( p, for_each( _entryList.begin(), _entryList.end(), ConstSumP<Entry>( &Entry::getResultPhasePUtilizationVariance, p ) ).sum() );
+		    setResultPhasePUtilization( p, std::accumulate( _entryList.begin(), _entryList.end(), 0.0, Entry::add_phase_using( &Entry::getResultPhasePUtilization, p ) ) );
+		    setResultPhasePUtilizationVariance( p, std::accumulate( _entryList.begin(), _entryList.end(), 0.0, Entry::add_phase_using( &Entry::getResultPhasePUtilizationVariance, p ) ) );
 		}
 	    }
 	    return getResultUtilization();
@@ -484,11 +485,8 @@ namespace LQIO {
 	double Task::computeResultThroughput()
 	{
 	    if ( getResultThroughput() == 0 || _entryList.size() == 1 ) {
-		double sum = for_each( _entryList.begin(),_entryList.end(), ConstSum<Entry>( &Entry::getResultThroughput ) ).sum();
-		double sum_var = for_each( _entryList.begin(),_entryList.end(), ConstSum<Entry>( &Entry::getResultThroughputVariance ) ).sum();
-
-		setResultThroughput( sum );
-		setResultThroughputVariance( sum_var );
+		setResultThroughput( std::accumulate( _entryList.begin(),_entryList.end(), 0.0, add_using_const<Entry>( &Entry::getResultThroughput ) ) );
+		setResultThroughputVariance( std::accumulate( _entryList.begin(),_entryList.end(), 0.0, add_using_const<Entry>( &Entry::getResultThroughputVariance ) ) );
 	    }
 	    return getResultThroughput();
 	}
@@ -519,11 +517,9 @@ namespace LQIO {
 	double Task::computeResultProcessorUtilization()
 	{
 	    if ( getResultProcessorUtilization() == 0.0 || _entryList.size() == 1 ) {
-		double sum = for_each( _entryList.begin(), _entryList.end(), ConstSum<Entry>( &Entry::getResultProcessorUtilization ) ).sum();
-		double sum_var = for_each( _entryList.begin(), _entryList.end(), ConstSum<Entry>( &Entry::getResultProcessorUtilizationVariance ) ).sum();
-		sum += for_each( _activities.begin(), _activities.end(), ConstSum<Activity>( &Activity::getResultProcessorUtilization ) ).sum();
-		setResultProcessorUtilization( sum );
-		setResultProcessorUtilizationVariance( sum_var );
+		setResultProcessorUtilization( std::accumulate( _entryList.begin(), _entryList.end(), 0.0, add_using_const<Entry>( &Entry::getResultProcessorUtilization ) )
+					       + std::accumulate( _activities.begin(), _activities.end(), 0.0, add_using_const<Activity>( &Activity::getResultProcessorUtilization ) ) );
+		setResultProcessorUtilizationVariance( std::accumulate( _entryList.begin(), _entryList.end(), 0.0, add_using_const<Entry>( &Entry::getResultProcessorUtilizationVariance ) ) );
 	    }
 	    return getResultProcessorUtilization();
 	}
@@ -640,7 +636,7 @@ namespace LQIO {
 	    if ( _histogram && _histogram->isTimeExceeded() ) {
 		return _histogram->getBinMean( _histogram->getOverflowIndex() );
 	    } else {
-		return 0;
+		return 0.0;
 	    }
 	}
 
@@ -649,7 +645,7 @@ namespace LQIO {
 	    if ( _histogram && _histogram->isTimeExceeded() ) {
 		return _histogram->getBinVariance( _histogram->getOverflowIndex() );
 	    } else {
-		return 0;
+		return 0.0;
 	    }
 	}
 
@@ -740,7 +736,7 @@ namespace LQIO {
 
 	void TimeoutTask::setAbortValue( double value)
 	{
-	    if ( _abort == NULL ) {
+	    if ( _abort == nullptr ) {
 		_abort = new ConstantExternalVariable(value);
 	    } else {
 		_abort->set(value);
@@ -753,7 +749,7 @@ namespace LQIO {
 
 	void TimeoutTask::setTimeoutValue( double value )
 	{
-	    if ( _timeout == NULL ) {
+	    if ( _timeout == nullptr ) {
 		_timeout = new ConstantExternalVariable(value);
 	    } else {
 		_timeout->set(value);
@@ -811,11 +807,11 @@ namespace LQIO {
 			     const Group * group )
 	    : Task(document, name, SCHEDULE_RETRY, entryList, processor,
 		   queue_length, priority, n_copies, n_replicas, group ),
-	      _sleep(NULL), _maxRetries(NULL), _abort(NULL),
+	      _sleep(nullptr), _maxRetries(nullptr), _abort(nullptr),
 	      _resultSuccessProbability(0.), _resultSuccessProbabilityVariance(0.),
 	      _resultAbortProbability(0.), _resultAbortProbabilityVariance(0.),
 	      _resultNumberOfRetries(0.), _resultNumberOfRetriesVariance(0.),
-	      _decision(NULL), _histogram(NULL)
+	      _decision(nullptr), _histogram(nullptr)
 	{
 	}
 
@@ -833,7 +829,7 @@ namespace LQIO {
 	      _resultSuccessProbability(0.), _resultSuccessProbabilityVariance(0.),
 	      _resultAbortProbability(0.), _resultAbortProbabilityVariance(0.),
 	      _resultNumberOfRetries(0.), _resultNumberOfRetriesVariance(0.),
-	      _decision(NULL), _histogram(NULL)
+	      _decision(nullptr), _histogram(nullptr)
 	{
 	}
 
@@ -858,7 +854,7 @@ namespace LQIO {
 
 	void RetryTask::setSleepTimeValue( double value)
 	{
-	    if ( _sleep == NULL ) {
+	    if ( _sleep == nullptr ) {
 		_sleep = new ConstantExternalVariable(value);
 	    } else {
 		_sleep->set(value);
@@ -872,7 +868,7 @@ namespace LQIO {
 
 	void RetryTask::setMaxRetriesValue( double value ) 	
 	{
-	    if ( _maxRetries == NULL ) {
+	    if ( _maxRetries == nullptr ) {
 		_maxRetries = new ConstantExternalVariable(value);
 	    } else {
 		_maxRetries->set(value);
@@ -911,7 +907,7 @@ namespace LQIO {
 
 	void RetryTask::setAbortValue( double value)
 	{
-	    if ( _abort == NULL ) {
+	    if ( _abort == nullptr ) {
 		_abort = new ConstantExternalVariable(value);
 	    } else {
 		_abort->set(value);
@@ -933,7 +929,7 @@ namespace LQIO {
 	}
  	bool RetryTask::hasHistogram() const
 	{
-	    return _histogram != NULL && _histogram->getBins() > 0;
+	    return _histogram != nullptr && _histogram->getBins() > 0;
 	}
 
 	void RetryTask::setHistogram(Histogram* histogram)
