@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- *  $Id: expat_document.h 14107 2020-11-18 18:51:51Z greg $
+ *  $Id: expat_document.h 14110 2020-11-20 15:37:56Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  */
@@ -63,8 +63,8 @@ namespace LQIO {
 		observation_table_t() : key(0), phase(0) {}
 		observation_table_t( int k, int p=0 ) : key(k), phase(p) {}
 		bool operator()( const char * s1, const char * s2 ) const { return strcasecmp( s1, s2 ) < 0; }
-		int key;
-		int phase;
+		const int key;
+		const int phase;
 	    };
 	    /*- SPEX */
 	    
@@ -325,7 +325,7 @@ namespace LQIO {
 	    Histogram * findOrAddHistogram( DocumentObject * object, Histogram::Type type, unsigned int n_bins, double min, double max );
 	    Histogram * findOrAddHistogram( DocumentObject * object, unsigned int phase, Histogram::Type type, unsigned int n_bins, double min, double max );
 
-	    bool checkAttributes( const XML_Char * element, const XML_Char ** attributes, std::set<const XML_Char *,Expat_Document::attribute_table_t>& table ) const;
+	    bool checkAttributes( const XML_Char * element, const XML_Char ** attributes, const std::set<const XML_Char *,Expat_Document::attribute_table_t>& table ) const;
 
 	    LQIO::DOM::ExternalVariable * getVariableAttribute( const XML_Char ** attributes, const XML_Char * argument, const XML_Char * default_value=NULL ) const;
 	    LQIO::DOM::ExternalVariable * getOptionalAttribute( const XML_Char ** attributes, const XML_Char * argument ) const;
@@ -405,26 +405,26 @@ namespace LQIO {
 	    static int __indent;
 
 	private:
-	    static std::set<const XML_Char *,attribute_table_t> model_table;
-	    static std::set<const XML_Char *,attribute_table_t> parameter_table;
-	    static std::set<const XML_Char *,attribute_table_t> processor_table;
-	    static std::set<const XML_Char *,attribute_table_t> decision_table;
-	    static std::set<const XML_Char *,attribute_table_t> decision_path_table;
-	    static std::set<const XML_Char *,attribute_table_t> group_table;
-	    static std::set<const XML_Char *,attribute_table_t> task_table;
-	    static std::set<const XML_Char *,attribute_table_t> entry_table;
-	    static std::set<const XML_Char *,attribute_table_t> activity_table;
-	    static std::set<const XML_Char *,attribute_table_t> call_table;
-	    static std::set<const XML_Char *,attribute_table_t> histogram_table;
+	    static const std::set<const XML_Char *,attribute_table_t> model_table;
+	    static const std::set<const XML_Char *,attribute_table_t> parameter_table;
+	    static const std::set<const XML_Char *,attribute_table_t> processor_table;
+	    static const std::set<const XML_Char *,attribute_table_t> decision_table;
+	    static const std::set<const XML_Char *,attribute_table_t> decision_path_table;
+	    static const std::set<const XML_Char *,attribute_table_t> group_table;
+	    static const std::set<const XML_Char *,attribute_table_t> task_table;
+	    static const std::set<const XML_Char *,attribute_table_t> entry_table;
+	    static const std::set<const XML_Char *,attribute_table_t> activity_table;
+	    static const std::set<const XML_Char *,attribute_table_t> call_table;
+	    static const std::set<const XML_Char *,attribute_table_t> histogram_table;
 
-	    static std::map<const XML_Char,const XML_Char *> escape_table;
+	    static const std::map<const XML_Char,const std::string> escape_table;
 
-	    static std::map<const XML_Char *,ActivityList::ActivityList::Type,attribute_table_t> precedence_table;
-	    static std::map<const ActivityList::Type,const XML_Char *> precedence_type_table;
-	    static std::map<const XML_Char *,result_table_t,result_table_t>  result_table;
-	    static std::map<const XML_Char *,observation_table_t,observation_table_t>  observation_table;	/* SPEX */
-	    static std::map<int,const char *> __key_lqx_function_map;			/* Maps srvn_gram.h KEY_XXX to SPEX attribute name */
-	    static std::map<const Call::Type,const call_type_table_t> call_type_table;
+	    static const std::map<const XML_Char *,const ActivityList::ActivityList::Type,attribute_table_t> precedence_table;
+	    static const std::map<const ActivityList::Type,const XML_Char *> precedence_type_table;
+	    static const std::map<const XML_Char *,const result_table_t,result_table_t>  result_table;
+	    static const std::map<const XML_Char *,const observation_table_t,observation_table_t>  observation_table;	/* SPEX */
+	    static const std::map<const int,const char *> __key_lqx_function_map;			/* Maps srvn_gram.h KEY_XXX to SPEX attribute name */
+	    static const std::map<const Call::Type,const call_type_table_t> call_type_table;
 
 	    static const XML_Char * XMLSchema_instance;
 

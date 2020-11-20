@@ -12,7 +12,7 @@
  *
  * $URL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqsim/entry.cc $
  *
- * $Id: entry.cc 14106 2020-11-18 14:33:50Z greg $
+ * $Id: entry.cc 14108 2020-11-19 17:15:02Z greg $
  */
 
 #include <parasol.h>

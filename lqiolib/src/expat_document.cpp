@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: expat_document.cpp 14107 2020-11-18 18:51:51Z greg $
+ * $Id: expat_document.cpp 14110 2020-11-20 15:37:56Z greg $
  *
  * Read in XML input files.
  *
@@ -80,7 +80,6 @@ namespace LQIO {
             : _document( document ), _parser(), _input_file_name(input_file_name), _createObjects(createObjects), _loadResults(loadResults), _stack(),
 	      _has_spex(false), _spex_parameters(), _spex_results(), _spex_convergence(), _spex_observation()
         {
-	    init_tables();
         }
 
 
@@ -100,10 +99,10 @@ namespace LQIO {
 		if ( program_text.size() ) {
 		    LQX::Program* program;
 		    /* If we have an LQX program, then we need to compute */
-		    if ( Spex::__parameter_list != NULL ) {
+		    if ( Spex::__parameter_list != nullptr ) {
 			LQIO::solution_error( LQIO::ERR_LQX_SPEX, input_filename.c_str() );
 			return false;
-		    } else if ( (program = LQX::Program::loadFromText(input_filename.c_str(), document.getLQXProgramLineNumber(), program_text.c_str())) == NULL ) {
+		    } else if ( (program = LQX::Program::loadFromText(input_filename.c_str(), document.getLQXProgramLineNumber(), program_text.c_str())) == nullptr ) {
 			LQIO::solution_error( LQIO::ERR_LQX_COMPILATION, input_filename.c_str() );
 			return false;
 		    } else {
@@ -167,7 +166,7 @@ namespace LQIO {
 		return false;
             }
 
-            _parser = XML_ParserCreateNS(NULL,'/');     /* Gobble header goop */
+            _parser = XML_ParserCreateNS(nullptr,'/');     /* Gobble header goop */
             if ( !_parser ) {
                 throw std::runtime_error("Could not allocate memory for Expat.");
             }
@@ -1039,7 +1038,7 @@ namespace LQIO {
         {
             ActivityList * pre_list = 0;
             ActivityList * post_list = 0;
-            std::map<const XML_Char *,ActivityList::ActivityList::Type>::const_iterator item = precedence_table.find(element);
+            std::map<const XML_Char *,const ActivityList::ActivityList::Type>::const_iterator item = precedence_table.find(element);
             if ( item != precedence_table.end() ) {
                 switch ( item->second ) {
                 case ActivityList::Type::OR_JOIN:
@@ -1082,7 +1081,7 @@ namespace LQIO {
                         if ( activity_name ) {
                             Activity* activity = dynamic_cast<Task *>(task)->getActivity(activity_name);
                             activity->inputFrom(post_list);
-                            post_list->add(activity,NULL);              /* Special count case */
+                            post_list->add(activity,nullptr);              /* Special count case */
                         }
                     }
                     break;
@@ -1214,7 +1213,7 @@ namespace LQIO {
 	{
 	    if ( strcasecmp( element, Xresult_observation ) == 0 ) {
 		for ( std::set<LQIO::Spex::ObservationInfo>::const_iterator observation = _spex_observation.begin(); observation != _spex_observation.end(); ++observation ) {
-		    if ( object == NULL ) {
+		    if ( object == nullptr ) {
 			LQIO::spex.observation( *observation );
 		    } else if ( dynamic_cast<Processor *>(object)
 			 || dynamic_cast<Group *>(object)
@@ -1553,10 +1552,10 @@ namespace LQIO {
 
 		    decision  = new Decision( &_document, dynamic_cast<Task *>(task), 
 			decision_name, decision_type,  decision_entry_name,
-			_document.db_build_parameter_variable(getStringAttribute(attributes,Xtimeout,"0.0"),NULL),
-			_document.db_build_parameter_variable(getStringAttribute(attributes,Xabort,"0.0"),NULL),
-			_document.db_build_parameter_variable(getStringAttribute(attributes,Xsleep,"0.0"),NULL),
-			_document.db_build_parameter_variable(getStringAttribute(attributes,Xmax_retries,"0"),NULL)
+			_document.db_build_parameter_variable(getStringAttribute(attributes,Xtimeout,"0.0"),nullptr),
+			_document.db_build_parameter_variable(getStringAttribute(attributes,Xabort,"0.0"),nullptr),
+			_document.db_build_parameter_variable(getStringAttribute(attributes,Xsleep,"0.0"),nullptr),
+			_document.db_build_parameter_variable(getStringAttribute(attributes,Xmax_retries,"0"),nullptr)
 			);
 
 		    _document.addDecision(decision);
@@ -1605,7 +1604,7 @@ namespace LQIO {
 			decisionPath = new DecisionPath(&_document, decision_path_name, dynamic_cast<Decision *>(decision), RETRY_PATH,  toEntry_name);
 
 		    }
-		    //if (decisionPath !=NULL)
+		    //if (decisionPath !=nullptr)
 		    //	decisionPath->printDecisionPath();
 		}
 	    }
@@ -1621,8 +1620,8 @@ namespace LQIO {
         void
         Expat_Document::handleFanIn( DocumentObject * object, const XML_Char ** attributes )
         {
-            const XML_Char * source = NULL;
-            const XML_Char * value = NULL;
+            const XML_Char * source = nullptr;
+            const XML_Char * value = nullptr;
             for ( ; *attributes; attributes += 2 ) {
                 if ( strcasecmp( *attributes, Xsource ) == 0 && !source ) {
                     source = *(attributes+1);
@@ -1637,7 +1636,7 @@ namespace LQIO {
             } else if ( !value ) {
                 throw missing_attribute( Xvalue );
             } else {
-                dynamic_cast<LQIO::DOM::Task *>(object)->setFanIn( source, _document.db_build_parameter_variable(value,NULL) );
+                dynamic_cast<LQIO::DOM::Task *>(object)->setFanIn( source, _document.db_build_parameter_variable(value,nullptr) );
             }
         }
 
@@ -1649,8 +1648,8 @@ namespace LQIO {
         void
         Expat_Document::handleFanOut( DocumentObject * object, const XML_Char ** attributes )
         {
-            const XML_Char * destination = NULL;
-            const XML_Char * value = NULL;
+            const XML_Char * destination = nullptr;
+            const XML_Char * value = nullptr;
             for ( ; *attributes; attributes += 2 ) {
                 if ( strcasecmp( *attributes, Xdest ) == 0 && !destination ) {
                     destination = *(attributes+1);
@@ -1665,7 +1664,7 @@ namespace LQIO {
             } else if ( !value ) {
                 throw missing_attribute( Xvalue );
             } else {
-                dynamic_cast<LQIO::DOM::Task *>(object)->setFanOut( destination, _document.db_build_parameter_variable(value,NULL) );
+                dynamic_cast<LQIO::DOM::Task *>(object)->setFanOut( destination, _document.db_build_parameter_variable(value,nullptr) );
             }
         }
 
@@ -1873,7 +1872,7 @@ namespace LQIO {
 
             if ( !to_entry ) {
                 if ( _createObjects ) {
-                    to_entry = new Entry( &_document, dest_entry_name );         // This differs here.. entry may not exist, so create it anyway then test later. assert(to_entry != NULL);
+                    to_entry = new Entry( &_document, dest_entry_name );         // This differs here.. entry may not exist, so create it anyway then test later. assert(to_entry != nullptr);
                     _document.addEntry(to_entry);         /* Add to global table */
                 } else {
                     throw undefined_symbol( dest_entry_name );
@@ -1893,7 +1892,7 @@ namespace LQIO {
 		LQIO::DOM::ExternalVariable* calls = getVariableAttribute(attributes,Xcalls_mean);
 
                 /* Check the existence */
-                if (call == NULL) {
+                if (call == nullptr) {
                     call = new Call( &_document, call_type, dynamic_cast<Phase *>(phase), to_entry, calls );
 		    std::string name = phase->getName();
 		    name += '_';
@@ -1932,7 +1931,7 @@ namespace LQIO {
             Entry* to_entry = _document.getEntryByName(dest_entry_name);
             if ( !to_entry ) {
                 if ( _createObjects ) {
-                    to_entry = new Entry( &_document, dest_entry_name );         // This differs here.. entry may not exist, so create it anyway then test later. assert(to_entry != NULL);
+                    to_entry = new Entry( &_document, dest_entry_name );         // This differs here.. entry may not exist, so create it anyway then test later. assert(to_entry != nullptr);
                     _document.addEntry(to_entry);         /* Add to global table */
                 } else {
                     throw undefined_symbol( dest_entry_name );
@@ -1970,7 +1969,7 @@ namespace LQIO {
             Entry* to_entry = _document.getEntryByName(dest_entry_name);
             if ( !to_entry ) {
                 if ( _createObjects ) {
-                    to_entry = new Entry( &_document, dest_entry_name );         // This differs here.. entry may not exist, so create it anyway then test later. assert(to_entry != NULL);
+                    to_entry = new Entry( &_document, dest_entry_name );         // This differs here.. entry may not exist, so create it anyway then test later. assert(to_entry != nullptr);
                     _document.addEntry(to_entry);         /* Add to global table */
                 } else {
                     throw std::runtime_error( dest_entry_name );
@@ -1980,7 +1979,7 @@ namespace LQIO {
 	    Entry * from_entry = dynamic_cast<Entry *>(entry);
 	    Call * call = from_entry->getForwardingToTarget(to_entry);
             if ( _createObjects ) {
-                if ( call == NULL ) {
+                if ( call == nullptr ) {
                     call = new Call( &_document, from_entry, to_entry, getVariableAttribute(attributes,Xprob) );
 		    std::string name = from_entry->getName();
 		    name += '_';
@@ -2006,7 +2005,7 @@ namespace LQIO {
 	    if ( phase ) {
 		if ( !dynamic_cast<Entry *>(object)) {
 		    LQIO::input_error2( LQIO::ERR_UNEXPECTED_ATTRIBUTE, Xhistogram_bin, Xphase );
-		    return NULL;
+		    return nullptr;
 		} else {
 		    return findOrAddHistogram( object, phase, Histogram::Type::CONTINUOUS,	/* Special version for entries. */
 					       getLongAttribute(attributes, Xnumber_bins, 10),
@@ -2054,7 +2053,7 @@ namespace LQIO {
         Expat_Document::handleResults( DocumentObject * object, const XML_Char ** attributes )
         {
             for ( ; *attributes; attributes += 2 ) {
-                std::map<const XML_Char *,result_table_t>::const_iterator item = result_table.find(*attributes);
+                std::map<const XML_Char *,const result_table_t>::const_iterator item = result_table.find(*attributes);
                 if ( item != result_table.end() ) {
                     set_result_fptr func = item->second.mean;
 		    const double value = get_double( *attributes, *(attributes+1) );
@@ -2071,7 +2070,7 @@ namespace LQIO {
         Expat_Document::handleResults95( DocumentObject * object, const XML_Char ** attributes )
         {
             for ( ; *attributes; attributes += 2 ) {
-                std::map<const XML_Char *,result_table_t>::const_iterator item = result_table.find(*attributes);
+                std::map<const XML_Char *,const result_table_t>::const_iterator item = result_table.find(*attributes);
                 if ( item != result_table.end() ) {
                     set_result_fptr func = item->second.variance;
 		    const double value = get_double( *attributes, *(attributes+1) );
@@ -2110,17 +2109,17 @@ namespace LQIO {
  	Expat_Document::handleSPEXObservation( DocumentObject * object, const XML_Char ** attributes, unsigned int conf_level )
 	{
             for ( ; *attributes; attributes += 2 ) {
-                std::map<const XML_Char *,observation_table_t>::const_iterator item = observation_table.find(*attributes);
+                std::map<const XML_Char *,const observation_table_t>::const_iterator item = observation_table.find(*attributes);
                 if ( item != observation_table.end() ) {
 		    const int key = item->second.key;
 		    /* Find the phase for the observation */
 		    int p = 0;
-		    if ( dynamic_cast<LQIO::DOM::Phase *>( object ) != NULL && dynamic_cast<LQIO::DOM::Activity *>( object ) == NULL ) {
+		    if ( dynamic_cast<LQIO::DOM::Phase *>( object ) != nullptr && dynamic_cast<LQIO::DOM::Activity *>( object ) == nullptr ) {
 			p = get_phase( dynamic_cast<LQIO::DOM::Phase *>( object ) );
-		    } else if ( dynamic_cast<LQIO::DOM::Call *>( object ) != NULL ) {
+		    } else if ( dynamic_cast<LQIO::DOM::Call *>( object ) != nullptr ) {
 			const LQIO::DOM::Call * call = dynamic_cast<const LQIO::DOM::Call *>(object);
 			const DocumentObject * source = call->getSourceObject();
-			if ( dynamic_cast<const LQIO::DOM::Phase *>(source) && dynamic_cast<LQIO::DOM::Activity *>( object ) == NULL ) {
+			if ( dynamic_cast<const LQIO::DOM::Phase *>(source) && dynamic_cast<LQIO::DOM::Activity *>( object ) == nullptr ) {
 			    p = get_phase( dynamic_cast<const LQIO::DOM::Phase *>(source) );
 			}
 		    } else {
@@ -2186,7 +2185,7 @@ namespace LQIO {
 	 */
 	
         bool
-        Expat_Document::checkAttributes( const XML_Char * element_name, const XML_Char ** attributes, std::set<const XML_Char *,Expat_Document::attribute_table_t>& table ) const
+        Expat_Document::checkAttributes( const XML_Char * element_name, const XML_Char ** attributes, const std::set<const XML_Char *,Expat_Document::attribute_table_t>& table ) const
         {
 	    bool rc = true;
             for ( ; *attributes; attributes += 2 ) {
@@ -2218,7 +2217,7 @@ namespace LQIO {
 	    if ( !s ) {
                 throw missing_attribute( attribute );
 	    } else {
-		return _document.db_build_parameter_variable( s, NULL );
+		return _document.db_build_parameter_variable( s, nullptr );
 	    }
 	}
 
@@ -2232,10 +2231,10 @@ namespace LQIO {
 	{
             for ( ; *attributes; attributes += 2 ) {
                 if ( strcasecmp( *attributes, attribute ) == 0 ) {
-		    return _document.db_build_parameter_variable( *(attributes+1), NULL );
+		    return _document.db_build_parameter_variable( *(attributes+1), nullptr );
 		}
 	    }
-	    return NULL;
+	    return nullptr;
 	}
 
         const XML_Char *
@@ -2320,7 +2319,7 @@ namespace LQIO {
         {
             for ( ; *attributes; attributes += 2 ) {
                 if ( strcasecmp( *attributes, Xscheduling ) == 0 ) {
-		    std::map<const char *, scheduling_type>::const_iterator i = scheduling_table.find( *(attributes+1) );
+		    std::map<const char *, const scheduling_type>::const_iterator i = scheduling_table.find( *(attributes+1) );
 		    if ( i == scheduling_table.end() ) {
 			invalid_argument( *attributes, *(attributes+1) );
 		    } else {
@@ -2430,7 +2429,7 @@ namespace LQIO {
             } else {
 #if defined(__CYGWIN__)
                 FILE *pPipe = popen( "cygpath -w /usr/local/share/lqns/", "rt" );
-                if( pPipe != NULL ) {
+                if( pPipe != nullptr ) {
                     char   psBuffer[512];
                     fgets( psBuffer, 512, pPipe );
                     pclose( pPipe );
@@ -3151,7 +3150,7 @@ namespace LQIO {
 	    _output << _self.end_element( Xprecedence ) << std::endl;
 	}
 
-	std::map<const ActivityList::Type,const XML_Char *> Expat_Document::precedence_type_table =
+	const std::map<const ActivityList::Type,const XML_Char *> Expat_Document::precedence_type_table =
 	{
 	    { ActivityList::Type::JOIN,     Xpre },
  	    { ActivityList::Type::OR_JOIN,  Xpre_or },
@@ -3193,7 +3192,7 @@ namespace LQIO {
                 const std::vector<const Activity*>& list = activity_list.getList();
                 for ( std::vector<const Activity*>::const_iterator next_activity = list.begin(); next_activity != list.end(); ++next_activity ) {
                     const Activity * activity = *next_activity;
-                    if ( activity_list.getParameter( activity ) == NULL ) {
+                    if ( activity_list.getParameter( activity ) == nullptr ) {
                         output << attribute( Xend, activity->getName() );
                     }
                 }
@@ -3205,7 +3204,7 @@ namespace LQIO {
             const std::vector<const Activity*>& list = activity_list.getList();
             for ( std::vector<const Activity*>::const_iterator next_activity = list.begin(); next_activity != list.end(); ++next_activity ) {
                 const Activity * activity = *next_activity;
-                const ExternalVariable * value = NULL;
+                const ExternalVariable * value = nullptr;
 
                 switch ( activity_list.getListType() ) {
                 case ActivityList::Type::REPEAT:
@@ -3240,7 +3239,7 @@ namespace LQIO {
          * <synch-call dest="e2" calls-mean="20"/>
          */
 
-	std::map<const Call::Type,const Expat_Document::call_type_table_t> Expat_Document::call_type_table =
+	const std::map<const Call::Type,const Expat_Document::call_type_table_t> Expat_Document::call_type_table =
 	{
 	    { Call::Type::SEND_NO_REPLY, { Xasynch_call, Xcalls_mean } },
             { Call::Type::RENDEZVOUS, { Xsynch_call,  Xcalls_mean } },
@@ -3386,7 +3385,7 @@ namespace LQIO {
         {
 	    LQX::Program * program = _document.getLQXProgram();
 	    const std::string& program_text = _document.getLQXProgramText();
-            if ( program_text.size() > 0 || program != NULL ) {
+            if ( program_text.size() > 0 || program != nullptr ) {
 		const int precision = output.precision(10);
                 output << start_element( Xlqx ) << "><![CDATA[" << std::endl;
 		if ( program_text.size() > 0 ) {
@@ -3471,195 +3470,6 @@ namespace LQIO {
             return output;
         }
 
-
-        /*
-         * Results for most of the elements of an lqn-model are of a common type in the schema.  This table is used to
-         * invoke the appropriate function.  The function is implemented in dom objects that support the result.
-         */
-
-        void
-        Expat_Document::init_tables()
-        {
-            if ( result_table.size() != 0 ) return;		/* Done already */
-
-	    Common_IO::init_tables();
-
-            activity_table.insert(Xphase);
-            activity_table.insert(Xname);
-            activity_table.insert(Xbound_to_entry);
-            activity_table.insert(Xhost_demand_mean);
-            activity_table.insert(Xhost_demand_cvsq);
-            activity_table.insert(Xthink_time);
-            activity_table.insert(Xcall_order);
-            activity_table.insert(Xmax_service_time);
-
-            call_table.insert(Xdest);
-            call_table.insert(Xcalls_mean);
-            call_table.insert(Xprob);
-
-            decision_table.insert(Xname);
-	    decision_table.insert(Xentry_name);
-            decision_table.insert(Xtype);
-	    decision_table.insert(Xfrom_entry);
-            decision_table.insert(Xdecision_entry);
-            decision_table.insert(Xtimeout);
-            decision_table.insert(Xabort);
-            decision_table.insert(Xsleep);
-            decision_table.insert(Xmax_retries);
-
-            decision_path_table.insert(Xname);
-	    decision_path_table.insert(Xentry_name);
-            decision_path_table.insert(Xtype);
-            decision_path_table.insert(Xto_entry);
-
-            entry_table.insert(Xname);
-            entry_table.insert(Xtype);
-            entry_table.insert(Xpriority);
-            entry_table.insert(Xopen_arrival_rate);
-            entry_table.insert(Xsemaphore);
-            entry_table.insert(Xrwlock);
-
-	    escape_table['&']  = "&amp;";
-	    escape_table['\''] = "&apos;";
-	    escape_table['>']  = "&gt;";
-	    escape_table['<']  = "&lt;";
-	    escape_table['"']  = "&qout;";
-
-            group_table.insert(Xname);
-            group_table.insert(Xcap);
-            group_table.insert(Xshare);
-
-            histogram_table.insert(Xmin);
-            histogram_table.insert(Xmax);
-//          histogram_table.insert(Xbin_size);
-            histogram_table.insert(Xnumber_bins);
-            histogram_table.insert(Xphase);
-//          histogram_table.insert(Xmean);
-//          histogram_table.insert(Xstd_dev);
-//          histogram_table.insert(Xskew);
-//          histogram_table.insert(Xkurtosis);
-
-            model_table.insert("description");
-            model_table.insert("lqncore-schema-version");
-            model_table.insert("lqn-schema-version");
-            model_table.insert(Xname);
-            model_table.insert(Xxml_debug);
-
-            observation_table[Xelapsed_time] =                   observation_table_t( KEY_ELAPSED_TIME );
-            observation_table[Xiterations] =                     observation_table_t( KEY_ITERATIONS );
-            observation_table[Xphase] =                          observation_table_t();
-            observation_table[XphaseP_proc_waiting[0]] =         observation_table_t( KEY_PROCESSOR_WAITING, 1 );
-            observation_table[XphaseP_proc_waiting[1]] =         observation_table_t( KEY_PROCESSOR_WAITING, 2 );
-            observation_table[XphaseP_proc_waiting[2]] =         observation_table_t( KEY_PROCESSOR_WAITING, 3 );
-            observation_table[XphaseP_service_time[0]] =         observation_table_t( KEY_SERVICE_TIME, 1 );
-            observation_table[XphaseP_service_time[1]] =         observation_table_t( KEY_SERVICE_TIME, 2 );
-            observation_table[XphaseP_service_time[2]] =         observation_table_t( KEY_SERVICE_TIME, 3 );
-            observation_table[XphaseP_service_time_variance[0]]= observation_table_t( KEY_VARIANCE, 1 );
-            observation_table[XphaseP_service_time_variance[1]]= observation_table_t( KEY_VARIANCE, 2 );
-            observation_table[XphaseP_service_time_variance[2]]= observation_table_t( KEY_VARIANCE, 3 );
-            observation_table[XphaseP_utilization[0]] =          observation_table_t( KEY_UTILIZATION, 1 );
-            observation_table[XphaseP_utilization[1]] =          observation_table_t( KEY_UTILIZATION, 2 );
-            observation_table[XphaseP_utilization[2]] =          observation_table_t( KEY_UTILIZATION, 3 );
-            observation_table[Xproc_utilization] =        	 observation_table_t( KEY_PROCESSOR_UTILIZATION );
-            observation_table[Xproc_waiting] =            	 observation_table_t( KEY_PROCESSOR_WAITING );
-            observation_table[Xservice_time] =            	 observation_table_t( KEY_SERVICE_TIME );
-            observation_table[Xservice_time_variance] =          observation_table_t( KEY_VARIANCE );
-            observation_table[Xsystem_cpu_time] =                observation_table_t( KEY_SYSTEM_TIME );
-            observation_table[Xthroughput] =                     observation_table_t( KEY_THROUGHPUT );
-            observation_table[Xthroughput_bound] =               observation_table_t( KEY_THROUGHPUT_BOUND );
-            observation_table[Xuser_cpu_time] =                  observation_table_t( KEY_USER_TIME );
-            observation_table[Xutilization] =                    observation_table_t( KEY_UTILIZATION );
-            observation_table[Xwaiting] =                 	 observation_table_t( KEY_WAITING );
-            observation_table[Xwaiting_variance] =        	 observation_table_t( KEY_WAITING_VARIANCE );
-
-            parameter_table.insert(Xcomment);
-            parameter_table.insert(Xconv_val);
-            parameter_table.insert(Xit_limit);
-            parameter_table.insert(Xprint_int);
-            parameter_table.insert(Xunderrelax_coeff);
-
-            processor_table.insert(Xname);
-            processor_table.insert(Xscheduling);
-            processor_table.insert(Xquantum);
-            processor_table.insert(Xmultiplicity);
-            processor_table.insert(Xreplication);
-            processor_table.insert(Xspeed_factor);
-
-            precedence_table[Xpre] =       ActivityList::Type::JOIN;
-            precedence_table[Xpre_or] =    ActivityList::Type::OR_JOIN;
-            precedence_table[Xpre_and] =   ActivityList::Type::AND_JOIN;
-            precedence_table[Xpost] =      ActivityList::Type::FORK;
-            precedence_table[Xpost_or] =   ActivityList::Type::OR_FORK;
-            precedence_table[Xpost_and] =  ActivityList::Type::AND_FORK;
-            precedence_table[Xpost_loop] = ActivityList::Type::REPEAT;
-
-	    result_table[Xbottleneck_strength] =	    result_table_t( &DocumentObject::setResultBottleneckStrength,        0 );
-            result_table[Xjoin_variance] =                  result_table_t( &DocumentObject::setResultVarianceJoinDelay,         &DocumentObject::setResultVarianceJoinDelayVariance );
-            result_table[Xjoin_waiting] =                   result_table_t( &DocumentObject::setResultJoinDelay,                 &DocumentObject::setResultJoinDelayVariance );
-            result_table[Xloss_probability] =               result_table_t( &DocumentObject::setResultDropProbability,           &DocumentObject::setResultDropProbabilityVariance );
-            result_table[Xopen_wait_time] =                 result_table_t( &DocumentObject::setResultWaitingTime,               &DocumentObject::setResultWaitingTimeVariance );
-            result_table[XphaseP_proc_waiting[0]] =         result_table_t( &DocumentObject::setResultPhase1ProcessorWaiting,    &DocumentObject::setResultPhase1ProcessorWaitingVariance );
-            result_table[XphaseP_proc_waiting[1]] =         result_table_t( &DocumentObject::setResultPhase2ProcessorWaiting,    &DocumentObject::setResultPhase2ProcessorWaitingVariance );
-            result_table[XphaseP_proc_waiting[2]] =         result_table_t( &DocumentObject::setResultPhase3ProcessorWaiting,    &DocumentObject::setResultPhase3ProcessorWaitingVariance );
-            result_table[XphaseP_service_time[0]] =         result_table_t( &DocumentObject::setResultPhase1ServiceTime,         &DocumentObject::setResultPhase1ServiceTimeVariance );
-            result_table[XphaseP_service_time[1]] =         result_table_t( &DocumentObject::setResultPhase2ServiceTime,         &DocumentObject::setResultPhase2ServiceTimeVariance );
-            result_table[XphaseP_service_time[2]] =         result_table_t( &DocumentObject::setResultPhase3ServiceTime,         &DocumentObject::setResultPhase3ServiceTimeVariance );
-            result_table[XphaseP_service_time_variance[0]]= result_table_t( &DocumentObject::setResultPhase1VarianceServiceTime, &DocumentObject::setResultPhase1VarianceServiceTimeVariance );
-            result_table[XphaseP_service_time_variance[1]]= result_table_t( &DocumentObject::setResultPhase2VarianceServiceTime, &DocumentObject::setResultPhase2VarianceServiceTimeVariance );
-            result_table[XphaseP_service_time_variance[2]]= result_table_t( &DocumentObject::setResultPhase3VarianceServiceTime, &DocumentObject::setResultPhase3VarianceServiceTimeVariance );
-            result_table[XphaseP_utilization[0]] =          result_table_t( &DocumentObject::setResultPhase1Utilization,         &DocumentObject::setResultPhase1UtilizationVariance );
-            result_table[XphaseP_utilization[1]] =          result_table_t( &DocumentObject::setResultPhase2Utilization,         &DocumentObject::setResultPhase2UtilizationVariance );
-            result_table[XphaseP_utilization[2]] =          result_table_t( &DocumentObject::setResultPhase3Utilization,         &DocumentObject::setResultPhase3UtilizationVariance );
-            result_table[Xprob_exceed_max_service_time] =   result_table_t( 0, 0 );
-            result_table[Xproc_utilization] =               result_table_t( &DocumentObject::setResultProcessorUtilization,      &DocumentObject::setResultProcessorUtilizationVariance );
-            result_table[Xproc_waiting] =                   result_table_t( &DocumentObject::setResultProcessorWaiting,          &DocumentObject::setResultProcessorWaitingVariance );
-            result_table[Xrwlock_reader_holding] =          result_table_t( &DocumentObject::setResultReaderHoldingTime,         &DocumentObject::setResultReaderHoldingTimeVariance );
-            result_table[Xrwlock_reader_holding_variance] = result_table_t( &DocumentObject::setResultVarianceReaderHoldingTime, &DocumentObject::setResultVarianceReaderHoldingTimeVariance );
-            result_table[Xrwlock_reader_utilization] =      result_table_t( &DocumentObject::setResultReaderHoldingUtilization,  &DocumentObject::setResultReaderHoldingUtilizationVariance );
-            result_table[Xrwlock_reader_waiting] =          result_table_t( &DocumentObject::setResultReaderBlockedTime,         &DocumentObject::setResultReaderBlockedTimeVariance );
-            result_table[Xrwlock_reader_waiting_variance] = result_table_t( &DocumentObject::setResultVarianceReaderBlockedTime, &DocumentObject::setResultVarianceReaderBlockedTimeVariance );
-            result_table[Xrwlock_writer_holding] =          result_table_t( &DocumentObject::setResultWriterHoldingTime,         &DocumentObject::setResultWriterHoldingTimeVariance );
-            result_table[Xrwlock_writer_holding_variance] = result_table_t( &DocumentObject::setResultVarianceWriterHoldingTime, &DocumentObject::setResultVarianceWriterHoldingTimeVariance );
-            result_table[Xrwlock_writer_utilization] =      result_table_t( &DocumentObject::setResultWriterHoldingUtilization,  &DocumentObject::setResultWriterHoldingUtilizationVariance );
-            result_table[Xrwlock_writer_waiting] =          result_table_t( &DocumentObject::setResultWriterBlockedTime,         &DocumentObject::setResultWriterBlockedTimeVariance );
-            result_table[Xrwlock_writer_waiting_variance] = result_table_t( &DocumentObject::setResultVarianceWriterBlockedTime, &DocumentObject::setResultVarianceWriterBlockedTimeVariance );
-            result_table[Xsemaphore_utilization] =          result_table_t( &DocumentObject::setResultHoldingUtilization,        &DocumentObject::setResultHoldingUtilizationVariance );
-            result_table[Xsemaphore_waiting] =              result_table_t( &DocumentObject::setResultHoldingTime,               &DocumentObject::setResultHoldingTimeVariance );
-            result_table[Xsemaphore_waiting_variance] =     result_table_t( &DocumentObject::setResultVarianceHoldingTime,       &DocumentObject::setResultVarianceHoldingTimeVariance );
-            result_table[Xservice_time] =                   result_table_t( &DocumentObject::setResultServiceTime,               &DocumentObject::setResultServiceTimeVariance );
-            result_table[Xservice_time_variance] =          result_table_t( &DocumentObject::setResultVarianceServiceTime,       &DocumentObject::setResultVarianceServiceTimeVariance );
-            result_table[Xsquared_coeff_variation] =        result_table_t( &DocumentObject::setResultSquaredCoeffVariation,     &DocumentObject::setResultSquaredCoeffVariationVariance );
-            result_table[Xthroughput] =                     result_table_t( &DocumentObject::setResultThroughput,                &DocumentObject::setResultThroughputVariance );
-            result_table[Xthroughput_bound] =               result_table_t( &DocumentObject::setResultThroughputBound,           0 );
-            result_table[Xutilization] =                    result_table_t( &DocumentObject::setResultUtilization,               &DocumentObject::setResultUtilizationVariance );
-            result_table[Xwaiting] =                        result_table_t( &DocumentObject::setResultWaitingTime,               &DocumentObject::setResultWaitingTimeVariance );
-            result_table[Xwaiting_variance] =               result_table_t( &DocumentObject::setResultVarianceWaitingTime,       &DocumentObject::setResultVarianceWaitingTimeVariance );
-
-            task_table.insert(Xname);
-            task_table.insert(Xscheduling);
-            task_table.insert(Xinitially);
-            task_table.insert(Xqueue_length);
-            task_table.insert(Xpriority);
-            task_table.insert(Xthink_time);
-            task_table.insert(Xmultiplicity);
-            task_table.insert(Xreplication);
-            task_table.insert(Xactivity_graph);                 // ignored.
-
-	    __key_lqx_function_map[KEY_ELAPSED_TIME]		= Xelapsed_time;
-	    __key_lqx_function_map[KEY_ITERATIONS]		= Xiterations;
-	    __key_lqx_function_map[KEY_PROCESSOR_UTILIZATION]	= Xproc_utilization;
-	    __key_lqx_function_map[KEY_PROCESSOR_WAITING]	= Xproc_waiting;
-	    __key_lqx_function_map[KEY_SERVICE_TIME]		= Xservice_time;
-	    __key_lqx_function_map[KEY_SYSTEM_TIME]		= Xsystem_cpu_time;
-	    __key_lqx_function_map[KEY_THROUGHPUT]		= Xthroughput;
-	    __key_lqx_function_map[KEY_THROUGHPUT_BOUND]	= Xthroughput_bound;
-	    __key_lqx_function_map[KEY_USER_TIME]		= Xuser_cpu_time;
-	    __key_lqx_function_map[KEY_UTILIZATION]		= Xutilization;
-	    __key_lqx_function_map[KEY_VARIANCE]		= Xservice_time_variance;
-	    __key_lqx_function_map[KEY_WAITING]			= Xwaiting;
-	    __key_lqx_function_map[KEY_WAITING_VARIANCE]	= Xwaiting_variance;
-        };
-
         std::ostream&
         Expat_Document::printIndent( std::ostream& output, const int i )
         {
@@ -3705,12 +3515,21 @@ namespace LQIO {
 	 * escape it.
 	 */
 
+	/* Map special char to string */
+	const std::map<const XML_Char, const std::string> Expat_Document::escape_table = {
+	    { '&',  "&amp;" },
+	    { '\'', "&apos;" },
+	    { '>',  "&gt;" },
+	    { '<',  "&lt;" },
+	    { '"',  "&qout;" },
+	};
+	
 	std::ostream&
         Expat_Document::printAttribute( std::ostream& output, const XML_Char * attribute, const XML_Char * value )
         {
             output << " " << attribute << "=\"";
 	    for ( ; *value != 0; ++value ) {
-		std::map<const XML_Char,const XML_Char *>::const_iterator item = escape_table.find(*value);
+		std::map<const XML_Char,const std::string>::const_iterator item = escape_table.find(*value);
 		if ( item == escape_table.end() ) {
 		    output << *value;
 		} else if ( item->first != '&' ) {
@@ -3955,24 +3774,218 @@ namespace LQIO {
 	const XML_Char * Expat_Document::Xnumber_of_retries  =            	"number-of-retries";
 	const XML_Char * Expat_Document::Xnumber_of_retries_variance =          "number-of-retries-variance";
 
+        const std::set<const XML_Char *,Expat_Document::attribute_table_t> Expat_Document::activity_table =
+	{
+            Xphase,
+            Xname,
+            Xbound_to_entry,
+            Xhost_demand_mean,
+            Xhost_demand_cvsq,
+            Xthink_time,
+            Xcall_order,
+            Xmax_service_time
+	};
 
-	std::map<const XML_Char, const XML_Char *> Expat_Document::escape_table;
-        std::map<const XML_Char *,ActivityList::ActivityList::Type,Expat_Document::attribute_table_t> Expat_Document::precedence_table;
-        std::map<const XML_Char *,Expat_Document::result_table_t,Expat_Document::result_table_t>  Expat_Document::result_table;
-        std::map<const XML_Char *,Expat_Document::observation_table_t,Expat_Document::observation_table_t>  Expat_Document::observation_table;	/* SPEX */
-        std::set<const XML_Char *,Expat_Document::attribute_table_t> Expat_Document::activity_table;
-        std::set<const XML_Char *,Expat_Document::attribute_table_t> Expat_Document::call_table;
-        std::set<const XML_Char *,Expat_Document::attribute_table_t> Expat_Document::entry_table;
+        const std::set<const XML_Char *,Expat_Document::attribute_table_t> Expat_Document::call_table =
+	{
+            Xdest,
+            Xcalls_mean,
+            Xprob
+	};
 
-        std::set<const XML_Char *,Expat_Document::attribute_table_t> Expat_Document::decision_table;
-        std::set<const XML_Char *,Expat_Document::attribute_table_t> Expat_Document::decision_path_table;
+        const std::set<const XML_Char *,Expat_Document::attribute_table_t> Expat_Document::decision_table =
+	{
+            Xname,
+	    Xentry_name,
+            Xtype,
+	    Xfrom_entry,
+            Xdecision_entry,
+            Xtimeout,
+            Xabort,
+            Xsleep,
+            Xmax_retries
+	};
+	
+        const std::set<const XML_Char *,Expat_Document::attribute_table_t> Expat_Document::decision_path_table =
+	{
+            Xname,
+	    Xentry_name,
+            Xtype,
+            Xto_entry
+	};
 
-        std::set<const XML_Char *,Expat_Document::attribute_table_t> Expat_Document::group_table;
-        std::set<const XML_Char *,Expat_Document::attribute_table_t> Expat_Document::histogram_table;
-        std::set<const XML_Char *,Expat_Document::attribute_table_t> Expat_Document::model_table;
-        std::set<const XML_Char *,Expat_Document::attribute_table_t> Expat_Document::parameter_table;
-        std::set<const XML_Char *,Expat_Document::attribute_table_t> Expat_Document::processor_table;
-        std::set<const XML_Char *,Expat_Document::attribute_table_t> Expat_Document::task_table;
-	std::map<int,const char *> Expat_Document::__key_lqx_function_map;	/* Maps srvn_gram.h KEY_XXX to XML attribute name */
+        const std::set<const XML_Char *,Expat_Document::attribute_table_t> Expat_Document::entry_table =
+	{
+            Xname,
+            Xtype,
+            Xpriority,
+            Xopen_arrival_rate,
+            Xsemaphore,
+            Xrwlock
+	};
+
+        const std::set<const XML_Char *,Expat_Document::attribute_table_t> Expat_Document::group_table =
+	{
+            Xname,
+            Xcap,
+            Xshare
+	};
+
+        const std::set<const XML_Char *,Expat_Document::attribute_table_t> Expat_Document::histogram_table =
+	{
+            Xmin,
+            Xmax,
+//          Xbin_size,
+            Xnumber_bins,
+            Xphase,
+//          Xmean,
+//          Xstd_dev,
+//          Xskew,
+//          Xkurtosis
+	};
+
+        const std::set<const XML_Char *,Expat_Document::attribute_table_t> Expat_Document::model_table =
+	{
+            "description",
+            "lqncore-schema-version",
+            "lqn-schema-version",
+            Xname,
+            Xxml_debug
+	};
+
+	/* SPEX */
+        const std::map<const XML_Char *,const Expat_Document::observation_table_t,Expat_Document::observation_table_t>  Expat_Document::observation_table =
+	{
+            { Xelapsed_time,                    observation_table_t( KEY_ELAPSED_TIME ) },
+            { Xiterations,                      observation_table_t( KEY_ITERATIONS ) },
+            { Xphase,                           observation_table_t() },
+            { XphaseP_proc_waiting[0],          observation_table_t( KEY_PROCESSOR_WAITING, 1 ) },
+            { XphaseP_proc_waiting[1],          observation_table_t( KEY_PROCESSOR_WAITING, 2 ) },
+            { XphaseP_proc_waiting[2],          observation_table_t( KEY_PROCESSOR_WAITING, 3 ) },
+            { XphaseP_service_time[0],          observation_table_t( KEY_SERVICE_TIME, 1 ) },
+            { XphaseP_service_time[1],          observation_table_t( KEY_SERVICE_TIME, 2 ) },
+            { XphaseP_service_time[2],          observation_table_t( KEY_SERVICE_TIME, 3 ) },
+            { XphaseP_service_time_variance[0], observation_table_t( KEY_VARIANCE, 1 ) },
+            { XphaseP_service_time_variance[1], observation_table_t( KEY_VARIANCE, 2 ) },
+            { XphaseP_service_time_variance[2], observation_table_t( KEY_VARIANCE, 3 ) },
+            { XphaseP_utilization[0],           observation_table_t( KEY_UTILIZATION, 1 ) },
+            { XphaseP_utilization[1],           observation_table_t( KEY_UTILIZATION, 2 ) },
+            { XphaseP_utilization[2],           observation_table_t( KEY_UTILIZATION, 3 ) },
+            { Xproc_utilization,         	observation_table_t( KEY_PROCESSOR_UTILIZATION ) },
+            { Xproc_waiting,             	observation_table_t( KEY_PROCESSOR_WAITING ) },
+            { Xservice_time,             	observation_table_t( KEY_SERVICE_TIME ) },
+            { Xservice_time_variance,           observation_table_t( KEY_VARIANCE ) },
+            { Xsystem_cpu_time,                 observation_table_t( KEY_SYSTEM_TIME ) },
+            { Xthroughput,                      observation_table_t( KEY_THROUGHPUT ) },
+            { Xthroughput_bound,                observation_table_t( KEY_THROUGHPUT_BOUND ) },
+            { Xuser_cpu_time,                   observation_table_t( KEY_USER_TIME ) },
+            { Xutilization,                     observation_table_t( KEY_UTILIZATION ) },
+            { Xwaiting,                  	observation_table_t( KEY_WAITING ) },
+            { Xwaiting_variance,         	observation_table_t( KEY_WAITING_VARIANCE ) }
+	};
+	    
+
+        const std::set<const XML_Char *,Expat_Document::attribute_table_t> Expat_Document::parameter_table = {
+            Xcomment,
+            Xconv_val,
+            Xit_limit,
+            Xprint_int,
+            Xunderrelax_coeff
+	};
+	    
+
+        const std::map<const XML_Char *,const ActivityList::ActivityList::Type,Expat_Document::attribute_table_t> Expat_Document::precedence_table =
+	{
+            { Xpre,        ActivityList::Type::JOIN },
+            { Xpre_or,     ActivityList::Type::OR_JOIN },
+            { Xpre_and,    ActivityList::Type::AND_JOIN },
+            { Xpost,       ActivityList::Type::FORK },
+            { Xpost_or,    ActivityList::Type::OR_FORK },
+            { Xpost_and,   ActivityList::Type::AND_FORK },
+            { Xpost_loop,  ActivityList::Type::REPEAT }
+	};
+
+        const std::set<const XML_Char *,Expat_Document::attribute_table_t> Expat_Document::processor_table = {
+            Xname,
+            Xscheduling,
+            Xquantum,
+            Xmultiplicity,
+            Xreplication,
+            Xspeed_factor
+	};
+
+        const std::map<const XML_Char *,const Expat_Document::result_table_t,Expat_Document::result_table_t>  Expat_Document::result_table =
+	{
+	    { Xbottleneck_strength,	 	result_table_t( &DocumentObject::setResultBottleneckStrength,        nullptr ) },
+            { Xjoin_variance,                   result_table_t( &DocumentObject::setResultVarianceJoinDelay,         &DocumentObject::setResultVarianceJoinDelayVariance ) },
+            { Xjoin_waiting,                    result_table_t( &DocumentObject::setResultJoinDelay,                 &DocumentObject::setResultJoinDelayVariance ) },
+            { Xloss_probability,                result_table_t( &DocumentObject::setResultDropProbability,           &DocumentObject::setResultDropProbabilityVariance ) },
+            { Xopen_wait_time,                  result_table_t( &DocumentObject::setResultWaitingTime,               &DocumentObject::setResultWaitingTimeVariance ) },
+            { XphaseP_proc_waiting[0],          result_table_t( &DocumentObject::setResultPhase1ProcessorWaiting,    &DocumentObject::setResultPhase1ProcessorWaitingVariance ) },
+            { XphaseP_proc_waiting[1],          result_table_t( &DocumentObject::setResultPhase2ProcessorWaiting,    &DocumentObject::setResultPhase2ProcessorWaitingVariance ) },
+            { XphaseP_proc_waiting[2],          result_table_t( &DocumentObject::setResultPhase3ProcessorWaiting,    &DocumentObject::setResultPhase3ProcessorWaitingVariance ) },
+            { XphaseP_service_time[0],          result_table_t( &DocumentObject::setResultPhase1ServiceTime,         &DocumentObject::setResultPhase1ServiceTimeVariance ) },
+            { XphaseP_service_time[1],          result_table_t( &DocumentObject::setResultPhase2ServiceTime,         &DocumentObject::setResultPhase2ServiceTimeVariance ) },
+            { XphaseP_service_time[2],          result_table_t( &DocumentObject::setResultPhase3ServiceTime,         &DocumentObject::setResultPhase3ServiceTimeVariance ) },
+            { XphaseP_service_time_variance[0], result_table_t( &DocumentObject::setResultPhase1VarianceServiceTime, &DocumentObject::setResultPhase1VarianceServiceTimeVariance ) },
+            { XphaseP_service_time_variance[1], result_table_t( &DocumentObject::setResultPhase2VarianceServiceTime, &DocumentObject::setResultPhase2VarianceServiceTimeVariance ) },
+            { XphaseP_service_time_variance[2], result_table_t( &DocumentObject::setResultPhase3VarianceServiceTime, &DocumentObject::setResultPhase3VarianceServiceTimeVariance ) },
+            { XphaseP_utilization[0],           result_table_t( &DocumentObject::setResultPhase1Utilization,         &DocumentObject::setResultPhase1UtilizationVariance ) },
+            { XphaseP_utilization[1],           result_table_t( &DocumentObject::setResultPhase2Utilization,         &DocumentObject::setResultPhase2UtilizationVariance ) },
+            { XphaseP_utilization[2],           result_table_t( &DocumentObject::setResultPhase3Utilization,         &DocumentObject::setResultPhase3UtilizationVariance ) },
+            { Xprob_exceed_max_service_time,    result_table_t( nullptr, 					     nullptr ) },
+            { Xproc_utilization,                result_table_t( &DocumentObject::setResultProcessorUtilization,      &DocumentObject::setResultProcessorUtilizationVariance ) },
+            { Xproc_waiting,                    result_table_t( &DocumentObject::setResultProcessorWaiting,          &DocumentObject::setResultProcessorWaitingVariance ) },
+            { Xrwlock_reader_holding,           result_table_t( &DocumentObject::setResultReaderHoldingTime,         &DocumentObject::setResultReaderHoldingTimeVariance ) },
+            { Xrwlock_reader_holding_variance,  result_table_t( &DocumentObject::setResultVarianceReaderHoldingTime, &DocumentObject::setResultVarianceReaderHoldingTimeVariance ) },
+            { Xrwlock_reader_utilization,       result_table_t( &DocumentObject::setResultReaderHoldingUtilization,  &DocumentObject::setResultReaderHoldingUtilizationVariance ) },
+            { Xrwlock_reader_waiting,           result_table_t( &DocumentObject::setResultReaderBlockedTime,         &DocumentObject::setResultReaderBlockedTimeVariance ) },
+            { Xrwlock_reader_waiting_variance,  result_table_t( &DocumentObject::setResultVarianceReaderBlockedTime, &DocumentObject::setResultVarianceReaderBlockedTimeVariance ) },
+            { Xrwlock_writer_holding,           result_table_t( &DocumentObject::setResultWriterHoldingTime,         &DocumentObject::setResultWriterHoldingTimeVariance ) },
+            { Xrwlock_writer_holding_variance,  result_table_t( &DocumentObject::setResultVarianceWriterHoldingTime, &DocumentObject::setResultVarianceWriterHoldingTimeVariance ) },
+            { Xrwlock_writer_utilization,       result_table_t( &DocumentObject::setResultWriterHoldingUtilization,  &DocumentObject::setResultWriterHoldingUtilizationVariance ) },
+            { Xrwlock_writer_waiting,           result_table_t( &DocumentObject::setResultWriterBlockedTime,         &DocumentObject::setResultWriterBlockedTimeVariance ) },
+            { Xrwlock_writer_waiting_variance,  result_table_t( &DocumentObject::setResultVarianceWriterBlockedTime, &DocumentObject::setResultVarianceWriterBlockedTimeVariance ) },
+            { Xsemaphore_utilization,           result_table_t( &DocumentObject::setResultHoldingUtilization,        &DocumentObject::setResultHoldingUtilizationVariance ) },
+            { Xsemaphore_waiting,               result_table_t( &DocumentObject::setResultHoldingTime,               &DocumentObject::setResultHoldingTimeVariance ) },
+            { Xsemaphore_waiting_variance,      result_table_t( &DocumentObject::setResultVarianceHoldingTime,       &DocumentObject::setResultVarianceHoldingTimeVariance ) },
+            { Xservice_time,                    result_table_t( &DocumentObject::setResultServiceTime,               &DocumentObject::setResultServiceTimeVariance ) },
+            { Xservice_time_variance,           result_table_t( &DocumentObject::setResultVarianceServiceTime,       &DocumentObject::setResultVarianceServiceTimeVariance ) },
+            { Xsquared_coeff_variation,         result_table_t( &DocumentObject::setResultSquaredCoeffVariation,     &DocumentObject::setResultSquaredCoeffVariationVariance ) },
+            { Xthroughput,                      result_table_t( &DocumentObject::setResultThroughput,                &DocumentObject::setResultThroughputVariance ) },
+            { Xthroughput_bound,                result_table_t( &DocumentObject::setResultThroughputBound,           nullptr ) },
+            { Xutilization,                     result_table_t( &DocumentObject::setResultUtilization,               &DocumentObject::setResultUtilizationVariance ) },
+            { Xwaiting,                         result_table_t( &DocumentObject::setResultWaitingTime,               &DocumentObject::setResultWaitingTimeVariance ) },
+            { Xwaiting_variance,                result_table_t( &DocumentObject::setResultVarianceWaitingTime,       &DocumentObject::setResultVarianceWaitingTimeVariance ) }
+	};
+	
+        const std::set<const XML_Char *,Expat_Document::attribute_table_t> Expat_Document::task_table = {
+            Xname,
+            Xscheduling,
+            Xinitially,
+            Xqueue_length,
+            Xpriority,
+            Xthink_time,
+            Xmultiplicity,
+            Xreplication,
+            Xactivity_graph                 // ignored.
+	};
+
+	/* Maps srvn_gram.h KEY_XXX to XML attribute name */
+	const std::map<const int,const char *> Expat_Document::__key_lqx_function_map = {
+	    { KEY_ELAPSED_TIME,		 Xelapsed_time },
+	    { KEY_ITERATIONS,		 Xiterations },
+	    { KEY_PROCESSOR_UTILIZATION, Xproc_utilization },
+	    { KEY_PROCESSOR_WAITING,	 Xproc_waiting },
+	    { KEY_SERVICE_TIME,		 Xservice_time },
+	    { KEY_SYSTEM_TIME,		 Xsystem_cpu_time },
+	    { KEY_THROUGHPUT,		 Xthroughput },
+	    { KEY_THROUGHPUT_BOUND,	 Xthroughput_bound },
+	    { KEY_USER_TIME,		 Xuser_cpu_time },
+	    { KEY_UTILIZATION,		 Xutilization },
+	    { KEY_VARIANCE,		 Xservice_time_variance },
+	    { KEY_WAITING,		 Xwaiting },
+	    { KEY_WAITING_VARIANCE,	 Xwaiting_variance }
+	};
     }
 }

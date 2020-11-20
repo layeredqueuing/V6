@@ -8,7 +8,7 @@
 /************************************************************************/
 
 /*
- * $Id: srvn_spex.h 14000 2020-10-25 12:50:53Z greg $
+ * $Id: srvn_spex.h 14110 2020-11-20 15:37:56Z greg $
  */
 
 #ifndef __LQIO_SRVN_SPEX_H__
@@ -328,9 +328,9 @@ namespace LQIO {
 	static std::map<const DOM::ExternalVariable *,const LQX::SyntaxTreeNode *> __inline_expression;	/* Maps temp vars to expressions */
 
     private:
-	static std::map<const std::string,const attribute_table_t> __control_parameters;
-	static std::map<const int,const std::pair<const std::string,const std::string> > __key_code_map;	/* Maps srvn_gram.h KEY_XXX to name */
-	static std::map<const int,const std::string> __key_lqx_function_map;	/* Maps srvn_gram.h KEY_XXX to lqx function name */
+	static const std::map<const std::string,const attribute_table_t> __control_parameters;
+	static const std::map<const int,const std::pair<const std::string,const std::string> > __key_code_map;	/* Maps srvn_gram.h KEY_XXX to name */
+	static const std::map<const int,const std::string> __key_lqx_function_map;	/* Maps srvn_gram.h KEY_XXX to lqx function name */
 
 	static const char * __convergence_limit_str;
 

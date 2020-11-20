@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_document.cpp 14106 2020-11-18 14:33:50Z greg $
+ *  $Id: dom_document.cpp 14110 2020-11-20 15:37:56Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -33,7 +33,7 @@ namespace LQIO {
     lqio_params_stats io_vars(VERSION,nullptr);
     
     namespace DOM {
-	Document* __document = NULL;
+	Document* __document = nullptr;
 	bool Document::__debugXML = false;
 	bool Document::__debugJSON = false;
 	std::map<const char *, double> Document::__initialValues;
@@ -94,7 +94,7 @@ namespace LQIO {
 		delete(groupIter->second);
 	    }
 
-	    __document = NULL;
+	    __document = nullptr;
 	    __input_file_name = "";
 
 	    LQIO::Spex::clear();
@@ -203,7 +203,7 @@ namespace LQIO {
 	    const std::map<const char *, ExternalVariable *>::const_iterator iter = _controlVariables.find(index);
 	    if ( iter != _controlVariables.end() ) {
 		const ExternalVariable * var = iter->second;
-		if ( var != NULL && var->wasSet() ) {
+		if ( var != nullptr && var->wasSet() ) {
 		    var->getValue(value);
 		}
 	    }
@@ -248,7 +248,7 @@ namespace LQIO {
 	    if( processor != _processors.end()) {
 		return processor->second;
 	    } else {
-		return NULL;
+		return nullptr;
 	    }
 	}
     
@@ -272,7 +272,7 @@ namespace LQIO {
 	    if (task != _tasks.end()) {
 		return task->second;
 	    } else {
-		return NULL;
+		return nullptr;
 	    }
 	}
     
@@ -309,7 +309,7 @@ namespace LQIO {
 	    std::map<std::string, Entry*>::const_iterator entry = _entries.find(name);
 	    /* Return the named entry */
 	    if ( entry == _entries.end()) {
-		return NULL;
+		return nullptr;
 	    } else {
 		return entry->second;
 	    }
@@ -334,7 +334,7 @@ namespace LQIO {
 	    if ( group != _groups.end()) {
 		return group->second;
 	    } else {
-		return NULL;
+		return nullptr;
 	    }
 	}
     
@@ -363,7 +363,7 @@ namespace LQIO {
 	    if ( decision != _decisions.end()) {
 		return decision->second;
 	    } else {
-		return NULL;
+		return nullptr;
 	    }
 	}
 	const std::map<std::string,Decision*>& Document::getDecisions() const
@@ -379,7 +379,7 @@ namespace LQIO {
 	    if ( decisionPath != _decisionPaths.end()) {
 		return decisionPath->second;
 	    } else {
-		return NULL;
+		return nullptr;
 	    }
 	}   
 
@@ -672,7 +672,7 @@ namespace LQIO {
 
 	bool Document::processorHasRate() const
 	{
-	    return std::find_if( _processors.begin(), _processors.end(), LQIO::DOM::DocumentObject::Predicate<LQIO::DOM::Processor>( &LQIO::DOM::Processor::hasRate ) ) != _processors.end();
+	    return std::any_of( _processors.begin(), _processors.end(), LQIO::DOM::DocumentObject::Predicate<LQIO::DOM::Processor>( &LQIO::DOM::Processor::hasRate ) );
 	}
 
 	bool Document::taskHasAndJoin() const
@@ -725,8 +725,8 @@ namespace LQIO {
 	Document::db_build_parameter_variable(const char* input, bool* isSymbol)
 	{
 	    if (isSymbol) { *isSymbol = false; }
-	    if ( input == NULL ) {
-		/* NULL input means a zero */
+	    if ( input == nullptr ) {
+		/* nullptr input means a zero */
 		return new ConstantExternalVariable(0.0);
 	    } else if ( input[0] == '$' ) {
 		if (isSymbol) { *isSymbol = true; }
@@ -735,7 +735,7 @@ namespace LQIO {
 		return new ConstantExternalVariable( srvn_get_infinity() );
 	    } else {
 		double result = 0.0;
-		char* endPtr = NULL;
+		char* endPtr = nullptr;
 		const char* realEndPtr = input + strlen(input);
 		result = strtod(input, &endPtr);
 

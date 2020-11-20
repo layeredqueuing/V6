@@ -1,5 +1,5 @@
 /*
- *  $Id: srvn_spex.cpp 14000 2020-10-25 12:50:53Z greg $
+ *  $Id: srvn_spex.cpp 14110 2020-11-20 15:37:56Z greg $
  *
  *  Created by Greg Franks on 2012/05/03.
  *  Copyright 2012 __MyCompanyName__. All rights reserved.
@@ -31,13 +31,13 @@ extern "C" {
 
 namespace LQIO {
 
-    Spex::Spex() 
+    Spex::Spex()
     {
     }
 
 	
-    /* 
-     * 
+    /*
+     *
      */
 
     void Spex::clear()
@@ -60,8 +60,8 @@ namespace LQIO {
     }
 
 
-    /* static */ bool 
-    Spex::is_global_var( const std::string& name ) 
+    /* static */ bool
+    Spex::is_global_var( const std::string& name )
     {
 	return DOM::__document->hasSymbolExternalVariable( name );
     }
@@ -91,7 +91,7 @@ namespace LQIO {
     }
 
 	
-    /* 
+    /*
      * Return true if there are any $vars (either as parameters, observations for objects (%f...), or observations for the document (%usr...)
      */
 
@@ -100,10 +100,10 @@ namespace LQIO {
 	return __input_variables.size() > 0 || __observation_variables.size() > 0 || __document_variables.size() > 0;
     }
 
-    /* 
+    /*
      * Set variables for gnuplot output.
      */
-    
+
     void Spex::setGnuplotVars( const std::string& s  )
     {
 	__gnuplot_output = true;
@@ -112,12 +112,12 @@ namespace LQIO {
 	size_t end = start;
 
 	while (start != std::string::npos) {
-	    end = s.find(",", start);	    				// Find next occurence of delimiter
-	    __gnuplot_variables.push_back(s.substr(start, end-start));  // Push back the token found into vector
-	    start = s.find_first_not_of(",", end);        		// Skip all occurences of the delimiter to find new start
+	    end = s.find(",", start);					// Find next occurence of delimiter
+	    __gnuplot_variables.push_back(s.substr(start, end-start));	// Push back the token found into vector
+	    start = s.find_first_not_of(",", end);			// Skip all occurences of the delimiter to find new start
 	}	
     }
-    
+
 
     /* ------------------------------------------------------------------------ */
 
@@ -126,7 +126,7 @@ namespace LQIO {
      * Create the foreach loops for all of the local variables created due to array lists in the parameters.
      */
 
-    bool Spex::construct_program( expr_list * main_line, expr_list * result, expr_list * convergence ) 
+    bool Spex::construct_program( expr_list * main_line, expr_list * result, expr_list * convergence )
     {
 	/* If we have only set control variables, then nothing to do. */
 	if ( !has_vars() ) return false;		
@@ -143,7 +143,7 @@ namespace LQIO {
 
 	/* Add observation variables */
 	for ( std::map<std::string,LQX::SyntaxTreeNode *>::iterator obs_p = __observation_variables.begin(); obs_p != __observation_variables.end(); ++obs_p ) {
-	    const std::string& name = obs_p->first;                 /* Strip $ for LQX var name  vvvvvvvv */
+	    const std::string& name = obs_p->first;		    /* Strip $ for LQX var name	 vvvvvvvv */
 	    main_line->push_back( new LQX::AssignmentStatementNode( new LQX::VariableExpression( &name[1], false ), new LQX::ConstantValueExpression( 0.0 ) ) );	/* Initialize all observations variables */
 	}
 
@@ -172,9 +172,9 @@ namespace LQIO {
 	return true;
     }
 
-    /* 
-     * Figure out the destination (lvalue) for an assignment statement.  If it's a control variable, attribute_table_t::operator() will 
-     * determined if the destination is a variable or if it is a "field" for an ObjectPropertyReadNode (somewhat misnamed).  Otherwise, 
+    /*
+     * Figure out the destination (lvalue) for an assignment statement.	 If it's a control variable, attribute_table_t::operator() will
+     * determined if the destination is a variable or if it is a "field" for an ObjectPropertyReadNode (somewhat misnamed).  Otherwise,
      * the destination is simply a variable.
      */
 
@@ -194,10 +194,10 @@ namespace LQIO {
     /* ------------------------------------------------------------------------ */
 
     /*
-     * Document variables 
+     * Document variables
      */
 	
-    LQX::SyntaxTreeNode * Spex::observation( const ObservationInfo& obs ) 
+    LQX::SyntaxTreeNode * Spex::observation( const ObservationInfo& obs )
     {
 	__document_variables.push_back( obs );
 	LQX::MethodInvocationExpression * object = new LQX::MethodInvocationExpression( "document" );
@@ -206,21 +206,21 @@ namespace LQIO {
 	case KEY_WAITING:	node = new LQX::ObjectPropertyReadNode( object, "waits" ); break;	/* Waits */
 	case KEY_SERVICE_TIME:	node = new LQX::ObjectPropertyReadNode( object, "steps" ); break;	/* Steps */
 	case KEY_ITERATIONS:	node = new LQX::ObjectPropertyReadNode( object, "iterations" ); break;
-	case KEY_ELAPSED_TIME:	node = new LQX::ObjectPropertyReadNode( object,  __lqx_elapsed_time ); break;
+	case KEY_ELAPSED_TIME:	node = new LQX::ObjectPropertyReadNode( object,	 __lqx_elapsed_time ); break;
 	case KEY_USER_TIME:	node = new LQX::ObjectPropertyReadNode( object, "user_cpu_time" ); break;
 	case KEY_SYSTEM_TIME:	node = new LQX::ObjectPropertyReadNode( object, "system_cpu_time" ); break;
 	default:	abort();
 	}
-	const std::string& name = obs.getVariableName();              /* Strip $ for LQX name vvvvvvvv */
+	const std::string& name = obs.getVariableName();	      /* Strip $ for LQX name vvvvvvvv */
 	__observation_variables[name] = new LQX::AssignmentStatementNode( new LQX::VariableExpression( &name[1], false ), node );
 	return object;		/* For chaining */
     }
 
     /*
-     * Processor, Task, Entry, Phase variables 
+     * Processor, Task, Entry, Phase variables
      */
 	
-    LQX::SyntaxTreeNode * Spex::observation( const DOM::DocumentObject* document_object, const ObservationInfo& obs ) 
+    LQX::SyntaxTreeNode * Spex::observation( const DOM::DocumentObject* document_object, const ObservationInfo& obs )
     {
 	const unsigned p = obs.getPhase();
 	LQX::MethodInvocationExpression * object = new LQX::MethodInvocationExpression( document_object->getTypeName(), new LQX::ConstantValueExpression( document_object->getName() ), 0 );
@@ -231,12 +231,12 @@ namespace LQIO {
 	}
 	return observation( object, document_object, obs );
     }
-    
-    /* 
-     * Activity variables 
+
+    /*
+     * Activity variables
      */
 	
-    LQX::SyntaxTreeNode * Spex::observation( const DOM::Task* task, const DOM::Activity * activity, const ObservationInfo& obs ) 
+    LQX::SyntaxTreeNode * Spex::observation( const DOM::Task* task, const DOM::Activity * activity, const ObservationInfo& obs )
     {
 	LQX::MethodInvocationExpression * object = new LQX::MethodInvocationExpression( task->getTypeName(), new LQX::ConstantValueExpression( task->getName() ), 0 );
 	object = new LQX::MethodInvocationExpression( activity->getTypeName(), object, new LQX::ConstantValueExpression( activity->getName() ), 0 );
@@ -244,7 +244,7 @@ namespace LQIO {
     }
 	
     /*
-     * Call Variables 
+     * Call Variables
      */
 	
     LQX::SyntaxTreeNode * Spex::observation( const DOM::Entry* src, const unsigned int phase, const DOM::Entry* dst, const ObservationInfo& obs )
@@ -259,11 +259,11 @@ namespace LQIO {
 
     }
 
-    /* 
-     * Activity Call variables 
+    /*
+     * Activity Call variables
      */
 	
-    LQX::SyntaxTreeNode * Spex::observation( const DOM::Task* task, const DOM::Activity * activity, const DOM::Entry * dst, const ObservationInfo& obs ) 
+    LQX::SyntaxTreeNode * Spex::observation( const DOM::Task* task, const DOM::Activity * activity, const DOM::Entry * dst, const ObservationInfo& obs )
     {
 	LQX::MethodInvocationExpression * object = new LQX::MethodInvocationExpression( task->getTypeName(), new LQX::ConstantValueExpression( task->getName() ), 0 );
 	object = new LQX::MethodInvocationExpression( activity->getTypeName(), object, new LQX::ConstantValueExpression( activity->getName() ), 0 );
@@ -285,24 +285,24 @@ namespace LQIO {
 	}
 	__observations.insert( std::pair<const DOM::DocumentObject*,ObservationInfo>(doc_obj,obs) );			/* Save variable names per DOM object */
 	__observation_variables[name] = new LQX::AssignmentStatementNode( new LQX::VariableExpression( &name[1], false ),	/* Strip $ for LQX variable name */
-									  new LQX::ObjectPropertyReadNode( lqx_obj, __key_lqx_function_map[key] ) );
+									  new LQX::ObjectPropertyReadNode( lqx_obj, __key_lqx_function_map.at(key) ) );
 	const unsigned int conf_level = obs.getConfLevel();
 	if ( conf_level != 0 ) {
 	    const std::string& conf_name = obs.getConfVariableName().c_str();
 	    lqx_obj = new LQX::MethodInvocationExpression( "conf_int", lqx_obj, new LQX::ConstantValueExpression( static_cast<double>(conf_level) ), 0 );
 	    __observation_variables[conf_name] = new LQX::AssignmentStatementNode( new LQX::VariableExpression( &conf_name[1], false ),
-										   new LQX::ObjectPropertyReadNode( lqx_obj, __key_lqx_function_map[key] ) );
+										   new LQX::ObjectPropertyReadNode( lqx_obj, __key_lqx_function_map.at(key) ) );
 	}
 	return lqx_obj;		/* For chaining */
     }
 	
     /*
      * foreach( i,$var in list );
-     * loop_stmt(X) ::= FOREACH OBRACKET IDENTIFIER(A) COMMA IDENTIFIER(B) IN expr(C) CBRACKET stmt(D). 
-     *                 { X = new ForeachStatementNode( A->getStoredIdentifier(), B->getStoredIdentifier(), A->getIsExternal(), B->getIsExternal(), C, D ); }
+     * loop_stmt(X) ::= FOREACH OBRACKET IDENTIFIER(A) COMMA IDENTIFIER(B) IN expr(C) CBRACKET stmt(D).
+     *		       { X = new ForeachStatementNode( A->getStoredIdentifier(), B->getStoredIdentifier(), A->getIsExternal(), B->getIsExternal(), C, D ); }
      */
 
-    LQX::SyntaxTreeNode* Spex::foreach_loop( std::vector<std::string>::const_iterator var_p, expr_list * result, expr_list * convergence ) const 
+    LQX::SyntaxTreeNode* Spex::foreach_loop( std::vector<std::string>::const_iterator var_p, expr_list * result, expr_list * convergence ) const
     {
 	if ( var_p != __array_variables.end() ) {
 	    std::string name = *var_p;	/* Make local copy because we force to local */
@@ -310,11 +310,11 @@ namespace LQIO {
 	    if ( i == __comprehensions.end() ) {
 		/* if we have $x = [...] */
 		name[0] = '_';			/* Array name */
-		return new LQX::ForeachStatementNode( "", &name[1], /* key ext */ false, /* val */ false, 
-						      new LQX::VariableExpression( name, false ), 
+		return new LQX::ForeachStatementNode( "", &name[1], /* key ext */ false, /* val */ false,
+						      new LQX::VariableExpression( name, false ),
 						      foreach_loop( ++var_p, result, convergence ) );
 	    } else {
-		/* for ( i = begin; i < end; ++i ) 
+		/* for ( i = begin; i < end; ++i )
 		   $x = f(i); */
 		return new LQX::LoopStatementNode( i->second.init(&name[1]), i->second.test(&name[1]), i->second.step(&name[1]), foreach_loop( ++var_p, result, convergence ) );
 	    }
@@ -339,10 +339,10 @@ namespace LQIO {
 	LQX::SyntaxTreeNode * left_expr = 0;
 	for ( std::vector<std::string>::const_iterator var_p = __convergence_variables.begin(); var_p != __convergence_variables.end(); ++var_p ) {
 	    const std::string& name = *var_p;
-	    LQX::SyntaxTreeNode * right_expr = new LQX::ComparisonExpression( LQX::ComparisonExpression::LESS_THAN, 
-									      new LQX::MethodInvocationExpression( "abs", 
+	    LQX::SyntaxTreeNode * right_expr = new LQX::ComparisonExpression( LQX::ComparisonExpression::LESS_THAN,
+									      new LQX::MethodInvocationExpression( "abs",
 														   new LQX::MathExpression(LQX::MathExpression::SUBTRACT,
-																	   new LQX::VariableExpression( &name[1], false ), 
+																	   new LQX::VariableExpression( &name[1], false ),
 																	   new LQX::VariableExpression( name, true ) ),
 														   0 ),
 									      new LQX::VariableExpression( __convergence_limit_str, true ) );
@@ -359,14 +359,14 @@ namespace LQIO {
 	    const std::string& name = *var_p;
 	    convergence->push_back( new LQX::AssignmentStatementNode( new LQX::VariableExpression( &name[1], false ), new LQX::VariableExpression( name, true ) ) );
 	}
-	    
+	
 	/* Convergence loop */
 #if sneaky
 	loop_code->push_back( new LQX::LoopStatementNode( new LQX::AssignmentStatementNode( new LQX::VariableExpression( "__done__", false ), new LQX::ConstantValueExpression( false ) ),
 							  new LQX::LogicExpression(LQX::LogicExpression::NOT, new LQX::VariableExpression( "__done__", false ), NULL),
 							  new LQX::CompoundStatementNode( convergence ),
 							  new LQX::CompoundStatementNode( loop_body( result ) ) ) );
-#else 
+#else
 	/* Stick convergence stuff at end of loop body */
 	expr_list * body = loop_body( result );
 	body->insert( body->end(), convergence->begin(), convergence->end() );
@@ -379,7 +379,7 @@ namespace LQIO {
     }
 
     /*
-     * Code which is run in the innermost iteration of the experiments, i.e., for () { for () { loop_body() } } ;  
+     * Code which is run in the innermost iteration of the experiments, i.e., for () { for () { loop_body() } } ;
      * The guts of the execution.
      */
 	
@@ -399,7 +399,7 @@ namespace LQIO {
 	}
 
 	/* Assign input variables which are not array vars. */
-	    
+	
 	for ( std::map<std::string,LQX::SyntaxTreeNode *>::const_iterator iv_p = __input_variables.begin(); iv_p != __input_variables.end(); ++iv_p ) {
 	    const std::string& name = iv_p->first;
 	    if ( is_global_var( name ) && std::find( __array_variables.begin(), __array_variables.end(), name ) == __array_variables.end() ) {
@@ -408,7 +408,7 @@ namespace LQIO {
 	}
 
 	/* Increment magic variable $0 */
-	loop_code->push_back( new LQX::AssignmentStatementNode( new LQX::VariableExpression( "_0", false ), 
+	loop_code->push_back( new LQX::AssignmentStatementNode( new LQX::VariableExpression( "_0", false ),
 								new LQX::MathExpression(LQX::MathExpression::ADD, new LQX::VariableExpression( "_0", false ), new LQX::ConstantValueExpression( 1.0 ) ) ) );
 
 	if ( __verbose ) {
@@ -433,7 +433,7 @@ namespace LQIO {
 	}
 
 	loop_code->push_back( new LQX::ConditionalStatementNode( new LQX::MethodInvocationExpression("solve"),
-								 new LQX::CompoundStatementNode( solve_success( result ) ), 
+								 new LQX::CompoundStatementNode( solve_success( result ) ),
 								 new LQX::CompoundStatementNode( solve_failure( result ) ) ) );
 
 	return loop_code;
@@ -497,7 +497,7 @@ namespace LQIO {
      * file_output_stmt(X) ::= FILE_PRINTLN_SP OBRACKET expr_list(A) CBRACKET.	     { X = new FilePrintStatementNode( A, true, true ); }
      */
 
-    LQX::SyntaxTreeNode* Spex::print_header() const 
+    LQX::SyntaxTreeNode* Spex::print_header() const
     {
 	expr_list * list = make_list( new LQX::ConstantValueExpression( ", " ), NULL );
 	for ( std::vector<Spex::var_name_and_expr>::iterator var = __result_variables.begin(); var != __result_variables.end(); ++var ) {
@@ -599,19 +599,19 @@ namespace LQIO {
 	    list->push_back( print_node( y2_label.str() ) );
 	}
 	list->push_back( print_node( ss.str() ) );
- 	return list;
+	return list;
     }
 
-    /* 
+    /*
      * Convert the null terminated list of arguments into an expression list.
      */
-    
+
     expr_list * Spex::make_list( LQX::SyntaxTreeNode* arg1, ... )
     {
- 	expr_list * list = new expr_list;
-	va_list arguments;                     // A place to store the list of arguments
+	expr_list * list = new expr_list;
+	va_list arguments;		       // A place to store the list of arguments
 
-	va_start ( arguments, arg1 );           // Initializing arguments to store all values after num
+	va_start ( arguments, arg1 );		// Initializing arguments to store all values after num
 	for ( LQX::SyntaxTreeNode* arg = arg1; arg != nullptr; arg = va_arg( arguments, LQX::SyntaxTreeNode* ) ) {
 	    list->push_back( arg );
 	}
@@ -626,9 +626,9 @@ namespace LQIO {
     }
 
     /*
-     * Find the observation matching name.  
+     * Find the observation matching name.
      */
-    
+
     Spex::ObservationInfo * Spex::findObservation( const std::string& name )
     {
 	for ( obs_var_tab_t::iterator i = __observations.begin(); i != __observations.end(); ++i ) {
@@ -648,10 +648,10 @@ namespace LQIO {
 	}
 	return begin;
     }
-    
+
 
     /* ------------------------------------------------------------------------ */
-    /* lqn 'input' output functions for printing spex stuff out in input file.  */
+    /* lqn 'input' output functions for printing spex stuff out in input file.	*/
     /* ------------------------------------------------------------------------ */
 
     std::ostream&
@@ -694,24 +694,24 @@ namespace LQIO {
 
     class Spex spex;
 
-    std::vector<std::string> Spex::__array_variables;                       /* Saves $<array_name> for generating nest for loops */
-    std::set<std::string> Spex::__array_references;                         /* Saves $<array_name> when used as an lvalue */
-    std::vector<Spex::var_name_and_expr> Spex::__result_variables;          /* Saves $<name> for printing the header of variable names */
-    std::vector<std::string> Spex::__convergence_variables;                 /* Saves $<name> for all variables used in convergence section */
-    std::map<std::string,LQX::SyntaxTreeNode *> Spex::__observation_variables;       /* Saves all observations (name, and funky assignment) */
+    std::vector<std::string> Spex::__array_variables;			    /* Saves $<array_name> for generating nest for loops */
+    std::set<std::string> Spex::__array_references;			    /* Saves $<array_name> when used as an lvalue */
+    std::vector<Spex::var_name_and_expr> Spex::__result_variables;	    /* Saves $<name> for printing the header of variable names */
+    std::vector<std::string> Spex::__convergence_variables;		    /* Saves $<name> for all variables used in convergence section */
+    std::map<std::string,LQX::SyntaxTreeNode *> Spex::__observation_variables;	     /* Saves all observations (name, and funky assignment) */
     std::map<std::string,Spex::ComprehensionInfo> Spex::__comprehensions;   /* Saves all comprehensions for $<name> */
     expr_list Spex::__deferred_assignment;
 
     std::map<std::string,LQX::SyntaxTreeNode *> Spex::__input_variables;    /* Save for printing when __verbose == true */
-    Spex::obs_var_tab_t Spex::__observations;	                      	    /* Saves all key-$var for each object */
-    std::vector<Spex::ObservationInfo> Spex::__document_variables;          /* Saves all key-$var for the document */
-    std::map<std::string,std::string> Spex::__input_iterator;               /* Saves iterator for x, y = expr statements */
+    Spex::obs_var_tab_t Spex::__observations;				    /* Saves all key-$var for each object */
+    std::vector<Spex::ObservationInfo> Spex::__document_variables;	    /* Saves all key-$var for the document */
+    std::map<std::string,std::string> Spex::__input_iterator;		    /* Saves iterator for x, y = expr statements */
 
     std::map<const DOM::ExternalVariable *,const LQX::SyntaxTreeNode *> Spex::__inline_expression;  /* Maps temp vars to expressions */
 
     bool Spex::__gnuplot_output = false;				    /* True if doing gnuplot.			*/
-    std::vector<std::string> Spex::__gnuplot_variables;			    /* Variables for output using gnuplot. 	*/
-    
+    std::vector<std::string> Spex::__gnuplot_variables;			    /* Variables for output using gnuplot.	*/
+
     bool Spex::__verbose = false;
     bool Spex::__no_header = false;
 
@@ -725,20 +725,20 @@ namespace LQIO {
     /*- JSON */
 
 
-    std::map<const std::string,const Spex::attribute_table_t> Spex::__control_parameters =
+    const std::map<const std::string,const Spex::attribute_table_t> Spex::__control_parameters =
     {
-	{ "$convergence_iters", 	    Spex::attribute_table_t( DOM::Document::XSpexIterationLimit ) },
-	{ "$convergence_under_relax",       Spex::attribute_table_t( DOM::Document::XSpexUnderrelaxation ) },
+	{ "$convergence_iters",		    Spex::attribute_table_t( DOM::Document::XSpexIterationLimit ) },
+	{ "$convergence_under_relax",	    Spex::attribute_table_t( DOM::Document::XSpexUnderrelaxation ) },
 	{ Spex::__convergence_limit_str,    Spex::attribute_table_t( &DOM::Document::setModelConvergence ) },
-	{ "$iteration_limit",   	    Spex::attribute_table_t( &DOM::Document::setModelIterationLimit ) },
-	{ "$model_comment",     	    Spex::attribute_table_t( DOM::Document::XComment ) },
-	{ "$print_interval",    	    Spex::attribute_table_t( &DOM::Document::setModelPrintInterval ) },
-	{ "$underrelaxation",   	    Spex::attribute_table_t( &DOM::Document::setModelUnderrelaxationCoefficient ) }
+	{ "$iteration_limit",		    Spex::attribute_table_t( &DOM::Document::setModelIterationLimit ) },
+	{ "$model_comment",		    Spex::attribute_table_t( DOM::Document::XComment ) },
+	{ "$print_interval",		    Spex::attribute_table_t( &DOM::Document::setModelPrintInterval ) },
+	{ "$underrelaxation",		    Spex::attribute_table_t( &DOM::Document::setModelUnderrelaxationCoefficient ) }
     };
 
 
     /* Maps srvn_gram.h KEY_XXX to name.  First is the SPEX "key", second is the name. */
-    std::map<const int,const std::pair<const std::string,const std::string> > Spex::__key_code_map =
+    const std::map<const int,const std::pair<const std::string,const std::string> > Spex::__key_code_map =
     {
 	{ KEY_ELAPSED_TIME,		{ "time","Elapsed Time" } },
 	{ KEY_EXCEEDED_TIME,		{ "x","Pr" } },
@@ -758,55 +758,55 @@ namespace LQIO {
 
 
     /* Maps srvn_gram.h KEY_XXX to lqx function name */
-    std::map<const int,const std::string> Spex::__key_lqx_function_map =
+    const std::map<const int,const std::string> Spex::__key_lqx_function_map =
     {
-	{ KEY_ELAPSED_TIME,            __lqx_elapsed_time },
-	{ KEY_EXCEEDED_TIME,           __lqx_pr_exceeded },
-	{ KEY_ITERATIONS,              __lqx_iterations },
-	{ KEY_PROCESSOR_UTILIZATION,   __lqx_processor_utilization },
-	{ KEY_PROCESSOR_WAITING,       __lqx_processor_waiting },
-	{ KEY_SERVICE_TIME,            __lqx_service_time },
-	{ KEY_SYSTEM_TIME,             __lqx_system_time },
-	{ KEY_THROUGHPUT,              __lqx_throughput },
-	{ KEY_THROUGHPUT_BOUND,        __lqx_throughput_bound },
-	{ KEY_USER_TIME,               __lqx_user_time },
-	{ KEY_UTILIZATION,             __lqx_utilization },
-	{ KEY_VARIANCE,                __lqx_variance },
-	{ KEY_WAITING,                 __lqx_waiting },
-	{ KEY_WAITING_VARIANCE,        __lqx_waiting_variance },
-    };    
+	{ KEY_ELAPSED_TIME,		__lqx_elapsed_time },
+	{ KEY_EXCEEDED_TIME,		__lqx_pr_exceeded },
+	{ KEY_ITERATIONS,		__lqx_iterations },
+	{ KEY_PROCESSOR_UTILIZATION,	__lqx_processor_utilization },
+	{ KEY_PROCESSOR_WAITING,	__lqx_processor_waiting },
+	{ KEY_SERVICE_TIME,		__lqx_service_time },
+	{ KEY_SYSTEM_TIME,		__lqx_system_time },
+	{ KEY_THROUGHPUT,		__lqx_throughput },
+	{ KEY_THROUGHPUT_BOUND,		__lqx_throughput_bound },
+	{ KEY_USER_TIME,		__lqx_user_time },
+	{ KEY_UTILIZATION,		__lqx_utilization },
+	{ KEY_VARIANCE,			__lqx_variance },
+	{ KEY_WAITING,			__lqx_waiting },
+	{ KEY_WAITING_VARIANCE,		__lqx_waiting_variance },
+    };
 }
 
 namespace LQIO {
-    Spex::ComprehensionInfo::ComprehensionInfo( double init, double test, double step ) 
+    Spex::ComprehensionInfo::ComprehensionInfo( double init, double test, double step )
 	: _init(init), _test(test), _step(step)
     {
     }
 
 
-    LQX::SyntaxTreeNode * 
+    LQX::SyntaxTreeNode *
     Spex::ComprehensionInfo::init( const std::string& name ) const
     {
 	const bool is_external = (name.size() > 1 && name[0] == '$');
 	return new LQX::AssignmentStatementNode( new LQX::VariableExpression( name, is_external ), new LQX::ConstantValueExpression( _init ) );
     }
 
-    LQX::SyntaxTreeNode * 
+    LQX::SyntaxTreeNode *
     Spex::ComprehensionInfo::test( const std::string& name ) const
     {
 	const bool is_external = (name.size() > 1 && name[0] == '$');
-	return new LQX::ComparisonExpression( LQX::ComparisonExpression::LESS_OR_EQUAL, 
-					      new LQX::VariableExpression( name, is_external ), 
+	return new LQX::ComparisonExpression( LQX::ComparisonExpression::LESS_OR_EQUAL,
+					      new LQX::VariableExpression( name, is_external ),
 					      new LQX::ConstantValueExpression( _test ) );
     }
 
-    LQX::SyntaxTreeNode * 
-    Spex::ComprehensionInfo::step( const std::string& name ) const 
+    LQX::SyntaxTreeNode *
+    Spex::ComprehensionInfo::step( const std::string& name ) const
     {	
 	const bool is_external = (name.size() > 1 && name[0] == '$');
-	return new LQX::AssignmentStatementNode( new LQX::VariableExpression( name, is_external ), 
+	return new LQX::AssignmentStatementNode( new LQX::VariableExpression( name, is_external ),
 						 new LQX::MathExpression( LQX::MathExpression::ADD,
-									  new LQX::VariableExpression( name, is_external ), 
+									  new LQX::VariableExpression( name, is_external ),
 									  new LQX::ConstantValueExpression( _step ) ) );
     }
 
@@ -848,7 +848,7 @@ namespace LQIO {
 	_output << Spex::print_result_variable( var ) << std::endl;
     }
 
-    Spex::ObservationInfo::ObservationInfo( int key, unsigned int phase, const char * variable_name, unsigned int conf_level, const char * conf_variable_name ) 
+    Spex::ObservationInfo::ObservationInfo( int key, unsigned int phase, const char * variable_name, unsigned int conf_level, const char * conf_variable_name )
 	: _key(key), _phase(phase), _variable_name(), _conf_level(conf_level), _conf_variable_name()
     {
 	if ( variable_name != NULL ) _variable_name = variable_name;
@@ -866,14 +866,14 @@ namespace LQIO {
     }
 
     bool
-    Spex::ObservationInfo::operator()( const DOM::DocumentObject * o1, const DOM::DocumentObject * o2 ) const 
-    { 
+    Spex::ObservationInfo::operator()( const DOM::DocumentObject * o1, const DOM::DocumentObject * o2 ) const
+    {
 	return o1 == NULL || (o2 != NULL && o1->getSequenceNumber() < o2->getSequenceNumber());
     }
 
     bool
-    Spex::ObservationInfo::operator()( const ObservationInfo& o1, const ObservationInfo& o2 ) const 
-    { 
+    Spex::ObservationInfo::operator()( const ObservationInfo& o1, const ObservationInfo& o2 ) const
+    {
 	return o1.getKey() < o2.getKey() || o1.getPhase() < o2.getPhase();
     }
 
@@ -943,7 +943,7 @@ namespace LQIO {
 /* ------------------------------------------------------------------------ */
 
 /*
- * Create a program.  Param_arg makes up the main line.  mearsure_arg
+ * Create a program.  Param_arg makes up the main line.	 mearsure_arg
  * is composed of all the %x type annotations for results.  result_arg
  * is composed of the result section.  measure and result are tacked
  * on after the solve() function to produce output.
@@ -952,8 +952,8 @@ namespace LQIO {
 void spex_set_program( void * param_arg, void * result_arg, void * convergence_arg )
 {
     expr_list * program = static_cast<expr_list *>(param_arg);
-    if ( program && LQIO::spex.construct_program( program, 
-						       static_cast<expr_list *>(result_arg), 
+    if ( program && LQIO::spex.construct_program( program,
+						       static_cast<expr_list *>(result_arg),
 						       static_cast<expr_list *>(convergence_arg) ) ) {
 	LQIO::DOM::__document->setLQXProgram( LQX::Program::loadRawProgram( program ) );
     }
@@ -1000,7 +1000,7 @@ void * spex_assignment_statement( const char * name, void * expr, const bool con
     static_cast<LQX::SyntaxTreeNode *>(expr)->print(ss,0);
     if ( strncmp( "array_create", ss.str().c_str(), 12 ) == 0 ) {
 	LQIO::Spex::__array_variables.push_back( std::string(name) );		/* Save variable name for looping */
-        std::string local = name;
+	std::string local = name;
 	local[0] = '_';
 	var = new LQX::VariableExpression(local,false);
     } else {
@@ -1009,7 +1009,7 @@ void * spex_assignment_statement( const char * name, void * expr, const bool con
     LQX::SyntaxTreeNode * statement = new LQX::AssignmentStatementNode( var, static_cast<LQX::SyntaxTreeNode *>(expr) );
 
     if ( constant_expression ) {
-	return statement; 
+	return statement;
     } else {
 	LQIO::Spex::__deferred_assignment.push_back( statement );
 	return nullptr;
@@ -1039,7 +1039,7 @@ void * spex_array_assignment( const char * name, void * list, const bool constan
     std::string local = name;
     local[0] = '_';
     LQX::SyntaxTreeNode * statement = new LQX::AssignmentStatementNode( new LQX::VariableExpression( local, false ), array );
-    LQIO::Spex::__input_variables[std::string(name)] =  array;
+    LQIO::Spex::__input_variables[std::string(name)] =	array;
     return statement;
 }
 
@@ -1061,7 +1061,7 @@ void * spex_array_comprehension( const char * name, double begin, double end, do
 }
 
 
-void * spex_forall( const char * iter_name, const char * name, void * expr ) 
+void * spex_forall( const char * iter_name, const char * name, void * expr )
 {
     if ( LQIO::Spex::has_input_var( name ) || LQIO::Spex::has_observation_var( name ) ) {
 	LQIO::input_error2( LQIO::ERR_DUPLICATE_SYMBOL, "variable", name );
@@ -1070,7 +1070,7 @@ void * spex_forall( const char * iter_name, const char * name, void * expr )
 
     LQIO::Spex::__input_variables[name] = static_cast<LQX::SyntaxTreeNode *>(expr);		/* Save variable for printing */
     LQIO::Spex::__input_iterator[name] = iter_name;
-    LQX::SyntaxTreeNode * statement = new LQX::AssignmentStatementNode( new LQX::VariableExpression( &name[1], false ), 
+    LQX::SyntaxTreeNode * statement = new LQX::AssignmentStatementNode( new LQX::VariableExpression( &name[1], false ),
 									static_cast<LQX::SyntaxTreeNode *>(expr) );
     LQIO::Spex::__deferred_assignment.push_back( statement );
     return nullptr;
@@ -1078,7 +1078,7 @@ void * spex_forall( const char * iter_name, const char * name, void * expr )
 
 /* ------------------------------------------------------------------------ */
 
-void * spex_ternary( void * arg1, void * arg2, void * arg3 ) 
+void * spex_ternary( void * arg1, void * arg2, void * arg3 )
 {
     return new LQX::ConditionalStatementNode(static_cast<LQX::SyntaxTreeNode *>(arg1), static_cast<LQX::SyntaxTreeNode *>(arg2), static_cast<LQX::SyntaxTreeNode *>(arg3));
 }
@@ -1116,47 +1116,47 @@ void * spex_power( void * arg1, void * arg2 )
 void * spex_or( void * arg1, void * arg3 )
 {
     return new LQX::LogicExpression(LQX::LogicExpression::OR, static_cast<LQX::SyntaxTreeNode *>(arg1), static_cast<LQX::SyntaxTreeNode *>(arg3) );
-} 
+}
 
 void * spex_and( void * arg1, void * arg3 )
 {
     return new LQX::LogicExpression(LQX::LogicExpression::AND, static_cast<LQX::SyntaxTreeNode *>(arg1), static_cast<LQX::SyntaxTreeNode *>(arg3) );
-} 
+}
 
 void * spex_equals( void * arg1, void * arg3 )
 {
     return new LQX::ComparisonExpression(LQX::ComparisonExpression::EQUALS, static_cast<LQX::SyntaxTreeNode *>(arg1), static_cast<LQX::SyntaxTreeNode *>(arg3) );
-} 
+}
 
 void * spex_not_equals( void * arg1, void * arg3 )
 {
     return new LQX::ComparisonExpression(LQX::ComparisonExpression::NOT_EQUALS, static_cast<LQX::SyntaxTreeNode *>(arg1), static_cast<LQX::SyntaxTreeNode *>(arg3) );
-} 
+}
 
 void * spex_less_than( void * arg1, void * arg3 )
 {
     return new LQX::ComparisonExpression(LQX::ComparisonExpression::LESS_THAN, static_cast<LQX::SyntaxTreeNode *>(arg1), static_cast<LQX::SyntaxTreeNode *>(arg3) );
-} 
+}
 
 void * spex_less_than_or_equals( void * arg1, void * arg3 )
 {
     return new LQX::ComparisonExpression(LQX::ComparisonExpression::LESS_OR_EQUAL, static_cast<LQX::SyntaxTreeNode *>(arg1), static_cast<LQX::SyntaxTreeNode *>(arg3) );
-} 
+}
 
 void * spex_greater_than( void * arg1, void * arg3 )
 {
     return new LQX::ComparisonExpression(LQX::ComparisonExpression::GREATER_THAN, static_cast<LQX::SyntaxTreeNode *>(arg1), static_cast<LQX::SyntaxTreeNode *>(arg3) );
-} 
+}
 
 void * spex_greater_than_or_equals( void * arg1, void * arg3 )
 {
     return new LQX::ComparisonExpression(LQX::ComparisonExpression::GREATER_OR_EQUAL, static_cast<LQX::SyntaxTreeNode *>(arg1), static_cast<LQX::SyntaxTreeNode *>(arg3) );
-} 
+}
 
 void * spex_not( void * arg2 )
 {
     return new LQX::LogicExpression(LQX::LogicExpression::NOT, static_cast<LQX::SyntaxTreeNode *>(arg2), NULL );
-} 
+}
 
 /*
  * Array references.  Arg1 is the name (as a variable), arg3 is the index.
@@ -1167,18 +1167,18 @@ void * spex_array_reference( void * arg1, void * arg3 )
     LQX::SyntaxTreeNode * var = static_cast<LQX::SyntaxTreeNode *>(arg1);
 
     /* Is arg1 a variable name (otherwise it's an array...) */
-    
+
     if ( dynamic_cast<LQX::VariableExpression *>(var) != NULL ) {
 	std::ostringstream ss;		/* get <name> */
 	ss << "$";			/* Regenerate <$name> */
 	var->print(ss,0);
 	std::string name = ss.str();
 	LQIO::Spex::__array_references.insert( name );
-    
+
 	name[0] = '_';			/* Convert to local <_name> */
 	arg1 = new LQX::VariableExpression( name, false );
     }
-    
+
     std::vector<LQX::SyntaxTreeNode *> * list = new std::vector<LQX::SyntaxTreeNode*>();
     list->push_back( static_cast<LQX::SyntaxTreeNode*>(arg1) );
     list->push_back( static_cast<LQX::SyntaxTreeNode*>(arg3) );
@@ -1217,7 +1217,7 @@ void * spex_document_observation( const int key, const char * var )
     return LQIO::spex.observation( LQIO::Spex::ObservationInfo( key, 0, var ) );
 }
 
-void * spex_processor_observation( const void * obj, const int key, const int conf, const char * var, const char * var2 ) 
+void * spex_processor_observation( const void * obj, const int key, const int conf, const char * var, const char * var2 )
 {
     if ( !obj || !var ) return nullptr;
 
@@ -1225,10 +1225,10 @@ void * spex_processor_observation( const void * obj, const int key, const int co
 }
 
 
-void * spex_group_observation( const void * obj, const int key, const int conf, const char * var, const char * var2 ) 
+void * spex_group_observation( const void * obj, const int key, const int conf, const char * var, const char * var2 )
 {
     if ( !obj || !var ) return nullptr;
-    
+
     return LQIO::spex.observation( static_cast<const LQIO::DOM::Group *>(obj), LQIO::Spex::ObservationInfo( key, 0, var, conf, var2 ) );
 }
 
@@ -1246,12 +1246,12 @@ void * spex_entry_observation( const void * obj, const int key, const int phase,
 
     const LQIO::DOM::Entry * entry = static_cast<const LQIO::DOM::Entry *>(obj);
 
-    if ( ((0 < phase && phase <= (int)LQIO::DOM::Phase::MAX_PHASE) && ( key == KEY_SERVICE_TIME || key == KEY_UTILIZATION  || key == KEY_PROCESSOR_UTILIZATION  || key == KEY_PROCESSOR_WAITING  || key == KEY_VARIANCE || KEY_EXCEEDED_TIME ))
- 	 || (phase == 0 && (key == KEY_THROUGHPUT || key == KEY_THROUGHPUT_BOUND || key == KEY_UTILIZATION || key == KEY_PROCESSOR_UTILIZATION || key == KEY_WAITING)) ) {
+    if ( ((0 < phase && phase <= (int)LQIO::DOM::Phase::MAX_PHASE) && ( key == KEY_SERVICE_TIME || key == KEY_UTILIZATION  || key == KEY_PROCESSOR_UTILIZATION	|| key == KEY_PROCESSOR_WAITING	 || key == KEY_VARIANCE || KEY_EXCEEDED_TIME ))
+	 || (phase == 0 && (key == KEY_THROUGHPUT || key == KEY_THROUGHPUT_BOUND || key == KEY_UTILIZATION || key == KEY_PROCESSOR_UTILIZATION || key == KEY_WAITING)) ) {
 	/* This is by phase... but LQX needs entry and phase name */
 	return LQIO::spex.observation( entry, LQIO::Spex::ObservationInfo( key, phase, var, conf, var2 ) );
     } else {
-	input_error2( LQIO::WRN_INVALID_SPEX_RESULT_PHASE, phase, LQIO::Spex::__key_code_map[key].first.c_str(), entry->getName().c_str() );
+	input_error2( LQIO::WRN_INVALID_SPEX_RESULT_PHASE, phase, LQIO::Spex::__key_code_map.at(key).first.c_str(), entry->getName().c_str() );
 	return nullptr;
     }
 
@@ -1273,7 +1273,7 @@ void * spex_call_observation( const void * src, const int key, const int phase, 
     const LQIO::DOM::Entry * dst_entry = static_cast<const LQIO::DOM::Entry *>(dst);
 
     if ( phase <= 0 || (int)LQIO::DOM::Phase::MAX_PHASE < phase ) {
-	input_error2( LQIO::WRN_INVALID_SPEX_RESULT_PHASE, phase, LQIO::Spex::__key_code_map[key].first.c_str(), src_entry->getName().c_str() );
+	input_error2( LQIO::WRN_INVALID_SPEX_RESULT_PHASE, phase, LQIO::Spex::__key_code_map.at(key).first.c_str(), src_entry->getName().c_str() );
 	return nullptr;
     } else {
 	return LQIO::spex.observation( src_entry, phase, dst_entry, LQIO::Spex::ObservationInfo( key, phase, var, conf, var2 ) );
@@ -1304,7 +1304,7 @@ void * spex_result_assignment_statement( const char * name, void * expr )
     if ( expr ) {
 	return new LQX::AssignmentStatementNode( variable, static_cast<LQX::SyntaxTreeNode *>(expr) );
     } else {
-        return variable;
+	return variable;
     }
 }
 
@@ -1355,5 +1355,3 @@ void * spex_get_string( const char * arg )
 {
     return new LQX::ConstantValueExpression( arg );
 }
-
-

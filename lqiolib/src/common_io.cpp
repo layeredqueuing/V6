@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: common_io.cpp 14106 2020-11-18 14:33:50Z greg $
+ * $Id: common_io.cpp 14110 2020-11-20 15:37:56Z greg $
  *
  * Read in XML input files.
  *
@@ -43,45 +43,35 @@ using namespace std;
 namespace LQIO {
     namespace DOM {
 
-	bool
-	Common_IO::Compare::operator()( const char * s1, const char * s2 ) const
-	{
-	    return strcasecmp( s1, s2 ) < 0;
-	}
+	bool Common_IO::Compare::operator()( const char * s1, const char * s2 ) const { return strcasecmp( s1, s2 ) < 0; }
 
-	std::map<const char *, scheduling_type,Common_IO::Compare> Common_IO::scheduling_table;
+	std::map<const char *, const scheduling_type,Common_IO::Compare> Common_IO::scheduling_table =
+	{
+	    { scheduling_label[SCHEDULE_CUSTOMER].XML, 	SCHEDULE_CUSTOMER },
+	    { scheduling_label[SCHEDULE_DELAY].XML,	SCHEDULE_DELAY },
+	    { scheduling_label[SCHEDULE_FIFO].XML, 	SCHEDULE_FIFO },
+	    { scheduling_label[SCHEDULE_HOL].XML,  	SCHEDULE_HOL },
+	    { scheduling_label[SCHEDULE_PPR].XML,  	SCHEDULE_PPR },
+	    { scheduling_label[SCHEDULE_RAND].XML, 	SCHEDULE_RAND },
+	    { scheduling_label[SCHEDULE_PS].XML,   	SCHEDULE_PS },
+	    { scheduling_label[SCHEDULE_PS_HOL].XML,    SCHEDULE_PS_HOL },
+	    { scheduling_label[SCHEDULE_PS_PPR].XML,    SCHEDULE_PS_PPR },
+	    { scheduling_label[SCHEDULE_POLL].XML, 	SCHEDULE_POLL },
+	    { scheduling_label[SCHEDULE_BURST].XML,	SCHEDULE_BURST },
+	    { scheduling_label[SCHEDULE_UNIFORM].XML,   SCHEDULE_UNIFORM },
+	    { scheduling_label[SCHEDULE_SEMAPHORE].XML, SCHEDULE_SEMAPHORE },
+	    { scheduling_label[SCHEDULE_CFS].XML,	SCHEDULE_CFS },
+	    { scheduling_label[SCHEDULE_RWLOCK].XML,    SCHEDULE_RWLOCK },
+	    { scheduling_label[SCHEDULE_TIMEOUT].XML,   SCHEDULE_TIMEOUT },
+	    { scheduling_label[SCHEDULE_ABORT].XML,     SCHEDULE_ABORT },
+	    { scheduling_label[SCHEDULE_RETRY].XML,     SCHEDULE_RETRY },
+	    { scheduling_label[SCHEDULE_INF_RETRY].XML, SCHEDULE_INF_RETRY }
+	};
 
 	Common_IO::Common_IO()
 	    : _conf_95( ConfidenceIntervals( LQIO::ConfidenceIntervals::CONF_95 ) ),
 	      _conf_99( ConfidenceIntervals( LQIO::ConfidenceIntervals::CONF_99 ) )
 	{
-	}
-
-	void
-	Common_IO::init_tables()
-	{
-            if ( scheduling_table.size() != 0 ) return;		/* Done already */
-
-	    scheduling_table[scheduling_label[SCHEDULE_CUSTOMER].XML] =    SCHEDULE_CUSTOMER;
-	    scheduling_table[scheduling_label[SCHEDULE_DELAY].XML] =	   SCHEDULE_DELAY;
-	    scheduling_table[scheduling_label[SCHEDULE_FIFO].XML] = 	   SCHEDULE_FIFO;
-	    scheduling_table[scheduling_label[SCHEDULE_HOL].XML] =  	   SCHEDULE_HOL;
-	    scheduling_table[scheduling_label[SCHEDULE_PPR].XML] =  	   SCHEDULE_PPR;
-	    scheduling_table[scheduling_label[SCHEDULE_RAND].XML] = 	   SCHEDULE_RAND;
-	    scheduling_table[scheduling_label[SCHEDULE_PS].XML] =   	   SCHEDULE_PS;
-	    scheduling_table[scheduling_label[SCHEDULE_PS_HOL].XML] =      SCHEDULE_PS_HOL;
-	    scheduling_table[scheduling_label[SCHEDULE_PS_PPR].XML] =      SCHEDULE_PS_PPR;
-	    scheduling_table[scheduling_label[SCHEDULE_POLL].XML] = 	   SCHEDULE_POLL;
-	    scheduling_table[scheduling_label[SCHEDULE_BURST].XML] =	   SCHEDULE_BURST;
-	    scheduling_table[scheduling_label[SCHEDULE_UNIFORM].XML] =     SCHEDULE_UNIFORM;
-	    scheduling_table[scheduling_label[SCHEDULE_SEMAPHORE].XML] =   SCHEDULE_SEMAPHORE;
-	    scheduling_table[scheduling_label[SCHEDULE_CFS].XML] =	   SCHEDULE_CFS;
-	    scheduling_table[scheduling_label[SCHEDULE_RWLOCK].XML] =      SCHEDULE_RWLOCK;
-	    scheduling_table[scheduling_label[SCHEDULE_TIMEOUT].XML] =     SCHEDULE_TIMEOUT;
-	    scheduling_table[scheduling_label[SCHEDULE_ABORT].XML] =       SCHEDULE_ABORT;
-	    scheduling_table[scheduling_label[SCHEDULE_RETRY].XML] =       SCHEDULE_RETRY;
-	    scheduling_table[scheduling_label[SCHEDULE_INF_RETRY].XML] =   SCHEDULE_INF_RETRY;
-
 	}
 
 	/* static */ void

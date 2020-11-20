@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- *  $Id: json_document.h 14107 2020-11-18 18:51:51Z greg $
+ *  $Id: json_document.h 14110 2020-11-20 15:37:56Z greg $
  *
  *  Created by Greg Franks.
  */
@@ -40,7 +40,7 @@ namespace LQIO {
 
 	private:
 	    friend class LQIO::DOM::Document;
-	    
+	  
 	    Json_Document( Document& document, const std::string&, bool create_objects=true, bool load_results=false );
 
 	public:
@@ -62,8 +62,6 @@ namespace LQIO {
 	private:
 	    Json_Document( const Json_Document& );
 	    Json_Document& operator=( const Json_Document& );
-
-	    static void init_tables();
 
 	    bool parse();
 
@@ -97,7 +95,7 @@ namespace LQIO {
 	    void handleHistogram( DocumentObject *, const picojson::value& );
 	    void handleHistogramBin( DocumentObject *, unsigned int, const picojson::value& );
 	    void handleMaxServiceTime( DocumentObject *, const picojson::value& );
-	    
+	  
 	    void handleResults( DocumentObject *, const std::map<std::string, picojson::value>& );
 
 	    void connectEntry( Entry *, Task *, const std::string& name );
@@ -122,7 +120,6 @@ namespace LQIO {
 
 	public:
 	    typedef Document& (Document::*doc_bool_fptr)( bool );
-	    typedef Document& (Document::*doc_clock_fptr)( double );
 	    typedef Document& (Document::*doc_double_fptr)( double );
 	    typedef Document& (Document::*doc_extvar_fptr)( ExternalVariable * );
 	    typedef Document& (Document::*doc_long_fptr)( long );
@@ -151,12 +148,41 @@ namespace LQIO {
 	    typedef DocumentObject& (DocumentObject::*set_result_fptr)( const double );
 	    typedef DocumentObject& (DocumentObject::*set_result_ph_fptr)( unsigned int, const double );
 
-	    typedef union {
+	    union set_fptr {
+                set_fptr( void * _v_ ) : v(_v_) {}
+                set_fptr( call_extvar_fptr _ca_e_ ) : ca_e(_ca_e_) {}
+                set_fptr( call_type_fptr _ca_t_ ) : ca_t(_ca_t_) {}
+                set_fptr( doc_bool_fptr _db_ ) : db(_db_) {}
+                set_fptr( doc_double_fptr _dd_ ) : dd(_dd_) {}
+		set_fptr( doc_long_fptr _dl_ ) : dl(_dl_) {}
+                set_fptr( doc_extvar_fptr _de_ ) : de(_de_) {}
+                set_fptr( doc_string_fptr _ds_ ) : ds(_ds_) {}
+                set_fptr( doc_unsigned_fptr _du_ ) : du(_du_) {}
+                set_fptr( entity_double_fptr _et_d_ ) : et_d(_et_d_) {}
+                set_fptr( entity_unsigned_fptr _et_u_ ) : et_u(_et_u_) {}
+                set_fptr( entry_activity_fptr _en_a_ ) : en_a(_en_a_) {}
+                set_fptr( entry_extvar_fptr _en_e_ ) : en_e(_en_e_) {}
+                set_fptr( group_bool_fptr _gr_b_ ) : gr_b(_gr_b_) {}
+                set_fptr( group_extvar_fptr _gr_e_ ) : gr_e(_gr_e_) {}
+                set_fptr( group_proc_fptr _gr_p_ ) : gr_p(_gr_p_) {}
+                set_fptr( obj_string_fptr _os_ ) : os(_os_) {}
+                set_fptr( phase_extvar_fptr _ph_e_ ) : ph_e(_ph_e_) {}
+                set_fptr( phase_type_fptr _ph_t_ ) : ph_t(_ph_t_) {}
+                set_fptr( proc_extvar_fptr _pr_e_ ) : pr_e(_pr_e_) {}
+                set_fptr( set_docobj_fptr _doc_ ) : doc(_doc_) {}
+                set_fptr( set_object_fptr _o_ ) : o(_o_) {}
+                set_fptr( set_result_fptr _re_d_ ) : re_d(_re_d_) {}
+                set_fptr( set_result_ph_fptr _rp_d_ ) : rp_d(_rp_d_) {}
+                set_fptr( task_extvar_fptr _ta_e_ ) : ta_e(_ta_e_) {}
+                set_fptr( task_fan_in_out_fptr _ta_f_ ) : ta_f(_ta_f_) {}
+                set_fptr( task_group_fptr _ta_g_ ) : ta_g(_ta_g_) {}
+                set_fptr( task_proc_fptr _ta_p_ ) : ta_p(_ta_p_) {}
+                set_fptr( task_unsigned_fptr _ta_u_ ) : ta_u(_ta_u_) {}
+		set_fptr() : v(nullptr) {}
                 void * v;
                 call_extvar_fptr ca_e;
                 call_type_fptr ca_t;
                 doc_bool_fptr db;
-                doc_clock_fptr dc;
                 doc_double_fptr dd;
 		doc_long_fptr dl;
                 doc_extvar_fptr de;
@@ -182,7 +208,7 @@ namespace LQIO {
                 task_group_fptr ta_g;
                 task_proc_fptr ta_p;
                 task_unsigned_fptr ta_u;
-	    } set_fptr;
+	    };
 
 	    class Import {
 		friend Json_Document::Json_Document( Document&, const std::string&, bool, bool );
@@ -200,41 +226,39 @@ namespace LQIO {
 		};
 
 	    public:
-                Import( call_extvar_fptr f )    : _t(dom_type::DOM_EXTVAR)    { _f.ca_e = f; }
-                Import( call_type_fptr f )      : _t(dom_type::JSON_OBJECT)   { _f.ca_t = f; }
-                Import( doc_bool_fptr f )       : _t(dom_type::BOOLEAN)       { _f.db = f; }
-                Import( doc_double_fptr f )     : _t(dom_type::DOUBLE)        { _f.dd = f; }
-                Import( doc_long_fptr f )       : _t(dom_type::LONG)          { _f.dl = f; }
-                Import( doc_extvar_fptr f )     : _t(dom_type::DOM_EXTVAR)    { _f.de = f; }
-                Import( doc_string_fptr f )     : _t(dom_type::STRING)        { _f.ds = f; }
-                Import( doc_unsigned_fptr f )   : _t(dom_type::UNSIGNED)      { _f.du = f; }
-                Import( entity_double_fptr f )  : _t(dom_type::DOUBLE)        { _f.et_d = f; }
-                Import( entity_unsigned_fptr f ): _t(dom_type::UNSIGNED)      { _f.et_u = f; }
-                Import( entry_activity_fptr f ) : _t(dom_type::DOM_ACTIVITY)  { _f.en_a = f; }
-                Import( entry_extvar_fptr f )   : _t(dom_type::DOM_EXTVAR)    { _f.en_e = f; }
-                Import( group_bool_fptr f )     : _t(dom_type::BOOLEAN)       { _f.gr_b = f; }
-                Import( group_extvar_fptr f )   : _t(dom_type::DOM_EXTVAR)    { _f.gr_e = f; }
-                Import( group_proc_fptr f )     : _t(dom_type::DOM_PROCESSOR) { _f.gr_p = f; }
-                Import( obj_string_fptr f )     : _t(dom_type::STRING)        { _f.os = f; }
-                Import( phase_extvar_fptr f )   : _t(dom_type::DOM_EXTVAR)    { _f.ph_e = f; }
-                Import( phase_type_fptr f )     : _t(dom_type::BOOLEAN)       { _f.ph_t = f; }
-                Import( proc_extvar_fptr f )    : _t(dom_type::DOM_EXTVAR)    { _f.pr_e = f; }
-                Import( set_docobj_fptr f )     : _t(dom_type::JSON_OBJECT)   { _f.doc = f; }
-                Import( set_object_fptr f )     : _t(dom_type::JSON_OBJECT)   { _f.o = f; }
-                Import( set_result_fptr f )     : _t(dom_type::DOUBLE)        { _f.re_d = f; }
-                Import( task_extvar_fptr f )    : _t(dom_type::DOM_EXTVAR)    { _f.ta_e = f; }
-                Import( task_group_fptr f )     : _t(dom_type::DOM_GROUP)     { _f.ta_g = f; }
-                Import( task_proc_fptr f )      : _t(dom_type::DOM_PROCESSOR) { _f.ta_p = f; }
-                Import( task_unsigned_fptr f )  : _t(dom_type::UNSIGNED)      { _f.ta_u = f; }
-                Import( task_fan_in_out_fptr f ): _t(dom_type::JSON_OBJECT)   { _f.ta_f = f; }
-                Import() : _t(dom_type::DOM_NULL) { _f.v = nullptr; }
+                Import( call_extvar_fptr f )    : _t(dom_type::DOM_EXTVAR),    _f(f) {}
+                Import( call_type_fptr f )      : _t(dom_type::JSON_OBJECT),   _f(f) {}
+                Import( doc_bool_fptr f )       : _t(dom_type::BOOLEAN),       _f(f) {}
+                Import( doc_double_fptr f )     : _t(dom_type::DOUBLE),        _f(f) {}
+                Import( doc_long_fptr f )       : _t(dom_type::LONG),          _f(f) {}
+                Import( doc_extvar_fptr f )     : _t(dom_type::DOM_EXTVAR),    _f(f) {}
+                Import( doc_string_fptr f )     : _t(dom_type::STRING),        _f(f) {}
+                Import( doc_unsigned_fptr f )   : _t(dom_type::UNSIGNED),      _f(f) {}
+                Import( entity_double_fptr f )  : _t(dom_type::DOUBLE),        _f(f) {}
+                Import( entity_unsigned_fptr f ): _t(dom_type::UNSIGNED),      _f(f) {}
+                Import( entry_activity_fptr f ) : _t(dom_type::DOM_ACTIVITY),  _f(f) {}
+                Import( entry_extvar_fptr f )   : _t(dom_type::DOM_EXTVAR),    _f(f) {}
+                Import( group_bool_fptr f )     : _t(dom_type::BOOLEAN),       _f(f) {}
+                Import( group_extvar_fptr f )   : _t(dom_type::DOM_EXTVAR),    _f(f) {}
+                Import( group_proc_fptr f )     : _t(dom_type::DOM_PROCESSOR), _f(f) {}
+                Import( obj_string_fptr f )     : _t(dom_type::STRING),        _f(f) {}
+                Import( phase_extvar_fptr f )   : _t(dom_type::DOM_EXTVAR),    _f(f) {}
+                Import( phase_type_fptr f )     : _t(dom_type::BOOLEAN),       _f(f) {}
+                Import( proc_extvar_fptr f )    : _t(dom_type::DOM_EXTVAR),    _f(f) {}
+                Import( set_docobj_fptr f )     : _t(dom_type::JSON_OBJECT),   _f(f) {}
+                Import( set_object_fptr f )     : _t(dom_type::JSON_OBJECT),   _f(f) {}
+                Import( set_result_fptr f )     : _t(dom_type::DOUBLE),        _f(f) {}
+                Import( task_extvar_fptr f )    : _t(dom_type::DOM_EXTVAR),    _f(f) {}
+                Import( task_group_fptr f )     : _t(dom_type::DOM_GROUP),     _f(f) {}
+                Import( task_proc_fptr f )      : _t(dom_type::DOM_PROCESSOR), _f(f) {}
+                Import( task_unsigned_fptr f )  : _t(dom_type::UNSIGNED),      _f(f) {}
+                Import( task_fan_in_out_fptr f ): _t(dom_type::JSON_OBJECT),   _f(f) {}
+		Import( dom_type t, const doc_double_fptr f ) : _t(t), _f(f) {}
+		Import() : _t(dom_type::DOM_NULL),  _f() { }
 		virtual ~Import() {}
 
 		dom_type getType() const { return _t; }
 		set_fptr getFptr() const { return _f; }
-
-	    protected:
-		void setType( dom_type t ) { _t = t; }
 
 	    public:
 		static IntegerManip indent( int i ) { return IntegerManip( &printIndent, i ); }
@@ -251,8 +275,8 @@ namespace LQIO {
 		static int __indent;
 
 	    private:
-		dom_type _t;
-		set_fptr _f;
+		const dom_type _t;
+		const set_fptr _f;
 	    };
 
 	    class ImportModel : public Import
@@ -444,12 +468,13 @@ namespace LQIO {
 	    public:
 		ImportGeneralResult() : Import() {}
 		ImportGeneralResult( doc_bool_fptr f )     : Import( f ) {}
-		ImportGeneralResult( doc_double_fptr f, dom_type t=dom_type::DOM_NULL ) : Import(f) { if ( t != dom_type::DOM_NULL ) setType( t ); }
+		ImportGeneralResult( doc_double_fptr f )   : Import( f ) {}
 		ImportGeneralResult( doc_extvar_fptr f )   : Import( f ) {}
 		ImportGeneralResult( doc_long_fptr f )     : Import( f ) {}
 		ImportGeneralResult( doc_string_fptr f )   : Import( f ) {}
 		ImportGeneralResult( doc_unsigned_fptr f ) : Import( f ) {}
 		ImportGeneralResult( set_docobj_fptr f )   : Import( f ) {}		/* For mva info */
+		ImportGeneralResult( dom_type t, const doc_double_fptr f ) : Import(t,f) {}
 
 		bool operator()( const char * s1, const char * s2 ) const { return strcasecmp( s1, s2 ) < 0; }
 		void operator()( const std::string& attribute, Json_Document&, Document& document, const picojson::value& ) const;
@@ -472,7 +497,7 @@ namespace LQIO {
 	    private:
 		int _key;
 	    };
-	    
+	  
 	    class ImportResult : public Import
 	    {
 	    public:
@@ -502,22 +527,22 @@ namespace LQIO {
 		void operator()( const std::string& attribute, Json_Document&, Histogram&, const picojson::value& ) const;
 	    };
 
-	    static std::map<const char*,Json_Document::ImportModel,Json_Document::ImportModel> model_table;
-	    static std::map<const char*,Json_Document::ImportGeneral,Json_Document::ImportGeneral> general_table;
-	    static std::map<const char*,Json_Document::ImportProcessor,Json_Document::ImportProcessor> processor_table;
-	    static std::map<const char*,Json_Document::ImportGroup,Json_Document::ImportGroup> group_table;
-	    static std::map<const char*,Json_Document::ImportTask,Json_Document::ImportTask> task_table;
-	    static std::map<const char*,Json_Document::ImportEntry,Json_Document::ImportEntry> entry_table;
-	    static std::map<const char*,Json_Document::ImportPhase,Json_Document::ImportPhase> phase_table;
-	    static std::map<const char*,Json_Document::ImportCall,Json_Document::ImportCall> call_table;
-	    static std::map<const char*,Json_Document::ImportTaskActivity,Json_Document::ImportTaskActivity> task_activity_table;
-	    static std::map<const char*,Json_Document::ImportActivity,Json_Document::ImportActivity> activity_table;
-	    static std::map<const char*,Json_Document::ImportPrecedence,Json_Document::ImportPrecedence> precedence_table;
-	    static std::map<const char*,Json_Document::ImportGeneralObservation,Json_Document::ImportGeneralObservation>  general_observation_table;
-	    static std::map<const char*,Json_Document::ImportObservation,Json_Document::ImportObservation> observation_table;
-	    static std::map<const char*,Json_Document::ImportGeneralResult,Json_Document::ImportGeneralResult> general_result_table;
-	    static std::map<const char*,Json_Document::ImportResult,Json_Document::ImportResult> result_table;
-	    static std::map<const char*,Json_Document::ImportHistogram,Json_Document::ImportHistogram> histogram_table;
+	    static const std::map<const char*,const Json_Document::ImportModel,Json_Document::ImportModel> model_table;
+	    static const std::map<const char*,const Json_Document::ImportGeneral,Json_Document::ImportGeneral> general_table;
+	    static const std::map<const char*,const Json_Document::ImportProcessor,Json_Document::ImportProcessor> processor_table;
+	    static const std::map<const char*,const Json_Document::ImportGroup,Json_Document::ImportGroup> group_table;
+	    static const std::map<const char*,const Json_Document::ImportTask,Json_Document::ImportTask> task_table;
+	    static const std::map<const char*,const Json_Document::ImportEntry,Json_Document::ImportEntry> entry_table;
+	    static const std::map<const char*,const Json_Document::ImportPhase,Json_Document::ImportPhase> phase_table;
+	    static const std::map<const char*,const Json_Document::ImportCall,Json_Document::ImportCall> call_table;
+	    static const std::map<const char*,const Json_Document::ImportTaskActivity,Json_Document::ImportTaskActivity> task_activity_table;
+	    static const std::map<const char*,const Json_Document::ImportActivity,Json_Document::ImportActivity> activity_table;
+	    static const std::map<const char*,const Json_Document::ImportPrecedence,Json_Document::ImportPrecedence> precedence_table;
+	    static const std::map<const char*,const Json_Document::ImportGeneralObservation,Json_Document::ImportGeneralObservation>  general_observation_table;
+	    static const std::map<const char*,const Json_Document::ImportObservation,Json_Document::ImportObservation> observation_table;
+	    static const std::map<const char*,const Json_Document::ImportGeneralResult,Json_Document::ImportGeneralResult> general_result_table;
+	    static const std::map<const char*,const Json_Document::ImportResult,Json_Document::ImportResult> result_table;
+	    static const std::map<const char*,const Json_Document::ImportHistogram,Json_Document::ImportHistogram> histogram_table;
 
 	    static const std::map<const ActivityList::Type,const std::string>  precedence_type_table;
 	    static const std::map<const Call::Type,const std::string> call_type_table;
@@ -913,7 +938,7 @@ namespace LQIO {
 	    const std::string& _input_file_name;
 	    bool _createObjects;
 	    bool _loadResults;
-	    static std::map<int,const char *> __key_lqx_function_map;			/* Maps srvn_gram.h KEY_XXX to lqx function name */
+	    static const std::map<const int,const char *> __key_lqx_function_map;			/* Maps srvn_gram.h KEY_XXX to lqx function name */
 
             static const char * Xactivity;
             static const char * Xand_fork;

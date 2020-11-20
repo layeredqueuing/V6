@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- *  $Id: common_io.h 14106 2020-11-18 14:33:50Z greg $
+ *  $Id: common_io.h 14110 2020-11-20 15:37:56Z greg $
  *
  *  Greg Franks
  */
@@ -114,7 +114,6 @@ namespace LQIO {
 
 	protected:
 	    double invert( const double ) const;
-	    static void init_tables();
 	    static void invalid_argument( const std::string& attr, const std::string& arg );
 	    static unsigned int get_phase( const LQIO::DOM::Phase * );
 
@@ -122,7 +121,7 @@ namespace LQIO {
 	    const ConfidenceIntervals _conf_95;
 	    const ConfidenceIntervals _conf_99;
 
-	    static std::map<const char *, scheduling_type,Common_IO::Compare> scheduling_table;
+	    static std::map<const char *,const scheduling_type,Common_IO::Compare> scheduling_table;
 
 	private:
 	    static std::ostream& printSVNId( std::ostream& output ) { output << "$" << "Id" << "$"; return output; }
