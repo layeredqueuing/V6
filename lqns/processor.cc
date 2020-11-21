@@ -556,7 +556,7 @@ Processor *
 Processor::find( const std::string& name )
 {
     std::set<Processor *>::const_iterator processor = find_if( Model::__processor.begin(), Model::__processor.end(), EQStr<Entity>( name ) );
-    return ( processor != Model::__processor.end() ) ? *processor : NULL;
+    return ( processor != Model::__processor.end() ) ? *processor : nullptr;
 }
 
 

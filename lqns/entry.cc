@@ -2100,10 +2100,9 @@ Entry::create(LQIO::DOM::Entry* dom, unsigned int index )
 {
     const char* entry_name = dom->getName().c_str();
 
-    std::set<Entry *>::const_iterator nextEntry = find_if( Model::__entry.begin(), Model::__entry.end(), EQStr<Entry>( entry_name ) );
-    if ( nextEntry != Model::__entry.end() ) {
+    if ( std::any_of( Model::__entry.begin(), Model::__entry.end(), EQStr<Entry>( entry_name ) ) ) {
 	LQIO::input_error2( LQIO::ERR_DUPLICATE_SYMBOL, "Entry", entry_name );
-	return 0;
+	return nullptr;
     } else {
 	Entry * entry = new TaskEntry( dom, Model::__entry.size() + 1, index );
 	Model::__entry.insert( entry );
