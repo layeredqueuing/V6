@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: lqns.cc 14028 2020-10-28 15:08:52Z greg $
+ * $Id: lqns.cc 14117 2020-11-21 13:58:51Z greg $
  *
  * Command line processing.
  *
@@ -113,7 +113,7 @@ const struct option longopts[] =
 #endif
 const char opts[]       = "abc:d:e:fhG:H:i:I:jno:pP:rt:u:vVwxz:";
 const char * opthelp[]  = {
-    /* ignore-advisories*/      "Do not output advisory messages",
+    /* no-advisories	*/      "Do not output advisory messages",
     /* bounds-only"     */      "Compute throughput bounds only.",
     /* convergence"     */      "Set the convergence value to ARG.",
     /* debug"           */      "Enable debug code.  See -Hd.",
@@ -181,9 +181,9 @@ int main (int argc, char *argv[])
 {
     string outputFileName = "";
 #if HAVE_GETOPT_LONG
-    LQIO::CommandLine command_line( opts, longopts );
+    LQIO::CommandLine command_line( longopts );
 #else
-    LQIO::CommandLine command_line( opts );
+    LQIO::CommandLine command_line();
 #endif
 
     unsigned global_error_flag = 0;     /* Error detected anywhere??    */
@@ -193,7 +193,7 @@ int main (int argc, char *argv[])
     LQIO::io_vars.init( VERSION, basename( argv[0] ), severity_action, local_error_messages, LSTLCLERRMSG-LQIO::LSTGBLERRMSG );
     command_line = LQIO::io_vars.lq_toolname;
 
-    sscanf( "$Date: 2020-10-28 11:08:52 -0400 (Wed, 28 Oct 2020) $", "%*s %s %*s", copyrightDate );
+    sscanf( "$Date: 2020-11-21 08:58:51 -0500 (Sat, 21 Nov 2020) $", "%*s %s %*s", copyrightDate );
 
     matherr_disposition = FP_IMMEDIATE_ABORT;
 

@@ -1,5 +1,5 @@
 /*
- *  $Id: srvn_input.cpp 14108 2020-11-19 17:15:02Z greg $
+ *  $Id: srvn_input.cpp 14114 2020-11-21 13:38:09Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -261,9 +261,9 @@ srvn_set_phase_type_flag (void * entry_v, unsigned n_phases, ...)
     for (unsigned int i = 1; i <= n_phases; i++) {
 	LQIO::DOM::Phase* phase = entry->getPhase(i);
 	if ( va_arg(ap, int) == 0 ) {
-	    phase->setPhaseTypeFlag(LQIO::DOM::Phase::Type::DETERMINISTIC);
-	} else {
 	    phase->setPhaseTypeFlag(LQIO::DOM::Phase::Type::STOCHASTIC);
+	} else {
+	    phase->setPhaseTypeFlag(LQIO::DOM::Phase::Type::DETERMINISTIC);
 	}
     }
     
@@ -752,9 +752,9 @@ srvn_set_activity_phase_type_flag ( void * activity, const int flag )
 {
     if ( !activity ) return;
     if ( flag == 0 ) {
-	static_cast<LQIO::DOM::Activity *>(activity)->setPhaseTypeFlag(LQIO::DOM::Phase::Type::DETERMINISTIC);
-    } else {
 	static_cast<LQIO::DOM::Activity *>(activity)->setPhaseTypeFlag(LQIO::DOM::Phase::Type::STOCHASTIC);
+    } else {
+	static_cast<LQIO::DOM::Activity *>(activity)->setPhaseTypeFlag(LQIO::DOM::Phase::Type::DETERMINISTIC);
     }
 }
 

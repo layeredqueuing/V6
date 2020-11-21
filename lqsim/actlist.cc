@@ -10,7 +10,7 @@
  * Activities are arcs in the graph that do work.
  * Nodes are points in the graph where splits and joins take place.
  *
- * $Id: actlist.cc 13879 2020-09-26 02:45:49Z greg $
+ * $Id: actlist.cc 14112 2020-11-20 20:42:27Z greg $
  */
 
 #include <sstream>
@@ -359,7 +359,7 @@ OutputActivityList::join_backtrack( std::deque<AndForkActivityList *>& fork_stac
 {
     std::deque<AndForkActivityList *>::iterator pos = fork_stack.end();
 
-    size_t depth = 0;
+    long int depth = 0;
     for ( std::vector<Activity *>::iterator i = _list.begin(); i != _list.end(); ++i ) {
 	if ( (*i) == start_activity ) throw start_activity;
 	if ( (*i)->_input == NULL ) continue;

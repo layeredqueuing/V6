@@ -1,4 +1,4 @@
-/* $Id: para_library.c 14000 2020-10-25 12:50:53Z greg $ */
+/* $Id: para_library.c 14116 2020-11-21 13:51:16Z greg $ */
 
 /************************************************************************/
 /*	para_library.c - PARASOL library source file			*/
@@ -497,7 +497,7 @@ SYSCALL	ps_create2(
 #if	HAVE_MAKECONTEXT && !defined(__OSX_AVAILABLE_BUT_DEPRECATED) && !defined(__POWERPC__)
 	stacksize = (unsigned long)(stackscale * (double)0xC000);	/* lqsim uses about 12,000.  32,000 should be enough */
 #elif	HAVE_SIGALTSTACK && !_WIN32 && !_WIN64
-	stacksize = (unsigned long)(stackscale * (double)0xC000);	/* punt... */
+	stacksize = (unsigned long)(stackscale * (double)0x10000);	/* punt... */
 #else
 	stacksize = (unsigned long)(stackscale * (double)sp_dss) + 0x100;
 	stacksize -= stacksize % sizeof(double);
@@ -5969,7 +5969,7 @@ LOCAL	long	init_table2(
 	  ps_abort("Insufficient memory");
 	
 
-	tabp->base = ((long) tabp->tab) + sizeof(double);
+	tabp->base = tabp->tab + sizeof(double);
 	memset(tabp->tab, '\0', tab_size * tabp->entry_size); 
 	return(OK);
 }
@@ -7743,7 +7743,7 @@ void mctx_create( mctx_t *mctx, void (*sf_addr)(void), void *sf_arg, void *sk_ad
 
 	/* Step 4: */
 	mctx_creat = mctx;
-	mctx_creat_func = sf_addr;
+	mctx_creat_func = (void (*)(void *))sf_addr;
 	mctx_creat_arg = sf_arg;
 	mctx_creat_sigs = osigs;
 	mctx_called = FALSE;
@@ -8321,10 +8321,10 @@ LOCAL 	long 	find_next_task(ps_task_t *tp) {
 /************************************************************************/
 
 void dq_cfs_si(sched_info *si){
-	rb_node *  n;
+	rb_node *  n =si->rbnode;
 	ps_cfs_rq_t *rq;
 
-	if (!(si->on_rq) || ((n=si->rbnode)==NIL)) {
+	if (!(si->on_rq) || ((n)==NIL)) {
 
 		ps_abort("Ready task missing from CFS run queue");
 	}
@@ -8482,8 +8482,7 @@ void update_ready_task(ps_task_t *tp){
 /************************************************************************/
 void update_sleep_task(ps_task_t *tp){
 
-/* update the sched_info of a waiting task.		*/
-	/*double MAX_SLEEP=0.1; */
+    /* update the sched_info of a waiting task.		*/
 	struct sched_info *si;
 	double delta;
 
@@ -8492,12 +8491,6 @@ void update_sleep_task(ps_task_t *tp){
 		return;
 
 	si->sched_time =ps_now;
-	/*if(delta>MAX_SLEEP)
-	  delta=MAX_SLEEP;
-
-	  si->fair+=delta;/*???  */
-
-	/*update group*/
 }
 
 /************************************************************************/

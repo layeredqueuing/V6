@@ -7,7 +7,7 @@
 /************************************************************************/
 
 /*
- * $Id: lqsim.cc 14028 2020-10-28 15:08:52Z greg $
+ * $Id: lqsim.cc 14117 2020-11-21 13:58:51Z greg $
  */
 
 
@@ -122,6 +122,7 @@ unsigned link_tab[MAX_NODES];		/* Link table.			*/
 static const struct option longopts[] =
     /* name */ /* has arg */ /*flag */ /* val */
 {
+    { "no-advisories",    no_argument,       0, 'a' },
     { "automatic",        required_argument, 0, 'A' },
     { "blocks",           required_argument, 0, 'B' },
     { "confidence",       required_argument, 0, 'C' },
@@ -134,6 +135,7 @@ static const struct option longopts[] =
     { "trace-output",     required_argument, 0, 'm' },
     { "max-blocks",	  required_argument, 0, 'M' },
     { "no-execute",       no_argument,	     0, 'n' },
+    { "nice",		  required_argument, 0, 'N' },
     { "output",           required_argument, 0, 'o' },
     { "parseable",        no_argument,	     0, 'p' },
     { "pragma",           required_argument, 0, 'P' },
@@ -161,8 +163,9 @@ static const struct option longopts[] =
     { 0, 0, 0, 0 }
 };
 #endif
-static const char opts[] = "A:B:C:de:G:h:HI:jm:Mno:pP:rRsS:t:T:vVwx";
+static const char opts[] = "aA:B:C:de:G:h:HI:jm:MnN:o:pP:rRsS:t:T:vVwx";
 static const char * opthelp[]  = {
+    /* "no-advisories   */    "Do not output advisory messages",
     /* "automatic"	*/    "Set the block time to <t>, the precision to <p> and the initial skip period to <s>.",
     /* "blocks"		*/    "Set the number of blocks to <b>, the block time to <t> and the initial skip period to <s>.",
     /* "confidence"     */    "Set the precision to <p>, the number of initial loops to skip to <l> and the block time to <t>.",
@@ -175,6 +178,7 @@ static const char * opthelp[]  = {
     /* "trace-output"	*/    "Send output from tracing to ARG.",
     /* "max-blocks"	*/    "Set the maximum number of blocks for the simulation (default is 30).",
     /* "no-execute"	*/    "Build the simulation, but do not solve.",
+    /* "nice"		*/    "Set nice value to ARG. (see nice(2)).",
     /* "output"		*/    "Redirect ouptut to FILE.",
     /* "parseable"	*/    "Generate parseable (.p) output.",
     /* "pragma"		*/    "Set simulation options.",
@@ -324,9 +328,9 @@ main( int argc, char * argv[] )
     extern int optind;
 
 #if HAVE_GETOPT_LONG
-    LQIO::CommandLine command_line( opts, longopts );
+    LQIO::CommandLine command_line( longopts );
 #else
-    LQIO::CommandLine command_line( opts );
+    LQIO::CommandLine command_line();
 #endif
 
     /* Set the program name and revision numbers.			*/
@@ -335,7 +339,7 @@ main( int argc, char * argv[] )
     LQIO::io_vars.init( VERSION, basename( argv[0] ), severity_action, local_error_messages, LSTLCLERRMSG-LQIO::LSTGBLERRMSG );
 
     command_line = LQIO::io_vars.lq_toolname;
-    (void) sscanf( "$Date: 2020-10-28 11:08:52 -0400 (Wed, 28 Oct 2020) $", "%*s %s %*s", copyright_date );
+    (void) sscanf( "$Date: 2020-11-21 08:58:51 -0500 (Sat, 21 Nov 2020) $", "%*s %s %*s", copyright_date );
     stddbg    = stdout;
 
     /* Stuff set from the input file.				*/
@@ -369,6 +373,10 @@ main( int argc, char * argv[] )
 	    char * token;
 	    switch ( c ) {
 
+	    case 'a':
+		pragmas.insert(LQIO::DOM::Pragma::_severity_level_,LQIO::DOM::Pragma::_run_time_);
+		break;
+		
 	    case 'A':		/* Auto blocking	*/
 		token = strtok( optarg, "," );
 		pragmas.insert(LQIO::DOM::Pragma::_block_period_, token );
@@ -474,8 +482,7 @@ main( int argc, char * argv[] )
 		if ( strcmp( optarg, "-" ) == 0 ) {
 		    stddbg = stdout;
 		} else if ( !(stddbg = fopen( optarg, "w" )) ) {
-		    (void) fprintf( stderr, "%s: cannot open ", LQIO::io_vars.toolname() );
-		    perror( optarg );
+		    (void) fprintf( stderr, "%s: cannot open %s: %s.", LQIO::io_vars.toolname(), optarg, strerror(errno) );
 		    exit( FILEIO_ERROR );
 		}
 		break;
@@ -484,6 +491,16 @@ main( int argc, char * argv[] )
 		no_execute_flag = true;
 		break;
 			
+	    case 'N':
+		nice_value = strtol( optarg, &value, 10 );
+		if ( nice_value < -20 || 20 <= nice_value || *value != '\0' ) {
+		    throw std::invalid_argument( optarg );
+		} else {
+		    override_print_int = true;
+		}
+		break;
+		break;
+		
 	    case 'o':
 		output_file = optarg;
 		break;
@@ -598,7 +615,7 @@ main( int argc, char * argv[] )
 		break;
 	    
 	    case 'w':
-		LQIO::io_vars.severity_level = LQIO::ADVISORY_ONLY;		/* Ignore warnings. */
+		pragmas.insert(LQIO::DOM::Pragma::_severity_level_,LQIO::DOM::Pragma::_advisory_);
 		break;
 			
 	    case 'x':
@@ -638,8 +655,11 @@ main( int argc, char * argv[] )
     }
 	
 #if !defined(WINNT)
-    if ( nice_value > 0 ) {
-	nice( nice_value );	/* Lower nice level for run */
+    if ( nice_value != 10 ) {
+	errno = 0;	/* Lower nice level for run */
+	if ( nice( nice_value ) == -1 && errno != 0 ) {
+	    (void) fprintf( stderr, "%s: --nice=%d failed: %s.", LQIO::io_vars.toolname(), nice_value, strerror(errno) );
+	}
     }
 #endif
 

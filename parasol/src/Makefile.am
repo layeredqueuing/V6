@@ -3,13 +3,14 @@
 # Makefile for Parasol libraries.
 #
 # ------------------------------------------------------------------------
-# $Id: Makefile.am 11142 2012-10-06 16:22:24Z greg $
+# $Id: Makefile.am 14116 2020-11-21 13:51:16Z greg $
 # ------------------------------------------------------------------------
 
 AM_CPPFLAGS	= -I../include
 noinst_LIBRARIES =  libparasol.a libparasolc.a libparasol++.a
 
 libparasol_a_SOURCES = para_library.c standalone.c 
+libparasol_a_CFLAGS = -Wall -Wno-switch
 EXTRA_libparasol_a_SOURCES = drand48.c
 libparasol_a_DEPENDENCIES = @DRAND48@
 libparasol_a_LIBADD = @DRAND48@

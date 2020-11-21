@@ -2,7 +2,7 @@
 # Copyright (C) 2005 Greg Franks <greg@sce.carleton.ca>
 #
 # ------------------------------------------------------------------------
-# $Id: Makefile.am 14105 2020-11-17 22:34:26Z greg $
+# $Id: Makefile.am 14114 2020-11-21 13:38:09Z greg $
 # ------------------------------------------------------------------------
 
 SRVN=	../lqsim
@@ -79,11 +79,11 @@ SRCS=	$(OBJS:.lqxo=.lqnx)
 
 EXTRA_DIST = $(SRCS) 
 
-SUFFIXES = .diff .d .lqxo .lqnx 
+SUFFIXES = .diff .d .svg .lqxo .lqnx 
 
 .lqnx.lqxo:
-	$(SRVN) $(OPTS) $<
-	@srvndiff -Q $(EPSILON) $@ ../../models/regression/sim-results/$*.p
+	-@$(SRVN) $(OPTS) $<
+	-@srvndiff -Q $(EPSILON) $@ ../../models/regression/sim-results/$*.p > /dev/null; if test $$? -ne 0; then echo $< failed; fi
 
 .lqnx.d:
 	$(SRVN) $(OPTS) $<
@@ -93,6 +93,16 @@ SUFFIXES = .diff .d .lqxo .lqnx
 	then srvndiff ../../models/regression/{petri,sim}-results/$*.p $< > $@; \
 	else srvndiff ../../models/regression/sim-results/$*.p $< > $@; \
 	fi
+
+.lqxo.svg:
+	lqn2ps -Osvg $<
+
+
+all:	
+
+quick:
+	rm -f $(SANITY)
+	make -k OPTS="$(OPTS)" $(SANITY)
 
 check:	$(OBJS)
 	echo $(OBJS) | tr -s " " "\n" | srvndiff -Q $(EPSILON) -@- . ../../models/regression-xml/sim-results
@@ -106,8 +116,6 @@ quick-check:
 check-verbose:
 	FILES=`echo $(OBJS) | tr -s " " "\n" | srvndiff -Q $(EPSILON) -@- . ../../models/regression/sim-results`; \
 	for i in $$FILES; do echo srvndiff ../../models/regression-xml/sim-results/$$i $$i; srvndiff ../../models/regression-xml/sim-results/$$i $$i; done
-
-all:	
 
 clean:
 	@-rm -f $(OBJS) *.out 
@@ -147,6 +155,3 @@ sync:	$(SYNC)
 
 other:	$(OTHER)
 	echo $(OTHER) | tr -s " " "\n" | srvndiff -Q -@- -S0.02 . ../../models/regression-xml/sim-results
-
-quick:
-	$(MAKE) OPTS='-S123456 -T10000' EPSILON='-A +t -S10.0' check

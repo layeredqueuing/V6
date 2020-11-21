@@ -10,7 +10,7 @@
 /*
  * Input output processing.
  *
- * $Id: instance.cc 14108 2020-11-19 17:15:02Z greg $
+ * $Id: instance.cc 14112 2020-11-20 20:42:27Z greg $
  */
 
 /*
@@ -2340,7 +2340,7 @@ void
 Instance::wait_for_threads( AndForkActivityList * fork_list, double* thread_K_outOf_N_end_compute_time )
 {
     Activity * ap;			/* Time stamp info from client	*/
-    unsigned int count = fork_list->get_visits();
+    int count = fork_list->get_visits();
     AndJoinActivityList * join_list = dynamic_cast<AndJoinActivityList *>(fork_list->get_join());
     const int N = count;
     const int K = (join_list && join_list->get_quorum_count() > 0) ? join_list->get_quorum_count() : count;
