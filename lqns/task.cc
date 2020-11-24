@@ -1925,7 +1925,7 @@ ReferenceTask::hasPath(const Task * dst_task){
 
     const std::vector<Entry *>& dst_entries = dst_task->entries();
     for ( std::vector<Entry *>::const_iterator dst_entry = dst_entries.begin(); dst_entry != dst_entries.end(); ++dst_entry ) {
-	if ( find_if( entries().begin(), entries().end(), Predicate1<const Entry,const Entry *>( &Entry::hasPath, *dst_entry ) ) != entries().end() ) return true;
+	if ( std::any_of( entries().begin(), entries().end(), Predicate1<const Entry,const Entry *>( &Entry::hasPath, *dst_entry ) ) ) return true;
     }
     return false;
 }
@@ -2367,7 +2367,7 @@ Task::create( LQIO::DOM::Task* dom, const std::vector<Entry *>& entries )
     if ( entries.size() == 0 ) {
 	LQIO::input_error2( LQIO::ERR_NO_ENTRIES_DEFINED_FOR_TASK, task_name );
 	return NULL;
-    } else if ( find_if( Model::__task.begin(), Model::__task.end(), EQStr<Task>( task_name ) ) != Model::__task.end() ) {
+    } else if ( std::any_of( Model::__task.begin(), Model::__task.end(), EQStr<Task>( task_name ) ) ) {
 	LQIO::input_error2( LQIO::ERR_DUPLICATE_SYMBOL, "Task", task_name );
 	return NULL;
     }

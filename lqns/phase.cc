@@ -321,12 +321,10 @@ Phase::findChildren( Call::stack& callStack, const bool directPath ) const
 	    /*
 	     * Chase the call if there is no loop, and if following the path results in pushing
 	     * tasks down.  Open class requests can loop up.  Always check the stack because of the
-	     * short-circuit test with directPath.
+	     * short-circuit test with directPath.  Always (for forwarding)	
 	     */
 
-	    if (( find_if( callStack.begin(), callStack.end(), Call::Find(*call, directPath) ) == callStack.end() && depth >= dstTask->submodel() )
-		|| directPath ) {					/* Always (for forwarding)	*/
-
+	    if ( (std::none_of( callStack.begin(), callStack.end(), Call::Find(*call, directPath) ) && depth >= dstTask->submodel()) || directPath ) {
 		callStack.push_back( (*call) );
 		if ( (*call)->hasForwarding() && directPath ) {
 		    addForwardingRendezvous( callStack );

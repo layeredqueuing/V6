@@ -62,3 +62,4 @@ srvn_result_scan.c
 srvn_scan.c
 srvndiff
 stamp-h1
+parasol/tests
