@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: entry.h 14108 2020-11-19 17:15:02Z greg $
+ * $Id: entry.h 14118 2020-11-23 17:30:44Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -550,7 +550,7 @@ void set_start_activity (Task* newTask, LQIO::DOM::Entry* targetEntry);
  * class body due to foward reference problems.  Inlined.
  */
 
-inline const Entity * Call::dstTask() const { return destination->owner(); }
-inline short Call::index() const { return destination->index(); }
-inline double Call::serviceTime() const { return destination->serviceTimeForPhase(1); }
+inline const Entity * Call::dstTask() const { return _destination->owner(); }
+inline short Call::index() const { return _destination->index(); }
+inline double Call::serviceTime() const { return _destination->serviceTimeForPhase(1); }
 #endif

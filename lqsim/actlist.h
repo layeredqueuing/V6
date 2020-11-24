@@ -1,16 +1,17 @@
-/************************************************************************/
-/* Copyright the Real-Time and Distributed Systems Group,		*/
-/* Department of Systems and Computer Engineering,			*/
-/* Carleton University, Ottawa, Ontario, Canada. K1S 5B6		*/
-/* 									*/
-/* May  1996.								*/
-/* August 2009								*/
-/************************************************************************/
-
-/*
+/* -*- c++ -*-
  * Activity Lists (for linking the graph of activities).
  *
- * $Id: actlist.h 13831 2020-09-18 12:51:41Z greg $
+ * Copyright the Real-Time and Distributed Systems Group,
+ * Department of Systems and Computer Engineering,
+ * Carleton University, Ottawa, Ontario, Canada. K1S 5B6
+ *
+ * May  1996.
+ * August 2009.
+ * November 2020.
+ *
+ * ------------------------------------------------------------------------
+ * $Id: actlist.h 14127 2020-11-24 22:44:16Z greg $
+ * ------------------------------------------------------------------------
  */
 
 #ifndef ACTLIST_H
@@ -38,9 +39,21 @@ typedef enum list_type
 class InputActivityList;
 class AndForkActivityList;
 class OutputActivityList;
+class AndJoinActivityList;
 
 
 class ActivityList {
+private:
+    /* Used to concatentate activity list names into a string */
+    struct fold {
+	fold( const std::string& op ) : _op(op) {}
+	std::string operator()( const std::string& s1, const Activity * a2 ) const;
+    private:
+	const std::string& _op;
+    };
+
+protected:
+
 public:
     typedef std::vector<Activity *>::const_iterator const_iterator;
     
@@ -100,7 +113,7 @@ public:
     InputActivityList& set_prev( OutputActivityList * list ) { _prev = list; return *this; }
 
     virtual double find_children( std::deque<Activity *>& activity_stack, std::deque<AndForkActivityList *>& fork_stack, const Entry * ep ) = 0;
-    virtual std::deque<AndForkActivityList *>::iterator fork_backtrack( std::deque<AndForkActivityList *>&, Activity *, Activity * );
+    virtual void fork_backtrack( std::deque<AndForkActivityList *>&, std::deque<AndJoinActivityList *>&, std::set<AndForkActivityList *>& );
 
 private:
     OutputActivityList * _prev;		/* Link to join list.		*/
@@ -153,18 +166,14 @@ class AndForkActivityList : public ForkActivityList
 {
 public:
     AndForkActivityList( list_type type, LQIO::DOM::ActivityList * dom )
-	: ForkActivityList(type,dom),
-	  _visit()
+	: ForkActivityList(type,dom)
 	{}
 
     virtual AndForkActivityList& push_back( Activity * activity );
     virtual AndForkActivityList& configure();
     virtual double find_children( std::deque<Activity *>& activity_stack, std::deque<AndForkActivityList *>& fork_stack, const Entry * ep );
-    virtual std::deque<AndForkActivityList *>::iterator fork_backtrack( std::deque<AndForkActivityList *>&, Activity *, Activity * );
+    virtual void fork_backtrack( std::deque<AndForkActivityList *>&, std::deque<AndJoinActivityList *>&, std::set<AndForkActivityList *>& );
     virtual double collect( std::deque<Activity *>& activity_stack, ActivityList::Collect& data ) const;
-    
-private:
-    std::vector<bool> _visit;		/* true if I visit a join.	*/
 };
 
 class LoopActivityList : public InputActivityList
@@ -207,7 +216,7 @@ public:
     OutputActivityList& set_next( InputActivityList * list ) { _next = list; return *this; }
     
     virtual double find_children( std::deque<Activity *>& activity_stack, std::deque<AndForkActivityList *>& fork_stack, const Entry * ep );
-    std::deque<AndForkActivityList *>::iterator join_backtrack( std::deque<AndForkActivityList *>& fork_stack, Activity * start_activity );
+    virtual void join_backtrack( std::deque<AndForkActivityList *>&, std::deque<AndJoinActivityList *>&, std::set<AndForkActivityList *>& );
     virtual double collect( std::deque<Activity *>& activity_stack, ActivityList::Collect& data ) const;
 
 private:
@@ -216,6 +225,15 @@ private:
 
 class AndJoinActivityList : public OutputActivityList
 {
+private:
+    class cycle_error : public std::runtime_error  {
+    public:
+	cycle_error( AndJoinActivityList& );
+	virtual ~cycle_error() throw() {}
+    private:
+	static std::string fold( const std::string& s1, const Activity * a2 );
+    };
+    
 public:
     typedef enum join_type
     {
@@ -235,15 +253,14 @@ public:
     bool add_to_join_list( unsigned i, Activity * activity );
     unsigned int get_quorum_count() const { return _quorum_count; }
 
-    void join_check();
-
     virtual double find_children( std::deque<Activity *>& activity_stack, std::deque<AndForkActivityList *>& fork_stack, const Entry * ep );
+    virtual void join_backtrack( std::deque<AndForkActivityList *>&, std::deque<AndJoinActivityList *>&, std::set<AndForkActivityList *>& );
     virtual double collect( std::deque<Activity *>& activity_stack, ActivityList::Collect& data ) const;
 
     AndJoinActivityList& insertDOMResults();
 
 private:
-    std::vector<ForkActivityList *> _fork;	/* Link to join from fork.	*/
+    const AndForkActivityList * _fork;		/* Link to join from fork.	*/
     std::vector<Activity *> _source;		/* Link to source activity 	*/
     join_type _join_type;
     unsigned int _quorum_count; 		/* tomari quorum		*/

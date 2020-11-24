@@ -1,4 +1,4 @@
-/* $Id: para_protos.h 12552 2016-04-08 19:47:40Z greg $ */
+/* $Id: para_protos.h 14125 2020-11-24 19:53:30Z greg $ */
 
 /************************************************************************/
 /*	para_protos.h - PARASOL library prototype and macro file	*/
@@ -61,7 +61,7 @@
 #define BAD_PARAM(param) bad_param_helper(__FUNCTION__, (param))
 #define BAD_CALL(message) bad_call_helper(__FUNCTION__, (message))
 
-extern int	bad_param_helper(
+extern long	bad_param_helper(
 
 /* Prints a message saying function was called with an invalid value	*/
 /* for param.								*/
@@ -72,7 +72,7 @@ extern int	bad_param_helper(
 
 /************************************************************************/
 
-extern int	bad_call_helper(
+extern long	bad_call_helper(
 
 /* Prints a message saying function was called with an invalid value	*/
 /* for param.								*/

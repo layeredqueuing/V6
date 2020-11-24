@@ -10,12 +10,13 @@
  * Activities are arcs in the graph that do work.
  * Nodes are points in the graph where splits and joins take place.
  *
- * $Id: actlist.cc 14112 2020-11-20 20:42:27Z greg $
+ * $Id: actlist.cc 14128 2020-11-24 22:50:18Z greg $
  */
 
 #include <sstream>
 #include <deque>
 #include <algorithm>
+#include <numeric>
 #include <parasol.h>
 #include "lqsim.h"
 #include <stdarg.h>
@@ -39,33 +40,32 @@ static void activity_cycle_error( int err, const char * task_name, std::deque<Ac
 const std::string
 ActivityList::get_name() const
 {
-    std::string buf;
     std::string sep;
 
     switch ( get_type() ) {
     case ACT_OR_FORK_LIST:
     case ACT_OR_JOIN_LIST:
-	sep += " + ";
+	sep = "+";
 	break;
     case ACT_AND_FORK_LIST:
     case ACT_AND_JOIN_LIST:
-	sep += " & ";
+	sep = "&";
 	break;
     case ACT_LOOP_LIST:
-	sep += " * ";
+	sep = "*";
 	break;
     }
     
-    for ( std::vector<Activity *>::const_iterator i = _list.begin(); i != _list.end(); ++i ) {
-	if ( i != _list.begin() ) {
-	    buf += sep;
-	}
-	buf += (*i)->name();
-    }
-    return buf;
+    return std::accumulate( std::next( _list.begin() ), _list.end(), std::string(_list.front()->name()), fold( sep ) );
 }
 
 
+std::string
+ActivityList::fold::operator()( const std::string& s1, const Activity * a2 ) const
+{
+    return s1 + " " + _op + " " + a2->name();
+}
+
 ActivityList&
 ActivityList::initialize()
 {
@@ -104,7 +104,6 @@ AndJoinActivityList&
 AndJoinActivityList::push_back( Activity * activity )
 {
     ActivityList::push_back( activity );
-    _fork.push_back( NULL );
     _source.push_back( NULL );
     return *this;
 }
@@ -121,7 +120,6 @@ AndForkActivityList&
 AndForkActivityList::push_back( Activity * activity )
 {
     ActivityList::push_back( activity );
-    _visit.push_back( false );
     return *this;
 }
 
@@ -153,7 +151,6 @@ AndJoinActivityList::configure()
 AndForkActivityList&
 AndForkActivityList::configure()
 {
-    _visit.assign( _list.size(), false );
     return *this;
 }
 
@@ -202,41 +199,69 @@ AndJoinActivityList::find_children( std::deque<Activity *>& activity_stack, std:
 {
     Activity * my_activity = activity_stack.back();
 
-    /* Look for the fork on the fork stack */
-    for ( std::vector<Activity *>::iterator i = _list.begin(); i != _list.end(); ++i ) {
-	if ( (*i) == my_activity ) continue;
+    if ( _fork == nullptr ) {
+	/* Look for the fork on the fork stack */
+	std::set<AndForkActivityList *> result_set(fork_stack.begin(),fork_stack.end());
+	
 	try {
-	    const size_t ix = i - _list.begin();
+	    for ( std::vector<Activity *>::iterator i = _list.begin(); i != _list.end(); ++i ) {
+		if ( (*i) == my_activity ) continue;		/* This is result set */
+		if ( (*i)->_input == nullptr ) {
+		    result_set.clear();				/* Intersection with null */
+		    break;
+		}
 
-	    std::deque<AndForkActivityList *>::iterator j = fork_stack.end();
-	    if ( (*i)->_input != NULL ) {
-		j = (*i)->_input->fork_backtrack( fork_stack, *i, *i );
+		std::set<AndForkActivityList *> branch_set;
+		std::deque<AndJoinActivityList *> join_stack;
+		join_stack.push_back( this );
+		(*i)->_input->fork_backtrack( fork_stack, join_stack, branch_set );
+
+		/* Find intersection of branches */
+	
+		std::set<AndForkActivityList *> intersection;
+		std::set_intersection( branch_set.begin(), branch_set.end(),
+				       result_set.begin(), result_set.end(),
+				       std::inserter( intersection, intersection.end() ) );
+		result_set = intersection;
 	    }
 	    
-	    if ( j != fork_stack.end() ) {
-		if ( !set_join_type( JOIN_INTERNAL_FORK_JOIN ) ) {
-		    activity_path_error( LQIO::ERR_JOIN_BAD_PATH, this, activity_stack );
-		} else if ( !_fork.at(ix) || std::find( fork_stack.begin(), fork_stack.end(), _fork[ix] ) != fork_stack.end() ) {
-		    _fork[ix] = *j;
-		    _fork[ix]->set_join( this );
-		}
-		if ( debug_flag ) {
-		    Activity * ap = activity_stack.back();
-		    std::string buf = "And Join: ";
-		    for ( size_t k = 0; k < activity_stack.size(); ++k ) buf += ' ';
-		    buf += ap->name();
-		    buf += ' ';
-		    buf += (*i)->name();
-		    for ( std::deque<AndForkActivityList *>::const_reverse_iterator lp = fork_stack.rbegin(); lp != fork_stack.rend(); ++lp ) {
-			buf += '\n';
-			buf += (*lp)->get_name();
+	    /* Result should be all forks that match on all branches.  Take the one closest to top-of-stack */
+
+	    if ( !result_set.empty() ) {
+
+		for ( std::deque<AndForkActivityList *>::const_reverse_iterator fork_list = fork_stack.rbegin(); fork_list != fork_stack.rend() && _fork == nullptr; ++fork_list ) {
+		    if ( result_set.find( *fork_list ) == result_set.end() ) continue;
+
+		    /* Set type for join */
+	    
+		    if ( !set_join_type( JOIN_INTERNAL_FORK_JOIN ) ) {
+			activity_path_error( LQIO::ERR_JOIN_BAD_PATH, this, activity_stack );
 		    }
-		    fprintf( stddbg, "%s\n", buf.c_str() );
+
+		    if ( debug_flag ) {
+#if 0
+			Activity * ap = activity_stack.back();
+			std::string buf = "And Join: ";
+			for ( size_t k = 0; k < activity_stack.size(); ++k ) buf += ' ';
+			buf += ap->name();
+			buf += ' ';
+			buf += (*i)->name();
+			for ( std::deque<AndForkActivityList *>::const_reverse_iterator lp = fork_stack.rbegin(); lp != fork_stack.rend(); ++lp ) {
+			    buf += '\n';
+			    buf += (*lp)->get_name();
+			}
+			fprintf( stddbg, "%s\n", buf.c_str() );
+#endif
+		    }
+
+		    /* Set the links */
+
+		    _fork = *fork_list;
+		    const_cast<AndForkActivityList *>(_fork)->set_join( this );
 		}
+		
 	    } else {
 		if ( !set_join_type( JOIN_SYNCHRONIZATION ) ) {
-		    activity_path_error( LQIO::ERR_JOIN_BAD_PATH, this, activity_stack );
-		} else if ( !add_to_join_list( ix, activity_stack.back() ) ) {
 		    activity_path_error( LQIO::ERR_JOIN_BAD_PATH, this, activity_stack );
 		} else {
 		    Server_Task * cp = dynamic_cast<Server_Task *>(ep->task());
@@ -244,7 +269,7 @@ AndJoinActivityList::find_children( std::deque<Activity *>& activity_stack, std:
 		}
 	    }
 	}
-	catch ( Activity * ) {
+	catch ( const cycle_error& e ) {
 	    Server_Task * cp = dynamic_cast<Server_Task *>(ep->task());
 	    activity_cycle_error( LQIO::ERR_CYCLE_IN_ACTIVITY_GRAPH, cp->name(), activity_stack );
 	}
@@ -354,53 +379,52 @@ AndJoinActivityList::add_to_join_list( unsigned i, Activity * activity )
  * Search backwards up activity list looking for a match on forkStack
  */
 
-std::deque<AndForkActivityList *>::iterator
-OutputActivityList::join_backtrack( std::deque<AndForkActivityList *>& fork_stack, Activity * start_activity )
+void
+OutputActivityList::join_backtrack( std::deque<AndForkActivityList *>& fork_stack, std::deque<AndJoinActivityList *>& join_stack, std::set<AndForkActivityList *>& result_set ) 
 {
-    std::deque<AndForkActivityList *>::iterator pos = fork_stack.end();
-
-    long int depth = 0;
     for ( std::vector<Activity *>::iterator i = _list.begin(); i != _list.end(); ++i ) {
-	if ( (*i) == start_activity ) throw start_activity;
 	if ( (*i)->_input == NULL ) continue;
-	std::deque<AndForkActivityList *>::iterator temp = (*i)->_input->fork_backtrack( fork_stack, (*i), start_activity );
-	if ( temp != fork_stack.end() && temp - fork_stack.end() > depth ) {
-	    pos = temp;
-	    depth = temp - fork_stack.end();
-	}
+	(*i)->_input->fork_backtrack( fork_stack, join_stack, result_set );
     }
-    return pos;
 }
 
-std::deque<AndForkActivityList *>::iterator 
-InputActivityList::fork_backtrack( std::deque<AndForkActivityList *>& fork_stack, Activity * this_activity, Activity * start_activity )
+void
+InputActivityList::fork_backtrack( std::deque<AndForkActivityList *>& fork_stack, std::deque<AndJoinActivityList *>& join_stack, std::set<AndForkActivityList *>& result_set )
 {
     if ( _prev ) {
-	return _prev->join_backtrack( fork_stack, start_activity );
-    } else {
-	return fork_stack.end();
+	return _prev->join_backtrack( fork_stack, join_stack, result_set );
     }
-    
 }
 
-std::deque<AndForkActivityList *>::iterator 
-AndForkActivityList::fork_backtrack( std::deque<AndForkActivityList *>& fork_stack, Activity * this_activity, Activity * start_activity )
+void
+AndForkActivityList::fork_backtrack( std::deque<AndForkActivityList *>& fork_stack, std::deque<AndJoinActivityList *>& join_stack, std::set<AndForkActivityList *>& result_set )
 {
-	
-    /* Tag branch as coming from a join */
+    result_set.insert( this );
+    InputActivityList::fork_backtrack( fork_stack, join_stack, result_set );
+}
 
-    for ( std::vector<Activity *>::iterator i = _list.begin(); i != _list.end(); ++i ) {
-	if ( (*i) == this_activity ) {
-	    _visit.at(i - _list.begin()) = true;
-	}
-    }
 
-    std::deque<AndForkActivityList *>::iterator pos = std::find( fork_stack.begin(), fork_stack.end(), this );
-    if ( get_prev() == NULL || pos != fork_stack.end() ) {
-	return pos;
-    } else {
-	return get_prev()->join_backtrack( fork_stack, start_activity );
+void
+AndJoinActivityList::join_backtrack( std::deque<AndForkActivityList *>& fork_stack, std::deque<AndJoinActivityList *>& join_stack, std::set<AndForkActivityList *>& result_set ) 
+{
+    if ( std::find( join_stack.begin(), join_stack.end(), this ) != join_stack.end() ) {
+	throw AndJoinActivityList::cycle_error( *this );
     }
+    join_stack.push_back( dynamic_cast<AndJoinActivityList *>(this) );
+    OutputActivityList::join_backtrack( fork_stack, join_stack, result_set );
+}
+
+
+AndJoinActivityList::cycle_error::cycle_error( AndJoinActivityList& list )
+    : std::runtime_error( std::accumulate( std::next( list.begin() ), list.end(), std::string(list.front()->name()), fold ) )
+{
+}
+
+
+std::string
+AndJoinActivityList::cycle_error::fold( const std::string& s1, const Activity * a2 )
+{
+    return s1 + "&" + a2->name();
 }
 
 /* ------------------------------------------------------------------------ */
@@ -534,25 +558,6 @@ ActivityList::shuffle()
 /*
  * Check for match
  */
-
-void
-AndJoinActivityList::join_check()
-{
-    for ( size_t i = 1; i < size(); ++i ) {
-	if ( _fork.at(i) != _fork.front() ) {
-	    std::string src;
-	    std::string dst;
-	    if ( _fork[i] && _fork[i]->get_prev() ) {
-		src = _fork[i]->get_prev()->get_name();
-	    }
-	    if ( get_next() ) {
-		dst = get_next()->get_name();
-	    }
-	    LQIO::solution_error( LQIO::ERR_JOIN_PATH_MISMATCH, "task", dst.c_str(), src.c_str() );
-	}
-    }
-}
-
 
 bool
 AndJoinActivityList::set_join_type( join_type type )

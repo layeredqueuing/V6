@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: phase.cc 14107 2020-11-18 18:51:51Z greg $
+ * $Id: phase.cc 14118 2020-11-23 17:30:44Z greg $
  *
  * Everything you wanted to know about an phase, but were afraid to ask.
  *
@@ -368,7 +368,7 @@ Phase::addForwardingRendezvous( Call::stack& callStack ) const
     for ( Call::stack::reverse_iterator call = callStack.rbegin(); call != callStack.rend(); ++call ) {
 	if ( (*call)->hasRendezvous() ) {
 	    rate *= (*call)->rendezvous();
-	    const_cast<Phase *>((*call)->srcPhase())->forwardedRendezvous( callStack.back(), rate );
+	    const_cast<Phase *>((*call)->getSource())->forwardedRendezvous( callStack.back(), rate );
 	    break;
 	} else if ( (*call)->hasSendNoReply() ) {
 	    break;
@@ -475,6 +475,12 @@ Phase::owner() const
     return _entry ? _entry->owner() : nullptr;
 }
 
+
+double
+Phase::getMaxCustomers() const
+{
+    return entry()->getMaxCustomers();		/* Activity will override */
+}
 
 /*
  * Initialize variance.

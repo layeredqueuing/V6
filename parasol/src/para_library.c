@@ -1,4 +1,4 @@
-/* $Id: para_library.c 14116 2020-11-21 13:51:16Z greg $ */
+/* $Id: para_library.c 14126 2020-11-24 21:25:31Z greg $ */
 
 /************************************************************************/
 /*	para_library.c - PARASOL library source file			*/
@@ -384,7 +384,7 @@ SYSCALL	ps_compute(
 	double	delta				/* cpu time delta	*/
 )
 {
-	char	string[40];
+	char	string[TEMP_STR_SIZE];
 	ps_node_t *np;
 
 	if(delta < 0.0)
@@ -750,7 +750,7 @@ SYSCALL	ps_hold(
 	double	delta				/* cpu time delta	*/
 )
 {
-	char	string[40];
+	char	string[TEMP_STR_SIZE];
 
 	if(delta < 0.0)
 		return(BAD_PARAM("delta"));
@@ -1187,7 +1187,7 @@ SYSCALL	ps_sleep(
 {
 	ps_node_t	*np;			/* node pointer		*/
 	ps_cpu_t	*hp;			/* host cpu pointer	*/
-	char		string[40];		/* Output buffer	*/
+	char		string[TEMP_STR_SIZE];	/* Output buffer	*/
 
 	np = node_ptr(ps_htp->node);
 
@@ -1318,7 +1318,7 @@ SYSCALL	ps_sync(
 	double	delta				/* cpu time delta	*/
 )
 {
-	char	string[40];
+	char	string[TEMP_STR_SIZE];
 
 	if(delta < 0.0)
 		return(BAD_PARAM("delta"));
@@ -2618,8 +2618,8 @@ SYSCALL ps_signal_semaphore(
 )
 {
 	long		i;			/* loop index		*/
-	ps_sema_t		*sp;		/* semaphore pointer	*/
-	char		string[30];		/* trace string		*/
+	ps_sema_t	*sp;			/* semaphore pointer	*/
+	char		string[TEMP_STR_SIZE];	/* trace string		*/
 	ps_tp_pair_t	*qpp;			/* tp queue pointer	*/
 	void	free_pair();			/* tp pair sink		*/
 
@@ -2730,9 +2730,9 @@ SYSCALL	ps_wait_semaphore(
 	long	sid				/* semaphore index	*/
 )
 {
-	ps_sema_t 		*sp;		/* semaphore pointer	*/
+	ps_sema_t 	*sp;			/* semaphore pointer	*/
 	long		i;			/* loop index		*/
-	char		string[30];		/* trace string		*/
+	char		string[TEMP_STR_SIZE];	/* trace string		*/
 	ps_tp_pair_t	*pp;			/* tp pair pointer	*/
 	ps_tp_pair_t	*qpp;			/* tp queue pointer	*/
 	ps_tp_pair_t	*opp;			/* old tp pair pointer	*/
@@ -6818,7 +6818,7 @@ LOCAL	long	ancestor(
 
 /************************************************************************/
 
-extern	int	bad_param_helper(
+extern	long	bad_param_helper(
 
 /* Prints a message saying function was called with an invalid value	*/
 /* for param.								*/
@@ -6838,7 +6838,7 @@ extern	int	bad_param_helper(
 
 /************************************************************************/
 
-extern int	bad_call_helper(
+extern long	bad_call_helper(
 
 /* Prints a message saying that something was wrong in a call to a	*/
 /* function.								*/
@@ -7052,7 +7052,7 @@ LOCAL	void	no_trace_rep(void)
 /* This is representative of an application without tracing on		*/
 
 {
-	static char 	dummy[40];
+	static char 	dummy[TEMP_STR_SIZE];
 
 	sprintf(dummy, "****%g:%d-Initializing-%d:%d****", 1.234926, 15, 9987, 
 	    3456);
@@ -8678,7 +8678,7 @@ void cap_handler(ps_task_t *tp){
 	ps_cfs_rq_t 	*rq;
 	ps_task_t	*ctp;
 	sched_info 	*group_si,*si;
-	char		string[40];		/* Output buffer	*/
+	char		string[TEMP_STR_SIZE];	/* Output buffer	*/
 
 	np=node_ptr(tp->node);
 	group_si=tp->si->parent;

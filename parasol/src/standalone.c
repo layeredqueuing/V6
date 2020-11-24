@@ -1,4 +1,4 @@
-/* $Id: standalone.c 12151 2014-09-30 13:34:15Z greg $ */
+/* $Id: standalone.c 14125 2020-11-24 19:53:30Z greg $ */
 /************************************************************************/
 /*	para_library.c - PARASOL library source file			*/
 /*									*/
@@ -47,8 +47,8 @@ int main(
 )
 {
 	long	flags = 0;			/* run-time flags	*/
- 	double	duration;			/* simulation duration	*/
-	long	seed;				/* random number seed	*/
+ 	double	duration = 0.;			/* simulation duration	*/
+	long	seed = 0;			/* random number seed	*/
 
 	printf("\n\n\n**************************************************");
 	printf("******************************");

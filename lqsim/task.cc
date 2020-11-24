@@ -10,7 +10,7 @@
 /*
  * Input output processing.
  *
- * $Id: task.cc 14108 2020-11-19 17:15:02Z greg $
+ * $Id: task.cc 14127 2020-11-24 22:44:16Z greg $
  */
 
 #include <iostream>
@@ -232,7 +232,6 @@ Task::initialize()
 	const Activity * src = (*lp)->front();
 	const Activity * dst = (*lp)->back();
 
-	(*lp)->join_check();	/* check fork-join matching*/
 	(*lp)->r_join.init( SAMPLE, "Join delay %-11.11s %-11.11s ", src->name(), dst->name() );
 	(*lp)->r_join_sqr.init( SAMPLE, "Join delay squared %-11.11s %-11.11s ", src->name(), dst->name() );
     }

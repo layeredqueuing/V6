@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: call.cc 14107 2020-11-18 18:51:51Z greg $
+ * $Id: call.cc 14118 2020-11-23 17:30:44Z greg $
  *
  * Everything you wanted to know about a call to an entry, but were afraid to ask.
  *
@@ -62,17 +62,17 @@ std::set<Entity *>& Call::add_server( std::set<Entity *>& servers, const Call * 
  */
 
 Call::Call( const Phase * fromPhase, const Entry * toEntry )
-    : source(fromPhase),
+    : _source(fromPhase),
       _wait(0.0),
       _interlockedFlow(-1.0),
       _callWeight(0.0),
       _queueWeight(1.0),
-      destination(toEntry), 
+      _destination(toEntry), 
       _dom(nullptr),
       _chainNumber(0)
 {
     if ( toEntry != nullptr ) {
-	const_cast<Entry *>(destination)->addDstCall( this );	/* Set reverse link	*/
+	const_cast<Entry *>(_destination)->addDstCall( this );	/* Set reverse link	*/
     }
 }
 
@@ -83,15 +83,15 @@ Call::Call( const Phase * fromPhase, const Entry * toEntry )
 
 Call::~Call()
 {
-    source = 0;			/* Calling entry.		*/
-    destination = 0;		/* to whom I am referring to	*/
+    _source = nullptr;			/* Calling entry.		*/
+    _destination = nullptr;		/* to whom I am referring to	*/
 }
 
 
 int
 Call::operator==( const Call& item ) const
 {
-    return (dstEntry() == item.dstEntry());
+    return dstEntry() == item.dstEntry();
 }
 
 
@@ -129,16 +129,16 @@ Call::rendezvous() const
     if ( hasRendezvous() ) {
 	try {
 	    const double value = getDOM()->getCallMeanValue();
-	    if ( srcPhase()->phaseTypeFlag() == LQIO::DOM::Phase::Type::DETERMINISTIC && value != std::floor( value ) ) throw std::domain_error( "invalid integer" );
+	    if ( getSource()->phaseTypeFlag() == LQIO::DOM::Phase::Type::DETERMINISTIC && value != std::floor( value ) ) throw std::domain_error( "invalid integer" );
 	    return value;
 	}
 	catch ( const std::domain_error &e ) {
 	    if ( isActivityCall() ) {
-		LQIO::solution_error( LQIO::ERR_INVALID_CALL_PARAMETER, "task", srcTask()->name().c_str(), srcPhase()->getDOM()->getTypeName(),
-				      srcPhase()->getDOM()->getName().c_str(), dstName().c_str(), e.what() );
+		LQIO::solution_error( LQIO::ERR_INVALID_CALL_PARAMETER, "task", srcTask()->name().c_str(), getSource()->getDOM()->getTypeName(),
+				      getSource()->getDOM()->getName().c_str(), dstName().c_str(), e.what() );
 	    } else {
-		LQIO::solution_error( LQIO::ERR_INVALID_CALL_PARAMETER, "entry", srcEntry()->name().c_str(), srcPhase()->getDOM()->getTypeName(),
-				      srcPhase()->getDOM()->getName().c_str(), dstName().c_str(), e.what() );
+		LQIO::solution_error( LQIO::ERR_INVALID_CALL_PARAMETER, "entry", srcEntry()->name().c_str(), getSource()->getDOM()->getTypeName(),
+				      getSource()->getDOM()->getName().c_str(), dstName().c_str(), e.what() );
 	    }
 	    throw_bad_parameter();
 	}
@@ -152,16 +152,16 @@ Call::sendNoReply() const
     if ( hasSendNoReply() ) {
 	try {
 	    const double value = getDOM()->getCallMeanValue();
-	    if ( srcPhase()->phaseTypeFlag() == LQIO::DOM::Phase::Type::DETERMINISTIC && value != std::floor( value ) ) throw std::domain_error( "invalid integer" );
+	    if ( getSource()->phaseTypeFlag() == LQIO::DOM::Phase::Type::DETERMINISTIC && value != std::floor( value ) ) throw std::domain_error( "invalid integer" );
 	    return value;
 	}
 	catch ( const std::domain_error &e ) {
 	    if ( isActivityCall() ) {
-		LQIO::solution_error( LQIO::ERR_INVALID_CALL_PARAMETER, "task", srcTask()->name().c_str(), srcPhase()->getDOM()->getTypeName(), 
-				      srcPhase()->getDOM()->getName().c_str(), dstName().c_str(), e.what() );
+		LQIO::solution_error( LQIO::ERR_INVALID_CALL_PARAMETER, "task", srcTask()->name().c_str(), getSource()->getDOM()->getTypeName(), 
+				      getSource()->getDOM()->getName().c_str(), dstName().c_str(), e.what() );
 	    } else {
-		LQIO::solution_error( LQIO::ERR_INVALID_CALL_PARAMETER, "entry", srcEntry()->name().c_str(), srcPhase()->getDOM()->getTypeName(), 
-				      srcPhase()->getDOM()->getName().c_str(), dstName().c_str(), e.what() );
+		LQIO::solution_error( LQIO::ERR_INVALID_CALL_PARAMETER, "entry", srcEntry()->name().c_str(), getSource()->getDOM()->getTypeName(), 
+				      getSource()->getDOM()->getName().c_str(), dstName().c_str(), e.what() );
 	    }
 	    throw_bad_parameter();
 	}
@@ -206,7 +206,7 @@ Call::fanOut() const
 const Entry *
 Call::srcEntry() const
 {
-    return source->entry();
+    return _source->entry();
 }
 
 
@@ -250,9 +250,9 @@ double
 Call::getMaxCustomers()const
 {
     if ( srcTask()->hasInfinitePopulation() ) {
-	return srcEntry()->getMaxCustomers();
+	return getSource()->getMaxCustomers();
     } else {
-	return min( srcTask()->population(), srcEntry()->getMaxCustomers() );
+	return std::min( srcTask()->population(), getSource()->getMaxCustomers() );
     }
 }
 
@@ -303,7 +303,7 @@ Call::rendezvousDelay( const unsigned k )
 const Task *
 Call::srcTask() const
 {
-    return dynamic_cast<const Task *>(source->owner());
+    return dynamic_cast<const Task *>(getSource()->owner());
 }
 double
 Call::elapsedTime() const
@@ -461,9 +461,9 @@ Call::setLambda( const unsigned, const unsigned p, const double rate )
     Server * aStation = dstTask()->serverStation();
     const unsigned e = dstEntry()->index();
     if ( hasSendNoReply() ) {
-	aStation->addVisits( e, 0, p, srcPhase()->throughput() * sendNoReply() );
+	aStation->addVisits( e, 0, p, getSource()->throughput() * sendNoReply() );
     } else if ( hasRendezvous() && srcTask()->isInOpenModel() && srcTask()->isInfinite() ) {
-	aStation->addVisits( e, 0, p, srcPhase()->throughput() * rendezvous() );
+	aStation->addVisits( e, 0, p, getSource()->throughput() * rendezvous() );
     }
 }
 
@@ -485,7 +485,7 @@ Call::clearWait( const unsigned k, const unsigned p, const double )
 void
 Call::clearILWait( const unsigned k, const unsigned p, const double )
 {
-    const_cast<Phase *> (source)->setILWait (submodel(), 0.0 );
+    const_cast<Phase *> (getSource())->setILWait (submodel(), 0.0 );
 }
 
 
@@ -543,7 +543,7 @@ Call::isRealCustomer( const MVASubmodel& submodel, const Entity * server, unsign
 double
 Call::getQueueLength( ) const
 {
-    return const_cast<Phase *> (source)->throughput() * rendezvous() * _wait;
+    return const_cast<Phase *> (getSource())->throughput() * rendezvous() * _wait;
 }
 
 
@@ -552,7 +552,7 @@ unsigned
 Call::getPhaseNum() const
 {
     if ( isActivityCall() ) return -1;
-    return srcEntry()->getPhaseNum(srcPhase());
+    return srcEntry()->getPhaseNum(getSource());
 }
 
 
@@ -567,7 +567,7 @@ Call::setRealCustomers( const MVASubmodel& submodel, const Entity * server, unsi
     if ( client->isReferenceTask() ) {
 	customers = client->population();
     } else {
-	customers = srcPhase()->utilization();
+	customers = getSource()->utilization();
     }
     customers *= server->fanIn(client);		/* Replication */
 
@@ -694,15 +694,15 @@ Call::saveILWait( const unsigned k, const unsigned p, const double )
 	}
 
 	const Probability IL_Pr(getInterlockedFlow());
-	const_cast<Phase *>(source)->addILWait (submodel(), diff * IL_Pr );
+	const_cast<Phase *>(getSource())->addILWait (submodel(), diff * IL_Pr );
 
     } else if ( isAlongILPath() ) {
 	
 	// this queueing time is adjusted!
 	if ( diff && dstEntry()->getILWait(submodel()) ) {
-	    const_cast<Phase *>(source)->addILWait(submodel(), diff ) ;
+	    const_cast<Phase *>(getSource())->addILWait(submodel(), diff ) ;
 	} else {
-	    const_cast<Phase *>(source)->addILWait(submodel(), dstEntry()->getILWait(submodel() )* getDOM()->getCallMeanValue()) ;
+	    const_cast<Phase *>(getSource())->addILWait(submodel(), dstEntry()->getILWait(submodel() )* getDOM()->getCallMeanValue()) ;
 	}
     }
 }
@@ -805,7 +805,7 @@ Call::add_wait_to::operator()( double sum, const Call * call ) const
 TaskCall::TaskCall( const Phase * fromPhase, const Entry * toEntry )
     : Call( fromPhase, toEntry )
 {
-    const_cast<Phase *>(source)->addSrcCall( this );
+    const_cast<Phase *>(getSource())->addSrcCall( this );
 }
 
 
@@ -889,16 +889,9 @@ ProcessorCall::setWait(double newWait)
 double
 ProcessorCall::getMaxCustomers() const
 {
-    return srcEntry()->getMaxCustomers();
+    return getSource()->getMaxCustomers();
 }
-
-/*
-  double
-  ProcessorCall::rendezvous() const
-  {
-  return min(Call::rendezvous(),static_cast<const double>(Call::getMaxCustomers()) );
-
-  }*/
+
 /*----------------------------------------------------------------------*/
 /*                            Activity Calls                            */
 /*----------------------------------------------------------------------*/
@@ -932,7 +925,7 @@ ActivityCall::srcEntry() const
 const std::string&
 ActivityCall::srcName() const
 {
-    return source->name();
+    return getSource()->name();
 }
 
 
@@ -943,14 +936,14 @@ ActivityCall::srcName() const
 const Task *
 ActivityCall::srcTask() const
 {
-    return dynamic_cast<const Task *>(source->owner());
+    return dynamic_cast<const Task *>(getSource()->owner());
 }
 
 double
 ActivityCall::getMaxCustomers()const
 {
-    return (dynamic_cast <const Activity *>(srcPhase())->getMaxCustomers());
-    //return (srcPhase()->getMaxCustomers());
+    return (dynamic_cast <const Activity *>(getSource())->getMaxCustomers());
+    //return (getSource()->getMaxCustomers());
 }
 
 /*----------------------------------------------------------------------*/
@@ -1001,7 +994,7 @@ ActProcCall::srcEntry() const
 const std::string&
 ActProcCall::srcName() const
 {
-    return source->name();
+    return getSource()->name();
 }
 
 
@@ -1012,14 +1005,14 @@ ActProcCall::srcName() const
 const Task *
 ActProcCall::srcTask() const
 {
-    return dynamic_cast<const Task *>(source->owner());
+    return dynamic_cast<const Task *>(getSource()->owner());
 }
 
 double
 ActProcCall::getMaxCustomers()const
 {
-    return (dynamic_cast <const Activity *>(srcPhase())->getMaxCustomers());
-    //return (srcPhase()->getMaxCustomers());
+    return (dynamic_cast <const Activity *>(getSource())->getMaxCustomers());
+    //return (getSource()->getMaxCustomers());
 }
 
 /*----------------------------------------------------------------------*/

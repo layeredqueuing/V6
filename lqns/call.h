@@ -10,7 +10,7 @@
  * November, 1994
  * March, 2004
  *
- * $Id: call.h 14106 2020-11-18 14:33:50Z greg $
+ * $Id: call.h 14118 2020-11-23 17:30:44Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -235,11 +235,11 @@ public:
 
     virtual const Entry * srcEntry() const;
     virtual const std::string& srcName() const;
-    const Phase * srcPhase() const { return source; }
+    const Phase * getSource() const { return _source; }
     virtual const Task * srcTask() const;
 
     const std::string& dstName() const;
-    const Entry * dstEntry() const { return destination; }
+    const Entry * dstEntry() const { return _destination; }
     unsigned submodel() const;	/* Proxy */
 
     double rendezvousDelay() const;
@@ -302,7 +302,7 @@ private:
     double interlockPr() const;
 
 protected:
-    const Phase* source;		/* Calling entry.		*/
+    const Phase* _source;		/* Calling entry.		*/
     double _wait;			/* Waiting time.		*/
     double _interlockedFlow;   		/* >0.0: interlocked flow 	*/
     					/* =0.0: is along the Path of an interlocked flow. */
@@ -311,7 +311,7 @@ protected:
     double _queueWeight;		/* the ratio of queueing time from its own chain */
 
 private:
-    const Entry* destination;		/* to whom I am referring to	*/
+    const Entry* _destination;		/* to whom I am referring to	*/
 
     /* Input */
     const LQIO::DOM::Call* _dom;

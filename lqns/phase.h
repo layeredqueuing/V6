@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: phase.h 14107 2020-11-18 18:51:51Z greg $
+ * $Id: phase.h 14118 2020-11-23 17:30:44Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -76,10 +76,6 @@ public:
     /* Instance variable access */
     virtual bool isPresent() const { return _dom != 0 && _dom->isPresent(); }
     bool hasThinkTime() const { return _dom && _dom->hasThinkTime(); }
-    double ILWait(unsigned int submodel) const { return _interlockedWait[submodel];} 
-    void setILWait (unsigned int submodel, double il_wait);
-    void addILWait (unsigned int submodel, double il_wait);
-    double getILWait (unsigned submodel) const;
     virtual bool isActivity() const { return false; }
 	
     NullPhase& setServiceTime( const double t );
@@ -93,6 +89,10 @@ public:
 
     virtual double waitExcept( const unsigned ) const;
     double elapsedTime() const { return waitExcept( 0 ); }
+    double ILWait(unsigned int submodel) const { return _interlockedWait[submodel];} 
+    void setILWait (unsigned int submodel, double il_wait);
+    void addILWait (unsigned int submodel, double il_wait);
+    double getILWait (unsigned submodel) const;
 
     virtual ostream& print( ostream& output ) const { return output; }
 	
@@ -201,6 +201,7 @@ public:
     Phase& setEntry( const Entry * entry ) { _entry = entry; return *this; }
     const Entry * entry() const { return _entry; }
     virtual const Entity * owner() const;
+    virtual double getMaxCustomers() const;	/* Proxy */
     Phase& setPrOvertaking( const Probability& pr_ot ) { _prOvertaking = pr_ot; return *this; }
     const Probability& prOvertaking() const { return _prOvertaking; }
 

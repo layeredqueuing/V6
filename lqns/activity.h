@@ -11,7 +11,7 @@
  * July 2007
  *
  * ------------------------------------------------------------------------
- * $Id: activity.h 14019 2020-10-26 21:49:17Z greg $
+ * $Id: activity.h 14118 2020-11-23 17:30:44Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -184,6 +184,7 @@ public:
 	
     virtual const std::string& name() const { return getDOM()->getName(); }
     virtual const Entity * owner() const { return _task; }
+    virtual double getMaxCustomers() const { return _maxCusts; }
 
     bool activityDefined() const;
     ActivityList * prevFork( ActivityList * aList );
@@ -225,7 +226,7 @@ public:
     void collectReplication( Entry *, const Activity::Collect& ) const;
     void collectServiceTime( Entry *, const Activity::Collect& ) const;
     void setThroughput( Entry *, const Activity::Collect& ) const;
-    void setMaxCustomers(Entry *, const Activity::Collect& ) const;
+    void setMaxCustomers( Entry *, const Activity::Collect& ) const;
 
 
     bool estimateQuorumJoinCDFs (DiscretePoints & sumTotal,
@@ -274,9 +275,9 @@ public:
     Collect& collect( std::deque<const Activity *>&, std::deque<Entry *>&, Collect& ) const;
     Count_If& count_if( std::deque<const Activity *>&, Count_If& ) const;
     virtual void callsPerform( const CallExec& ) const;
-    virtual bool getInterlockedTasks( Interlock::CollectTasks& path ) const;
     unsigned concurrentThreads( unsigned ) const;
-    unsigned getMaxCustomers() const {return _maxCusts;}
+    virtual bool getInterlockedTasks( Interlock::CollectTasks& path ) const;
+
     /* XML output */
 
     const Activity& insertDOMResults() const;
@@ -313,7 +314,7 @@ private:
 
     double _throughput;				/* My throughput.		*/
     bool myLocalQuorumDelay;
-    unsigned _maxCusts;
+    double _maxCusts;
 };
 
 
