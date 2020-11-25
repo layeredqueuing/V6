@@ -2,7 +2,7 @@
  * $HeadURL$
  *
  * ------------------------------------------------------------------------
- * $Id: runlqx.cc 14000 2020-10-25 12:50:53Z greg $
+ * $Id: runlqx.cc 14135 2020-11-25 18:22:02Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -51,8 +51,8 @@ namespace SolverInterface
 			
 	/* Make sure all external variables are accounted for */
 	if (!_document->areAllExternalVariablesAssigned()) {
-	    cerr << LQIO::io_vars.lq_toolname << ": Not all external variables are assigned at time of solve." << endl;
-	    cerr << LQIO::io_vars.lq_toolname << ": Solve was not invoked." << endl;
+	    std::cerr << LQIO::io_vars.lq_toolname << ": Not all external variables are assigned at time of solve." << std::endl;
+	    std::cerr << LQIO::io_vars.lq_toolname << ": Solve was not invoked." << std::endl;
 	    return LQX::Symbol::encodeBoolean(false);
 	}
 			
@@ -66,15 +66,15 @@ namespace SolverInterface
 	    const bool ok = (_aModel->*_solve)();
 	    return LQX::Symbol::encodeBoolean(ok);
 	}
-	catch ( const domain_error & error ) {
+	catch ( const std::domain_error & error ) {
 	    throw LQX::RuntimeException( error.what() );
 	    LQIO::io_vars.error_count += 1;
 	}
-	catch ( const runtime_error & error ) {
+	catch ( const std::runtime_error & error ) {
 	    throw LQX::RuntimeException( error.what() );
 	    LQIO::io_vars.error_count += 1;
 	}
-	catch ( const logic_error& error ) {
+	catch ( const std::logic_error& error ) {
 	    throw LQX::RuntimeException( error.what() );
 	    LQIO::io_vars.error_count += 1;
 	}

@@ -2,7 +2,7 @@
  * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqn2ps/share.cc $
  *
  * ------------------------------------------------------------------------
- * $Id: share.cc 14000 2020-10-25 12:50:53Z greg $
+ * $Id: share.cc 14135 2020-11-25 18:22:02Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -27,13 +27,13 @@ Share::Share( const LQIO::DOM::Group* dom, const Processor * aProcessor )
     }
 }
 
-ostream& 
-Share::print( ostream& output ) const
+std::ostream& 
+Share::print( std::ostream& output ) const
 {
     output << "  g " << name()
 	   << " " << share()
 	   << " " << _processor->name() 
-	   << endl;
+	   << std::endl;
     return output;
 }
 
@@ -63,7 +63,7 @@ Share::create( const std::pair<std::string,LQIO::DOM::Group *>& p )
 
 
 Share * 
-Share::find( const string& name )
+Share::find( const std::string& name )
 {
     std::set<Share *>::const_iterator share = find_if( __share.begin(), __share.end(), EQStr<Share>( name ) );
     return share != __share.end() ? *share : 0;

@@ -1,7 +1,7 @@
 /* -*- c++ -*-
  * open.h	-- Greg Franks
  *
- * $Id: open.h 14000 2020-10-25 12:50:53Z greg $
+ * $Id: open.h 14135 2020-11-25 18:22:02Z greg $
  */
 
 #ifndef _OPEN_H
@@ -20,9 +20,9 @@ class OpenArrivalSource : public Task {		// "Clients", like reference tasks
 public:
     OpenArrivalSource( Entry * source );
     ~OpenArrivalSource();
-    virtual OpenArrivalSource * clone( unsigned int, const string& aName, const Processor * aProcessor, const Share * aShare ) const { return 0; }
+    virtual OpenArrivalSource * clone( unsigned int, const std::string& aName, const Processor * aProcessor, const Share * aShare ) const { return 0; }
 
-    virtual const string& name() const;
+    virtual const std::string& name() const;
     
     virtual OpenArrivalSource& rename() { return *this; }	/* Don't bother */
     virtual OpenArrivalSource& squishName() { return *this; }	/* Don't bother */
@@ -59,9 +59,9 @@ public:
     virtual Graphic::colour_type colour() const;
 
 
-    virtual const OpenArrivalSource& draw( ostream& output ) const;
-    virtual ostream& drawClient( ostream&, const bool is_in_open_model, const bool is_in_closed_model ) const;
-    virtual ostream& print( ostream& output ) const;
+    virtual const OpenArrivalSource& draw( std::ostream& output ) const;
+    virtual std::ostream& drawClient( std::ostream&, const bool is_in_open_model, const bool is_in_closed_model ) const;
+    virtual std::ostream& print( std::ostream& output ) const;
 
 private:
     const Entry& myEntry() const { return *_entries.at(0); }

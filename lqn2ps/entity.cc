@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: entity.cc 14000 2020-10-25 12:50:53Z greg $
+ * $Id: entity.cc 14135 2020-11-25 18:22:02Z greg $
  *
  * Everything you wanted to know about a task or processor, but were
  * afraid to ask.
@@ -44,8 +44,8 @@
  * Printing function.
  */
 
-ostream&
-operator<<( ostream& output, const Entity& self ) 
+std::ostream&
+operator<<( std::ostream& output, const Entity& self ) 
 {
     if ( Flags::print[OUTPUT_FORMAT].value.i == FORMAT_TXT ) {
 	self.print( output );
@@ -277,7 +277,7 @@ Entity::align() const
 Entity&
 Entity::sort()
 {
-    ::sort( _callers.begin(), _callers.end(), Call::compareDst );
+    std::sort( _callers.begin(), _callers.end(), Call::compareDst );
     return *this;
 }
 
@@ -389,8 +389,8 @@ Entity::label()
 
 
 
-ostream&
-Entity::print( ostream& output ) const
+std::ostream&
+Entity::print( std::ostream& output ) const
 {
     LQIO::SRVN::EntityInput::print( output, dynamic_cast<const LQIO::DOM::Entity *>(getDOM()) );
     return output;
@@ -416,13 +416,13 @@ Entity::chainColour( unsigned int k ) const
  * Print entry service time parameters.
  */
 
-ostream&
-Entity::printName( ostream& output, const int count ) const
+std::ostream&
+Entity::printName( std::ostream& output, const int count ) const
 {
     if ( count == 0 ) {
-	output << setw( maxStrLen-1 ) << name() << " ";
+	output << std::setw( maxStrLen-1 ) << name() << " ";
     } else {
-	output << setw( maxStrLen ) << " ";
+	output << std::setw( maxStrLen ) << " ";
     }
     return output;
 }
@@ -435,8 +435,8 @@ Entity::printName( ostream& output, const int count ) const
  * Draw the queueing network
  */
 
-ostream&
-Entity::drawQueueingNetwork( ostream& output, const double max_x, const double max_y, std::vector<bool> &chain, std::vector<Arc *>& lastArc ) const
+std::ostream&
+Entity::drawQueueingNetwork( std::ostream& output, const double max_x, const double max_y, std::vector<bool> &chain, std::vector<Arc *>& lastArc ) const
 {
     std::vector<Entity *> myClients;
     clients( myClients );
@@ -451,12 +451,12 @@ Entity::drawQueueingNetwork( ostream& output, const double max_x, const double m
 	for ( std::vector<Entity *>::iterator client = myClients.begin(); client != myClients.end(); ++client ) {
 	    if ( !(*client)->hasClientChain( *k ) ) continue;
 
-	    stringstream aComment;
+	    std::stringstream aComment;
 	    aComment << "---------- Chain " << *k << ": " << name() << " -> " <<  (*client)->name() << " ----------";
 	    myNode->comment( output, aComment.str() );
 	    drawServerToClient( output, max_x, max_y, (*client), chain, *k );
 	    
-	    aComment.seekp(17, ios::beg);		// rewind.
+	    aComment.seekp(17, std::ios::beg);		// rewind.
 	    aComment << *k << ": " << (*client)->name() << " -> " <<  name() << " ----------";
 	    myNode->comment( output, aComment.str() );
 	    drawClientToServer( output, (*client), chain, *k, lastArc );
@@ -472,10 +472,10 @@ Entity::drawQueueingNetwork( ostream& output, const double max_x, const double m
  * Draw the queue for the queueing object.
  */
 
-ostream&
-Entity::drawServer( ostream& output ) const
+std::ostream&
+Entity::drawServer( std::ostream& output ) const
 {
-    string aComment;
+    std::string aComment;
     aComment += "========== ";
     aComment += name();
     aComment += " ==========";
@@ -512,8 +512,8 @@ Entity::drawServer( ostream& output ) const
  * From Server to Client
  */
 
-ostream&
-Entity::drawServerToClient( ostream& output, const double max_x, const double min_y, const Entity * aClient, std::vector<bool> &chain, const unsigned k ) const
+std::ostream&
+Entity::drawServerToClient( std::ostream& output, const double max_x, const double min_y, const Entity * aClient, std::vector<bool> &chain, const unsigned k ) const
 {
     const unsigned int max_k = chain.size() - 1;
     if ( !hasServerChain( k ) ) return output;
@@ -611,8 +611,8 @@ Entity::drawServerToClient( ostream& output, const double max_x, const double mi
  * From Client to Server
  */
 
-ostream&
-Entity::drawClientToServer( ostream& output, const Entity * aClient, std::vector<bool> &chain, const unsigned k, std::vector<Arc *>& lastArc ) const
+std::ostream&
+Entity::drawClientToServer( std::ostream& output, const Entity * aClient, std::vector<bool> &chain, const unsigned k, std::vector<Arc *>& lastArc ) const
 {
     const unsigned N_POINTS = 5;
     Arc * inArc  = Arc::newArc( N_POINTS );

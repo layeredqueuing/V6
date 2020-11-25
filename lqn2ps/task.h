@@ -10,7 +10,7 @@
  * April 2010.
  *
  * ------------------------------------------------------------------------
- * $Id: task.h 14000 2020-10-25 12:50:53Z greg $
+ * $Id: task.h 14135 2020-11-25 18:22:02Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -64,7 +64,7 @@ protected:
 
 public:
     virtual ~Task();
-    virtual Task * clone( unsigned int, const string& aName, const Processor * aProcessor, const Share * aShare ) const = 0;
+    virtual Task * clone( unsigned int, const std::string& aName, const Processor * aProcessor, const Share * aShare ) const = 0;
 
     virtual Entity& processor( const Processor * aProcessor ) { _processor = aProcessor; return *this; }
     virtual const Processor * processor() const { return _processor; }
@@ -79,7 +79,7 @@ public:
     const std::vector<Entry *>& entries() const { return _entries; }
     Task& addEntry( Entry * );
     Task& removeEntry( Entry * );
-    Activity * findActivity( const string& name ) const;
+    Activity * findActivity( const std::string& name ) const;
     Activity * findOrAddActivity( const LQIO::DOM::Activity * );
 #if defined(REP2FLAT)
     Activity * addActivity( const Activity&, const unsigned );
@@ -181,11 +181,11 @@ public:
 
     /* Printing */
     
-    virtual const Task& draw( ostream& output ) const;
-    ostream& printEntries( ostream& ) const;
-    ostream& printActivities( ostream& ) const;
+    virtual const Task& draw( std::ostream& output ) const;
+    std::ostream& printEntries( std::ostream& ) const;
+    std::ostream& printActivities( std::ostream& ) const;
 
-    virtual ostream& drawClient( ostream&, const bool is_in_open_model, const bool is_in_closed_model ) const;
+    virtual std::ostream& drawClient( std::ostream&, const bool is_in_open_model, const bool is_in_closed_model ) const;
 
 private:
     size_t topologicalSort();
@@ -205,7 +205,7 @@ private:
     Task& expandActivities( const Task& src, int replica );
 
 protected:
-    LQIO::DOM::Task * cloneDOM( const string& aName, LQIO::DOM::Processor * dom_processor ) const;
+    LQIO::DOM::Task * cloneDOM( const std::string& aName, LQIO::DOM::Processor * dom_processor ) const;
     const std::vector<Entry *>& groupEntries( int replica, std::vector<Entry *>& newEntryList  ) const;
 
 public:
@@ -233,14 +233,14 @@ private:
     static const double JLQNDEF_TASK_BOX_SCALING;
 };
 
-inline ostream& operator<<( ostream& output, const Task& self ) { self.draw( output ); return output; }
+inline std::ostream& operator<<( std::ostream& output, const Task& self ) { self.draw( output ); return output; }
 
 /* ------------------------- Reference Tasks -------------------------- */
 
 class ReferenceTask : public Task {
 public:
     ReferenceTask( const LQIO::DOM::Task* dom, const Processor * aProc, const Share * aShare, const std::vector<Entry *>& aCltn );
-    virtual ReferenceTask * clone( unsigned int, const string& aName, const Processor * aProcessor, const Share * aShare ) const;
+    virtual ReferenceTask * clone( unsigned int, const std::string& aName, const Processor * aProcessor, const Share * aShare ) const;
 
     virtual double getIndex() const { return index(); }
 
@@ -263,7 +263,7 @@ public:
 class ServerTask : public Task {
 public:
     ServerTask( const LQIO::DOM::Task* dom, const Processor * aProc, const Share * aShare, const std::vector<Entry *>& aCltn );
-    virtual ServerTask * clone( unsigned int, const string& aName, const Processor * aProcessor, const Share * aShare ) const;
+    virtual ServerTask * clone( unsigned int, const std::string& aName, const Processor * aProcessor, const Share * aShare ) const;
 
     virtual bool isServerTask() const   { return true; }
     virtual bool canConvertToReferenceTask() const;
@@ -274,7 +274,7 @@ public:
 class SemaphoreTask : public Task {
 public:
     SemaphoreTask( const LQIO::DOM::Task* dom, const Processor * aProc, const Share * aShare, const std::vector<Entry *>& entries );
-    virtual SemaphoreTask * clone( unsigned int, const string& aName, const Processor * aProcessor, const Share * aShare ) const;
+    virtual SemaphoreTask * clone( unsigned int, const std::string& aName, const Processor * aProcessor, const Share * aShare ) const;
 
     virtual bool isServerTask() const   { return true; }
 
@@ -284,7 +284,7 @@ private:
 class RWLockTask : public Task {
 public:
     RWLockTask( const LQIO::DOM::Task* dom, const Processor * aProc, const Share * aShare, const std::vector<Entry *>& entries );
-    virtual RWLockTask * clone( unsigned int, const string& aName, const Processor * aProcessor, const Share * aShare ) const;
+    virtual RWLockTask * clone( unsigned int, const std::string& aName, const Processor * aProcessor, const Share * aShare ) const;
 
     virtual bool isServerTask() const   { return true; }
 
@@ -297,10 +297,10 @@ private:
 
 struct eqTaskStr 
 {
-    eqTaskStr( const string& s ) : _s(s) {}
+    eqTaskStr( const std::string& s ) : _s(s) {}
     bool operator()(const Task * p1 ) const { return p1->name() == _s; }
 
 private:
-    const string & _s;
+    const std::string & _s;
 };
 #endif

@@ -8,7 +8,7 @@
  *
  * November, 1994
  *
- * $Id: phase.h 14107 2020-11-18 18:51:51Z greg $
+ * $Id: phase.h 14135 2020-11-25 18:22:02Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -96,7 +96,7 @@ public:
     const Entry * entry() const { return _entry; }
     virtual const Task * owner() const;
 
-    virtual const string& name() const;
+    virtual const std::string& name() const;
 
     Phase& phaseTypeFlag( LQIO::DOM::Phase::Type aType );
     LQIO::DOM::Phase::Type phaseTypeFlag() const;
@@ -151,8 +151,8 @@ private:
 };
 
 
-inline ostream& operator<<( ostream& output, const Phase& ) { return output; }
-inline ostream& operator<<( ostream& output, const Phase::Histogram::Bin& ) { return output; }
+inline std::ostream& operator<<( std::ostream& output, const Phase& ) { return output; }
+inline std::ostream& operator<<( std::ostream& output, const Phase::Histogram::Bin& ) { return output; }
 
 template <> struct Predicate<Phase>
 {

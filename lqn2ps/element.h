@@ -2,7 +2,7 @@
  * element.h	-- Greg Franks
  *
  * ------------------------------------------------------------------------
- * $Id: element.h 14000 2020-10-25 12:50:53Z greg $
+ * $Id: element.h 14135 2020-11-25 18:22:02Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -35,8 +35,8 @@ private:
     Element& operator=( const Element& );
 
 public:
-    virtual const string& name() const { return getDOM()->getName(); }
-    Element& setName( const string& s ) { const_cast<LQIO::DOM::DocumentObject *>(getDOM())->setName(s); return *this; }
+    virtual const std::string& name() const { return getDOM()->getName(); }
+    Element& setName( const std::string& s ) { const_cast<LQIO::DOM::DocumentObject *>(getDOM())->setName(s); return *this; }
     const LQIO::DOM::DocumentObject * getDOM() const { return _documentObject; }
     Element& setDOM( const LQIO::DOM::DocumentObject * dom ) { _documentObject = dom; return *this; }
 
@@ -86,7 +86,7 @@ public:
 
     /* Printing */
 
-    virtual const Element& draw( ostream& output ) const = 0;
+    virtual const Element& draw( std::ostream& output ) const = 0;
 
 protected:
     size_t followCalls( std::pair<std::vector<Call *>::const_iterator,std::vector<Call *>::const_iterator>, CallStack&, const unsigned ) const;

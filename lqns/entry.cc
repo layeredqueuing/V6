@@ -12,7 +12,7 @@
  * July 2007.
  *
  * ------------------------------------------------------------------------
- * $Id: entry.cc 14129 2020-11-24 22:56:30Z greg $
+ * $Id: entry.cc 14135 2020-11-25 18:22:02Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -2011,11 +2011,7 @@ CallInfoItem::hasSendNoReply() const
 bool
 CallInfoItem::hasForwarding() const
 {
-    if ( phase[1] && phase[1]->hasForwarding() ) {
-	return true;
-    } else {
-	return false;
-    }
+    return phase[1] && phase[1]->hasForwarding();
 }
 
 

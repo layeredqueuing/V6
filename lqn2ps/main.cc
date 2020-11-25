@@ -1,6 +1,6 @@
 /* srvn2eepic.c	-- Greg Franks Sun Jan 26 2003
  *
- * $Id: main.cc 14000 2020-10-25 12:50:53Z greg $
+ * $Id: main.cc 14135 2020-11-25 18:22:02Z greg $
  */
 
 #include "lqn2ps.h"
@@ -284,7 +284,7 @@ main(int argc, char *argv[])
 	    goto found1;
 	}
 #endif
-	cerr << LQIO::io_vars.lq_toolname << ": command not found." << endl;
+	std::cerr << LQIO::io_vars.lq_toolname << ": command not found." << std::endl;
 	exit( 1 );
     found1: ;
     }
@@ -296,7 +296,7 @@ main(int argc, char *argv[])
  * construct the error message.
  */
 
-class_error::class_error( const string& aStr, const char * file, const unsigned line, const char * anError )
+class_error::class_error( const std::string& aStr, const char * file, const unsigned line, const char * anError )
     : exception()
 {
     char temp[10];
@@ -350,8 +350,8 @@ process_pragma( const char * p )
 
     do {
 	while ( isspace( *p ) ) ++p;		/* Skip leading whitespace. */
-	string param;
-	string value;
+	std::string param;
+	std::string value;
 	while ( *p && !isspace( *p ) && *p != '=' & *p != ',' ) {
 	    param += *p++;			/* get parameter */
 	}
@@ -371,7 +371,7 @@ process_pragma( const char * p )
 
 
 bool
-pragma( const string& parameter, const string& value )
+pragma( const std::string& parameter, const std::string& value )
 {
     for ( unsigned int i = 0; Options::pragma[i] != 0; ++i ) {
 	if ( parameter.compare( Options::pragma[i] ) != 0 ) continue;
@@ -420,7 +420,7 @@ pragma( const string& parameter, const string& value )
 		} 
 	    }
 	    if ( Flags::sort == INVALID_SORT ) {
-		cerr << LQIO::io_vars.lq_toolname << ": Invalid argument to 'sort=' :" << value << endl; 
+		std::cerr << LQIO::io_vars.lq_toolname << ": Invalid argument to 'sort=' :" << value << std::endl; 
 		return false;
 	    }
 	    break;
@@ -436,11 +436,11 @@ pragma( const string& parameter, const string& value )
 #endif
 
 	default:
-	    cerr << LQIO::io_vars.lq_toolname << ": Unknown pragma: \"" << parameter;
+	    std::cerr << LQIO::io_vars.lq_toolname << ": Unknown pragma: \"" << parameter;
 	    if ( value.size() ) {
-		cerr << "\"=\"" << value;
+		std::cerr << "\"=\"" << value;
 	    }
-	    cerr << "\"" << endl;
+	    std::cerr << "\"" << std::endl;
 	    return false;
 	}
     }
@@ -584,30 +584,30 @@ set_indent( const unsigned int anInt )
     return old_indent;
 }
 
-static ostream&
-value_str_str( ostream& output, const char * aStr )
+static std::ostream&
+value_str_str( std::ostream& output, const char * aStr )
 {
     output << '"' << aStr << '"';
     return output;
 }
 
-static ostream&
-value_int_str( ostream& output, const int anInt )
+static std::ostream&
+value_int_str( std::ostream& output, const int anInt )
 {
     output << '"' << anInt << '"';
     return output;
 }
 
-static ostream&
-pluralize( ostream& output, const string& aStr, const unsigned int i ) 
+static std::ostream&
+pluralize( std::ostream& output, const std::string& aStr, const unsigned int i ) 
 {
     output << aStr;
     if ( i != 1 ) output << "s";
     return output;
 }
 
-static ostream&
-indent_str( ostream& output, const int anInt )
+static std::ostream&
+indent_str( std::ostream& output, const int anInt )
 {
     if ( anInt < 0 ) {
 	if ( static_cast<int>(current_indent) + anInt < 0 ) {
@@ -617,7 +617,7 @@ indent_str( ostream& output, const int anInt )
 	}
     }
     if ( current_indent != 0 ) {
-	output << setw( current_indent * 3 ) << " ";
+	output << std::setw( current_indent * 3 ) << " ";
     }
     if ( anInt > 0 ) {
 	current_indent += anInt;
@@ -625,29 +625,29 @@ indent_str( ostream& output, const int anInt )
     return output;
 }
 
-static ostream&
-temp_indent_str( ostream& output, const int anInt )
+static std::ostream&
+temp_indent_str( std::ostream& output, const int anInt )
 {
-    output << setw( (current_indent + anInt) * 3 ) << " ";
+    output << std::setw( (current_indent + anInt) * 3 ) << " ";
     return output;
 }
 
-static ostream&
-value_bool_str( ostream& output, const bool aBool )
+static std::ostream&
+value_bool_str( std::ostream& output, const bool aBool )
 {
     output << '"' << (aBool ? "yes" : "no") << '"';
     return output;
 }
 
-static ostream&
-value_double_str( ostream& output, const double aDouble )
+static std::ostream&
+value_double_str( std::ostream& output, const double aDouble )
 {
     output << '"' << aDouble << '"';
     return output;
 }
 
-static ostream&
-opt_pct_str( ostream& output, const double aDouble )
+static std::ostream&
+opt_pct_str( std::ostream& output, const double aDouble )
 {
     output << aDouble;
     if ( difference_output() ) {
@@ -658,11 +658,11 @@ opt_pct_str( ostream& output, const double aDouble )
 
 
 
-static ostream&
-conf_level_str( ostream& output, const int fill, const int level ) 
+static std::ostream&
+conf_level_str( std::ostream& output, const int fill, const int level ) 
 {	
-    ios_base::fmtflags flags = output.setf( ios::right, ios::adjustfield );
-    output << setw( fill-4 ) << "+/- " << setw(2) << level << "% ";
+    std::ios_base::fmtflags flags = output.setf( std::ios::right, std::ios::adjustfield );
+    output << std::setw( fill-4 ) << "+/- " << std::setw(2) << level << "% ";
     output.flags( flags );
     return output;
 }
@@ -672,7 +672,7 @@ StringManip value_str( const char * aStr )
     return StringManip( &value_str_str, aStr );
 }
 
-StringPlural plural( const string& s, const unsigned i )
+StringPlural plural( const std::string& s, const unsigned i )
 {
     return StringPlural( &pluralize, s, i );
 }
