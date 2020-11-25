@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: json_document.cpp 14132 2020-11-25 13:11:04Z greg $
+ * $Id: json_document.cpp 14133 2020-11-25 13:51:31Z greg $
  *
  * Read in JSON input files.
  *
@@ -70,8 +70,6 @@ extern "C" {
 
 namespace LQIO {
     namespace DOM {
-	using namespace std;
-
 	int Json_Document::Import::__indent = 0;
 	int Json_Document::Export::__indent = -1;		/* suppress initial newline */
 
@@ -86,7 +84,7 @@ namespace LQIO {
 	    AddPragma( Document& document ) : _document(document) {}
 	    void operator()( const std::pair<std::string, picojson::value>& o )
 		{
-		    if ( Document::__debugJSON ) cerr << Json_Document::Import::indent(0) << "{ \"" << o.first << "\", \"" << o.second.to_str() << "\" }" << endl;
+		    if ( Document::__debugJSON ) std::cerr << Json_Document::Import::indent(0) << "{ \"" << o.first << "\", \"" << o.second.to_str() << "\" }" << std::endl;
 		    _document.addPragma( o.first, o.second.to_str() );
 		}
 	private:
@@ -299,7 +297,7 @@ namespace LQIO {
 		std::string program;
 		const picojson::value::array& arr = value.get<picojson::array>();
 		for (picojson::value::array::const_iterator i = arr.begin(); i != arr.end(); ++i) {
-		    if ( Document::__debugJSON ) cerr << Import::indent(0) << i->to_str() << endl;
+		    if ( Document::__debugJSON ) std::cerr << Import::indent(0) << i->to_str() << std::endl;
 		    if ( i->is<std::string>() ) {
 			program += i->get<std::string>();
 			program += "\n";
@@ -323,7 +321,7 @@ namespace LQIO {
 		}
 	    } else if ( value.is<picojson::object>() ) {
 		const picojson::value::object& obj = value.get<picojson::object>();
-		for_each( obj.begin(), obj.end(), AddPragma( _document ) );
+		std::for_each( obj.begin(), obj.end(), AddPragma( _document ) );
 	    } else {
 		invalid_argument( Xpragma, value.to_str() );
 	    }
@@ -375,12 +373,12 @@ namespace LQIO {
 	    if ( value.is<picojson::array>() ) {
 		const picojson::value::array& arr = value.get<picojson::array>();
 		for (picojson::value::array::const_iterator i = arr.begin(); i != arr.end(); ++i) {
-		    if ( Document::__debugJSON ) Import::beginAttribute( cerr, *i );
+		    if ( Document::__debugJSON ) Import::beginAttribute( std::cerr, *i );
 		    handleProcessor( 0, *i );
-		    if ( Document::__debugJSON ) Import::endAttribute( cerr, *i );
+		    if ( Document::__debugJSON ) Import::endAttribute( std::cerr, *i );
 		}
 	    } else if ( value.is<picojson::object>() ) {
-		const map<std::string, picojson::value> obj = value.get<picojson::object>();
+		const std::map<std::string, picojson::value> obj = value.get<picojson::object>();
 		try {
 		    const std::string& processor_name = get_string_attribute( Xname, obj );
 		    Processor * processor = _document.getProcessorByName( processor_name );
@@ -439,12 +437,12 @@ namespace LQIO {
 	    if ( value.is<picojson::array>() ) {
 		const picojson::value::array& arr = value.get<picojson::array>();
 		for (picojson::value::array::const_iterator i = arr.begin(); i != arr.end(); ++i) {
-		    if ( Document::__debugJSON ) Import::beginAttribute( cerr, *i );
+		    if ( Document::__debugJSON ) Import::beginAttribute( std::cerr, *i );
 		    handleGroup( parent, *i );
-		    if ( Document::__debugJSON ) Import::endAttribute( cerr, *i );
+		    if ( Document::__debugJSON ) Import::endAttribute( std::cerr, *i );
 		}
 	    } else if ( value.is<picojson::object>() ) {
-		const map<std::string, picojson::value> obj = value.get<picojson::object>();
+		const std::map<std::string, picojson::value> obj = value.get<picojson::object>();
 		try {
 		    const std::string& group_name = get_string_attribute( Xname, obj );
 		    Group * group = _document.getGroupByName( group_name );
@@ -493,12 +491,12 @@ namespace LQIO {
 	    if ( value.is<picojson::array>() ) {
 		const picojson::value::array& arr = value.get<picojson::array>();
 		for (picojson::value::array::const_iterator i = arr.begin(); i != arr.end(); ++i) {
-		    if ( Document::__debugJSON ) Import::beginAttribute( cerr, *i );
+		    if ( Document::__debugJSON ) Import::beginAttribute( std::cerr, *i );
 		    handleTask( parent, *i );
-		    if ( Document::__debugJSON ) Import::endAttribute( cerr, *i );
+		    if ( Document::__debugJSON ) Import::endAttribute( std::cerr, *i );
 		}
 	    } else if ( value.is<picojson::object>() ) {
-		const map<std::string, picojson::value> obj = value.get<picojson::object>();
+		const std::map<std::string, picojson::value> obj = value.get<picojson::object>();
 		try {
 		    const std::string& task_name = get_string_attribute( Xname, obj );
 		    Task * task = _document.getTaskByName( task_name );
@@ -576,15 +574,15 @@ namespace LQIO {
 	    if ( value.is<picojson::array>() ) {
 		const picojson::value::array& arr = value.get<picojson::array>();
 		for (picojson::value::array::const_iterator i = arr.begin(); i != arr.end(); ++i) {
-		    if ( Document::__debugJSON ) Import::beginAttribute( cerr, *i );
+		    if ( Document::__debugJSON ) Import::beginAttribute( std::cerr, *i );
 		    handleFanInOut( parent, *i, fan_in_out );
-		    if ( Document::__debugJSON ) Import::endAttribute( cerr, *i );
+		    if ( Document::__debugJSON ) Import::endAttribute( std::cerr, *i );
 		}
 	    } else if ( value.is<picojson::object>() ) {
 		const picojson::value::object& obj = value.get<picojson::object>();
 		picojson::value::object::const_iterator i = obj.begin();
 		if ( obj.size() == 1 ) {
-		    if ( Document::__debugJSON ) Import::printIndent(cerr,0) << "{ " << i->first << ": " << i->second.to_str() << " }" << std::endl;
+		    if ( Document::__debugJSON ) Import::printIndent(std::cerr,0) << "{ " << i->first << ": " << i->second.to_str() << " }" << std::endl;
 		    Task * task = dynamic_cast<Task *>(parent);
 		    if ( task ) {
 			(task->*fan_in_out)( i->first, get_external_variable( i->second ) );
@@ -605,12 +603,12 @@ namespace LQIO {
 	    if ( value.is<picojson::array>() ) {
 		const picojson::value::array& arr = value.get<picojson::array>();
 		for (picojson::value::array::const_iterator i = arr.begin(); i != arr.end(); ++i) {
-		    if ( Document::__debugJSON ) Import::beginAttribute( cerr, *i );
+		    if ( Document::__debugJSON ) Import::beginAttribute( std::cerr, *i );
 		    handleEntry( parent, *i );
-		    if ( Document::__debugJSON ) Import::endAttribute( cerr, *i );
+		    if ( Document::__debugJSON ) Import::endAttribute( std::cerr, *i );
 		}
 	    } else if ( value.is<picojson::object>() ) {
-		const map<std::string, picojson::value> obj = value.get<picojson::object>();
+		const std::map<std::string, picojson::value> obj = value.get<picojson::object>();
 		try {
 		    const std::string& entry_name = get_string_attribute( Xname, obj );
 		    Entry * entry = _document.getEntryByName( entry_name.c_str() );
@@ -653,7 +651,7 @@ namespace LQIO {
 				    /* If I have Xphase, then I am a standard entry.  Forwarding is also an array. */
 				    _document.db_check_set_entry(entry, entry->getName(), Entry::Type::STANDARD);
 				}
-				if ( Document::__debugJSON ) Import::beginAttribute( cerr, attr, i->second );
+				if ( Document::__debugJSON ) Import::beginAttribute( std::cerr, attr, i->second );
 				const picojson::value::array& arr = i->second.get<picojson::array>();
 				unsigned int p_j = 0;		/* Dest array index */
 				for (picojson::value::array::const_iterator x = arr.begin(); x != arr.end(); ++x ) {
@@ -667,7 +665,7 @@ namespace LQIO {
 					j->second(attr,*this,*phase,*x);					/* Handle parameter argument */
 				    }
 				}
-				if ( Document::__debugJSON ) Import::endAttribute( cerr, attr, i->second );
+				if ( Document::__debugJSON ) Import::endAttribute( std::cerr, attr, i->second );
 			    } else {
 				j->second(attr,false,*this,*entry,i->second);					/* Handle attribute */
 			    }
@@ -702,13 +700,13 @@ namespace LQIO {
 	    if ( value.is<picojson::array>() ) {
 		const picojson::value::array& arr = value.get<picojson::array>();
 		for (picojson::value::array::const_iterator i = arr.begin(); i != arr.end(); ++i) {
-		    if ( Document::__debugJSON ) Import::beginAttribute( cerr, *i );
+		    if ( Document::__debugJSON ) Import::beginAttribute( std::cerr, *i );
 		    handlePhase( parent, *i );
-		    if ( Document::__debugJSON ) Import::endAttribute( cerr, *i );
+		    if ( Document::__debugJSON ) Import::endAttribute( std::cerr, *i );
 		}
 	    } else if ( value.is<picojson::object>() ) {
 		Entry& entry = *dynamic_cast<Entry *>(parent);
-		const map<std::string, picojson::value> obj = value.get<picojson::object>();
+		const std::map<std::string, picojson::value> obj = value.get<picojson::object>();
 		try {
 		    // Need to get the phase number, and create the phase if necessary.
 		    if ( _createObjects ) {
@@ -758,12 +756,12 @@ namespace LQIO {
 	    if ( value.is<picojson::array>() ) {
 		const picojson::value::array& arr = value.get<picojson::array>();
 		for (picojson::value::array::const_iterator i = arr.begin(); i != arr.end(); ++i) {
-		    if ( Document::__debugJSON ) Import::beginAttribute( cerr, *i );
+		    if ( Document::__debugJSON ) Import::beginAttribute( std::cerr, *i );
 		    handleTaskActivity( parent, *i );
-		    if ( Document::__debugJSON ) Import::endAttribute( cerr, *i );
+		    if ( Document::__debugJSON ) Import::endAttribute( std::cerr, *i );
 		}
 	    } else if ( value.is<picojson::object>() ) {
-		const map<std::string, picojson::value> obj = value.get<picojson::object>();
+		const std::map<std::string, picojson::value> obj = value.get<picojson::object>();
 		/* Find task... */
 		try {
 		    const std::string& attr = get_string_attribute( Xtask, obj );
@@ -803,13 +801,13 @@ namespace LQIO {
 	    if ( value.is<picojson::array>() ) {
 		const picojson::value::array& arr = value.get<picojson::array>();
 		for (picojson::value::array::const_iterator i = arr.begin(); i != arr.end(); ++i) {
-		    if ( Document::__debugJSON ) Import::beginAttribute( cerr, *i );
+		    if ( Document::__debugJSON ) Import::beginAttribute( std::cerr, *i );
 		    handleActivity( parent, *i );
-		    if ( Document::__debugJSON ) Import::endAttribute( cerr, *i );
+		    if ( Document::__debugJSON ) Import::endAttribute( std::cerr, *i );
 		}
 	    } else if ( value.is<picojson::object>() && dynamic_cast<Task *>(parent) ) {
 		Task& task = *dynamic_cast<Task *>(parent);
-		const map<std::string, picojson::value> obj = value.get<picojson::object>();
+		const std::map<std::string, picojson::value> obj = value.get<picojson::object>();
 		try {
 		    const std::string& activity_name = get_string_attribute( Xname, obj );
 		    Activity * activity = task.getActivity( activity_name, _createObjects );
@@ -859,13 +857,13 @@ namespace LQIO {
 	    if ( value.is<picojson::array>() ) {
 		const picojson::value::array& arr = value.get<picojson::array>();
 		for (picojson::value::array::const_iterator i = arr.begin(); i != arr.end(); ++i) {
-		    if ( Document::__debugJSON ) Import::beginAttribute( cerr, *i );
+		    if ( Document::__debugJSON ) Import::beginAttribute( std::cerr, *i );
 		    handlePrecedence( parent, *i );
-		    if ( Document::__debugJSON ) Import::endAttribute( cerr, *i );
+		    if ( Document::__debugJSON ) Import::endAttribute( std::cerr, *i );
 		}
 	    } else if ( value.is<picojson::object>() && dynamic_cast<Task *>(parent) ) {
 		Task& task = *dynamic_cast<Task *>(parent);
-		const map<std::string, picojson::value> obj = value.get<picojson::object>();
+		const std::map<std::string, picojson::value> obj = value.get<picojson::object>();
 		ActivityList * pre_list = 0;		/* Need this for quorum/results of join */
 		ActivityList * post_list = 0;
 		std::map<const char *,picojson::value> deferred;	/* For deferred attributes */
@@ -877,7 +875,7 @@ namespace LQIO {
 			    LQIO::solution_error( LQIO::ERR_UNEXPECTED_ATTRIBUTE, Xprecedence, attr.c_str() );
 			} else if ( i->second.is<picojson::array>() ) {
 			    if ( _createObjects ) {
-				if ( Document::__debugJSON ) Import::beginAttribute( cerr, i->first, i->second );
+				if ( Document::__debugJSON ) Import::beginAttribute( std::cerr, i->first, i->second );
 				ActivityList * precedence;
 				if ( j->second.precedence_type() == ActivityList::Type::AND_JOIN ) {
 				    precedence = new AndJoinActivityList( &_document, &task, /* quorum count */ 0 );		// set by Import
@@ -899,7 +897,7 @@ namespace LQIO {
 				for (picojson::value::array::const_iterator x = arr.begin(); x != arr.end(); ++x) {
 				    j->second(attr,*this,*precedence,*x);		/* Handle attribute */
 				}
-				if ( Document::__debugJSON ) Import::endAttribute( cerr, i->first, i->second );
+				if ( Document::__debugJSON ) Import::endAttribute( std::cerr, i->first, i->second );
 			    }
 			} else if ( i->second.is<double>() || i->second.is<std::string>() || i->second.is<picojson::object>() ) {
 			    deferred[j->first] = i->second;
@@ -924,7 +922,7 @@ namespace LQIO {
 			LQIO::solution_error( LQIO::ERR_UNEXPECTED_ATTRIBUTE, Xprecedence, i->first );
 		    } else if ( i->first == Xquorum && i->second.is<double>() && _createObjects ) {
 			dynamic_cast<AndJoinActivityList *>(pre_list)->setQuorumCountValue( static_cast<int>(i->second.get<double>()) );
-		    } else if ( i->first == Xquorum && i->second.is<string>() && _createObjects ) {
+		    } else if ( i->first == Xquorum && i->second.is<std::string>() && _createObjects ) {
 			dynamic_cast<AndJoinActivityList *>(pre_list)->setQuorumCount( _document.db_build_parameter_variable( i->second.get<std::string>().c_str(), 0 ) );
 		    } else if ( i->first == Xresults && i->second.is<picojson::object>() ) {
 			handleResult( pre_list, i->second );	/* Result goes with join */
@@ -952,7 +950,7 @@ namespace LQIO {
 	Json_Document::handleCall( DocumentObject * parent, const picojson::value& value, Call::Type call_type )
 	{
 	    if ( value.is<picojson::object>() ) {
-		const map<std::string, picojson::value> obj = value.get<picojson::object>();
+		const std::map<std::string, picojson::value> obj = value.get<picojson::object>();
 		try {
 		    const std::string& destination_name = get_string_attribute( Xdestination, obj );
 		    Entry * destination = _document.getEntryByName( destination_name );
@@ -992,14 +990,14 @@ namespace LQIO {
 
 		    for ( picojson::value::object::const_iterator i = obj.begin(); i != obj.end(); ++i ) {
 			const std::string& attr = i->first;
-			if ( Document::__debugJSON ) Import::beginAttribute( cerr, attr, i->second );
+			if ( Document::__debugJSON ) Import::beginAttribute( std::cerr, attr, i->second );
 			const std::map<const char *,const ImportCall>::const_iterator j = call_table.find(attr.c_str());
 			if ( j == call_table.end() ) {
 			    LQIO::solution_error( LQIO::ERR_UNEXPECTED_ATTRIBUTE, call_type_table.at(call_type).c_str(), attr.c_str() );
 			} else {
 			    j->second( attr, *this, *call, i->second );
 			}
-			if ( Document::__debugJSON ) Import::endAttribute( cerr, attr, i->second );
+			if ( Document::__debugJSON ) Import::endAttribute( std::cerr, attr, i->second );
 		    }
 		}
 		catch ( const missing_attribute& attr ) {
@@ -1027,7 +1025,7 @@ namespace LQIO {
 	    } else if ( value.is<std::string>() && dynamic_cast<Activity *>(parent) ) {
 		Activity * activity = dynamic_cast<Activity *>(parent);
 		const std::string& name = value.get<std::string>();
-		if ( Document::__debugJSON ) Import::printIndent(cerr, 0) << name << std::endl;
+		if ( Document::__debugJSON ) Import::printIndent(std::cerr, 0) << name << std::endl;
 		Entry * entry = _document.getEntryByName( name );
 		if ( !entry ) {
 		    throw undefined_symbol( name );
@@ -1049,7 +1047,7 @@ namespace LQIO {
 		const picojson::value::array& arr = value.get<picojson::array>();
 		for (picojson::value::array::const_iterator i = arr.begin(); i != arr.end(); ++i) {
 		    if ( Document::__debugJSON ) {
-			cerr << Import::indent(0) << i->to_str() << endl;
+			std::cerr << Import::indent(0) << i->to_str() << std::endl;
 		    }
 		    if ( i->is<std::string>() ) {
 			program += i->get<std::string>();
@@ -1072,7 +1070,7 @@ namespace LQIO {
 		const picojson::value::array& arr = value.get<picojson::array>();
 		for (picojson::value::array::const_iterator i = arr.begin(); i != arr.end(); ++i) {
 		    if ( Document::__debugJSON ) {
-			cerr << Import::indent(0) << i->to_str() << endl;
+			std::cerr << Import::indent(0) << i->to_str() << std::endl;
 		    }
 		    if ( i->is<std::string>() ) {
 			program += i->get<std::string>();
@@ -1208,16 +1206,16 @@ namespace LQIO {
 		const picojson::value::array& arr = value.get<picojson::array>();
 		unsigned int p = 1;
 		for (picojson::value::array::const_iterator x = arr.begin(); x != arr.end(); ++x, ++p ) {
-		    if ( Document::__debugJSON ) Import::beginAttribute( cerr, *x );
+		    if ( Document::__debugJSON ) Import::beginAttribute( std::cerr, *x );
 		    if ( x->is<picojson::object>() ) {
 			handleHistogram( entry->getPhase( p ), *x );
 		    } else {
 			invalid_argument( Xhistogram, value.to_str() );
 		    }
-		    if ( Document::__debugJSON ) Import::endAttribute( cerr, *x );
+		    if ( Document::__debugJSON ) Import::endAttribute( std::cerr, *x );
 		}
 	    } else if ( value.is<picojson::object>() ) {
-		const map<std::string, picojson::value> obj = value.get<picojson::object>();
+		const std::map<std::string, picojson::value> obj = value.get<picojson::object>();
 		try {
 		    Histogram * hist = new Histogram( &_document,
 						      Histogram::Type::CONTINUOUS,
@@ -1230,7 +1228,7 @@ namespace LQIO {
 		    if ( _loadResults ) {
 			for (picojson::value::object::const_iterator i = obj.begin(); i != obj.end(); ++i) {
 			    const std::string& attr = i->first;
-			    if ( Document::__debugJSON ) Import::beginAttribute( cerr, attr, i->second );
+			    if ( Document::__debugJSON ) Import::beginAttribute( std::cerr, attr, i->second );
 			    const std::map<const char *,const ImportHistogram>::const_iterator j = histogram_table.find(attr.c_str());
 			    if ( j == histogram_table.end() ) {
 				LQIO::solution_error( LQIO::ERR_UNEXPECTED_ATTRIBUTE, Xtask, attr.c_str() );
@@ -1238,14 +1236,14 @@ namespace LQIO {
 				const picojson::value::array& arr = i->second.get<picojson::array>();
 				unsigned int n = 0;
 				for (picojson::value::array::const_iterator x = arr.begin(); x != arr.end(); ++x, ++n ) {
-				    if ( Document::__debugJSON ) Import::beginAttribute( cerr, *x );
+				    if ( Document::__debugJSON ) Import::beginAttribute( std::cerr, *x );
 				    handleHistogramBin( hist, n, *x );		/* Need the bin :-( */
-				    if ( Document::__debugJSON ) Import::endAttribute( cerr, *x );
+				    if ( Document::__debugJSON ) Import::endAttribute( std::cerr, *x );
 				}
 			    } else if ( j->second.getType() != dom_type::DOM_NULL ) {
 				invalid_argument( Xhistogram, value.to_str() );
 			    }
-			    if ( Document::__debugJSON ) Import::endAttribute( cerr, attr, i->second );
+			    if ( Document::__debugJSON ) Import::endAttribute( std::cerr, attr, i->second );
 			}
 		    }
 		}
@@ -1272,12 +1270,12 @@ namespace LQIO {
 	{
 	    Histogram * histogram = dynamic_cast<Histogram *>(parent);
 	    if ( value.is<picojson::object>() && histogram ) {
-		const map<std::string, picojson::value> obj = value.get<picojson::object>();
+		const std::map<std::string, picojson::value> obj = value.get<picojson::object>();
 		double mean = 0.;
 		double variance = 0.;
 		for ( picojson::value::object::const_iterator k = obj.begin(); k != obj.end(); ++k ) {
 		    const std::string& attr = k->first;
-		    if ( Document::__debugJSON ) Import::beginAttribute( cerr, attr, k->second );
+		    if ( Document::__debugJSON ) Import::beginAttribute( std::cerr, attr, k->second );
 		    if ( attr == Xbegin && k->second.is<double>() ) {
 		    } else if ( attr == Xprob && k->second.is<double>() ) {
 			mean  = k->second.get<double>();
@@ -1286,7 +1284,7 @@ namespace LQIO {
 		    } else if ( attr != Xend || !k->second.is<double>() ) {
 			invalid_argument( attr, k->second.to_str() );
 		    }
-		    if ( Document::__debugJSON ) Import::endAttribute( cerr, attr, k->second );
+		    if ( Document::__debugJSON ) Import::endAttribute( std::cerr, attr, k->second );
 		}
 		histogram->setBinMeanVariance( index, mean, variance );
 	    } else {
@@ -1303,16 +1301,16 @@ namespace LQIO {
 		const picojson::value::array& arr = value.get<picojson::array>();
 		unsigned int p = 1;
 		for (picojson::value::array::const_iterator x = arr.begin(); x != arr.end(); ++x, ++p ) {
-		    if ( Document::__debugJSON ) Import::beginAttribute( cerr, *x );
+		    if ( Document::__debugJSON ) Import::beginAttribute( std::cerr, *x );
 		    if ( x->is<picojson::object>() ) {
 			handleMaxServiceTime( entry->getPhase( p ), *x );
 		    } else {
 			invalid_argument( Xmax_service_time, value.to_str() );
 		    }
-		    if ( Document::__debugJSON ) Import::endAttribute( cerr, *x );
+		    if ( Document::__debugJSON ) Import::endAttribute( std::cerr, *x );
 		}
 	    } else if ( value.is<picojson::object>() ) {
-		const map<std::string, picojson::value> obj = value.get<picojson::object>();
+		const std::map<std::string, picojson::value> obj = value.get<picojson::object>();
 		try {
 		    double service_time = get_double_attribute( Xmax_service_time, obj );
 		    Histogram * hist = new Histogram( &_document,
@@ -1327,7 +1325,7 @@ namespace LQIO {
 			for (picojson::value::object::const_iterator i = obj.begin(); i != obj.end(); ++i) {
 #if 0
 			    const std::string& attr = i->first;
-			    if ( Document::__debugJSON ) Import::beginAttribute( cerr, attr, i->second );
+			    if ( Document::__debugJSON ) Import::beginAttribute( std::cerr, attr, i->second );
 			    const std::map<const char *,const ImportHistogram>::const_iterator j = histogram_table.find(attr.c_str());
 			    if ( j == histogram_table.end() ) {
 				LQIO::solution_error( LQIO::ERR_UNEXPECTED_ATTRIBUTE, Xtask, attr.c_str() );
@@ -1335,14 +1333,14 @@ namespace LQIO {
 				const picojson::value::array& arr = i->second.get<picojson::array>();
 				unsigned int n = 0;
 				for (picojson::value::array::const_iterator x = arr.begin(); x != arr.end(); ++x, ++n ) {
-				    if ( Document::__debugJSON ) Import::beginAttribute( cerr, *x );
+				    if ( Document::__debugJSON ) Import::beginAttribute( std::cerr, *x );
 				    handleHistogramBin( hist, n, *x );		/* Need the bin :-( */
-				    if ( Document::__debugJSON ) Import::endAttribute( cerr, *x );
+				    if ( Document::__debugJSON ) Import::endAttribute( std::cerr, *x );
 				}
 			    } else if ( j->second.getType() != dom_type::DOM_NULL ) {
 				invalid_argument( Xmax_service_time, value.to_str() );
 			    }
-			    if ( Document::__debugJSON ) Import::endAttribute( cerr, attr, i->second );
+			    if ( Document::__debugJSON ) Import::endAttribute( std::cerr, attr, i->second );
 #endif
 			}
 		    }
@@ -1433,7 +1431,7 @@ namespace LQIO {
 	Json_Document::get_double_attribute( const char * name, const std::map<std::string, picojson::value>& obj )
 	{
 	    const std::map<std::string, picojson::value>::const_iterator attr = obj.find( name );
-	    if ( Document::__debugJSON ) Import::beginAttribute( cerr, attr->first, attr->second );
+	    if ( Document::__debugJSON ) Import::beginAttribute( std::cerr, attr->first, attr->second );
 	    if ( attr == obj.end() ) {
 		throw missing_attribute( name );
 	    } else if ( attr->second.is<double>() ) {
@@ -1465,7 +1463,7 @@ namespace LQIO {
 	{
 	    const std::map<std::string, picojson::value>::const_iterator attr = obj.find( Xscheduling );
 	    if ( attr != obj.end() ) {
-		const string attribute = attr->second.to_str();
+		const std::string attribute = attr->second.to_str();
 		std::map<const char *, const scheduling_type>::const_iterator i = scheduling_table.find( attribute.c_str() );
 		if ( i == scheduling_table.end() ) {
 		    invalid_argument( Xscheduling, attribute );	/* throws */
@@ -1553,7 +1551,7 @@ namespace LQIO {
 		    __indent = 0;
 		}
 	    }
-	    output << setw( __indent * 4 ) << " ";
+	    output << std::setw( __indent * 4 ) << " ";
 	    if ( i >= 0 ) {
 		__indent += i;
 	    }
@@ -1564,11 +1562,11 @@ namespace LQIO {
 	Json_Document::Import::beginAttribute( std::ostream& output, const std::string& attribute, const picojson::value& value )
 	{
 	    if ( value.is<picojson::object>() ) {
-		std::cerr << indent( +1 ) << attribute << ": {" << endl;
+		std::cerr << indent( +1 ) << attribute << ": {" << std::endl;
 	    } else if ( value.is<picojson::array>() ) {
-		std::cerr << indent( +1 ) << attribute << ": [" << endl;
+		std::cerr << indent( +1 ) << attribute << ": [" << std::endl;
 	    } else {
-		std::cerr << indent( 0 ) << attribute << ": " << value.to_str() << endl;
+		std::cerr << indent( 0 ) << attribute << ": " << value.to_str() << std::endl;
 	    }
 	    return output;
 	}
@@ -1577,11 +1575,11 @@ namespace LQIO {
 	Json_Document::Import::beginAttribute( std::ostream& output, const picojson::value& value )
 	{
 	    if ( value.is<picojson::object>() ) {
-		std::cerr << indent( +1 ) << "{" << endl;
+		std::cerr << indent( +1 ) << "{" << std::endl;
 	    } else if ( value.is<picojson::array>() ) {
-		std::cerr << indent( +1 ) << "[" << endl;
+		std::cerr << indent( +1 ) << "[" << std::endl;
 	    } else {
-		std::cerr << indent( 0 ) << value.to_str() << endl;
+		std::cerr << indent( 0 ) << value.to_str() << std::endl;
 	    }
 	    return output;
 	}
@@ -1596,9 +1594,9 @@ namespace LQIO {
 	Json_Document::Import::endAttribute( std::ostream& output, const picojson::value& value )
 	{
 	    if ( value.is<picojson::object>() ) {
-		std::cerr << indent( -1 ) << "}" << endl;
+		std::cerr << indent( -1 ) << "}" << std::endl;
 	    } else if ( value.is<picojson::array>() ) {
-		std::cerr << indent( -1 ) << "]" << endl;
+		std::cerr << indent( -1 ) << "]" << std::endl;
 	    }
 
 	    return output;
@@ -1611,7 +1609,7 @@ namespace LQIO {
 	void
 	Json_Document::ImportModel::operator()( const std::string& attribute, Json_Document& document, const picojson::value& value ) const
 	{
-	    if ( Document::__debugJSON ) cerr << begin_attribute( attribute, value );
+	    if ( Document::__debugJSON ) std::cerr << begin_attribute( attribute, value );
 
 	    switch ( getType() ) {
 	    case dom_type::JSON_OBJECT:
@@ -1630,7 +1628,7 @@ namespace LQIO {
 		break;
 	    }
 
-	    if ( Document::__debugJSON ) cerr << end_attribute( attribute, value );
+	    if ( Document::__debugJSON ) std::cerr << end_attribute( attribute, value );
 	}
 
 	/*
@@ -1640,7 +1638,7 @@ namespace LQIO {
 	void
 	Json_Document::ImportGeneral::operator()( const std::string& attribute, Json_Document& input, Document& document, const picojson::value& value ) const
 	{
-	    if ( Document::__debugJSON ) cerr << begin_attribute( attribute, value );
+	    if ( Document::__debugJSON ) std::cerr << begin_attribute( attribute, value );
 
 	    switch ( getType()	) {
 	    case dom_type::DOM_EXTVAR:
@@ -1687,7 +1685,7 @@ namespace LQIO {
 		abort();
 	    }
 
-	    if ( Document::__debugJSON ) cerr << end_attribute( attribute, value );
+	    if ( Document::__debugJSON ) std::cerr << end_attribute( attribute, value );
 	}
 
 
@@ -1698,7 +1696,7 @@ namespace LQIO {
 	void
 	Json_Document::ImportProcessor::operator()( const std::string& attribute, Json_Document& input, Processor& processor, const picojson::value& value ) const
 	{
-	    if ( Document::__debugJSON ) cerr << begin_attribute( attribute, value );
+	    if ( Document::__debugJSON ) std::cerr << begin_attribute( attribute, value );
 
 	    switch ( getType() ) {
 	    case dom_type::DOM_EXTVAR:
@@ -1744,7 +1742,7 @@ namespace LQIO {
 		break;
 	    }
 
-	    if ( Document::__debugJSON ) cerr << end_attribute( attribute, value );
+	    if ( Document::__debugJSON ) std::cerr << end_attribute( attribute, value );
 	}
 
 
@@ -1755,7 +1753,7 @@ namespace LQIO {
 	void
 	Json_Document::ImportGroup::operator()( const std::string& attribute, Json_Document& input, Group& group, const picojson::value& value ) const
 	{
-	    if ( Document::__debugJSON ) cerr << begin_attribute( attribute, value );
+	    if ( Document::__debugJSON ) std::cerr << begin_attribute( attribute, value );
 	    switch ( getType() ) {
 	    case dom_type::DOM_EXTVAR:
 		(group.*getFptr().gr_e)( input.get_external_variable( value ) );
@@ -1806,7 +1804,7 @@ namespace LQIO {
 	    default:
 		abort();
 	    }
-	    if ( Document::__debugJSON ) cerr << end_attribute( attribute, value );
+	    if ( Document::__debugJSON ) std::cerr << end_attribute( attribute, value );
 	}
 
 
@@ -1817,7 +1815,7 @@ namespace LQIO {
 	void
 	Json_Document::ImportTask::operator()( const std::string& attribute, Json_Document& input, Task& task, const picojson::value& value ) const
 	{
-	    if ( Document::__debugJSON ) cerr << begin_attribute( attribute, value );
+	    if ( Document::__debugJSON ) std::cerr << begin_attribute( attribute, value );
 
 	    switch ( getType() ) {
 	    case dom_type::DOM_EXTVAR:
@@ -1887,7 +1885,7 @@ namespace LQIO {
 		break;
 	    }
 
-	    if ( Document::__debugJSON ) cerr << end_attribute( attribute, value );
+	    if ( Document::__debugJSON ) std::cerr << end_attribute( attribute, value );
 	}
 
 
@@ -1900,9 +1898,9 @@ namespace LQIO {
 	{
 	    if ( Document::__debugJSON ) {
 		if ( is_array ) {
-		    Import::beginAttribute( cerr, value );
+		    Import::beginAttribute( std::cerr, value );
 		} else {
-		    Import::beginAttribute( cerr, attribute, value );
+		    Import::beginAttribute( std::cerr, attribute, value );
 		}
 	    }
 
@@ -1949,9 +1947,9 @@ namespace LQIO {
 
 	    if ( Document::__debugJSON ) {
 		if ( is_array ) {
-		    Import::endAttribute( cerr, value );
+		    Import::endAttribute( std::cerr, value );
 		} else {
-		    Import::endAttribute( cerr, attribute, value );
+		    Import::endAttribute( std::cerr, attribute, value );
 		}
 	    }
 	}
@@ -1964,7 +1962,7 @@ namespace LQIO {
 	void
 	Json_Document::ImportEntry::operator()( const std::string& attribute, Json_Document& input, Phase& phase, const picojson::value& value ) const
 	{
-	    if ( Document::__debugJSON ) Import::beginAttribute( cerr, value );
+	    if ( Document::__debugJSON ) Import::beginAttribute( std::cerr, value );
 
 	    switch ( getType() ) {
 	    case dom_type::DOM_EXTVAR:
@@ -1992,14 +1990,14 @@ namespace LQIO {
 		break;
 	    }
 
-	    if ( Document::__debugJSON ) Import::endAttribute( cerr, value );
+	    if ( Document::__debugJSON ) Import::endAttribute( std::cerr, value );
 	}
 
 
 	void
 	Json_Document::ImportPhase::operator()( const std::string& attribute, Json_Document& input, Phase& phase, const picojson::value& value ) const
 	{
-	    if ( Document::__debugJSON ) cerr << begin_attribute( attribute, value );
+	    if ( Document::__debugJSON ) std::cerr << begin_attribute( attribute, value );
 
 	    switch ( getType() ) {
 	    case dom_type::DOM_EXTVAR:
@@ -2032,7 +2030,7 @@ namespace LQIO {
 		abort();
 	    }
 
-	    if ( Document::__debugJSON ) cerr << end_attribute( attribute, value );
+	    if ( Document::__debugJSON ) std::cerr << end_attribute( attribute, value );
 	}
 
 
@@ -2044,7 +2042,7 @@ namespace LQIO {
 	void
 	Json_Document::ImportCall::operator()( const std::string& attribute, Json_Document& input, Call& call, const picojson::value& value ) const
 	{
-	    if ( Document::__debugJSON ) Import::beginAttribute( cerr, value );
+	    if ( Document::__debugJSON ) Import::beginAttribute( std::cerr, value );
 
 	    switch ( getType() ) {
 	    case dom_type::DOM_EXTVAR:
@@ -2063,7 +2061,7 @@ namespace LQIO {
 		break;
 	    }
 
-	    if ( Document::__debugJSON ) Import::endAttribute( cerr, value );
+	    if ( Document::__debugJSON ) Import::endAttribute( std::cerr, value );
 	}
 
 	/*
@@ -2073,7 +2071,7 @@ namespace LQIO {
 	void
 	Json_Document::ImportCall::operator()( const std::string& attribute, Json_Document& input, Entry& entry, const picojson::value& value ) const
 	{
-	    if ( Document::__debugJSON ) cerr << begin_attribute( attribute, value );
+	    if ( Document::__debugJSON ) std::cerr << begin_attribute( attribute, value );
 	    switch ( getType() ) {
 	    case dom_type::JSON_OBJECT:
 		(input.*getFptr().o)( &entry, value );
@@ -2087,13 +2085,13 @@ namespace LQIO {
 		break;
 	    }
 
-	    if ( Document::__debugJSON ) cerr << end_attribute( attribute, value );
+	    if ( Document::__debugJSON ) std::cerr << end_attribute( attribute, value );
 	}
 
 	void
 	Json_Document::ImportTaskActivity::operator()( const std::string& attribute, Json_Document& input, Task *task, const picojson::value& value ) const
 	{
-	    if ( Document::__debugJSON ) cerr << begin_attribute( attribute, value );
+	    if ( Document::__debugJSON ) std::cerr << begin_attribute( attribute, value );
 	    switch ( getType() ) {
 	    case dom_type::JSON_OBJECT:
 		if ( value.is<picojson::object>() || value.is<picojson::array>() ) {
@@ -2107,13 +2105,13 @@ namespace LQIO {
 	    default:
 		abort();
 	    }
-	    if ( Document::__debugJSON ) cerr << end_attribute( attribute, value );
+	    if ( Document::__debugJSON ) std::cerr << end_attribute( attribute, value );
 	}
 
 	void
 	Json_Document::ImportActivity::operator()( const std::string& attribute, Json_Document& input, Activity& activity, const picojson::value& value ) const
 	{
-	    if ( Document::__debugJSON ) cerr << begin_attribute( attribute, value );
+	    if ( Document::__debugJSON ) std::cerr << begin_attribute( attribute, value );
 
 	    switch ( getType() ) {
 	    case dom_type::DOM_EXTVAR:
@@ -2146,7 +2144,7 @@ namespace LQIO {
 		abort();
 	    }
 
-	    if ( Document::__debugJSON ) cerr << end_attribute( attribute, value );
+	    if ( Document::__debugJSON ) std::cerr << end_attribute( attribute, value );
 	}
 
 
@@ -2160,7 +2158,7 @@ namespace LQIO {
 
 		/* Just an activity reference */
 
-		if ( Document::__debugJSON ) cerr << indent(0) << value.get<std::string>() << std::endl;
+		if ( Document::__debugJSON ) std::cerr << indent(0) << value.get<std::string>() << std::endl;
 		activity = task->getActivity( value.get<std::string>() );
 		if ( !activity ) {
 		    throw undefined_symbol( value.get<std::string>().c_str() );
@@ -2170,7 +2168,7 @@ namespace LQIO {
 		const picojson::value::object& obj = value.get<picojson::object>();
 		picojson::value::object::const_iterator i = obj.begin();
 		if ( obj.size() == 1 ) {
-		    if ( Document::__debugJSON ) cerr << indent(0) << "{ " << i->first << ": " << i->second.to_str() << " }" << std::endl;
+		    if ( Document::__debugJSON ) std::cerr << indent(0) << "{ " << i->first << ": " << i->second.to_str() << " }" << std::endl;
 		    const std::string& name = i->first;
 		    activity = task->getActivity( name );
 		    if ( !activity ) {
@@ -2205,7 +2203,7 @@ namespace LQIO {
 	void
 	Json_Document::ImportGeneralObservation::operator()( const std::string& attribute, Json_Document& input, LQIO::DOM::Document& document, const picojson::value& value ) const
 	{
-	    if ( Document::__debugJSON ) cerr << begin_attribute( attribute, value );
+	    if ( Document::__debugJSON ) std::cerr << begin_attribute( attribute, value );
 	    const int key = getKey();
 	    try {
 		if ( value.is<std::string>() ) {
@@ -2219,13 +2217,13 @@ namespace LQIO {
 		LQIO::solution_error( LQIO::ERR_INVALID_ARGUMENT, attribute.c_str(), arg.what() );
 	    }
 
-	    if ( Document::__debugJSON ) cerr << end_attribute( attribute, value );
+	    if ( Document::__debugJSON ) std::cerr << end_attribute( attribute, value );
 	}
 
 	void
 	Json_Document::ImportObservation::operator()( const std::string& attribute, Json_Document& input, DocumentObject& object, unsigned int phase, const picojson::value& value ) const
 	{
-	    if ( Document::__debugJSON ) cerr << begin_attribute( attribute, value );
+	    if ( Document::__debugJSON ) std::cerr << begin_attribute( attribute, value );
 
 	    const int key = getKey();
 	    try {
@@ -2256,7 +2254,7 @@ namespace LQIO {
 		LQIO::solution_error( LQIO::ERR_INVALID_ARGUMENT, attribute.c_str(), arg.what() );
 	    }
 
-	    if ( Document::__debugJSON ) cerr << end_attribute( attribute, value );
+	    if ( Document::__debugJSON ) std::cerr << end_attribute( attribute, value );
 	}
 
 	void
@@ -2302,7 +2300,7 @@ namespace LQIO {
 	void
 	Json_Document::ImportGeneralResult::operator()( const std::string& attribute, Json_Document& input, Document& document, const picojson::value& value ) const
 	{
-	    if ( Document::__debugJSON ) cerr << begin_attribute( attribute, value );
+	    if ( Document::__debugJSON ) std::cerr << begin_attribute( attribute, value );
 	    unsigned long hrs	= 0;
 	    unsigned long mins	= 0;
 	    double secs	 = 0;
@@ -2341,8 +2339,8 @@ namespace LQIO {
 		break;
 
 	    case dom_type::STRING:
-		if ( value.is<string>() ) {
-		    (document.*getFptr().ds)( value.get<string>() );
+		if ( value.is<std::string>() ) {
+		    (document.*getFptr().ds)( value.get<std::string>() );
 		} else {
 		    invalid_argument( attribute, value.to_str() );
 		}
@@ -2363,13 +2361,13 @@ namespace LQIO {
 		invalid_argument( attribute, value.to_str() );
 		break;
 	    }
-	    if ( Document::__debugJSON ) cerr << end_attribute( attribute, value );
+	    if ( Document::__debugJSON ) std::cerr << end_attribute( attribute, value );
 	}
 
 	void
 	Json_Document::ImportResult::operator()( const std::string& attribute, Json_Document& input, DocumentObject& dom_obj, const picojson::value& value ) const
 	{
-	    if ( Document::__debugJSON ) cerr << begin_attribute( attribute, value );
+	    if ( Document::__debugJSON ) std::cerr << begin_attribute( attribute, value );
 	    if ( value.is<double>() && getType() == dom_type::DOUBLE ) {
 		(dom_obj.*getFptr().re_d)( value.get<double>() );
 	    } else if ( value.is<picojson::array>() ) {		/* phase results */
@@ -2377,7 +2375,7 @@ namespace LQIO {
 		const picojson::value::array& arr = value.get<picojson::array>();
 		unsigned int p = 1;
 		for ( picojson::value::array::const_iterator x = arr.begin(); x != arr.end(); ++x, ++p ) {
-		    if ( Document::__debugJSON ) Import::beginAttribute( cerr, *x );
+		    if ( Document::__debugJSON ) Import::beginAttribute( std::cerr, *x );
 		    if ( x->is<double>() ) {
 			(dom_obj.*getF2ptr())( p, x->get<double>() );
 		    } else if ( x->is<picojson::object>() ) {
@@ -2387,7 +2385,7 @@ namespace LQIO {
 		    } else {
 			invalid_argument( attribute, value.to_str() );
 		    }
-		    if ( Document::__debugJSON ) Import::endAttribute( cerr, *x );
+		    if ( Document::__debugJSON ) Import::endAttribute( std::cerr, *x );
 		}
 	    } else if ( value.is<picojson::object>() ) {
 		const picojson::value::object& obj = value.get<picojson::object>();
@@ -2395,10 +2393,10 @@ namespace LQIO {
 		    const std::string& attr = i->first;
 		    const picojson::value& arg = i->second;
 		    if ( attr == Xmean && arg.is<double>() ) {
-			if ( Document::__debugJSON ) Import::beginAttribute( cerr, attr, arg );
+			if ( Document::__debugJSON ) Import::beginAttribute( std::cerr, attr, arg );
 			(dom_obj.*getFptr().re_d)( arg.get<double>() );				/* Mean */
 		    } else if ( attr == Xconf_95 ) {
-			if ( Document::__debugJSON ) Import::beginAttribute( cerr, attr, arg );
+			if ( Document::__debugJSON ) Import::beginAttribute( std::cerr, attr, arg );
 			(dom_obj.*getGptr())( input.invert( arg.get<double>() ) );		/* Variance */
 		    } else {
 			LQIO::solution_error( LQIO::ERR_UNEXPECTED_ATTRIBUTE, Xresults, attr.c_str() );
@@ -2407,14 +2405,14 @@ namespace LQIO {
 	    } else {
 		invalid_argument( attribute, value.to_str() );
 	    }
-	    if ( Document::__debugJSON ) cerr << end_attribute( attribute, value );
+	    if ( Document::__debugJSON ) std::cerr << end_attribute( attribute, value );
 	}
 
 
 	void
 	Json_Document::ImportHistogram::operator()( const std::string& attribute, Json_Document& input, Histogram& hist, const picojson::value& value ) const
 	{
-	    if ( Document::__debugJSON ) cerr << begin_attribute( attribute, value );
+	    if ( Document::__debugJSON ) std::cerr << begin_attribute( attribute, value );
 	    switch ( getType() ) {
 	    case dom_type::JSON_OBJECT:		/* Bin number */
 		if ( value.is<picojson::object>() || value.is<picojson::array>() ) {
@@ -2430,7 +2428,7 @@ namespace LQIO {
 		break;
 	    }
 
-	    if ( Document::__debugJSON ) cerr << end_attribute( attribute, value );
+	    if ( Document::__debugJSON ) std::cerr << end_attribute( attribute, value );
 	}
     }
 }
@@ -2475,7 +2473,7 @@ namespace LQIO {
 	    if ( !document.instantiated() && Spex::numberOfInputVariables() > 0 ) {
 		_output << begin_array( Xparameters );
 		const std::map<std::string,LQX::SyntaxTreeNode *>& vars = Spex::get_input_variables();
-		for_each( vars.begin(), vars.end(), ExportParameters( _output, _conf_95 ) );
+		std::for_each( vars.begin(), vars.end(), ExportParameters( _output, _conf_95 ) );
 		_output << end_array() << ",";
 	    }
 
@@ -2483,7 +2481,7 @@ namespace LQIO {
 
 	    const std::map<std::string,Processor *>& processors = document.getProcessors();
 	    _output << next_begin_array( Xprocessor );
-	    for_each( processors.begin(), processors.end(), ExportProcessor( _output, _conf_95 ) );
+	    std::for_each( processors.begin(), processors.end(), ExportProcessor( _output, _conf_95 ) );
 	    _output << end_array();
 
 	    const std::vector<Spex::var_name_and_expr>& results = Spex::get_result_variables();
@@ -2491,8 +2489,8 @@ namespace LQIO {
 		const std::map<std::string,LQX::SyntaxTreeNode *>& input_variables = Spex::get_input_variables();
 		LQX::SyntaxTreeNode::setVariablePrefix( "$" );
 		_output << next_begin_array( Xresults );
-		for_each( input_variables.begin(), input_variables.end(), ExportInputVariables( _output, _conf_95 ) );
-		for_each( results.begin(), results.end(), ExportResults( _output, _conf_95 ) );
+		std::for_each( input_variables.begin(), input_variables.end(), ExportInputVariables( _output, _conf_95 ) );
+		std::for_each( results.begin(), results.end(), ExportResults( _output, _conf_95 ) );
 		_output << end_array();
 	    }
 
@@ -2529,14 +2527,14 @@ namespace LQIO {
 	    if ( document.hasPragmas() ) {
 		_output << next_begin_array( Xpragma );
 		const std::map<std::string,std::string>& pragmas = document.getPragmaList();
-		for_each( pragmas.begin(), pragmas.end(), ExportPragma( _output, _conf_95 ) );
+		std::for_each( pragmas.begin(), pragmas.end(), ExportPragma( _output, _conf_95 ) );
 		_output << end_array();
 	    }
 
 	    const std::vector<LQIO::Spex::ObservationInfo> doc_vars = LQIO::Spex::get_document_variables();
 	    if ( doc_vars.size() > 0 ) {
 		_output << next_begin_object( Xobserve );
-		for_each ( doc_vars.begin(), doc_vars.end(), ExportObservation( _output, _conf_95 ) );
+		std::for_each ( doc_vars.begin(), doc_vars.end(), ExportObservation( _output, _conf_95 ) );
 		_output << end_object();
 	    }
 	    if ( document.hasResults() ) {
@@ -2613,7 +2611,7 @@ namespace LQIO {
 		std::pair<Spex::obs_var_tab_t::const_iterator, Spex::obs_var_tab_t::const_iterator> range = Spex::get_observations().equal_range( &processor );
 		if ( range.first != range.second ) {
 		    _output << next_begin_object( Xobserve );
-		    for_each( range.first, range.second, ExportObservation( _output, _conf_95 ) );
+		    std::for_each( range.first, range.second, ExportObservation( _output, _conf_95 ) );
 		    _output << end_object();
 		}
 	    }
@@ -2628,12 +2626,12 @@ namespace LQIO {
 	    const std::set<Group*>& groups = processor.getGroupList();
 	    if ( groups.size() > 0 ) {
 		_output << next_begin_array( Xgroup );
-		for_each( groups.begin(), groups.end(), ExportGroup( _output, _conf_95 ) );
+		std::for_each( groups.begin(), groups.end(), ExportGroup( _output, _conf_95 ) );
 		_output << end_array();
 	    } else {
 		const std::set<Task *>& tasks = processor.getTaskList();
 		_output << next_begin_array( Xtask );
-		for_each( tasks.begin(), tasks.end(), ExportTask( _output, _conf_95 ) );
+		std::for_each( tasks.begin(), tasks.end(), ExportTask( _output, _conf_95 ) );
 		_output << end_array();
 	    }
 	    _output << end_object();
@@ -2657,7 +2655,7 @@ namespace LQIO {
 		std::pair<Spex::obs_var_tab_t::const_iterator, Spex::obs_var_tab_t::const_iterator> range = Spex::get_observations().equal_range( &group );
 		if ( range.first != range.second ) {
 		    _output << next_begin_object( Xobserve );
-		    for_each( range.first, range.second, ExportObservation( _output, _conf_95 ) );
+		    std::for_each( range.first, range.second, ExportObservation( _output, _conf_95 ) );
 		    _output << end_object();
 		}
 	    }
@@ -2671,7 +2669,7 @@ namespace LQIO {
 
 	    const std::set<Task *>& tasks = group.getTaskList();
 	    _output << next_begin_array( Xtask );
-	    for_each( tasks.begin(), tasks.end(), ExportTask( _output, _conf_95 ) );
+	    std::for_each( tasks.begin(), tasks.end(), ExportTask( _output, _conf_95 ) );
 	    _output << end_array();
 	    _output << end_object();
 	}
@@ -2714,12 +2712,12 @@ namespace LQIO {
 	    }
 	    if ( task.getFanIns().size() > 0 ) {
 		_output << next_begin_array( Xfanin );
-		for_each( task.getFanIns().begin(), task.getFanIns().end(), ExportFanInOut( _output, _conf_95 ) );
+		std::for_each( task.getFanIns().begin(), task.getFanIns().end(), ExportFanInOut( _output, _conf_95 ) );
 		_output << end_array();
 	    }
 	    if ( task.getFanOuts().size() > 0 ) {
 		_output << next_begin_array( Xfanout );
-		for_each( task.getFanOuts().begin(), task.getFanOuts().end(), ExportFanInOut( _output, _conf_95 ) );
+		std::for_each( task.getFanOuts().begin(), task.getFanOuts().end(), ExportFanInOut( _output, _conf_95 ) );
 		_output << end_array();
 	    }
 
@@ -2732,12 +2730,12 @@ namespace LQIO {
 		    std::vector< std::vector<Spex::ObservationInfo> > obs( n_phases + 1 );
 		    bool has_phases = false;
 		    for ( unsigned int i = 0; i <= n_phases; ++i ) {
-			for_each( range.first, range.second, CollectPhase( obs[i], i ) );
+			std::for_each( range.first, range.second, CollectPhase( obs[i], i ) );
 			has_phases |= (i > 0 && obs[i].size() > 0);
 		    }
 		    /* Only want phase 0 (total) */
 		    if ( obs[0].size() > 0 ) {
-			for_each( obs[0].begin(), obs[0].end(), ExportObservation( _output, _conf_95 ) );
+			std::for_each( obs[0].begin(), obs[0].end(), ExportObservation( _output, _conf_95 ) );
 		    }
 		    if ( has_phases ) {
 			if ( obs[0].size() > 0 ) _output << ",";
@@ -2746,7 +2744,7 @@ namespace LQIO {
 			    if ( p != 1 ) _output << ", ";
 			    _output << begin_object()
 				    << attribute( Xphase, p ) << ",";
-			    for_each( obs[p].begin(), obs[p].end(), ExportObservation( _output, _conf_95 ) );
+			    std::for_each( obs[p].begin(), obs[p].end(), ExportObservation( _output, _conf_95 ) );
 			    _output << end_object();
 			}
 			_output << end_array();
@@ -2795,14 +2793,14 @@ namespace LQIO {
 
 	    /* Entry definition */
 	    _output << next_begin_array( Xentry );
-	    for_each ( entries.begin(), entries.end(), ExportEntry( _output, _conf_95 ) );
+	    std::for_each ( entries.begin(), entries.end(), ExportEntry( _output, _conf_95 ) );
 	    _output << end_array();
 
 	    /* Activity definitions */
 	    const std::map<std::string,Activity*>& activities = task.getActivities();
 	    if ( activities.size() ) {
 		_output << next_begin_array( Xactivity );
-		for_each( activities.begin(), activities.end(), ExportActivity( _output, _conf_95 ) );
+		std::for_each( activities.begin(), activities.end(), ExportActivity( _output, _conf_95 ) );
 		_output << end_array();
 	    }
 
@@ -2810,7 +2808,7 @@ namespace LQIO {
 	    const std::set<ActivityList*>& precedences = task.getActivityLists();
 	    if ( precedences.size() > 1 ) {
 		_output << next_begin_array( Xprecedence );
-		for_each( precedences.begin(), precedences.end(), ExportPrecedence( _output, _conf_95 ) );
+		std::for_each( precedences.begin(), precedences.end(), ExportPrecedence( _output, _conf_95 ) );
 		_output << end_array();
 	    }
 	    _output << end_object();
@@ -2848,7 +2846,7 @@ namespace LQIO {
 	    const std::vector<Call *>& forwarding = entry.getForwarding();
 	    if ( forwarding.size() > 0 ) {
 		_output << next_begin_array( Xforwarding );
-		for_each( forwarding.begin(), forwarding.end(), ExportCall( _output, Call::Type::FORWARD, _conf_95 ) );
+		std::for_each( forwarding.begin(), forwarding.end(), ExportCall( _output, Call::Type::FORWARD, _conf_95 ) );
 		_output << end_array();
 	    }
 
@@ -2858,7 +2856,7 @@ namespace LQIO {
 		_output << next_attribute( Xstart_activity, entry.getStartActivity()->getName() );
 	    } else {
 		_output << next_begin_array( Xphase );
-		for_each( phases.begin(), phases.end(), ExportPhase( _output, _conf_95 ) );
+		std::for_each( phases.begin(), phases.end(), ExportPhase( _output, _conf_95 ) );
 		_output << end_array();
 	    }
 
@@ -2874,7 +2872,7 @@ namespace LQIO {
 		std::pair<Spex::obs_var_tab_t::const_iterator, Spex::obs_var_tab_t::const_iterator> range = Spex::get_observations().equal_range( &entry );
 		if ( range.first != range.second ) {
 		    _output << next_begin_object( Xobserve );
-		    for_each( range.first, range.second, ExportObservation( _output, _conf_95 ) );
+		    std::for_each( range.first, range.second, ExportObservation( _output, _conf_95 ) );
 		    _output << end_object();
 		}
 	    }
@@ -2905,7 +2903,7 @@ namespace LQIO {
 	}
 
 	/*
-	 * print out the phases.  don't use for_each because the phases are a map, so phase 1 may not exist.  however,
+	 * print out the phases.  don't use std::for_each because the phases are a map, so phase 1 may not exist.  however,
 	 * the json version uses arrays, so use null if the phase is not there.
 	 */
 
@@ -3059,7 +3057,7 @@ namespace LQIO {
 		std::pair<Spex::obs_var_tab_t::const_iterator, Spex::obs_var_tab_t::const_iterator> range = Spex::get_observations().equal_range( call );
 		if ( range.first != range.second ) {
 		    _output << next_begin_object( Xobserve );
-		    for_each( range.first, range.second, ExportObservation( _output, _conf_95 ) );
+		    std::for_each( range.first, range.second, ExportObservation( _output, _conf_95 ) );
 		    _output << end_object();
 		}
 	    }
@@ -3119,12 +3117,12 @@ namespace LQIO {
 	    const std::vector<Call*>& calls = phase.getCalls();
 	    if ( std::any_of( calls.begin(), calls.end(), has_synch_call ) ) {
 		_output << next_begin_array( Xsynch_call );
-		for_each( calls.begin(), calls.end(), ExportCall( _output, Call::Type::RENDEZVOUS, _conf_95 ) );
+		std::for_each( calls.begin(), calls.end(), ExportCall( _output, Call::Type::RENDEZVOUS, _conf_95 ) );
 		_output << end_array();
 	    }
 	    if ( std::any_of( calls.begin(), calls.end(), has_asynch_call ) ) {
 		_output << next_begin_array( Xasynch_call );
-		for_each( calls.begin(), calls.end(), ExportCall( _output, Call::Type::SEND_NO_REPLY, _conf_95 ) );
+		std::for_each( calls.begin(), calls.end(), ExportCall( _output, Call::Type::SEND_NO_REPLY, _conf_95 ) );
 		_output << end_array();
 	    }
 	}
@@ -3137,7 +3135,7 @@ namespace LQIO {
 		std::pair<Spex::obs_var_tab_t::const_iterator, Spex::obs_var_tab_t::const_iterator> range = Spex::get_observations().equal_range( &phase );
 		if ( range.first != range.second ) {
 		    _output << next_begin_object( Xobserve );
-		    for_each( range.first, range.second, ExportObservation( _output, _conf_95 ) );
+		    std::for_each( range.first, range.second, ExportObservation( _output, _conf_95 ) );
 		    _output << end_object();
 		}
 	    }
@@ -3333,7 +3331,7 @@ namespace LQIO {
 		output << std::endl;
 	    }
 	    if ( __indent > 0 ) {
-		output << setw( __indent * 4 ) << " ";
+		output << std::setw( __indent * 4 ) << " ";
 	    }
 	    return output;
 	}
@@ -3500,7 +3498,7 @@ namespace LQIO {
 		    if ( isgraph( *p ) ) {
 			output << *p;
 		    } else {
-			output << "\\u" << std::setfill('0') << std::setw(4) << static_cast<unsigned int>(*p) << setfill( ' ' );
+			output << "\\u" << std::setfill('0') << std::setw(4) << static_cast<unsigned int>(*p) << std::setfill( ' ' );
 		    }
 		    break;
 		}
@@ -3573,7 +3571,7 @@ namespace LQIO {
 	    }
 	    output << indent() << "}";
 	    if ( __indent == 0 ) {
-		output << endl;
+		output << std::endl;
 	    }
 	    return output;
 	}

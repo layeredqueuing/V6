@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: expat_document.cpp 14132 2020-11-25 13:11:04Z greg $
+ * $Id: expat_document.cpp 14133 2020-11-25 13:51:31Z greg $
  *
  * Read in XML input files.
  *
@@ -2392,7 +2392,7 @@ namespace LQIO {
 	    /* Export in model input order */
 
 	    const std::map<unsigned,Entity *>& entities = _document.getEntities();
-	    for_each( entities.begin(), entities.end(), ExportProcessor( output, *this ) );
+	    std::for_each( entities.begin(), entities.end(), ExportProcessor( output, *this ) );
 
             if ( !_document.instantiated() ) {
 		if ( hasSPEX() ) {
@@ -2456,7 +2456,7 @@ namespace LQIO {
 	    output << start_element( Xspex_parameters ) << ">" /* <![CDATA[" */ << std::endl;
 	    const std::map<std::string,LQX::SyntaxTreeNode *>& input_variables = Spex::get_input_variables();
 	    LQX::SyntaxTreeNode::setVariablePrefix( "$" );
-	    for_each( input_variables.begin(), input_variables.end(), Spex::PrintInputVariable( output ) );
+	    std::for_each( input_variables.begin(), input_variables.end(), Spex::PrintInputVariable( output ) );
 	    output /* << "]]>" << std::endl */ << end_element( Xspex_parameters ) << std::endl;
 	    output.precision(precision);
 	}
@@ -2490,7 +2490,7 @@ namespace LQIO {
                 }
 		if ( doc_vars.size() > 0 ) {
                     output << simple_element( Xresult_observation );
-		    for_each( doc_vars.begin(), doc_vars.end(), ExportObservation( output ) );
+		    std::for_each( doc_vars.begin(), doc_vars.end(), ExportObservation( output ) );
 		    output << "/>" << std::endl;
 		}
                 if ( hasResults() ) {
@@ -2588,9 +2588,9 @@ namespace LQIO {
             }
 
             const std::set<Group*>& group_list = processor.getGroupList();
-	    for_each( group_list.begin(), group_list.end(), ExportGroup( output, *this ) );
+	    std::for_each( group_list.begin(), group_list.end(), ExportGroup( output, *this ) );
 
-	    for_each( task_list.begin(), task_list.end(), ExportTask( output, *this, true ) );
+	    std::for_each( task_list.begin(), task_list.end(), ExportTask( output, *this, true ) );
 
             output << end_element( Xprocessor ) << std::endl;
         }
@@ -2620,7 +2620,7 @@ namespace LQIO {
 
 
             const std::set<Task*>& task_list = group.getTaskList();
-	    for_each( task_list.begin(), task_list.end(), ExportTask( output, *this ) );
+	    std::for_each( task_list.begin(), task_list.end(), ExportTask( output, *this ) );
 
             output << end_element( Xgroup ) << std::endl;
         }
@@ -2801,7 +2801,7 @@ namespace LQIO {
             }
 
             const std::vector<Entry *>& entries = task.getEntryList();
-	    for_each( entries.begin(), entries.end(), ExportEntry( output, *this ) );
+	    std::for_each( entries.begin(), entries.end(), ExportEntry( output, *this ) );
 
             const std::map<std::string,DOM::Activity*>& activities = task.getActivities();
             if ( activities.size() > 0 ) {
@@ -2809,12 +2809,12 @@ namespace LQIO {
                 /* The activities */
 
                 output << start_element( Xtask_activities ) << ">" << std::endl;
-                for_each( activities.begin(), activities.end(), ExportActivity( output, *this ) );
+                std::for_each( activities.begin(), activities.end(), ExportActivity( output, *this ) );
 
                 /* Precedence connections */
 
                 const std::set<ActivityList*>& precedences = task.getActivityLists();
-                for_each ( precedences.begin(), precedences.end(), ExportPrecedence( output, *this ) );
+                std::for_each ( precedences.begin(), precedences.end(), ExportPrecedence( output, *this ) );
 
                 /* Finally handle the list of replies. We find all of the reply entries for the activities, then swap the order. */
                 std::map<const Entry *,std::vector<const Activity *> > entry_reply_list;
@@ -2988,13 +2988,13 @@ namespace LQIO {
                 }
 
                 const std::vector<Call*>& forwarding = entry.getForwarding();
-                for_each( forwarding.begin(), forwarding.end(), ExportCall( output, *this ) );
+                std::for_each( forwarding.begin(), forwarding.end(), ExportCall( output, *this ) );
 
                 if ( entry.isStandardEntry() ) {
                     output << start_element( Xentry_phase_activities ) << ">" << std::endl;
 
                     const std::map<unsigned, Phase*>& phases = entry.getPhaseList();
-                    for_each ( phases.begin(), phases.end(), ExportPhase( output, *this ) );
+                    std::for_each ( phases.begin(), phases.end(), ExportPhase( output, *this ) );
                     output << end_element( Xentry_phase_activities ) << std::endl;
                 }
             } /* if ( complex_element ) */
@@ -3127,7 +3127,7 @@ namespace LQIO {
                     output << end_element( Xresult_activity, has_confidence ) << std::endl;
                 }
 
-		for_each( calls.begin(), calls.end(), ExportCall( output, *this ) );
+		std::for_each( calls.begin(), calls.end(), ExportCall( output, *this ) );
             } /* if ( complex_element ) */
 
             output << end_element( Xactivity, complex_element ) << std::endl;
@@ -3362,17 +3362,17 @@ namespace LQIO {
 		const bool has_99 = find_if( range.first, range.second, HasConfidenceObservation( 99 ) ) != range.second;
 		const bool complex_type = has_95 || has_99;
 		output << start_element( Xresult_observation, complex_type );
-		for_each( range.first, range.second, ExportObservation( output ) );
+		std::for_each( range.first, range.second, ExportObservation( output ) );
 		if ( complex_type ) {
 		    output << ">" << std::endl;
 		    if ( has_95 ) {
 			output << start_element( Xconf_95, false );
-			for_each( range.first, range.second, ExportObservation( output, 95 ) );
+			std::for_each( range.first, range.second, ExportObservation( output, 95 ) );
 			output << "/>" << std::endl;
 		    }
 		    if ( has_99 ) {
 			output << start_element( Xconf_99, false );
-			for_each( range.first, range.second, ExportObservation( output, 99 ) );
+			std::for_each( range.first, range.second, ExportObservation( output, 99 ) );
 			output << "/>" << std::endl;
 		    }
 		}
@@ -3408,8 +3408,8 @@ namespace LQIO {
 		const int precision = output.precision(10);
 		output << start_element( Xspex_results ) << ">" /* <![CDATA[" */ << std::endl;
 		LQX::SyntaxTreeNode::setVariablePrefix( "$" );
-		for_each( input_variables.begin(), input_variables.end(), Spex::PrintInputArrayVariable( output ) );
-		for_each( results.begin(), results.end(), Spex::PrintResultVariable( output ) );
+		std::for_each( input_variables.begin(), input_variables.end(), Spex::PrintInputArrayVariable( output ) );
+		std::for_each( results.begin(), results.end(), Spex::PrintResultVariable( output ) );
 		output /* << "]]>" << std::endl */ << end_element( Xspex_results ) << std::endl;
 		output.precision(precision);
 	    }

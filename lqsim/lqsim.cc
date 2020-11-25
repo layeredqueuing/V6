@@ -7,7 +7,7 @@
 /************************************************************************/
 
 /*
- * $Id: lqsim.cc 14131 2020-11-25 02:17:53Z greg $
+ * $Id: lqsim.cc 14133 2020-11-25 13:51:31Z greg $
  */
 
 
@@ -27,16 +27,17 @@
 #if HAVE_IEEEFP_H && !defined(MSDOS)
 #include <ieeefp.h>
 #endif
-
 #if HAVE_FLOAT_H
 #include <float.h>
 #endif
-
 #if HAVE_GETOPT_H
 #include <getopt.h>
 #endif
 #if HAVE_MCHECK_H
 #include <mcheck.h>
+#endif
+#if HAVE_UNISTD_H
+#include <unistd.h>
 #endif
 #include <lqio/input.h>
 #if !HAVE_GETSUBOPT
@@ -333,7 +334,7 @@ main( int argc, char * argv[] )
     LQIO::io_vars.init( VERSION, basename( argv[0] ), severity_action, local_error_messages, LSTLCLERRMSG-LQIO::LSTGBLERRMSG );
 
     command_line = LQIO::io_vars.lq_toolname;
-    (void) sscanf( "$Date: 2020-11-24 21:17:53 -0500 (Tue, 24 Nov 2020) $", "%*s %s %*s", copyright_date );
+    (void) sscanf( "$Date: 2020-11-25 08:51:31 -0500 (Wed, 25 Nov 2020) $", "%*s %s %*s", copyright_date );
     stddbg    = stdout;
 
     /* Stuff set from the input file.				*/

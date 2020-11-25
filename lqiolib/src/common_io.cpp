@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: common_io.cpp 14132 2020-11-25 13:11:04Z greg $
+ * $Id: common_io.cpp 14133 2020-11-25 13:51:31Z greg $
  *
  * Read in XML input files.
  *
@@ -37,8 +37,6 @@
 #include "dom_document.h"
 #include "dom_phase.h"
 #include "common_io.h"
-
-using namespace std;
 
 namespace LQIO {
     namespace DOM {
@@ -184,15 +182,15 @@ static inline double tv_to_double( struct timeval& tv ) { return (static_cast<do
 	    const double hrs   = floor( time / 3600.0 );
 	    const double msecs = floor( (time - floor( time )) * 1000.0 );
 
-	    const ios_base::fmtflags flags = output.setf( ios::dec|ios::fixed, ios::basefield|ios::fixed );
+	    const std::ios_base::fmtflags flags = output.setf( std::ios::dec|std::ios::fixed, std::ios::basefield|std::ios::fixed );
 	    const int precision = output.precision(0);
-	    output.setf( ios::right, ios::adjustfield );
+	    output.setf( std::ios::right, std::ios::adjustfield );
 
-	    output << setw(2) << hrs;
+	    output << std::setw(2) << hrs;
 	    char fill = output.fill('0');
-	    output << ':' << setw(2) << mins;
-	    output << ':' << setw(2) << secs;
-	    output << '.' << setw(3) << msecs;
+	    output << ':' << std::setw(2) << mins;
+	    output << ':' << std::setw(2) << secs;
+	    output << '.' << std::setw(3) << msecs;
 
 	    output.flags(flags);
 	    output.precision(precision);

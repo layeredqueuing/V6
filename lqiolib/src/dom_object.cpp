@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_object.cpp 14132 2020-11-25 13:11:04Z greg $
+ *  $Id: dom_object.cpp 14133 2020-11-25 13:51:31Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -68,31 +68,7 @@ namespace LQIO {
 
 	void DocumentObject::subclass() const
 	{
-	    if ( dynamic_cast<const Activity *>(this) ) {
-		throw should_implement( "Activity" );
-	    } else if ( dynamic_cast<const ActivityList *>(this) ) {
-		throw should_implement( "ActivityList" );
-	    } else if ( dynamic_cast<const AndJoinActivityList *>(this) ) {
-		throw should_implement( "AndJoinActivityList" );
-	    } else if ( dynamic_cast<const Call *>(this) ) {
-		throw should_implement( "Call" );
-	    } else if ( dynamic_cast<const Entry *>(this) ) {
-		throw should_implement( "Entry" );
-	    } else if ( dynamic_cast<const Group *>(this) ) {
-		throw should_implement( "Group" );
-	    } else if ( dynamic_cast<const Phase *>(this) ) {
-		throw should_implement( "Phase" );
-	    } else if ( dynamic_cast<const Processor *>(this) ) {
-		throw should_implement( "Processor" );
-	    } else if ( dynamic_cast<const SemaphoreTask *>(this) ) {
-		throw should_implement( "SemaphoreTask" );
-	    } else if ( dynamic_cast<const RWLockTask *>(this) ) {
-		throw should_implement( "RWLockTask" );
-	    } else if ( dynamic_cast<const Task *>(this) ) {
-		throw should_implement( "Task" );
-	    } else {
-		throw should_implement( "unknown" );
-	    }
+	    throw should_implement( getTypeName() );
 	}
 
 	ExternalVariable * DocumentObject::checkIntegerVariable( ExternalVariable * var, int floor_value ) const

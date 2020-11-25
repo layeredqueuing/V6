@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_pragma.cpp 14027 2020-10-28 14:34:37Z greg $
+ *  $Id: dom_pragma.cpp 14133 2020-11-25 13:51:31Z greg $
  *
  *  Created by Martin Mroz on 16/04/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -215,7 +215,7 @@ namespace LQIO {
 
 	void Pragma::merge( const std::map<std::string,std::string>& list )
 	{
-	    for_each( list.begin(), list.end(), Merge(*this) );
+	    std::for_each( list.begin(), list.end(), Merge(*this) );
 	}
 
 	

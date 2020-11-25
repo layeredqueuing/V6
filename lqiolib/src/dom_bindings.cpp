@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_bindings.cpp 14132 2020-11-25 13:11:04Z greg $
+ *  $Id: dom_bindings.cpp 14133 2020-11-25 13:51:31Z greg $
  *
  *  Created by Martin Mroz on 16/04/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -427,7 +427,7 @@ namespace LQIO {
 	    {
 		/* Return a description of the task */
 		std::stringstream ss;
-		ss << "Entry(" << getDOMEntry()->getName() << ")";
+		ss << getTypeName() << "(" << getDOMEntry()->getName() << ")";
 		return ss.str();
 	    }
 
@@ -681,8 +681,8 @@ namespace LQIO {
 	    {
 		/* Return a description of the task */
 		std::stringstream ss;
-		ss << getTypeName() << "(" << const_cast<DOM::DocumentObject*>(getDOMCall()->getSourceObject())->getName() << "->"
-		   << const_cast<DOM::Entry*>(getDOMCall()->getDestinationEntry())->getName() << ")";
+		ss << getTypeName() << "(" << getDOMCall()->getSourceObject()->getName() << "->"
+		   << getDOMCall()->getDestinationEntry()->getName() << ")";
 		return ss.str();
 	    }
 
