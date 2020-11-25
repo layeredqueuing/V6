@@ -7,9 +7,9 @@
  * Department of Systems and Computer Engineering,
  * Carleton University, Ottawa, Ontario, Canada. K1S 5B6
  *
- * $Date: 2020-10-25 08:50:53 -0400 (Sun, 25 Oct 2020) $
+ * $Date: 2020-11-25 15:57:44 -0500 (Wed, 25 Nov 2020) $
  *
- * $Id: open.h 14000 2020-10-25 12:50:53Z greg $
+ * $Id: open.h 14141 2020-11-25 20:57:44Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -25,7 +25,7 @@ class Open;
 class Server;
 class MVA;
 
-ostream& operator<<( ostream &, Open& );
+std::ostream& operator<<( std::ostream &, Open& );
 
 /* -------------------------------------------------------------------- */
 
@@ -41,7 +41,7 @@ public:
     Open( Vector<Server *>& );
     virtual ~Open();
 
-    ostream& print( ostream& output = cout ) const;
+    std::ostream& print( std::ostream& output = std::cout ) const;
 
     void solve( const MVA& closedModel, const Population& N );	/* Mixed models.	*/
     void solve();						/* Open models.		*/

@@ -11,7 +11,7 @@
  * May, 2009
  *
  * ------------------------------------------------------------------------
- * $Id: processor.h 14074 2020-11-10 15:07:10Z greg $
+ * $Id: processor.h 14141 2020-11-25 20:57:44Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -33,12 +33,12 @@ class Processor : public Entity {
 private:
     class SRVNManip {
     public:
-	SRVNManip( ostream& (*ff)(ostream&, const Processor & ), const Processor & theProcessor ) : f(ff), aProcessor(theProcessor) {}
+	SRVNManip( std::ostream& (*ff)(std::ostream&, const Processor & ), const Processor & theProcessor ) : f(ff), aProcessor(theProcessor) {}
     private:
-	ostream& (*f)( ostream&, const Processor& );
+	std::ostream& (*f)( std::ostream&, const Processor& );
 	const Processor & aProcessor;
 
-	friend ostream& operator<<(ostream & os, const SRVNManip& m ) { return m.f(os,m.aProcessor); }
+	friend std::ostream& operator<<(std::ostream & os, const SRVNManip& m ) { return m.f(os,m.aProcessor); }
     };
 
 public:
@@ -84,14 +84,14 @@ public:
     /* DOM insertion of results */
 
     virtual const Processor& insertDOMResults() const;
-    virtual ostream& print( ostream& ) const;
+    virtual std::ostream& print( std::ostream& ) const;
 
 public:
     static Processor * find( const std::string& name );
 
 private:
     SRVNManip print_processor_type() const { return SRVNManip( output_processor_type, *this ); }
-    static ostream& output_processor_type( ostream& output, const Processor& aProcessor );
+    static std::ostream& output_processor_type( std::ostream& output, const Processor& aProcessor );
 
 public:
     double _utilization;			/* Processor Utilization	*/

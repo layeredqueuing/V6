@@ -12,7 +12,7 @@
  * November, 1994
  *
  * ----------------------------------------------------------------------
- * $Id: errmsg.cc 14043 2020-11-05 14:06:12Z greg $
+ * $Id: errmsg.cc 14141 2020-11-25 20:57:44Z greg $
  * ----------------------------------------------------------------------
  */
 
@@ -75,7 +75,7 @@ severity_action (unsigned severity)
     case LQIO::RUNTIME_ERROR:
 	LQIO::io_vars.error_count += 1;
 	if  ( LQIO::io_vars.error_count >= LQIO::io_vars.max_error ) {
-	    throw runtime_error( "Too many errors" );
+	    throw std::runtime_error( "Too many errors" );
 	}
 	break;
     }

@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- * $Id: multserv.cc 14000 2020-10-25 12:50:53Z greg $
+ * $Id: multserv.cc 14141 2020-11-25 20:57:44Z greg $
  *
  * Server definitions for Multiserver MVA.
  * From
@@ -187,7 +187,7 @@ double
 Reiser_Multi_Server::alpha( const unsigned n ) const
 {
     if ( rho() >= 1.0 ) {
-	throw range_error( "Reiser_Multi_Server::alpha" );
+	throw std::range_error( "Reiser_Multi_Server::alpha" );
     } else if ( n < J - 1 ) {
 	return mu() / ( mu( J - 1 ) * power( 1.0 - rho(), n + 1 ) ) + sumOf_rho( n );
     } else {
@@ -252,8 +252,8 @@ Reiser_Multi_Server::sumOf_rho( const unsigned n ) const
  * Print information about this station.
  */
 
-ostream&
-Reiser_Multi_Server::printHeading( ostream& output ) const
+std::ostream&
+Reiser_Multi_Server::printHeading( std::ostream& output ) const
 {
     output << ", " << J << " servers";
     return output;
@@ -548,16 +548,16 @@ Conway_Multi_Server::meanMinimumService( const Population& n ) const
 
 
 #if	DEBUG_MVA
-ostream&
-Conway_Multi_Server::printXE( ostream& output, const unsigned int i, const Population& N, const unsigned int k, const double xe, const double q ) const
+std::ostream& 
+Conway_Multi_Server::printXE( std::ostream& output, const unsigned int i, const Population& N, const unsigned int k, const double xe, const double q ) const
 {
     output << "XE_{" << closedIndex << "," << k << "," << i << "}" << N << " = " << xe << ", Q* = " << q << endl;
     return output;
 }
 
 
-ostream&
-Conway_Multi_Server::printXR( ostream& output, const Population& N, const unsigned int k, const double xe, const double pb ) const
+std::ostream& 
+Conway_Multi_Server::printXR( std::ostream& output, const Population& N, const unsigned int k, const double xe, const double pb ) const
 {
     output << "XR_{" << closedIndex << "," << k << "}" << N << " = " << xe << ", PB = " << pb << endl;
     return output;
@@ -650,7 +650,7 @@ Markov_Phased_Conway_Multi_Server::meanMinimumOvertaking( const MVA& solver, con
     const unsigned n_server = static_cast<unsigned>(mu());
 
     //const unsigned n_client = ::min( n_server, N.sum() );
-    const double n_client = ::min( static_cast<double>(n_server), getMaxCustomers() );
+    const double n_client = std::min( static_cast<double>(n_server), getMaxCustomers() );
     const Probability prob = PrOT( k, p_i );
 
     const double mean_cust = static_cast<double>(n_server)/static_cast<double>(n_client);
@@ -734,7 +734,7 @@ Rolia_Multi_Server::wait( const MVA& solver, const unsigned k, const Population&
 	    }
 	}
     }
-    catch ( const domain_error &e ) {
+    catch ( const std::domain_error &e ) {
 	for ( unsigned e = 1; e <= E; ++e ) {
 	    if ( !V(e,k) ) continue;
 	    for ( unsigned p = 0; p <= MAX_PHASES; ++p ) {
@@ -754,7 +754,7 @@ Positive
 Rolia_Multi_Server::sumOf_SL( const MVA& solver, const Population& N, const unsigned k ) const
 {
     const double s = solver.sumOf_SL_m( *this, N, k );
-    if ( !isfinite( s ) ) throw domain_error( "Rolia_Multi_Server::sumOf_SL" );
+    if ( !isfinite( s ) ) throw std::domain_error( "Rolia_Multi_Server::sumOf_SL" );
     return solver.PB2( *this, N, k ) * s  / mu();
 }
 
@@ -1223,7 +1223,7 @@ B_Iterator::step( Population& n, const unsigned k, const unsigned n_k )
     if ( k > K ) {
 	return n_k == 0;		/* End of the line, mine.	*/
     } else if ( k > index ) {
-	n[k] = min( n_k, limit[k] );	/* Updating past "index".	*/
+	n[k] = std::min( n_k, limit[k] );	/* Updating past "index".	*/
     } else if ( k == index ) {
 	n[k] -= 1;			/* Updating at "index".		*/
     }

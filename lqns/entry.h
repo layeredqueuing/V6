@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: entry.h 14118 2020-11-23 17:30:44Z greg $
+ * $Id: entry.h 14141 2020-11-25 20:57:44Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -234,7 +234,7 @@ public:
 	
     int operator==( const Entry& anEntry ) const;
     static void reset();
-    static Entry * find( const string& entry_name );
+    static Entry * find( const std::string& entry_name );
     static Entry * create( LQIO::DOM::Entry* domEntry, unsigned int );
     static bool max_phase( const Entry * e1, const Entry * e2 ) { return e1->maxPhase() < e2->maxPhase(); }
 	

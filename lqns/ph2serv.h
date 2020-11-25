@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: ph2serv.h 14000 2020-10-25 12:50:53Z greg $
+ * $Id: ph2serv.h 14141 2020-11-25 20:57:44Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -61,7 +61,7 @@ public:
     virtual void initStep( const MVA& );
     virtual double prOt( const unsigned e, const unsigned k, const unsigned ) const { return Gamma[e][k]; }
 
-    virtual ostream& printOutput( ostream& output, const unsigned = 0 ) const;
+    virtual std::ostream& printOutput( std::ostream& output, const unsigned = 0 ) const;
 
     virtual const char * typeStr() const { return "Rolia_Phased_Server"; }
 
@@ -133,7 +133,7 @@ public:
     virtual const char * typeStr() const { return "HVFCFS_Rolia_Phased_Server"; }
 
 protected:
-    virtual ostream& printInput( ostream& output, const unsigned e, const unsigned k ) const { return HVFCFS_Server::printInput( output, e, k ); }
+    virtual std::ostream& printInput( std::ostream& output, const unsigned e, const unsigned k ) const { return HVFCFS_Server::printInput( output, e, k ); }
 };
 
 
@@ -186,7 +186,7 @@ public:
 
     virtual void wait( const MVA& solver, const unsigned k, const Population & N ) const;
 
-    virtual ostream& printOutput( ostream& output, const unsigned = 0 ) const;
+    virtual std::ostream& printOutput( std::ostream& output, const unsigned = 0 ) const;
 
     virtual const char * typeStr() const { return "Simple_Phased_Server"; }
 
@@ -251,8 +251,7 @@ public:
 
     virtual const char * typeStr() const { return "HVFCFS_Simple_Phased_Server"; }
 
-protected:
-    virtual ostream& printInput( ostream& output, const unsigned e, const unsigned k ) const { return HVFCFS_Server::printInput( output, e, k ); }
+    virtual std::ostream& printInput( std::ostream& output, const unsigned e, const unsigned k ) const { return HVFCFS_Server::printInput( output, e, k ); } 
 };
 
 
@@ -313,8 +312,8 @@ protected:
     Probability PrOT( const unsigned k, const unsigned p_i ) const;
     Positive sumOf_S2U( const MVA& solver, const unsigned p_i, const Population& N, const unsigned k ) const;
 
-    virtual ostream& printInput( ostream&, const unsigned, const unsigned ) const;
-    ostream& printOvertaking( ostream&, const unsigned, const unsigned ) const;
+    virtual std::ostream& printInput( std::ostream&, const unsigned, const unsigned ) const;
+    std::ostream& printOvertaking( std::ostream&, const unsigned, const unsigned ) const;
 
 private:
     void initialize();
@@ -383,7 +382,7 @@ public:
     virtual const char * typeStr() const { return "HVFCFS_Markov_Phased_Server"; }
 
 protected:
-    virtual ostream& printInput( ostream&, const unsigned, const unsigned ) const;
+    virtual std::ostream& printInput( std::ostream&, const unsigned, const unsigned ) const;
 };
 
 

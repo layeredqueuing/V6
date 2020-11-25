@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: lqns.cc 14117 2020-11-21 13:58:51Z greg $
+ * $Id: lqns.cc 14141 2020-11-25 20:57:44Z greg $
  *
  * Command line processing.
  *
@@ -166,7 +166,7 @@ const char * opthelp[]  = {
     0
 };
 
-static int process ( const string&, const string& );
+static int process ( const std::string&, const std::string& );
 static void init_flags ();
 
 #if (defined(linux) || defined(__linux__)) && !defined(__USE_XOPEN_EXTENDED)
@@ -179,7 +179,7 @@ extern "C" int getsubopt (char **, char * const *, char **);
 
 int main (int argc, char *argv[])
 {
-    string outputFileName = "";
+    std::string outputFileName = "";
 #if HAVE_GETOPT_LONG
     LQIO::CommandLine command_line( longopts );
 #else
@@ -193,7 +193,7 @@ int main (int argc, char *argv[])
     LQIO::io_vars.init( VERSION, basename( argv[0] ), severity_action, local_error_messages, LSTLCLERRMSG-LQIO::LSTGBLERRMSG );
     command_line = LQIO::io_vars.lq_toolname;
 
-    sscanf( "$Date: 2020-11-21 08:58:51 -0500 (Sat, 21 Nov 2020) $", "%*s %s %*s", copyrightDate );
+    sscanf( "$Date: 2020-11-25 15:57:44 -0500 (Wed, 25 Nov 2020) $", "%*s %s %*s", copyrightDate );
 
     matherr_disposition = FP_IMMEDIATE_ABORT;
 
@@ -225,7 +225,7 @@ int main (int argc, char *argv[])
 
         case 'c':
             if ( !optarg || (Model::convergence_value = strtod( optarg, 0 )) == 0 ) {
-                cerr << LQIO::io_vars.lq_toolname << "convergence=" << optarg << " is invalid, choose a non-negative real." << endl;
+                std::cerr << LQIO::io_vars.lq_toolname << "convergence=" << optarg << " is invalid, choose a non-negative real." << std::endl;
                 (void) exit( INVALID_ARGUMENT );
             } else {
                 flags.override_convergence = true;
@@ -261,7 +261,7 @@ int main (int argc, char *argv[])
                 break;
 
             default:
-                cerr << LQIO::io_vars.lq_toolname << ": invalid argument to -e -- " << optarg << endl;
+                std::cerr << LQIO::io_vars.lq_toolname << ": invalid argument to -e -- " << optarg << std::endl;
                 break;
             }
             break;
@@ -304,13 +304,13 @@ int main (int argc, char *argv[])
             } else if ( strcasecmp( optarg, "lqn" ) == 0 ) {
                 Model::input_format = LQIO::DOM::Document::LQN_INPUT;
             } else {
-                cerr << LQIO::io_vars.lq_toolname << ": invalid argument to -I -- " << optarg << endl;
+                std::cerr << LQIO::io_vars.lq_toolname << ": invalid argument to -I -- " << optarg << std::endl;
             }
             break;
 
         case 'i':
             if ( !optarg || (Model::iteration_limit = (unsigned)strtol( optarg, 0, 10 )) == 0 ) {
-                cerr << LQIO::io_vars.lq_toolname << "iteration-limit=" << optarg << " is invalid, choose a non-negative integer." << endl;
+                std::cerr << LQIO::io_vars.lq_toolname << "iteration-limit=" << optarg << " is invalid, choose a non-negative integer." << std::endl;
                 (void) exit( INVALID_ARGUMENT );
             } else {
                 flags.override_iterations = true;
@@ -355,7 +355,7 @@ int main (int argc, char *argv[])
 
         case 'P':       /* Pragma processing... */
 	    if ( !pragmas.insert( optarg ) ) {
-                Pragma::usage( cerr );
+                Pragma::usage( std::cerr );
                 exit( INVALID_ARGUMENT );
             }
             break;
@@ -408,7 +408,7 @@ int main (int argc, char *argv[])
 
         case 'u':
             if ( !optarg || (Model::underrelaxation = strtod( optarg, 0 )) <= 0.0 || 2.0 < Model::underrelaxation ) {
-                cerr << LQIO::io_vars.lq_toolname << "underrelaxation=" << optarg << " is invalid, choose a value between 0.0 and 2.0." << endl;
+                std::cerr << LQIO::io_vars.lq_toolname << "underrelaxation=" << optarg << " is invalid, choose a value between 0.0 and 2.0." << std::endl;
                 (void) exit( INVALID_ARGUMENT );
             } else {
                 flags.override_underrelaxation = true;
@@ -421,10 +421,10 @@ int main (int argc, char *argv[])
             break;
 
         case 'V':
-            cout << "Layered Queueing Network Analyser, Version " << VERSION << endl << endl;
-            cout << "  Copyright " << copyrightDate << " the Real-Time and Distributed Systems Group," << endl;
-            cout << "  Department of Systems and Computer Engineering," << endl;
-            cout << "  Carleton University, Ottawa, Ontario, Canada. K1S 5B6" << endl << endl;
+            std::cout << "Layered Queueing Network Analyser, Version " << VERSION << std::endl << std::endl;
+            std::cout << "  Copyright " << copyrightDate << " the Real-Time and Distributed Systems Group," << std::endl;
+            std::cout << "  Department of Systems and Computer Engineering," << std::endl;
+            std::cout << "  Carleton University, Ottawa, Ontario, Canada. K1S 5B6" << std::endl << std::endl;
             break;
 
         case (256+'v'):
@@ -469,11 +469,11 @@ int main (int argc, char *argv[])
     LQIO::io_vars.lq_command_line = command_line.c_str();
 
     if ( flags.generate && flags.no_execute ) {
-        cerr << LQIO::io_vars.lq_toolname << ": -n is incompatible with -zgenerate.  -zgenerate ignored." << endl;
+        std::cerr << LQIO::io_vars.lq_toolname << ": -n is incompatible with -zgenerate.  -zgenerate ignored." << std::endl;
     }
 
     if ( flags.reload_only && flags.restart ) {
-	cerr << LQIO::io_vars.lq_toolname << ": --reload-lqx and --restart are mutually exclusive: --restart assumed."  << endl;
+	std::cerr << LQIO::io_vars.lq_toolname << ": --reload-lqx and --restart are mutually exclusive: --restart assumed."  << std::endl;
 	flags.reload_only = false;
     }
 
@@ -497,22 +497,22 @@ int main (int argc, char *argv[])
 
         if ( file_count > 1 ) {
             if ( outputFileName != "" ) {
-                cerr << LQIO::io_vars.lq_toolname << ": Too many input files specified with the option: -o"
+                std::cerr << LQIO::io_vars.lq_toolname << ": Too many input files specified with the option: -o"
                      << outputFileName
-                     << endl;
+                     << std::endl;
                 exit( INVALID_ARGUMENT );
             }
             if ( Generate::file_name.size() ) {
-                cerr << LQIO::io_vars.lq_toolname << ": Too many input files specified with the option: -zgenerate="
+                std::cerr << LQIO::io_vars.lq_toolname << ": Too many input files specified with the option: -zgenerate="
                      << Generate::file_name
-                     << endl;
+                     << std::endl;
                 exit( INVALID_ARGUMENT );
             }
         }
 
         for ( ; optind < argc; ++optind ) {
             if ( file_count > 1 ) {
-                cout << argv[optind] << ':' << endl;
+                std::cout << argv[optind] << ':' << std::endl;
             }
             global_error_flag |= process( argv[optind], outputFileName );
         }
@@ -526,7 +526,7 @@ int main (int argc, char *argv[])
  */
 
 static int
-process ( const string& inputFileName, const string& outputFileName )
+process ( const std::string& inputFileName, const std::string& outputFileName )
 {
     /* Open input file. */
 
@@ -545,7 +545,7 @@ process ( const string& inputFileName, const string& outputFileName )
     if ( Model::prepare(document) == false ) return INVALID_INPUT;
         
     if ( document->getInputFormat() != LQIO::DOM::Document::LQN_INPUT && LQIO::Spex::__no_header ) {
-        cerr << LQIO::io_vars.lq_toolname << ": --no-header is ignored for " << inputFileName << "." << endl;
+        std::cerr << LQIO::io_vars.lq_toolname << ": --no-header is ignored for " << inputFileName << "." << std::endl;
     }
 
     /* declare Model * at this scope but don't instantiate due to problems with LQX programs and registering external symbols*/
@@ -571,7 +571,7 @@ process ( const string& inputFileName, const string& outputFileName )
 		if ( !aModel ) throw std::runtime_error( "could not create model" );
 
 		if ( flags.verbose ) {
-		    cerr << "Solve..." << endl;
+		    std::cerr << "Solve..." << std::endl;
 		}
 
 		/* Simply invoke the solver for the current DOM state */
@@ -580,7 +580,7 @@ process ( const string& inputFileName, const string& outputFileName )
 	} else {
 
 	    if ( flags.verbose ) {
-		cerr << "Compile LQX..." << endl;
+		std::cerr << "Compile LQX..." << std::endl;
 	    }
 
 	    /* Attempt to run the program */
@@ -631,12 +631,12 @@ process ( const string& inputFileName, const string& outputFileName )
     catch ( const std::domain_error& e ) {
 	rc = INVALID_INPUT;
     }
-    catch ( const range_error& e ) {
-	cerr << LQIO::io_vars.lq_toolname << ": range error - " << e.what() << endl;
+    catch ( const std::range_error& e ) {
+	std::cerr << LQIO::io_vars.lq_toolname << ": range error - " << e.what() << std::endl;
 	rc = INVALID_OUTPUT;
     }
     catch ( const floating_point_error& e ) {
-	cerr << LQIO::io_vars.lq_toolname << ": floating point error - " << e.what() << endl;
+	std::cerr << LQIO::io_vars.lq_toolname << ": floating point error - " << e.what() << std::endl;
 	rc = INVALID_OUTPUT;
     }
     catch ( const std::runtime_error& e ) {
@@ -781,8 +781,8 @@ template class VectorMath<unsigned int>;
 template class VectorMath<double>;
 template class VectorMath<Probability>;
 
-template ostream& operator<< ( ostream& output, const Vector<unsigned int>& self );
-template ostream& operator<< ( ostream& output, const VectorMath<unsigned int>& self );
-template ostream& operator<< ( ostream& output, const VectorMath<Probability>& self );
-template ostream& operator<< ( ostream& output, const VectorMath<double>& self );
+template std::ostream& operator<< ( std::ostream& output, const Vector<unsigned int>& self );
+template std::ostream& operator<< ( std::ostream& output, const VectorMath<unsigned int>& self );
+template std::ostream& operator<< ( std::ostream& output, const VectorMath<Probability>& self );
+template std::ostream& operator<< ( std::ostream& output, const VectorMath<double>& self );
 #endif

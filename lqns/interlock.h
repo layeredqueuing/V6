@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: interlock.h 14093 2020-11-15 12:01:03Z greg $
+ * $Id: interlock.h 14141 2020-11-25 20:57:44Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -193,8 +193,8 @@ public:
     double interlockedFlow( const Entry * aClientEntry ) const;
     Probability interlockedFlow( const Task& viaTask, const Entry * aServerEntry,  double& il_rate, bool& moreThan4 ) const;
 
-    ostream& print( ostream& output ) const;
-    static ostream& printPathTable( ostream& output );
+    std::ostream& print( std::ostream& output ) const;
+    static std::ostream& printPathTable( std::ostream& output );
 private:
     Interlock( const Interlock& );
     Interlock& operator=( const Interlock& );
@@ -218,13 +218,13 @@ private:
     unsigned _sources;
 };
 
-inline ostream& operator<<( ostream& output, const Interlock& self) { return self.print( output ); }
+inline std::ostream& operator<<( std::ostream& output, const Interlock& self) { return self.print( output ); }
 
 InterlockInfo& operator+=( InterlockInfo&, const InterlockInfo& );
 InterlockInfo& operator-=( InterlockInfo&, const InterlockInfo& );
 InterlockInfo operator*( const InterlockInfo&, double );
 
-ostream& operator<<( ostream&, const Interlock& );
-ostream& operator<<( ostream&, const InterlockInfo& );
+std::ostream& operator<<( std::ostream&, const Interlock& );
+std::ostream& operator<<( std::ostream&, const InterlockInfo& );
 bool operator>( const InterlockInfo&, double  );
 #endif

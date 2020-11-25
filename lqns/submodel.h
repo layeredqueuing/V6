@@ -7,7 +7,7 @@
  *
  * June 2007
  *
- * $Id: submodel.h 14100 2020-11-15 15:58:58Z greg $
+ * $Id: submodel.h 14141 2020-11-25 20:57:44Z greg $
  */
 
 #ifndef _SUBMODEL_H
@@ -38,15 +38,15 @@ class Group;
 class Submodel {
     class SubmodelManip {
     public:
-	SubmodelManip( ostream& (*ff)(ostream&, const Submodel&, const unsigned long ),
+	SubmodelManip( std::ostream& (*ff)(std::ostream&, const Submodel&, const unsigned long ),
 		       const Submodel& aSubmodel, const unsigned long anInt )
 	    : f(ff), submodel(aSubmodel), arg(anInt) {}
     private:
-	ostream& (*f)( ostream&, const Submodel&, const unsigned long );
+	std::ostream& (*f)( std::ostream&, const Submodel&, const unsigned long );
 	const Submodel& submodel;
 	const unsigned long arg;
 
-	friend ostream& operator<<(ostream & os, const SubmodelManip& m ) { return m.f(os,m.submodel,m.arg); }
+	friend std::ostream& operator<<(std::ostream & os, const SubmodelManip& m ) { return m.f(os,m.submodel,m.arg); }
     };
 
 public:
@@ -88,7 +88,7 @@ public:
 
     virtual Submodel& solve( long, MVACount&, const double ) = 0;
 	
-    virtual ostream& print( ostream& ) const = 0;
+    virtual std::ostream& print( std::ostream& ) const = 0;
 
     void debug_stop( const unsigned long, const double ) const;
 
@@ -97,7 +97,7 @@ protected:
     SubmodelManip print_submodel_header( const Submodel& aSubModel, const unsigned long iterations  ) { return SubmodelManip( &Submodel::submodel_header_str, aSubModel, iterations ); }
 
 private:
-    static ostream& submodel_header_str( ostream& output, const Submodel& aSubmodel, const unsigned long iterations );
+    static std::ostream& submodel_header_str( std::ostream& output, const Submodel& aSubmodel, const unsigned long iterations );
 
 protected:
     std::set<Task *> _clients;		/* Table of clients 		*/
@@ -115,7 +115,7 @@ protected:
     Vector<unsigned> _priority;		/* Priority for chain k.	*/
 };
 
-inline ostream& operator<<( ostream& output, const Submodel& self) { return self.print( output ); }
+inline std::ostream& operator<<( std::ostream& output, const Submodel& self) { return self.print( output ); }
 
 /* ---------------------- Standard MVA Submodel ----------------------- */
 
@@ -148,7 +148,7 @@ public:
 
     virtual MVASubmodel& solve( long, MVACount&, const double );
 	
-    virtual ostream& print( ostream& ) const;
+    virtual std::ostream& print( std::ostream& ) const;
 
 private:
     bool hasReplication() const { return _hasReplication; }
@@ -159,9 +159,9 @@ protected:
     unsigned makeChains();
     void saveWait( Entry *, const Server * );
 
-    ostream& printClosedModel( ostream& ) const;
-    ostream& printOpenModel( ostream& ) const;
-    ostream& printMaxCustomers( ostream& output ) const;	/*+ interlock -*/
+    std::ostream& printClosedModel( std::ostream& ) const;
+    std::ostream& printOpenModel( std::ostream& ) const;
+    std::ostream& printMaxCustomers( std::ostream& output ) const;	/*+ interlock -*/
 
 private:
     bool _hasReplication;		/* True if replication present.	*/

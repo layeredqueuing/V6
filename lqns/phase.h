@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: phase.h 14118 2020-11-23 17:30:44Z greg $
+ * $Id: phase.h 14141 2020-11-25 20:57:44Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -94,7 +94,7 @@ public:
     void addILWait (unsigned int submodel, double il_wait);
     double getILWait (unsigned submodel) const;
 
-    virtual ostream& print( ostream& output ) const { return output; }
+    virtual std::ostream& print( std::ostream& output ) const { return output; }
 	
     virtual NullPhase& recalculateDynamicValues() { return *this; }
 
@@ -307,5 +307,5 @@ private:
     double _cfs_delay_lowerbound;
 };
 
-inline ostream& operator<<( ostream& output, const Phase& self ) { self.print( output ); return output; }
+inline std::ostream& operator<<( std::ostream& output, const Phase& self ) { self.print( output ); return output; }
 #endif

@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: call.cc 14129 2020-11-24 22:56:30Z greg $
+ * $Id: call.cc 14141 2020-11-25 20:57:44Z greg $
  *
  * Everything you wanted to know about a call to an entry, but were afraid to ask.
  *
@@ -309,7 +309,7 @@ double
 Call::elapsedTime() const
 {
     if (flags.trace_quorum) {
-	cout <<"\nCall::elapsedTime(): call " << this->srcName() << " to " << dstEntry()->name() << endl;
+	std::cout <<"\nCall::elapsedTime(): call " << this->srcName() << " to " << dstEntry()->name() << std::endl;
     }
 
     if ( hasRendezvous() ) {
@@ -442,8 +442,8 @@ Call::setChain( const unsigned k, const unsigned p, const double rate )
 	_chainNumber = k;
 
 	if ( flags.trace_replication ) {
-	    cout <<"\nCall::setChain, k=" << k<< "  " ;
-	    cout <<",call from "<< srcName() << " To " << dstName()<<endl;
+	    std::cout <<"\nCall::setChain, k=" << k<< "  " ;
+	    std::cout <<",call from "<< srcName() << " To " << dstName()<< std::endl;
 	}
     }
 }
@@ -617,15 +617,15 @@ Call::setInterlockedFlow( const MVASubmodel& submodel )
 
     if ( flags.trace_interlock ) {
 	if ( isProcessorCall() ) {
-	    cout<<"aProcessorCall(srcTask="<<srcTask()->name()
-		<<", dstentry="<<dstEntry()->name()<<"),	aCall->getInterlocked="
-		<< getInterlockedFlow()<<endl;
+	    std::cout<<"aProcessorCall(srcTask="<<srcTask()->name()
+		     <<", dstentry="<<dstEntry()->name()<<"),	aCall->getInterlocked="
+		     << getInterlockedFlow()<<std::endl;
 	} else {
-	    cout<<"aCall(srcTask="<<srcTask()->name()
-		<<", dstentry="<<dstEntry()->name()<<"), num_source="<<num<<", p="<<p<<endl;
-	    cout<<"aCall(srcTask="<<srcTask()->name()
-		<<", dstentry="<<dstEntry()->name()<<"),	aCall->getInterlocked="
-		<< getInterlockedFlow()<<endl;
+	    std::cout<<"aCall(srcTask="<<srcTask()->name()
+		     <<", dstentry="<<dstEntry()->name()<<"), num_source="<<num<<", p="<<p<<std::endl;
+	    std::cout<<"aCall(srcTask="<<srcTask()->name()
+		     <<", dstentry="<<dstEntry()->name()<<"),	aCall->getInterlocked="
+		     << getInterlockedFlow()<<std::endl;
 	} 
     }
     return *this;
@@ -644,9 +644,9 @@ Call::saveQueueWeight( const unsigned k, const unsigned p, const double )
 	_queueWeight = station->QW[e][k][p];
     
 	if ( flags.trace_interlock ) {
-	    cout << "Call::saveQueueWeight(): Call from " 
+	    std::cout << "Call::saveQueueWeight(): Call from " 
 		 << srcEntry()->name() << " to " << dstEntry()->name() << ": queue lenth is: " 
-		 << _queueWeight << endl;
+		 << _queueWeight << std::endl;
 	}
     }
 }
@@ -686,11 +686,11 @@ Call::saveILWait( const unsigned k, const unsigned p, const double )
 
     if ( isInterlocked () ) {
 	if ( flags.trace_interlock ) {
-	    cout << "Call::saveILWait(): Call( " << srcEntry()->name() << " , " << dstEntry()->name()<<")";
-	    cout<< "has interlocked wait "<<diff <<endl;
-	    cout<< "aStation->nILRate[e][k]="<<aStation->nILRate[e][k]
-		<<", CallMeanValue="<<getDOM()->getCallMeanValue()<<endl;
-	    cout<< "call->elapsedTime() ="<<eps <<", _wait="<<_wait <<",diff="<<diff<<endl;
+	    std::cout << "Call::saveILWait(): Call( " << srcEntry()->name() << " , " << dstEntry()->name()<<")";
+	    std::cout << "has interlocked wait "<<diff << std::endl;
+	    std::cout << "aStation->nILRate[e][k]="<<aStation->nILRate[e][k]
+		<<", CallMeanValue="<<getDOM()->getCallMeanValue()<< std::endl;
+	    std::cout << "call->elapsedTime() ="<<eps <<", _wait="<<_wait <<",diff="<<diff<< std::endl;
 	}
 
 	const Probability IL_Pr(getInterlockedFlow());
@@ -713,7 +713,7 @@ double
 Call::interlockPr() const
 {
     if ( flags.trace_quorum ) {
-	cout <<"\nCall::elapsedTime(): call " << this->srcName() << " to " << dstEntry()->name() << endl;
+	std::cout <<"\nCall::elapsedTime(): call " << this->srcName() << " to " << dstEntry()->name() << std::endl;
     }
     if ( srcTask()->hasInfinitePopulation() ) return 0.0;
 
@@ -732,19 +732,19 @@ Call::interlockPr() const
     const double upperbound = std::min( 1.0 / getMaxCustomers(), 1.0 );
     if ( queue < 0.1 ) {
 	if ( flags.trace_interlock ) {
-	    cout <<"queueingTime()="<<queueingTime()<<", et="<<elapsedTime()<<",queueingTime()/et= "<<queue <<", 1/N="<<1.0/getMaxCustomers()<<endl;
+	    std::cout <<"queueingTime()="<<queueingTime()<<", et="<<elapsedTime()<<",queueingTime()/et= "<<queue <<", 1/N="<<1.0/getMaxCustomers()<< std::endl;
 	}
 	return std::max( upperbound, queue );
     }
 
     const int d = getMaxCustomers() - 1;
     if ( flags.trace_interlock ) {
-	cout << "getMaxCustomers()="<<getMaxCustomers()<<",  dstEntry()->owner()->population()="<< dstEntry()->owner()->population()<<",d="<<d<<endl;
+	std::cout << "getMaxCustomers()="<<getMaxCustomers()<<",  dstEntry()->owner()->population()="<< dstEntry()->owner()->population()<<",d="<<d<< std::endl;
     }
     if ( et && d > 0 ) {
 	double t =  1. - ((queueingTime() * getqueueWeight()) / (et * d));
 	if ( flags.trace_interlock ) {
-	    cout <<"queueingTime()="<<queueingTime()<<", et="<<elapsedTime()<<";getqueueWeight()="<<getqueueWeight()<<",t="<<t<<endl;
+	    std::cout <<"queueingTime()="<<queueingTime()<<", et="<<elapsedTime()<<";getqueueWeight()="<<getqueueWeight()<<",t="<<t<< std::endl;
 	}
 	const double ql = srcEntry()->getILQueueLength();
 	if ( ql > 0.0 && t < ql ) {
@@ -775,8 +775,8 @@ Call::add_interlock_pr::operator()( double sum, const Call * call ) const
     }
 #if 1
     if ( flags.trace_interlock ) {	// will need submodel number for X
-	cout << "getInterlockPr::in submodel " << "X" << ", Call( " << call->srcEntry()->name() << " , " << call->dstEntry()->name()
-	     << ") has interlock prob "<< sum <<" to client Entry "<< call->dstEntry()->name() << endl;
+	std::cout << "getInterlockPr::in submodel " << "X" << ", Call( " << call->srcEntry()->name() << " , " << call->dstEntry()->name()
+	     << ") has interlock prob "<< sum <<" to client Entry "<< call->dstEntry()->name() << std::endl;
     }
 #endif
     return sum;
@@ -981,9 +981,9 @@ ActProcCall::ActProcCall( const Phase * fromPhase, const Entry * toEntry )
 const Entry *
 ActProcCall::srcEntry() const
 {
-    cout<<"ActProcCall:"<<srcName()<<endl;
+    std::cout<<"ActProcCall:"<<srcName()<<std::endl;
     throw should_not_implement( "ActProcCall::srcEntry", __FILE__, __LINE__ );
-    return 0;
+    return nullptr;
 }
 
 

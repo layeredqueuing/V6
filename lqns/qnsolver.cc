@@ -1,5 +1,5 @@
 /*
- * $Id: qnsolver.cc 14000 2020-10-25 12:50:53Z greg $
+ * $Id: qnsolver.cc 14141 2020-11-25 20:57:44Z greg $
  */
 
 #include <lqio/pmif_document.h>
@@ -100,7 +100,7 @@ private:
 	AddDemand( const AddDemand& src ) : _server(src._server), _index(src._index) {}
 	AddDemand( Server * server, const std::map<std::string,unsigned>& index ) : _server(server), _index(index) {}
 
-	void operator()( const pair<std::string,LQIO::PMIF_Document::Station::Demand>& pair ) 
+	void operator()( const std::pair<std::string,LQIO::PMIF_Document::Station::Demand>& pair ) 
 	    {
 		const unsigned int k = _index.at(pair.first);
 		const LQIO::PMIF_Document::Station::Demand& demand = pair.second;
@@ -282,24 +282,24 @@ bool solve( LQIO::PMIF_Document& document, solver_type solver )
 	model->solve();
     }
     catch ( const std::runtime_error& error ) {
-	cerr << "runtime error - " << error.what() << endl;
+	std::cerr << "runtime error - " << error.what() << std::endl;
 	ok = false;
     }
-    catch ( const logic_error& error ) {
-	cerr << "logic error - " << error.what() << endl;
+    catch ( const std::logic_error& error ) {
+	std::cerr << "logic error - " << error.what() << std::endl;
 	ok = false;
     }
     catch ( const floating_point_error& error ) {
-	cerr << "floating point error - " << error.what() << endl;
+	std::cerr << "floating point error - " << error.what() << std::endl;
 	ok = false;
     }
     catch ( const not_implemented& error ) {
-	cerr << error.what() << endl;
+	std::cerr << error.what() << std::endl;
 	ok = false;
     }
     
     if ( verbose_flag ) {
-	model->print( cerr );
+	model->print( std::cerr );
     }
 
     delete model;
@@ -324,14 +324,14 @@ makeopts( const struct option * longopts, std::string& opts )
 static void
 usage() 
 {
-    cerr << "Usage: " << program_name;
+    std::cerr << "Usage: " << program_name;
 
 #if HAVE_GETOPT_LONG
-    cerr << " [option]" << endl << endl;
-    cerr << "Options" << endl;
+    std::cerr << " [option]" << std::endl << std::endl;
+    std::cerr << "Options" << std::endl;
     const char ** p = opthelp;
     for ( const struct option *o = longopts; (o->name || o->val) && *p; ++o, ++p ) {
-	string s;
+	std::string s;
 	if ( o->name ) {
 	    s = "--";
 	    s += o->name;
@@ -341,16 +341,16 @@ usage()
 	    s = " ";
 	}
 	if ( isascii(o->val) && isgraph(o->val) ) {
-	    cerr << " -" << static_cast<char>(o->val) << ", ";
+	    std::cerr << " -" << static_cast<char>(o->val) << ", ";
 	} else {
-	    cerr << "     ";
+	    std::cerr << "     ";
 	}
-	cerr.setf( ios::left, ios::adjustfield );
-	cerr << setw(24) << s << *p << endl;
+	std::cerr.setf( std::ios::left, std::ios::adjustfield );
+	std::cerr << std::setw(24) << s << *p << std::endl;
     }
 #else
     const char * s;
-    cerr << " [-";
+    std::cerr << " [-";
     for ( s = opts.c_str(); *s; ++s ) {
 	if ( *(s+1) == ':' ) {
 	    ++s;
@@ -358,19 +358,19 @@ usage()
 	    cerr.put( *s );
 	}
     }
-    cerr << ']';
+    std::cerr << ']';
 
     for ( s = opts.c_str(); *s; ++s ) {
 	if ( *(s+1) == ':' ) {
-	    cerr << " [-" << *s;
+	    std::cerr << " [-" << *s;
 	    switch ( *s ) {
 	    }
-	    cerr << ']';
+	    std::cerr << ']';
 	    ++s;
 	}
     }
 #endif
-    cerr << endl;
+    std::cerr << std::endl;
 }
 
 #include <vector.cc>

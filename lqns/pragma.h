@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: pragma.h 14037 2020-11-04 19:39:56Z greg $
+ * $Id: pragma.h 14141 2020-11-25 20:57:44Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -220,10 +220,7 @@ private:
 
 public:
     static void set( const std::map<std::string,std::string>& );
-#if __cplusplus < 201103L
-    static void initialize();
-#endif
-    static ostream& usage( ostream&  );
+    static std::ostream& usage( std::ostream&  );
     static const std::map<std::string,Pragma::fptr>& getPragmas() { return __set_pragma; }
     
 private:
@@ -252,7 +249,7 @@ private:
     /* --- */
     
 
- #if HAVE_LIBGSL && HAVE_LIBGSLCBLAS
+#if HAVE_LIBGSL && HAVE_LIBGSLCBLAS
     PRAGMA_QUORUM_DISTRIBUTION  _quorumDistribution;
     PRAGMA_QUORUM_DELAYED_CALLS  _quorumDelayedCalls;
     PRAGMA_IDLETIME  _idletime;

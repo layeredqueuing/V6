@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: mva.cc 14000 2020-10-25 12:50:53Z greg $
+ * $Id: mva.cc 14141 2020-11-25 20:57:44Z greg $
  *
  * MVA solvers: Exact, Bard-Schweitzer, Linearizer and Linearizer2.
  * Abstract superclass does no operation by itself.
@@ -166,7 +166,7 @@ bool MVA::debug_X = false;
  * Print all results.
  */
 
-ostream& operator<<( ostream& output, MVA& model )
+std::ostream& operator<<( std::ostream& output, MVA& model )
 {
     return model.print( output );
 }
@@ -1422,7 +1422,7 @@ MVA::PB( const Server& station, const Population &N, const unsigned k ) const
 double
 MVA::PB2( const Server& station, const Population &N, const unsigned k ) const
 {
-    const double U1_m   = min( 1.0, sumOf_U_m( station, N, k ) / station.mu() );
+    const double U1_m   = std::min( 1.0, sumOf_U_m( station, N, k ) / station.mu() );
     return power( U1_m, static_cast<unsigned>(station.mu()) );
 }
 
@@ -1790,9 +1790,9 @@ MVA::queueOnly_adjusted( const Server& station, const unsigned k, const Populati
 	const double service = station.S(e,k);
 	if ( service == 0.0 ) continue;
 	if (station.chainILRate(j)==0.0){
-	    sum += max( L[Nej][m][e][k] - U[Nej][m][e][k], 0.);	/* Can't have negative length */
+	    sum += std::max( L[Nej][m][e][k] - U[Nej][m][e][k], 0.);	/* Can't have negative length */
 	}else  {
-	    sum += max( L[Nej][m][e][k] * station.interlock_rate( e, k )- U[Nej][m][e][k], 0.);
+	    sum += std::max( L[Nej][m][e][k] * station.interlock_rate( e, k )- U[Nej][m][e][k], 0.);
 	}
     }
     return sum;
@@ -1814,7 +1814,7 @@ MVA::queueOnly( const Server& station, const unsigned k, const Population& N, co
     for ( unsigned e = 1; e <= E; ++e ) {
 	const double service = station.S(e,k);
 	if ( service == 0.0 ) continue;
-	sum += max( L[Nej][m][e][k] - U[Nej][m][e][k], 0.);
+	sum += std::max( L[Nej][m][e][k] - U[Nej][m][e][k], 0.);
     }
     return sum;
 }
@@ -1996,8 +1996,8 @@ MVA::tau( const Server& station, const unsigned j, const unsigned k, const Popul
  * Print throughput and utilization for all stations.
  */
 
-ostream&
-MVA::print( ostream& output ) const
+std::ostream&
+MVA::print( std::ostream& output ) const
 {
     const int width = output.precision() + 2;
     unsigned m;
@@ -2022,22 +2022,22 @@ MVA::print( ostream& output ) const
 		}
 
 		//TF NOTE: Need to support printing output
-		output <<   "L_" << e << k << " = " << setw(width) << L[offset(NCust)][m][e][k];
-		output << ", W_" << e << k << " = " << setw(width) << Q[m]->W[e][k][0];
-		output << ", Q_" << e << k << " = " << setw(width);
+		output <<   "L_" << e << k << " = " << std::setw(width) << L[offset(NCust)][m][e][k];
+		output << ", W_" << e << k << " = " << std::setw(width) << Q[m]->W[e][k][0];
+		output << ", Q_" << e << k << " = " << std::setw(width);
 		if ( !isinf( Q[m]->W[e][k][0] ) ) {
-		    output << max(Q[m]->W[e][k][0] - Q[m]->S(e,k), 0.);
+		    output << std::max(Q[m]->W[e][k][0] - Q[m]->S(e,k), 0.);
 		} else {
 		    output << Q[m]->W[e][k][0];
 		}
 //	output << ", R_" << e << k << " = " << setw(width) << Q[m]->R(e,k);
 //	output << ", Y_" << e << k << " = " << setw(width) << throughput( e, k );
-		output << ", U_" << e << k << " = " << setw(width) << U[offset(NCust)][m][e][k];
-		output << endl;
+		output << ", U_" << e << k << " = " << std::setw(width) << U[offset(NCust)][m][e][k];
+		output << std::endl;
 	    }
 	}
 	if ( count > 1 ) {
-	    output << "   U_sum = " << utilization(*Q[m]) << endl;
+	    output << "   U_sum = " << utilization(*Q[m]) << std::endl;
 	}
 	const unsigned n = offset(NCust);
 	if ( Q[m]->vectorProbabilities() ) {
@@ -2055,9 +2055,9 @@ MVA::print( ostream& output ) const
 		} else {
 		    output << " PB";
 		}
-		output << " = " << setw(width) << P[n][m][j];
+		output << " = " << std::setw(width) << P[n][m][j];
 	    }
-	    output << endl;
+	    output << std::endl;
 	}
     }
 
@@ -2070,16 +2070,16 @@ MVA::print( ostream& output ) const
  * Print think time.
  */
 
-ostream&
-MVA::printZ( ostream& output ) const
+std::ostream&
+MVA::printZ( std::ostream& output ) const
 {
     int width = output.precision() + 2;
 
     for ( unsigned k = 1; k <= K; ++k ) {
 	if ( k > 1 ) output << ", ";
-	output << "Z_" << k << " = " << setw(width) << Z[k];
+	output << "Z_" << k << " = " << std::setw(width) << Z[k];
     }
-    output << endl;
+    output << std::endl;
     return output;
 }
 
@@ -2089,8 +2089,8 @@ MVA::printZ( ostream& output ) const
  * Print throughput
  */
 
-ostream&
-MVA::printX( ostream& output ) const
+std::ostream&
+MVA::printX( std::ostream& output ) const
 {
     int width = output.precision() + 2;
     const unsigned n = offset(NCust);						/* Hoist */
@@ -2102,9 +2102,9 @@ MVA::printX( ostream& output ) const
 	    output << NCust[j];
 	    if ( j < K ) output << ",";
 	}
-	output << ") = " << setw(width) << X[n][k];
+	output << ") = " << std::setw(width) << X[n][k];
     }
-    output << endl;
+    output << std::endl;
     return output;
 }
 
@@ -2113,16 +2113,16 @@ MVA::printX( ostream& output ) const
  * Print priorities.
  */
 
-ostream&
-MVA::printPri( ostream& output ) const
+std::ostream&
+MVA::printPri( std::ostream& output ) const
 {
     int width = output.precision();
 
     for ( unsigned k = 1; k <= K; ++k ) {
 	if ( k > 1 ) output << ", ";
-	output << "Pri_" << k << " = " << setw(width) << priority[k];
+	output << "Pri_" << k << " = " << std::setw(width) << priority[k];
     }
-    output << endl;
+    output << std::endl;
     return output;
 }
 
@@ -2133,8 +2133,8 @@ MVA::printPri( ostream& output ) const
  * Jiffy printer of Queue Length L at NCust.
  */
 
-ostream&
-MVA::printL( ostream& output, const Population & N ) const
+std::ostream&
+MVA::printL( std::ostream& output, const Population & N ) const
 {
     const unsigned n = offset(N);
     for ( unsigned m = 1; m <= M; ++m ) {
@@ -2144,7 +2144,7 @@ MVA::printL( ostream& output, const Population & N ) const
 		if ( k > 1 ) output << ", ";
 		output << "L_{" << m << "," << e << "," << k << "}" << N << " = " << L[n][m][e][k];
 	    }
-	    output << endl;
+	    output << std::endl;
 	}
     }
     return output;
@@ -2156,8 +2156,8 @@ MVA::printL( ostream& output, const Population & N ) const
  * Jiffy printer of Population X at NCust.
  */
 
-ostream&
-MVA::printW( ostream& output ) const
+std::ostream&
+MVA::printW( std::ostream& output ) const
 {
     for ( unsigned m = 1; m <= M; ++m ) {
 	const unsigned E = Q[m]->nEntries();
@@ -2166,7 +2166,7 @@ MVA::printW( ostream& output ) const
 		if ( k > 1 ) output << ", ";
 		output << "W_{" << m << "," << e << "," << k << "} = " << Q[m]->W[e][k][0];
 	    }
-	    output << endl;
+	    output << std::endl;
 	}
     }
     return output;
@@ -2177,8 +2177,8 @@ MVA::printW( ostream& output ) const
  * Jiffy printer of Utilization at NCust.
  */
 
-ostream&
-MVA::printU( ostream& output, const Population& N  ) const
+std::ostream&
+MVA::printU( std::ostream& output, const Population& N  ) const
 {
     const unsigned n = offset(N);
     for ( unsigned m = 1; m <= M; ++m ) {
@@ -2188,7 +2188,7 @@ MVA::printU( ostream& output, const Population& N  ) const
 		if ( k > 1 ) output << ", ";
 		output << "U_{" << m << "," << e << "," << k << "}" << N << " = " << U[n][m][e][k];
 	    }
-	    output << endl;
+	    output << std::endl;
 	}
     }
     return output;
@@ -2199,8 +2199,8 @@ MVA::printU( ostream& output, const Population& N  ) const
  * Jiffy printer of marginal Queue Probabilties.
  */
 
-ostream&
-MVA::printP( ostream& output, const Population & N ) const
+std::ostream&
+MVA::printP( std::ostream& output, const Population & N ) const
 {
     const unsigned n = offset(N);
     for ( unsigned m = 1; m <= M; ++m ) {
@@ -2214,7 +2214,7 @@ MVA::printP( ostream& output, const Population & N ) const
 		output << "P_{" << m << I << "}" << N << " = " << P[n][m][i];
 		i = next( I );
 	    } while ( i != 0 );
-	    output << endl;
+	    output << std::endl;
 
 	} else if ( P[n][m] ) {
 	    const unsigned J = Q[m]->marginalProbabilitiesSize();
@@ -2228,7 +2228,7 @@ MVA::printP( ostream& output, const Population & N ) const
 		}
 		output << N << " = " << P[n][m][j];
 	    }
-	    output << endl;
+	    output << std::endl;
 	}
     }
     return output;
@@ -2257,8 +2257,8 @@ MVA::printR( ostream& output ) const
  *
  */
 
-ostream&
-MVA::printVectorP( ostream& output, const unsigned m, const Population& N ) const
+std::ostream&
+MVA::printVectorP( std::ostream& output, const unsigned m, const Population& N ) const
 {
     const int width = output.precision() + 2;
     Population I(K);			// Need to sequence over this.
@@ -2287,16 +2287,16 @@ MVA::printVectorP( ostream& output, const unsigned m, const Population& N ) cons
 	} else {
 	    output << ", ";
 	}
-	output << "P_" << j << N << " = " << setw(width) << tempP[j];
+	output << "P_" << j << N << " = " << std::setw(width) << tempP[j];
     }
-    output << endl;
+    output << std::endl;
 
-    output << "   -- Full marginals -- " << endl;
+    output << "   -- Full marginals -- " << std::endl;
     output << "   P_" << I << P[0][m];
     while ( (i = next( I )) ) {
 	output << ", P_" << I << P[i][m];
     }
-    output << endl;
+    output << std::endl;
 
     return output;
 }
@@ -2660,7 +2660,7 @@ SchweitzerCommon::initialize()
 		    P[n][m][j] = temp;
 		    sum       += temp;
 		}
-		const double PmjN = min( 1.0 - sum, pop >= J ? temp * (pop + 1.0 - J) : 0.0 );
+		const double PmjN = std::min( 1.0 - sum, pop >= J ? temp * (pop + 1.0 - J) : 0.0 );
 		P[n][m][J] = PmjN;
 		P[n][m][0] = 1.0 - (sum + PmjN);
 	    }
@@ -2682,7 +2682,7 @@ SchweitzerCommon::core( const Population& N, const unsigned n )
     unsigned i = 0;
 
 #if DEBUG_MVA
-    if ( debug_L || debug_P ) cout << "Initially..." << endl;
+    if ( debug_L || debug_P ) cout << "Initially..." << std::endl;
     if ( debug_R ) printR( cout );
     if ( debug_L ) printL( cout, N );
     if ( debug_P ) printP( cout, N );
@@ -2700,7 +2700,7 @@ SchweitzerCommon::core( const Population& N, const unsigned n )
 	i += 1;
 #if DEBUG_MVA
 	if ( i > 45 && debug_L ) {
-	    cout << "After " << iterations() << " Iterations..." << endl;
+	    cout << "After " << iterations() << " Iterations..." << std::endl;
 	    if ( debug_L ) printL( cout, N );
 	}
 #endif
@@ -2723,7 +2723,7 @@ SchweitzerCommon::core( const Population& N, const unsigned n )
     } while ( max_delta_L( n, N ) >= termination_test );
 #if DEBUG_MVA
     if ( debug_L ) {
-	cout << "After " << iterations() << " Iterations..." << endl;
+	cout << "After " << iterations() << " Iterations..." << std::endl;
 	printL( cout, N );
     }
 #endif
@@ -2767,7 +2767,7 @@ SchweitzerCommon::estimate_Lm( const unsigned m, const Population & N, const uns
 
 	    for ( unsigned e = 1; e <= E; ++e ) {
 
-		const double N_k = min(static_cast<double>(Q[m]->getMaxCustomers(e,k)), static_cast<double>(N[k]));
+		const double N_k = std::min(static_cast<double>(Q[m]->getMaxCustomers(e,k)), static_cast<double>(N[k]));
 		/* this entry has zero or one customer, L(Nej
 		 */
 		if ( N_k < 1 ) continue;
@@ -2824,8 +2824,8 @@ SchweitzerCommon::marginalProbabilities( const unsigned m, const Population& N )
     if ( P[n][m] == 0 ) return;
 
     const unsigned J  = Q[m]->marginalProbabilitiesSize();
-    const unsigned JJ = min( J, N.sum() );	/* Note: loops end at the minimum of servers, customers. */
-    const double U_m  = min( static_cast<double>(J), utilization( m, N ) );
+    const unsigned JJ = std::min( J, N.sum() );	/* Note: loops end at the minimum of servers, customers. */
+    const double U_m  = std::min( static_cast<double>(J), utilization( m, N ) );
 
     if ( U_m < Q[m]->mu() ) {
 	double sum        = 1.0;					/* Eqn 5.5 */
@@ -3481,8 +3481,8 @@ Linearizer::update_Delta( const Population & N )
  * Jiffy printer of D at N.
  */
 
-ostream&
-Linearizer::printD( ostream& output, const Population & N ) const
+std::ostream&
+Linearizer::printD( std::ostream& output, const Population & N ) const
 {
     for ( unsigned m = 1; m <= M; ++m ) {
 	const unsigned E = Q[m]->nEntries();
@@ -3493,7 +3493,7 @@ Linearizer::printD( ostream& output, const Population & N ) const
 			j << "}" << N << " = " << D[m][e][k][j] << "\t";
 		}
 	    }
-	    output << endl;
+	    output << std::endl;
 	}
     }
     return output;
@@ -3718,7 +3718,7 @@ Linearizer2::estimate_L( const Population & N )
 		 */
 
 		const unsigned Nej = offset_e_c_e_j(c,j);
-		Lm[Nej][m] += max( 0.0, sum + D_k[m][e][j] - temp );
+		Lm[Nej][m] += std::max( 0.0, sum + D_k[m][e][j] - temp );
 	    }
 	}
     }

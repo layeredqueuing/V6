@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: prob.cc 14000 2020-10-25 12:50:53Z greg $
+ * $Id: prob.cc 14141 2020-11-25 20:57:44Z greg $
  *
  * This class only allows double precision values in the range of 0.0 to
  * 1.0.  Attempts to set instances to values outside this range will
@@ -21,8 +21,8 @@
 
 /* ----------------------- Helper Functions --------------------------- */
 
-istream& 
-operator<<( istream &input, Probability& arg )
+std::istream& 
+operator<<( std::istream &input, Probability& arg )
 {
     double temp;
     input >> temp;
@@ -30,8 +30,8 @@ operator<<( istream &input, Probability& arg )
     return input;
 }
 
-istream& 
-operator<<( istream &input, Positive& arg )
+std::istream& 
+operator<<( std::istream &input, Positive& arg )
 {
     double temp;
     input >> temp;
@@ -79,7 +79,7 @@ double
 Probability::check( const double arg ) const
 {
     if ( !isfinite(arg) || arg < 0.0 || (1.0 + NOISE) < arg ) {
-	throw domain_error( "Probability::check" );
+	throw std::domain_error( "Probability::check" );
     } else if ( 1.0 < arg ) {
 	return 1.0;    /* A little noise -- truncate. */
     }
@@ -126,7 +126,7 @@ double
 Positive::check( const double arg ) const
 {
     if ( !isfinite(arg) || arg < 0.0 ) {
-	throw domain_error( "Positive::check" );
+	throw std::domain_error( "Positive::check" );
     }
     return arg;
 }

@@ -1,6 +1,6 @@
 /* option.cc -- Greg Franks Wed Oct 12 2005
  *
- * $Id: option.cc 14105 2020-11-17 22:34:26Z greg $
+ * $Id: option.cc 14141 2020-11-25 20:57:44Z greg $
  */
 
 #include <config.h>
@@ -203,7 +203,7 @@ Options::Trace::mva( const char *arg )
     } else if ( 0 < ( temp = (unsigned)strtol( arg, 0, 10 ) ) && temp < 100 ) {
 	flags.trace_submodel = temp;
     } else {
-	cerr << LQIO::io_vars.lq_toolname << " -tmva=" << arg << " is invalid." << endl;
+	std::cerr << LQIO::io_vars.lq_toolname << " -tmva=" << arg << " is invalid." << std::endl;
     }
 }
 
@@ -307,7 +307,7 @@ void
 Options::Special::iteration_limit( const char * arg )
 {
     if ( !arg || (Model::iteration_limit = (unsigned)strtol( arg, 0, 10 )) == 0 ) {
-	cerr << LQIO::io_vars.lq_toolname << "iteration-limit=" << arg << " is invalid, choose non-negative integer." << endl;
+	std::cerr << LQIO::io_vars.lq_toolname << "iteration-limit=" << arg << " is invalid, choose non-negative integer." << std::endl;
 	(void) exit( INVALID_ARGUMENT );
     } else {
 	flags.override_iterations = true;
@@ -318,7 +318,7 @@ void
 Options::Special::print_interval( const char * arg )
 {
     if ( !arg || (Model::print_interval = (unsigned)strtol( arg, 0, 10 )) == 0 ) {
-	cerr << LQIO::io_vars.lq_toolname << "print-interval=" << arg << " is invalid, choose non-negative integer." << endl;
+	std::cerr << LQIO::io_vars.lq_toolname << "print-interval=" << arg << " is invalid, choose non-negative integer." << std::endl;
 	(void) exit( INVALID_ARGUMENT );
     } else {
 	flags.override_print_interval = true;
@@ -335,7 +335,7 @@ void
 Options::Special::convergence_value( const char * arg )
 {
     if ( !arg || (Model::convergence_value = strtod( arg, 0 )) == 0 ) {
-	cerr << LQIO::io_vars.lq_toolname << "convergence=" << arg << " is invalid, choose non-negative real." << endl;
+	std::cerr << LQIO::io_vars.lq_toolname << "convergence=" << arg << " is invalid, choose non-negative real." << std::endl;
 	(void) exit( INVALID_ARGUMENT );
     } else {
 	flags.override_convergence = true;
@@ -348,7 +348,7 @@ Options::Special::single_step( const char * arg )
     if ( !arg ) {
 	flags.single_step = true;
     } else if ( (flags.single_step = atol( arg )) <= 0 ) {
-	cerr << LQIO::io_vars.lq_toolname << ": step=" << arg << " is invalid, choose non-negative integer." << endl;
+	std::cerr << LQIO::io_vars.lq_toolname << ": step=" << arg << " is invalid, choose non-negative integer." << std::endl;
 	(void) exit( INVALID_ARGUMENT );
     }
 }
@@ -357,7 +357,7 @@ void
 Options::Special::underrelaxation( const char * arg )
 {
     if ( !arg || (Model::underrelaxation = strtod( arg, 0 )) <= 0.0 || 2.0 < Model::underrelaxation ) {
-	cerr << LQIO::io_vars.lq_toolname << "underrelaxation=" << arg << " is invalid, choose a value between 0.0 and 2.0." << endl;
+	std::cerr << LQIO::io_vars.lq_toolname << "underrelaxation=" << arg << " is invalid, choose a value between 0.0 and 2.0." << std::endl;
 	(void) exit( INVALID_ARGUMENT );
     } else {
 	flags.override_underrelaxation = true;
@@ -368,7 +368,7 @@ void
 Options::Special::generate_queueing_model( const char * arg )
 {
     if ( !arg ) {
-	cerr << LQIO::io_vars.lq_toolname << "generate: missing filename argument.." << endl;
+	std::cerr << LQIO::io_vars.lq_toolname << "generate: missing filename argument.." << std::endl;
 	(void) exit( INVALID_ARGUMENT );
     } else {
 	flags.generate = true;
@@ -380,7 +380,7 @@ void
 Options::Special::mol_ms_underrelaxation( const char * arg )
 {
     if ( !arg || (MVA::MOL_multiserver_underrelaxation = strtod( arg, 0 )) <= 0.0 || 1.0 < MVA::MOL_multiserver_underrelaxation ) {
-	cerr << LQIO::io_vars.lq_toolname << "underrelaxation=" << arg << " is invalid, choose real between 0.0 and 1.0." << endl;
+	std::cerr << LQIO::io_vars.lq_toolname << "underrelaxation=" << arg << " is invalid, choose real between 0.0 and 1.0." << std::endl;
 	(void) exit( INVALID_ARGUMENT );
     }
 }
@@ -390,18 +390,18 @@ Options::Special::make_man( const char * arg )
 {
     HelpTroff man;
     if ( arg ) {
-	ofstream output;
-	output.open( arg, ios::out );	/* NO \r's in output for windoze */
+	std::ofstream output;
+	output.open( arg, std::ios::out );	/* NO \r's in output for windoze */
 	if ( !output ) {
-	    ostringstream msg; 
+	    std::ostringstream msg; 
 	    msg << "Cannot open output file " << arg << " - " << strerror( errno );
-	    throw runtime_error( msg.str() );
+	    throw std::runtime_error( msg.str() );
 	} else {
 	    output << man;
 	}
 	output.close();
     } else {
-	cout << man;
+	std::cout << man;
     }
     exit( 0 );
 }
@@ -411,18 +411,18 @@ Options::Special::make_tex( const char * arg )
 {
     HelpLaTeX man;
     if ( arg ) {
-	ofstream output;
-	output.open( arg, ios::out );	/* NO \r's in output for windoze */
+	std::ofstream output;
+	output.open( arg, std::ios::out );	/* NO \r's in output for windoze */
 	if ( !output ) {
-	    ostringstream msg; 
+	    std::ostringstream msg; 
 	    msg << "Cannot open output file " << arg << " - " << strerror( errno );
-	    throw runtime_error( msg.str() );
+	    throw std::runtime_error( msg.str() );
 	} else {
 	    output << man;
 	}
 	output.close();
     } else {
-	cout << man;
+	std::cout << man;
     }
     exit( 0 );
 }
@@ -431,9 +431,9 @@ void
 Options::Special::min_steps( const char * arg )
 {
     if ( !arg ) {
-	cerr << LQIO::io_vars.lq_toolname << ": no value supplied to -zmin-steps." << endl;
+	std::cerr << LQIO::io_vars.lq_toolname << ": no value supplied to -zmin-steps." << std::endl;
     } else if ( (flags.min_steps = atoi( arg )) < 1 ) {
-	cerr << LQIO::io_vars.lq_toolname << ": min-steps=" << arg << " is invalid, choose value greater than 1." << endl;
+	std::cerr << LQIO::io_vars.lq_toolname << ": min-steps=" << arg << " is invalid, choose value greater than 1." << std::endl;
 	(void) exit( INVALID_ARGUMENT );
     }
 }

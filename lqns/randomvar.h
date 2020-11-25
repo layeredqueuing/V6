@@ -8,7 +8,7 @@
  *
  * January, 2005
  *
- * $Id: randomvar.h 14000 2020-10-25 12:50:53Z greg $
+ * $Id: randomvar.h 14141 2020-11-25 20:57:44Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -28,7 +28,7 @@ DiscretePoints max( const DiscretePoints&, const DiscretePoints& );
 DiscretePoints min( const DiscretePoints&, const DiscretePoints& );
 
 
-ostream& operator<<( ostream&, const Exponential& );
+std::ostream& operator<<( std::ostream&, const Exponential& );
 
 struct Erlang
 {
@@ -75,7 +75,7 @@ public:
 
     /* Printing... */
 
-    virtual ostream& print( ostream& output ) const;
+    virtual std::ostream& print( std::ostream& output ) const;
 	
 protected:
     virtual const char * typeStr() const { return "Exponential: "; }
@@ -118,7 +118,7 @@ public:
     DiscretePoints& operator=( const DiscretePoints& );
     virtual ~DiscretePoints();
     
-    const string& nameGet() const { return myName; }
+    const std::string& nameGet() const { return myName; }
     void nameSet( char * );
     bool active() const { return isActive; }
     void active(bool newState){isActive = newState;}
@@ -148,7 +148,7 @@ public:
 
     /* Printing... */ 
 
-    virtual ostream& print( ostream& output ) const;
+    virtual std::ostream& print( std::ostream& output ) const;
 	
 protected:
     virtual const char * typeStr() const { return "DiscretePoints: "; };
@@ -181,6 +181,6 @@ protected:
 
 private:
     bool isActive;
-    string myName;
+    std::string myName;
 };
 #endif

@@ -9,7 +9,7 @@ double  * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/gene
  *
  * November, 1994
  *
- * $Id: generate.h 14000 2020-10-25 12:50:53Z greg $
+ * $Id: generate.h 14141 2020-11-25 20:57:44Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -66,9 +66,9 @@ private:
     static ArgsManip overtaking_args( const unsigned e, const unsigned k, const unsigned p ) { return ArgsManip( &print_overtaking_args, e, k, p ); }
     static StnManip station_name( const Entity& entity ) { return StnManip( &print_station_name, entity ); }
 
-    static ostream& print_station_name( ostream& output, const Entity& anEntity );
-    static ostream& print_station_args( ostream& output, const unsigned e, const unsigned k, const unsigned p );
-    static ostream& print_overtaking_args( ostream& output, const unsigned e, const unsigned k, const unsigned p );
+    static std::ostream& print_station_name( std::ostream& output, const Entity& anEntity );
+    static std::ostream& print_station_args( std::ostream& output, const unsigned e, const unsigned k, const unsigned p );
+    static std::ostream& print_overtaking_args( std::ostream& output, const unsigned e, const unsigned k, const unsigned p );
 
 public:
     static std::string file_name;

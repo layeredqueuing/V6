@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: phase.cc 14129 2020-11-24 22:56:30Z greg $
+ * $Id: phase.cc 14141 2020-11-25 20:57:44Z greg $
  *
  * Everything you wanted to know about an phase, but were afraid to ask.
  *
@@ -185,9 +185,8 @@ NullPhase::addILWait( unsigned int submodel, double il_wait )
 {
     _interlockedWait[submodel] += il_wait;
     if ( flags.trace_interlock ) {
-	cout<<getDOM()->getName()<<"->_interlockedWait["<<submodel<<"] :";
-	cout<< " is added by "<<il_wait <<" = "<<_interlockedWait[submodel]<<endl;
-	
+	std::cout<<getDOM()->getName()<<"->_interlockedWait["<<submodel<<"] :";
+	std::cout<< " is added by "<<il_wait <<" = "<<_interlockedWait[submodel]<<std::endl;
     }
 }
 
@@ -329,7 +328,7 @@ Phase::findChildren( Call::stack& callStack, const bool directPath ) const
 		if ( (*call)->hasForwarding() && directPath ) {
 		    addForwardingRendezvous( callStack );
 		}
-		max_depth = max( dstTask->findChildren( callStack, directPath ), max_depth );
+		max_depth = std::max( dstTask->findChildren( callStack, directPath ), max_depth );
 		callStack.pop_back();
 
 	    }
@@ -344,7 +343,7 @@ Phase::findChildren( Call::stack& callStack, const bool directPath ) const
     if ( processorCall() ) {
 	callStack.push_back( processorCall() );
 	const Entity * child = processorCall()->dstTask();
-	max_depth = max( child->findChildren( callStack, directPath ), max_depth );
+	max_depth = std::max( child->findChildren( callStack, directPath ), max_depth );
 	callStack.pop_back();
     }
     return max_depth;
@@ -920,7 +919,7 @@ Phase::computeCFSDelay( double ratio1, double ratio2 )
 
     } else if ( ratio1 > 0. && _thinkCall->wait() > 0.0001 ) {
 	if ( ratio2 > 0. ) {	    //it is the case of :util >share
-	    _cfs_delay_lowerbound = max( _thinkCall->wait(), _cfs_delay_lowerbound );
+	    _cfs_delay_lowerbound = std::max( _thinkCall->wait(), _cfs_delay_lowerbound );
 	} else {
 	    _cfs_delay_upperbound = _thinkCall->wait();
 	}
@@ -941,7 +940,7 @@ Phase::computeCFSDelay( double ratio1, double ratio2 )
 	newThinkTime = 0.0;
     }
 
-    newThinkTime = max( newThinkTime, 0. );
+    newThinkTime = std::max( newThinkTime, 0. );
     const double oldThinkTime = _thinkEntry->serviceTimeForPhase(1);
 //    under_relax( newThinkTime, oldThinkTime, 1. );
     if ( oldThinkTime != newThinkTime  ) {
@@ -1071,8 +1070,8 @@ Phase::updateWait( const Submodel& aSubmodel, const double relax )
     under_relax( _wait[submodel], newWait, relax );
 
     if ( oldWait && flags.trace_delta_wait ) {
-	cout << "Phase::updateWait(" << submodel << "," << relax << ") for " << name() << endl;
-	cout << "        Sum of wait=" << newWait << ", _wait[" << submodel << "]=" << _wait[submodel] <<endl;
+	std::cout << "Phase::updateWait(" << submodel << "," << relax << ") for " << name() << std::endl;
+	std::cout << "        Sum of wait=" << newWait << ", _wait[" << submodel << "]=" << _wait[submodel] << std::endl;
     }
 
     return *this;
@@ -1094,8 +1093,8 @@ Phase::getReplicationProcWait( unsigned int submodel, const double relax )
 	    // newWait +=  _surrogateDelay[k];
 
 	    if (flags.trace_quorum) {
-		cout << "\nPhase::getReplicationProcWait(): Call " << this->name() << ", Submodel=" <<  processorCall()->submodel()
-		     << ", _surrogateDelay[" <<k<<"]="<<_surrogateDelay[k] << endl;
+		std::cout << "\nPhase::getReplicationProcWait(): Call " << this->name() << ", Submodel=" <<  processorCall()->submodel()
+		     << ", _surrogateDelay[" <<k<<"]="<<_surrogateDelay[k] << std::endl;
 		fflush(stdout);
 	    }
 	}
@@ -1139,9 +1138,9 @@ Phase::getProcWait( unsigned int submodel, const double relax ) //tomari : quoru
 	newWait += processorCall()->rendezvousDelay();
 
 	if (flags.trace_quorum) {
-	    cout << "\nPhase::getProcWait(): Call " << this->name() << ", Submodel=" <<  processorCall()->submodel()
-		 << ", newWait="<<newWait << endl;
-	    fflush(stdout);
+	    std::cout << "\nPhase::getProcWait(): Call " << this->name() << ", Submodel=" <<  processorCall()->submodel()
+		 << ", newWait="<<newWait << std::endl;
+	    std::cout.flush();
 	}
 			
     }
@@ -1183,8 +1182,8 @@ Phase::updateWaitReplication( const Submodel& aSubmodel )
     // of this phase...
 
     if ( flags.trace_replication ) {
-	cout <<"\nPhase::updateWaitReplication()........Current phase is " << entry()->name() << ":" << name();
-	cout <<" ..............." <<endl;
+	std::cout <<"\nPhase::updateWaitReplication()........Current phase is " << entry()->name() << ":" << name();
+	std::cout <<" ..............." << std::endl;
     }
     const Task * ownerTask = dynamic_cast<const Task *>(owner());
     const ChainVector& aChain = ownerTask->clientChains(aSubmodel.number());
@@ -1192,7 +1191,7 @@ Phase::updateWaitReplication( const Submodel& aSubmodel )
     for ( unsigned ix = 1; ix <= aChain.size(); ++ix ) {
 	const unsigned k = aChain[ix];
 
-	//cout <<"\n***Start processing master chain k = " << k << " *****" << endl;
+	//std::cout <<"\n***Start processing master chain k = " << k << " *****" << std::endl;
 
 	bool proc_mod = false;
 	double nr_factor = 0.0;
@@ -1212,7 +1211,7 @@ Phase::updateWaitReplication( const Submodel& aSubmodel )
 		nr_factor = (*call)->nrFactor( aSubmodel, k );
 	    }
 	    if ( flags.trace_replication ) {
-		cout << "\nCallChainNum=" << (*call)->getChain() << ",Src=" << (*call)->srcName() << ",Dst=" << (*call)->dstName() << ",Wait=" << temp << endl;
+		std::cout << "\nCallChainNum=" << (*call)->getChain() << ",Src=" << (*call)->srcName() << ",Dst=" << (*call)->dstName() << ",Wait=" << temp << std::endl;
 	    }
 	    newWait += temp;
 
@@ -1229,8 +1228,8 @@ Phase::updateWaitReplication( const Submodel& aSubmodel )
 		double temp=  processorCall()->rendezvousDelay( k );
 		newWait += temp;
 		if ( flags.trace_replication ) {
-		    cout << "\n Processor Call: CallChainNum="<<processorCall()->getChain() <<  ",Src=" << processorCall()->srcName() << ",Dst= " << processorCall()->dstName()
-			 << ",Wait=" << temp << endl;
+		    std::cout << "\n Processor Call: CallChainNum="<<processorCall()->getChain() <<  ",Src=" << processorCall()->srcName() << ",Dst= " << processorCall()->dstName()
+			 << ",Wait=" << temp << std::endl;
 		}
 		if ( processorCall()->dstTask()->hasServerChain(k) ) {
 		    nr_factor = processorCall()->nrFactor( aSubmodel, k );
@@ -1246,14 +1245,14 @@ Phase::updateWaitReplication( const Submodel& aSubmodel )
 	    newWait = 0;
 	}
 
-	delta = max( delta, square( (_surrogateDelay[k] - newWait) * throughput() ) );
+	delta = std::max( delta, square( (_surrogateDelay[k] - newWait) * throughput() ) );
 	under_relax( _surrogateDelay[k], newWait, 1.0 );
 	
 	if ( flags.trace_replication ) {
-	    cout << endl << "SurrogateDelay of current master chain " << k << " =" << _surrogateDelay[k] << endl
+	    std::cout << std::endl << "SurrogateDelay of current master chain " << k << " =" << _surrogateDelay[k] << std::endl
 		 << name() << ": waitExceptChain(submodel=" << aSubmodel.number() << ",k=" << k << ") = " << newWait
-		 << ", nr_factor = " << nr_factor << endl
-		 << ", waitExcept(submodel=" << aSubmodel.number() << ") = " << waitExcept( aSubmodel.number() ) << endl;
+		 << ", nr_factor = " << nr_factor << std::endl
+		 << ", waitExcept(submodel=" << aSubmodel.number() << ") = " << waitExcept( aSubmodel.number() ) << std::endl;
 	}
     }
     return delta;
@@ -1353,8 +1352,8 @@ Phase::updateInterlockedWait( const Submodel& aSubmodel, const double relax )
     under_relax( _interlockedWait[submodel], newILWait, relax );
 
     if ( oldWait && flags.trace_interlock ) {
-	cout << "Phase::updateILWait(" << submodel << "," << relax << ") for " << name() << endl;
-	cout << "        Sum of interlocked wait=" << newILWait << ", _interlockedWait[" << submodel << "]=" << _interlockedWait[submodel];
+	std::cout << "Phase::updateILWait(" << submodel << "," << relax << ") for " << name() << std::endl;
+	std::cout << "        Sum of interlocked wait=" << newILWait << ", _interlockedWait[" << submodel << "]=" << _interlockedWait[submodel];
     }
 
     return *this;
@@ -1619,7 +1618,7 @@ Phase::mol_phase() const
     variance = var_iter / q + ( 1.0 - q ) / square( q ) * square( r_iter );
 
     if ( Options::Debug::variance() ) {
-	cout << name() << " MOL var: q=" << q << ", r_iter=" << r_iter << ", Proc Var=" << processorVariance() << ", SP Var=" << SP_Model.variance() << ", var_iter=" << var_iter << ", variance=" << variance << endl;
+	std::cout << name() << " MOL var: q=" << q << ", r_iter=" << r_iter << ", Proc Var=" << processorVariance() << ", SP Var=" << SP_Model.variance() << ", var_iter=" << var_iter << ", variance=" << variance << std::endl;
     }
     return variance;
 }
@@ -1704,7 +1703,7 @@ Phase::initProcessor()
     /* If I don't have an entry on the processor, create one provided that the processor is interesting */
 	
     if ( getDOM()->hasServiceTime() ) {
-	string entry_name( owner()->name() );
+	std::string entry_name( owner()->name() );
 	entry_name += ':';
 	entry_name += name();
 	
@@ -1739,7 +1738,7 @@ Phase::initProcessor()
 
     if ( hasThinkTime() ) {
 			
-	string think_entry_name;
+	std::string think_entry_name;
 	think_entry_name = Model::thinkServer->name();
 	think_entry_name += "-";
 	think_entry_name += name();
@@ -1777,7 +1776,7 @@ Phase::initCFSProcessor()
 
     if ( ! hasThinkTime() ) {
 
-	string think_entry_name;
+	std::string think_entry_name;
 	think_entry_name = Model::thinkServer->name();
 	think_entry_name += "-";
 	think_entry_name += name();

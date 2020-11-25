@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: entity.cc 14097 2020-11-15 14:12:41Z greg $
+ * $Id: entity.cc 14141 2020-11-25 20:57:44Z greg $
  *
  * Everything you wanted to know about a task or processor, but were
  * afraid to ask.
@@ -46,8 +46,8 @@
  * Printing function.
  */
 
-ostream&
-operator<<( ostream& output, const Entity& self )
+std::ostream&
+operator<<( std::ostream& output, const Entity& self )
 {
     self.print( output );
     return output;
@@ -132,7 +132,7 @@ Entity::configure( const unsigned nSubmodels )
 unsigned
 Entity::findChildren( Call::stack& callStack, const bool ) const
 {
-    unsigned max_depth = max( submodel(), callStack.depth() );
+    unsigned max_depth = std::max( submodel(), callStack.depth() );
 
     const_cast<Entity *>(this)->setSubmodel( max_depth );
     return max_depth;
@@ -460,9 +460,9 @@ Entity::prInterlock( const Task& aClient ) const
 {
     const Probability pr = _interlock.interlockedFlow( aClient ) / population();
     if ( flags.trace_interlock ) {
-	cout << "Interlock: "
-	     << aClient.name() << "(" << aClient.population() << ") -> "
-	     << name()         << "(" << population()         << ")  = " << pr << endl;
+	std::cout << "Interlock: "
+		  << aClient.name() << "(" << aClient.population() << ") -> "
+		  << name()         << "(" << population()         << ")  = " << pr << std::endl;
     }
     return pr;
 }
@@ -473,10 +473,10 @@ Entity::prInterlock( const Entry * clientEntry ) const
 {
     const Probability pr = _interlock.interlockedFlow( clientEntry );
     if ( flags.trace_interlock ) {
-	cout << "Interlock rate: ";
-	    const Entity * client = clientEntry->owner();
-	    cout << client->name() << "(" << client->population() << ") -> "
-		 << name()         << "(" << population()         << ")  = " << pr << endl;
+	std::cout << "Interlock rate: ";
+	const Entity * client = clientEntry->owner();
+	std::cout << client->name() << "(" << client->population() << ") -> "
+		  << name()         << "(" << population()         << ")  = " << pr << std::endl;
     }
     return pr;
 }
@@ -489,11 +489,11 @@ Entity::prInterlock( const Task& aClient, const Entry * aServerEntry, double& il
     Probability pril = _interlock.interlockedFlow( aClient, aServerEntry, il_rate, moreThan4 );
     pril /= population();
     if ( flags.trace_interlock ) {
-	cout << "Interlock probability: "
-	     << aClient.name() << "(" << aClient.population() << ") -> "
-	     << name()         << "(" << aServerEntry->name()         << ")  = " << pril << endl;
-	cout << "Interlock rate: ("
-	     << aClient.name() << " -> " << name() << ")  = " << il_rate << endl;
+	std::cout << "Interlock probability: "
+		  << aClient.name() << "(" << aClient.population() << ") -> "
+		  << name()         << "(" << aServerEntry->name()         << ")  = " << pril << std::endl;
+	std::cout << "Interlock rate: ("
+		  << aClient.name() << " -> " << name() << ")  = " << il_rate << std::endl;
     }
     return pril;
 }
@@ -510,9 +510,6 @@ Entity::setChainILRate(const Task& aClient, double rate) const
 }
 
 void Entity::set_chain_IL_rate::operator()( unsigned int k ) { if ( _serverChains.find(k) ) { _station->setChainILRate( k, _rate ); } }
-
-
-
 
 
 bool
@@ -730,24 +727,24 @@ Entity::setInterlockRelation( Server * station, const Entry * server_entry_1, co
 		station->set_IL_Relation( se1, k1, 1, 0, 4 );
 	    }
 	    if ( flags.trace_interlock && p1 == 3 ) {
-		cout << "set sending Interlock relation: (server entry=" << server_entry_1->name()
+		std::cout << "set sending Interlock relation: (server entry=" << server_entry_1->name()
 		     << ", client task= " << client_1->name()<< "), IR_Relation( se1="
-		     << se1<< ", k1= "<<k1 << ", se2=" << se2<< ", k2= 0) = 3"  <<endl;
+		     << se1<< ", k1= "<<k1 << ", se2=" << se2<< ", k2= 0) = 3"  << std::endl;
 	    }
 	    if ( flags.trace_interlock && p2 == 3 ) {
-		cout << "set sending Interlock relation: (server entry=" << server_entry_2->name()
+		std::cout << "set sending Interlock relation: (server entry=" << server_entry_2->name()
 		     << ", client task= " << client_2->name()<< "), IR_Relation( se2="
-		     << se2<< ", k= "<<k2 << ", se1=" << se1<< ", k= 0) = 3"  <<endl;
+		     << se2<< ", k= "<<k2 << ", se1=" << se1<< ", k= 0) = 3"  << std::endl;
 	    }
 	}
 	//================
 	if ( flags.trace_interlock ) {
-	    cout << "set Interlock relation: (server entry="  << server_entry_1->name()
+	    std::cout << "set Interlock relation: (server entry="  << server_entry_1->name()
 		 << ", client task= " << client_1->name()
 		 << "), between (server entry="  << server_entry_2->name()
 		 << ", client task= " << client_2->name()
 		 << "), IR_Relation( se1=" << se1<< ", k1= "<<k1
-		 << ", se2=" << se2<< ", k2= "<<k2 << ") = 1"  <<endl;
+		 << ", se2=" << se2<< ", k2= "<<k2 << ") = 1"  << std::endl;
 	
 	}
     } else { // have no common entry!
@@ -763,11 +760,11 @@ Entity::setInterlockRelation( Server * station, const Entry * server_entry_1, co
 		station->set_IL_Relation( se2, k2, se1, k1, p );
 	    }
 	    if ( flags.trace_interlock ) {
-		cout << "set Interlock relation: type3 sending (server entry="  << server_entry_1->name()
+		std::cout << "set Interlock relation: type3 sending (server entry="  << server_entry_1->name()
 		     << ", client task= " << client_1->name()<< "), between (server entry="  << server_entry_2->name()
 		     << ", client task= " << client_2->name()<< "), IR_Relation( se1="
 		     << se1<< ", k1= "<<k1 << ", se2=" << se2<< ", k2= "<<k2
-		     << ") = " << station->IL_Relation( se2, k2, se1, k1 ) <<endl;
+		     << ") = " << station->IL_Relation( se2, k2, se1, k1 ) << std::endl;
 			
 	    }
 	}
@@ -797,7 +794,7 @@ Entity::setIdleTime( const double relax )
 	z = get_infinity();	/* INFINITY */
     }
     if ( flags.trace_idle_time ) {
-	cout << "\nEntity::setIdleTime():" << name() << "   Idle Time:  " << z << endl;
+	std::cout << "\nEntity::setIdleTime():" << name() << "   Idle Time:  " << z << std::endl;
     }
     under_relax( _thinkTime, z, relax );
 }
@@ -969,7 +966,7 @@ Entity::saveServerResults( const MVASubmodel& submodel, double relax )
 	    if ( isfinite( tput ) ) {
 		lambda += tput;
 	    } else if ( tput < 0.0 ) {
-		throw domain_error( "MVASubmodel::saveServerResults" );
+		throw std::domain_error( "MVASubmodel::saveServerResults" );
 	    } else {
 		lambda = tput;
 		break;
@@ -992,15 +989,15 @@ Entity::saveServerResults( const MVASubmodel& submodel, double relax )
  * Print chains for this client.
  */
 
-/* static */ ostream&
-Entity::output_server_chains( ostream& output, const Entity& aServer )
+/* static */ std::ostream&
+Entity::output_server_chains( std::ostream& output, const Entity& aServer )
 {
-    output << "Chains:" << aServer.serverChains() << endl;
+    output << "Chains:" << aServer.serverChains() << std::endl;
     return output;
 }
 
-/* static */  ostream&
-Entity::output_entity_info( ostream& output, const Entity& aServer )
+/* static */  std::ostream&
+Entity::output_entity_info( std::ostream& output, const Entity& aServer )
 {
     if ( aServer.serverStation() ) {
 	output << "(" << aServer.serverStation()->typeStr() << ")";

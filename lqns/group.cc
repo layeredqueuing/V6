@@ -10,7 +10,7 @@
  * November, 2008
  *
  * ------------------------------------------------------------------------
- * $Id: group.cc 14101 2020-11-16 15:45:24Z greg $
+ * $Id: group.cc 14141 2020-11-25 20:57:44Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -154,7 +154,7 @@ Group::reset()
 
     const double groupdelay = getCFSDelay();
     if ( groupdelay > 0. ) {
-	cerr<<"group "<<name()<<" has a nonzero group delay ("<<groupdelay<<") after reseting..."<<endl;
+	std::cerr <<"group "<<name()<<" has a nonzero group delay ("<<groupdelay<<") after reseting..."<< std::endl;
     }
     return *this;
 }

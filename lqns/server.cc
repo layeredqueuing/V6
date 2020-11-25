@@ -1,5 +1,5 @@
 /*  -*- C++ -*-
- * $Id: server.cc 14035 2020-11-02 15:46:45Z greg $
+ * $Id: server.cc 14141 2020-11-25 20:57:44Z greg $
  *
  * Copyright the Real-Time and Distributed Systems Group,
  * Department of Systems and Computer Engineering,
@@ -57,8 +57,8 @@
  * Print all results.
  */
 
-ostream&
-operator<<( ostream& output, const Server& self )
+std::ostream&
+operator<<( std::ostream& output, const Server& self )
 {
     return self.print( output );
 }
@@ -76,10 +76,10 @@ Server::initialize()
     unsigned e, k;
 
     if ( E == 0 ) {
-	throw out_of_range( "Server::initialize -- entries" );
+	throw std::out_of_range( "Server::initialize -- entries" );
     }
     if ( P == 0 || MAX_PHASES < P ) {
-	throw out_of_range( "Server::initialize -- phases" );
+	throw std::out_of_range( "Server::initialize -- phases" );
     }
 
     W = new double ** [E+1];
@@ -928,7 +928,7 @@ Server::alpha( const unsigned n ) const
     const double u = rho();
     const double den = power( 1.0 - u, n + 1 );
     if ( den == 0.0 ) {
-	throw range_error( "Server::alpha" );
+	throw std::range_error( "Server::alpha" );
     }
     return 1.0 / den;
 }
@@ -1027,11 +1027,11 @@ Server::setMixFlow(bool isILflow)
  * Print information about this station.
  */
 
-ostream&
-Server::print( ostream& output ) const
+std::ostream&
+Server::print( std::ostream& output ) const
 {
     output << typeStr();
-    printHeading( output ) << ":" << endl;
+    printHeading( output ) << ":" << std::endl;
     for ( unsigned e = 1; e <= E; ++e ) {
 	for ( unsigned k = 0; k <= K; ++k ) {
 	    if ( S(e,k) == 0.0 && V(e,k) == 0.0 ) continue;
@@ -1047,8 +1047,8 @@ Server::print( ostream& output ) const
  * Print out data for this entry and class.
  */
 
-ostream&
-Server::printInput( ostream& output, const unsigned e, const unsigned k ) const
+std::ostream&
+Server::printInput( std::ostream& output, const unsigned e, const unsigned k ) const
 {
     unsigned maxP = 1;
     for ( unsigned int p = 1; p <= MAX_PHASES; ++p ) {
@@ -1060,7 +1060,7 @@ Server::printInput( ostream& output, const unsigned e, const unsigned k ) const
     output << "  MC(e=" << e << ",k=" << k << ") = " << _maxCusts[e][k];
     /* real number of customers */
     output << ", RC(e=" << e << ",k=" << k << ") = " << _realCusts[e][k];
-    output << endl;
+    output << std::endl;
 
     output << "  V(e=" << e << ",k=" << k;
     if ( maxP > 1 ) {
@@ -1071,7 +1071,7 @@ Server::printInput( ostream& output, const unsigned e, const unsigned k ) const
 	if ( p > 1 ) output << ", ";
 	output << V(e,k,p);
     }
-    output << endl;
+    output << std::endl;
 
     output << "  S(e=" << e << ",k=" << k;
     if ( P > 1 ) {
@@ -1082,26 +1082,26 @@ Server::printInput( ostream& output, const unsigned e, const unsigned k ) const
 	if ( p > 1 ) output << ", ";
 	output << S(e,k,p);
     }
-    output << endl;
+    output << std::endl;
 
     if ( IL[e][k] > 0.005 && (chainILRate(e,k)>0.005 || chainILRate(e,k)<0) ) {
 	output << "  PrIL(e=" << e << ",k=" << k << ") = "  << IL[e][k];
 	output << "  IR(e=" << e << ",k=" << k << ") = " << chainILRate(e,k);
-	output << endl;
+	output << std::endl;
     }
 
     return output;
 }
 
 
-ostream&
-Server::printWait(ostream& output, const unsigned k) const
+std::ostream&
+Server::printWait( std::ostream& output, const unsigned k ) const
 {
-    output << "Server wait:"<< endl;
+    output << "Server wait:"<< std::endl;
     for ( unsigned e = 1; e <= E; ++e ) {
 	for ( unsigned p = 1; p <= MAX_PHASES; ++p ) {
 	    if ( S(e,k) == 0.0 && V(e,k) == 0.0 ) continue;
-	    output << "  W(e=" << e << ",k=" << k << ",p=" << p << ")=" << W[e][k][p] << endl;
+	    output << "  W(e=" << e << ",k=" << k << ",p=" << p << ")=" << W[e][k][p] << std::endl;
 
 	}
     }
@@ -1647,9 +1647,6 @@ HVFCFS_Server::wait( const MVA& solver, const unsigned k, const Population& N ) 
 {
     assert( 0 < k && k <= K );
 
-    // double sum = solver.sumOf_SQ_m( *this, N, k ) + solver.sumOf_rU_m( *this, N, k );
-    //if ( sum < 0.0 ) sum = 0.0;
-
     for ( unsigned e = 1; e <= E; ++e ) {
 	if ( !V(e,k) ) continue;
 
@@ -1745,8 +1742,8 @@ HVFCFS_Server::openWait() const
  * Print out data for this entry and class.
  */
 
-ostream&
-HVFCFS_Server::printInput( ostream& output, const unsigned e, const unsigned k ) const
+std::ostream&
+HVFCFS_Server::printInput( std::ostream& output, const unsigned e, const unsigned k ) const
 {
     Server::printInput( output, e, k );
 
@@ -1762,7 +1759,7 @@ HVFCFS_Server::printInput( ostream& output, const unsigned e, const unsigned k )
 	if ( p > 1 ) output << ", ";
 	output << myVariance[e][k][p];
     }
-    output << endl;
+    output << std::endl;
     return output;
 }
 

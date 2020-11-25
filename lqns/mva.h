@@ -9,7 +9,7 @@
  * November, 1994
  * August, 2005
  *
- * $Id: mva.h 14000 2020-10-25 12:50:53Z greg $
+ * $Id: mva.h 14141 2020-11-25 20:57:44Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -28,7 +28,7 @@ class MVA;
 class FullPopulationMap;
 class PartialPopulationMap;
 
-ostream& operator<<( ostream &, MVA& );
+std::ostream& operator<<( std::ostream &, MVA& );
 
 /* -------------------------------------------------------------------- */
 
@@ -41,15 +41,15 @@ class MVA
     /* The following is defined in the MVA test suite and only used there. */
 #if defined(TESTMVA)
     friend bool check( const int solverId, const MVA& solver, const unsigned );
-    friend void special_check( ostream&, const MVA&, const unsigned );
+    friend void special_check( std::ostream&, const MVA&, const unsigned );
 #endif
 
 protected:
     /* Thrown to indicate iteration limits in internal computations.  */
-    class iteration_limit : public runtime_error
+    class iteration_limit : public std::runtime_error
     {
     public:
-	explicit iteration_limit( const string& aStr) : runtime_error( aStr ) {}
+	explicit iteration_limit( const std::string& aStr) : runtime_error( aStr ) {}
     };
 
     /*
@@ -132,7 +132,7 @@ public:
     Positive arrivalRate( const Server&, const unsigned e, const unsigned k, const Population& N ) const;
     double syncDelta( const Server&, const unsigned e, const unsigned k, const Population& N ) const;
 
-    ostream& print( ostream& ) const;
+    std::ostream& print( std::ostream& ) const;
 
     unsigned long iterations() const { return stepCount; }
     unsigned long waits() const { return waitCount; }
@@ -172,18 +172,18 @@ protected:
     void setQueueWeight(const Population &N ) const;
 
 #if	DEBUG_MVA
-    ostream& printL( ostream&, const Population& ) const;
-    ostream& printW( ostream& ) const;
-    ostream& printU( ostream&, const Population & N ) const;
-    ostream& printP( ostream&, const Population & N ) const;
+    std::ostream& printL( std::ostream&, const Population& ) const;
+    std::ostream& printW( std::ostream& ) const;
+    std::ostream& printU( std::ostream&, const Population & N ) const;
+    std::ostream& printP( std::ostream&, const Population & N ) const;
     ostream& printR( ostream& ) const;
 #endif
-    ostream& printVectorP( ostream& output, const unsigned m, const Population& N ) const;
+    std::ostream& printVectorP( std::ostream& output, const unsigned m, const Population& N ) const;
 
 private:
-    ostream& printZ( ostream& ) const;
-    ostream& printX( ostream& ) const;
-    ostream& printPri( ostream& output ) const;
+    std::ostream& printZ( std::ostream& ) const;
+    std::ostream& printX( std::ostream& ) const;
+    std::ostream& printPri( std::ostream& output ) const;
 
     void initialize();
 
@@ -334,7 +334,7 @@ protected:
 
     virtual void update_Delta( const Population & N );
     double D_mekj( const unsigned m, const unsigned e, const unsigned k, const unsigned j ) const { return D[m][e][k][j]; }
-    ostream& printD( ostream&, const Population& ) const;
+    std::ostream& printD( std::ostream&, const Population& ) const;
 
     virtual void estimate_P( const Population & N );
 

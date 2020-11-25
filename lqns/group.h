@@ -9,7 +9,7 @@
  *
  * November, 2008
  *
- * $Id: group.h 14037 2020-11-04 19:39:56Z greg $
+ * $Id: group.h 14141 2020-11-25 20:57:44Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -86,7 +86,7 @@ public:
 
     /* Printing */
 
-    ostream& print( ostream& output ) const { return output; }
+    std::ostream& print( std::ostream& output ) const { return output; }
     const std::string& name() const { return _dom->getName(); }
 
     /* DOM insertion of results */
@@ -114,7 +114,7 @@ private:
     double _ratio2;                     /* ratio for the adjustment, based on (util-share) */
 };
 
-inline ostream& operator<<( ostream& output, const Group& self ) { return self.print( output ); }
+inline std::ostream& operator<<( std::ostream& output, const Group& self ) { return self.print( output ); }
 
 #endif
 
