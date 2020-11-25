@@ -2,7 +2,7 @@
  * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqsim/task.h $
  * Global vars for simulation.
  *
- * $Id: task.h 13831 2020-09-18 12:51:41Z greg $
+ * $Id: task.h 14131 2020-11-25 02:17:53Z greg $
  */
 
 /************************************************************************/
@@ -20,6 +20,7 @@
 #include <set>
 #include <vector>
 #include <string>
+#include <list>
 #include <algorithm>
 #include <cstdio>
 #include <lqio/dom_task.h>

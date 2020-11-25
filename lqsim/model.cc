@@ -9,7 +9,7 @@
 /*
  * Input processing.
  *
- * $Id: model.cc 14000 2020-10-25 12:50:53Z greg $
+ * $Id: model.cc 14131 2020-11-25 02:17:53Z greg $
  */
 
 /* Debug Messages for Loading */
@@ -28,23 +28,16 @@
 #include <stdarg.h>
 #include <assert.h>
 #include <errno.h>
-#include <math.h>
+#include <cmath>
 #include <unistd.h>
 #if HAVE_SYS_UTSNAME_H
 #include <sys/utsname.h>
 #endif
-#if HAVE_SYS_RESOURCE_H
-#include <sys/resource.h>
-#endif
 #if HAVE_VALUES_H
 #include <values.h>
 #endif
-#if HAVE_UNISTD_H
 #include <sys/stat.h>
-#include <unistd.h>
-#endif
 #if HAVE_SYS_WAIT_H
-#include <sys/wait.h>
 #endif
 #if HAVE_MCHECK_H
 #include <mcheck.h>
@@ -75,7 +68,7 @@ extern "C" {
 }
 
 int Model::__genesis_task_id = 0;
-Model * Model::__model = NULL;
+Model * Model::__model = nullptr;
 double Model::max_service = 0.0;
 const double Model::simulation_parameters::DEFAULT_TIME = 1e5;
 LQIO::DOM::Document::input_format Model::input_format = LQIO::DOM::Document::AUTOMATIC_INPUT;
@@ -131,7 +124,7 @@ Model::~Model()
     if ( _document ) {
 	delete _document;
     }
-    __model = NULL;
+    __model = nullptr;
 }
 
 
@@ -191,7 +184,7 @@ Model::construct()
 	/* Add the entries so we can reverse them */
 	for ( nextEntry = task->getEntryList().begin(); nextEntry != task->getEntryList().end(); ++nextEntry ) {
 	    newTask->_entry.push_back( Entry::add( *nextEntry, newTask ) );
-	    if ((*nextEntry)->getStartActivity() != NULL) {
+	    if ((*nextEntry)->getStartActivity() != nullptr) {
 		activityEntries.push_back(*nextEntry);
 	    }
 	}

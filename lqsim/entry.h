@@ -9,7 +9,7 @@
 /*
  * Global vars for simulation.
  *
- * $Id: entry.h 14108 2020-11-19 17:15:02Z greg $
+ * $Id: entry.h 14131 2020-11-25 02:17:53Z greg $
  */
 
 #ifndef ENTRY_H
@@ -19,7 +19,6 @@
 #include <string>
 #include <set>
 #include <vector>
-#include <list>
 #include <lqio/dom_task.h>
 #include <lqio/dom_entry.h>
 #include "model.h"
@@ -47,11 +46,11 @@ private:
     Entry& operator=( const Entry& );
     
 public:
-    typedef enum receive_type {
-	RECEIVE_NONE,
-	RECEIVE_RENDEZVOUS,
-	RECEIVE_SEND_NO_REPLY
-    } receive_type;
+    enum class Type {
+	NONE,
+	RENDEZVOUS,
+	SEND_NO_REPLY
+    };
 
     static Entry * find( const char * entry_name );
     static bool find( const char * from_entry_name, Entry *&from_entry, const char * to_entry_name, Entry *&to_entry );
@@ -90,12 +89,12 @@ public:
     virtual bool is_w_unlock() const;
     virtual bool is_w_lock() const;
 
-    bool is_send_no_reply() const { return _recv == RECEIVE_SEND_NO_REPLY; }
-    bool is_rendezvous() const { return _recv == RECEIVE_RENDEZVOUS; }
+    bool is_send_no_reply() const { return _recv == Type::SEND_NO_REPLY; }
+    bool is_rendezvous() const { return _recv == Type::RENDEZVOUS; }
     bool has_lost_messages() const;
 
     virtual bool test_and_set( LQIO::DOM::Entry::Type );			/* Sets _type too!		*/
-    bool test_and_set_recv( receive_type );
+    bool test_and_set_recv( Type );
     bool test_and_set_semaphore( LQIO::DOM::Entry::Semaphore );
     bool test_and_set_rwlock( LQIO::DOM::Entry::RWLock );
 
@@ -132,7 +131,7 @@ private:
     const unsigned int _local_id;	/* Local offset (for instance)	*/
     int _port;				/* Parasol port.		*/
     Activity * _activity;		/* Activity list.		*/
-    receive_type _recv;			/* flag...			*/
+    Type _recv;				/* flag...			*/
     Task * _task;			/* Owner of entry.		*/
     Targets _fwd;			/* forward info		        */
     ActivityList * _join_list;		/* For joins			*/

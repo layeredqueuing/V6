@@ -11,7 +11,7 @@
  * Activities are arcs in the graph that do work.
  * Nodes are points in the graph where splits and joins take place.
  *
- * $Id: activity.cc 14107 2020-11-18 18:51:51Z greg $
+ * $Id: activity.cc 14131 2020-11-25 02:17:53Z greg $
  */
 
 #include <parasol.h>
@@ -25,9 +25,9 @@
 #include <lqio/dom_histogram.h>
 #include <lqio/dom_activity.h>
 #include <lqio/dom_actlist.h>
+#include "activity.h"
 #include "model.h"
 #include "entry.h"
-#include "activity.h"
 #include "task.h"
 #include "errmsg.h"
 #include "message.h"
@@ -65,17 +65,17 @@ Activity::Activity( Task * cp, LQIO::DOM::Phase * dom )
       _phase(0),
       _scale(0.0),
       _shape(1.0),		/* coefficient of variation squared (usually) -- Exponential assumed */
-      _distribution(NULL),
+      _distribution(nullptr),
       _index(cp ? cp->_activity.size(): -1),
       _prewaiting(0),
       _reply(),
       _is_reachable(false),
       _is_start_activity(false),
-      _input(NULL),
-      _output(NULL),
+      _input(nullptr),
+      _output(nullptr),
       _active(0),
       _cpu_active(0),
-      _hist_data(NULL)
+      _hist_data(nullptr)
 {
     if ( dom && (dom->hasHistogram() || dom->hasMaxServiceTimeExceeded()) ) {
 //	    _hist_data = new Histogram( _dom->getHistogram() );
@@ -88,8 +88,8 @@ Activity::~Activity()
     if ( _hist_data ) {
 	delete _hist_data;
     }
-    _input = NULL;
-    _output = NULL;
+    _input = nullptr;
+    _output = nullptr;
 
     _reply.clear();
 }
@@ -112,13 +112,13 @@ Activity::set_DOM(LQIO::DOM::Phase* phaseInfo)
 bool
 Activity::has_lost_messages() const
 {
-    return std::find_if(_calls.begin(),_calls.end(), Predicate<tar_t>( &tar_t::dropped_messages ) ) != _calls.end();
+    return std::any_of(_calls.begin(),_calls.end(), Predicate<tar_t>( &tar_t::dropped_messages ) );
 }
 
 double
 Activity::service() const
 {
-    if (_dom == NULL) return _arrival_rate;		/* Psuedo entry sets this for open arrival */
+    if (_dom == nullptr) return _arrival_rate;		/* Psuedo entry sets this for open arrival */
     try {
 	return get_DOM()->getServiceTimeValue();
     }
@@ -235,6 +235,7 @@ Activity::initialize()
  * we descend down, we bump the depth.  If our path's cross, we have a
  * loop and abort.
  */
+
 
 double
 Activity::find_children( std::deque<Activity *>& activity_stack, std::deque<AndForkActivityList *>& fork_stack, const Entry * ep )
@@ -415,9 +416,9 @@ Activity::add_calls()
 	/* Make sure all is well */
 	if (!destEntry) {
 	    LQIO::input_error2( LQIO::ERR_NOT_DEFINED, toDOMEntry->getName().c_str() );
-	} else if ( domCall->getCallType() == LQIO::DOM::Call::Type::RENDEZVOUS && !destEntry->test_and_set_recv( Entry::RECEIVE_RENDEZVOUS ) ) {
+	} else if ( domCall->getCallType() == LQIO::DOM::Call::Type::RENDEZVOUS && !destEntry->test_and_set_recv( Entry::Type::RENDEZVOUS ) ) {
 	    continue;
-	} else if ( domCall->getCallType() == LQIO::DOM::Call::Type::SEND_NO_REPLY && !destEntry->test_and_set_recv( Entry::RECEIVE_SEND_NO_REPLY ) ) {
+	} else if ( domCall->getCallType() == LQIO::DOM::Call::Type::SEND_NO_REPLY && !destEntry->test_and_set_recv( Entry::Type::SEND_NO_REPLY ) ) {
 	    continue;
 	} else if ( !destEntry->task()->is_reference_task()) {
 	    _calls.store_target_info( destEntry, domCall );
@@ -463,12 +464,12 @@ Activity::add_activity_lists()
 {  
     /* Obtain the Task and Activity information DOM records */
     LQIO::DOM::Activity* domAct = dynamic_cast<LQIO::DOM::Activity*>(get_DOM());
-    if (domAct == NULL) { return *this; }
+    if (domAct == nullptr) { return *this; }
 	
     /* May as well start with the outputToList, this is done with various methods */
     LQIO::DOM::ActivityList* joinList = domAct->getOutputToList();
-    ActivityList * localActivityList = NULL;
-    if (joinList != NULL && joinList->getProcessed() == false) {
+    ActivityList * localActivityList = nullptr;
+    if (joinList != nullptr && joinList->getProcessed() == false) {
 	const std::vector<const LQIO::DOM::Activity*>& list = joinList->getList();
 	std::vector<const LQIO::DOM::Activity*>::const_iterator iter;
 	joinList->setProcessed(true);
@@ -498,15 +499,15 @@ Activity::add_activity_lists()
 		
 	/* Create the association for the activity list */
 	domToNative[joinList] = localActivityList;
-	if (joinList->getNext() != NULL) {
+	if (joinList->getNext() != nullptr) {
 	    actConnections[joinList] = joinList->getNext();
 	}
     }
 	
     /* Now we move onto the inputList, or the fork list */
     LQIO::DOM::ActivityList* forkList = domAct->getInputFromList();
-    localActivityList = NULL;
-    if (forkList != NULL && forkList->getProcessed() == false) {
+    localActivityList = nullptr;
+    if (forkList != nullptr && forkList->getProcessed() == false) {
 	const std::vector<const LQIO::DOM::Activity*>& list = forkList->getList();
 	std::vector<const LQIO::DOM::Activity*>::const_iterator iter;
 	forkList->setProcessed(true);
@@ -539,7 +540,7 @@ Activity::add_activity_lists()
 		
 	/* Create the association for the activity list */
 	domToNative[forkList] = localActivityList;
-	if (forkList->getNext() != NULL) {
+	if (forkList->getNext() != nullptr) {
 	    actConnections[forkList] = forkList->getNext();
 	}
     }
@@ -637,13 +638,13 @@ Activity::insertDOMResults()
 ActivityList *
 Activity::act_join_item( LQIO::DOM::ActivityList * dom )
 {
-    OutputActivityList * list = NULL;
+    OutputActivityList * list = nullptr;
 
     if ( _output ) {
 	LQIO::input_error2( LQIO::ERR_DUPLICATE_ACTIVITY_LVALUE, task()->name(), name() );
     } else {
 	Task * cp = task();
-	list = new OutputActivityList( ACT_JOIN_LIST, dom );
+	list = new OutputActivityList( ActivityList::Type::JOIN_LIST, dom );
 	list->push_back( this );
 	cp->add_list( list );
     }
@@ -667,9 +668,9 @@ Activity::act_and_join_list ( ActivityList* input_list, LQIO::DOM::ActivityList 
 
     Task * cp = task();
 
-    AndJoinActivityList * list = NULL;
-    if ( input_list == NULL ) {
-	list = new AndJoinActivityList( ACT_AND_JOIN_LIST, dom );
+    AndJoinActivityList * list = nullptr;
+    if ( input_list == nullptr ) {
+	list = new AndJoinActivityList( ActivityList::Type::AND_JOIN_LIST, dom );
 	list->push_back( this );
 	cp->add_list(list).add_join(list);
     } else {
@@ -694,13 +695,13 @@ Activity::act_and_join_list ( ActivityList* input_list, LQIO::DOM::ActivityList 
 ActivityList *
 Activity::act_or_join_list ( ActivityList * input_list, LQIO::DOM::ActivityList * dom )
 {
-    OutputActivityList * list = NULL;
+    OutputActivityList * list = nullptr;
 
     if ( _output ) {
 	LQIO::input_error2( LQIO::ERR_DUPLICATE_ACTIVITY_LVALUE, task()->name(), name() );
-    } else if ( input_list == NULL ) {
+    } else if ( input_list == nullptr ) {
 	Task * cp = task();
-	list = new OutputActivityList( ACT_OR_JOIN_LIST, dom );
+	list = new OutputActivityList( ActivityList::Type::OR_JOIN_LIST, dom );
 	list->push_back( this );
 	cp->add_list( list );
     } else {
@@ -716,7 +717,7 @@ Activity::act_or_join_list ( ActivityList * input_list, LQIO::DOM::ActivityList 
 ActivityList *
 Activity::act_fork_item( LQIO::DOM::ActivityList * dom )
 {
-    ForkActivityList * list = NULL;
+    ForkActivityList * list = nullptr;
 
     if ( _is_start_activity ) {
 	LQIO::input_error2( LQIO::ERR_IS_START_ACTIVITY, task()->name(), name() );
@@ -724,7 +725,7 @@ Activity::act_fork_item( LQIO::DOM::ActivityList * dom )
 	LQIO::input_error2( LQIO::ERR_DUPLICATE_ACTIVITY_RVALUE, task()->name(), name() );
     } else {
 	Task * cp = task();
-	list = new ForkActivityList( ACT_FORK_LIST, dom );
+	list = new ForkActivityList( ActivityList::Type::FORK_LIST, dom );
 	list->push_back( this );
 	cp->add_list( list );
     }
@@ -741,15 +742,15 @@ Activity::act_fork_item( LQIO::DOM::ActivityList * dom )
 ActivityList *
 Activity::act_and_fork_list ( ActivityList * input_list, LQIO::DOM::ActivityList * dom )
 {
-    AndForkActivityList * list = NULL;
+    AndForkActivityList * list = nullptr;
 
     if ( _is_start_activity ) {
 	LQIO::input_error2( LQIO::ERR_IS_START_ACTIVITY, task()->name(), name() );
     } else if ( _input ) {
 	LQIO::input_error2( LQIO::ERR_DUPLICATE_ACTIVITY_RVALUE, task()->name(), name() );
-    } else if ( input_list == NULL ) {
+    } else if ( input_list == nullptr ) {
 	Task * cp = task();
-	list = new AndForkActivityList( ACT_AND_FORK_LIST, dom );
+	list = new AndForkActivityList( ActivityList::Type::AND_FORK_LIST, dom );
 	list->push_back( this );
 	cp->add_list(list).add_fork(list);
     } else {
@@ -770,15 +771,15 @@ Activity::act_and_fork_list ( ActivityList * input_list, LQIO::DOM::ActivityList
 ActivityList *
 Activity::act_or_fork_list ( ActivityList * input_list, LQIO::DOM::ActivityList * dom )
 {
-    OrForkActivityList * list = NULL;
+    OrForkActivityList * list = nullptr;
 
     if ( _is_start_activity ) {
 	LQIO::input_error2( LQIO::ERR_IS_START_ACTIVITY, task()->name(), name() );
     } else if ( _input ) {
 	LQIO::input_error2( LQIO::ERR_DUPLICATE_ACTIVITY_RVALUE, task()->name(), name() );
-    } else if ( input_list == NULL ) {
+    } else if ( input_list == nullptr ) {
 	Task * cp = task();
-	list = new OrForkActivityList( ACT_OR_FORK_LIST, dom );
+	list = new OrForkActivityList( ActivityList::Type::OR_FORK_LIST, dom );
 	list->push_back( this );
 	cp->add_list(list);
     } else {
@@ -798,22 +799,22 @@ Activity::act_or_fork_list ( ActivityList * input_list, LQIO::DOM::ActivityList 
 ActivityList *
 Activity::act_loop_list ( ActivityList * input_list, LQIO::DOM::ActivityList * dom )
 {
-    LoopActivityList * list = NULL;
+    LoopActivityList * list = nullptr;
 	  
     if ( _is_start_activity ) {
 	LQIO::input_error2( LQIO::ERR_IS_START_ACTIVITY, task()->name(), name() );
     } else if ( _input ) {
 	LQIO::input_error2( LQIO::ERR_DUPLICATE_ACTIVITY_RVALUE, task()->name(), name() );
-    } else if ( input_list == NULL ) {
+    } else if ( input_list == nullptr ) {
 	Task * cp = task();
-	list = new LoopActivityList( ACT_LOOP_LIST, dom );
+	list = new LoopActivityList( ActivityList::Type::LOOP_LIST, dom );
 	cp->add_list( list );
     } else {
 	list = dynamic_cast<LoopActivityList *>(input_list);
     }
 
     if ( list ) {
-	if ( dom->getParameter(dynamic_cast<LQIO::DOM::Activity *>(get_DOM())) == NULL ) {
+	if ( dom->getParameter(dynamic_cast<LQIO::DOM::Activity *>(get_DOM())) == nullptr ) {
 	    list->end_list( this );
 	} else {
 	    list->push_back( this );

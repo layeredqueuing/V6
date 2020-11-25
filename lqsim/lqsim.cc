@@ -7,25 +7,19 @@
 /************************************************************************/
 
 /*
- * $Id: lqsim.cc 14117 2020-11-21 13:58:51Z greg $
+ * $Id: lqsim.cc 14131 2020-11-25 02:17:53Z greg $
  */
 
 
 #include "lqsim.h"
 #include <cstdlib>
-#include <unistd.h>
-#include <math.h>
-#include <time.h>
+#include <cmath>
 #include <cstring>
-#include <time.h>
 #include <errno.h>
 #include <libgen.h>
-#include <sys/time.h>
-#include <sys/stat.h>
 #include <stdexcept>
 #include <sstream>		/* LQX */
 #if HAVE_SYS_RESOURCE_H
-#include <sys/resource.h>
 #endif
 #if HAVE_FENV_H
 #include <fenv.h>
@@ -339,7 +333,7 @@ main( int argc, char * argv[] )
     LQIO::io_vars.init( VERSION, basename( argv[0] ), severity_action, local_error_messages, LSTLCLERRMSG-LQIO::LSTGBLERRMSG );
 
     command_line = LQIO::io_vars.lq_toolname;
-    (void) sscanf( "$Date: 2020-11-21 08:58:51 -0500 (Sat, 21 Nov 2020) $", "%*s %s %*s", copyright_date );
+    (void) sscanf( "$Date: 2020-11-24 21:17:53 -0500 (Tue, 24 Nov 2020) $", "%*s %s %*s", copyright_date );
     stddbg    = stdout;
 
     /* Stuff set from the input file.				*/

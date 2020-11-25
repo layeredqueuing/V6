@@ -1,9 +1,9 @@
-/* target.h	-- Greg Franks
+/*  -*- c++ -*- 
+ * target.h	-- Greg Franks
  *
- * $HeadURL$
  *
  * ------------------------------------------------------------------------
- * $Id: target.h 14107 2020-11-18 18:51:51Z greg $
+ * $Id: target.h 14131 2020-11-25 02:17:53Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -23,11 +23,11 @@ class Activity;
 
 class tar_t {				/* send target struct		*/
     friend class Targets;
-    typedef enum { undefined, call, constant } target_type;
+    enum class Type { undefined, call, constant };
     
 public:
-    tar_t();
-    
+    tar_t() : _entry(nullptr), _link(-1), _tprob(0.0), _calls(0.0), _reply(false), _type(Type::undefined) {}
+
     Entry * entry() const { return _entry; }
     double calls() const { return _calls; }
     bool reply() const { return _reply; }
@@ -56,8 +56,8 @@ private:
 //    tar_t( const tar_t& );
 //    tar_t& operator=( const tar_t& );		/* need for realloc */
     
-    void initialize( Entry * to_entry, LQIO::DOM::Call* domCall ) { _entry = to_entry; _type = call; _dom._call = domCall; }
-    void initialize( Entry * to_entry, double value, bool reply=false ) { _entry = to_entry; _type = constant; _calls = value; _reply = reply; }
+    void initialize( Entry * to_entry, LQIO::DOM::Call* domCall ) { _entry = to_entry; _type = Type::call; _dom._call = domCall; }
+    void initialize( Entry * to_entry, double value, bool reply=false ) { _entry = to_entry; _type = Type::constant; _calls = value; _reply = reply; }
 
 private:
     Entry * _entry;			/* target entry 		*/
@@ -65,7 +65,7 @@ private:
     double _tprob;			/* test probability		*/
     double _calls;			/* # of calls.			*/
     bool _reply;			/* Generate reply.		*/
-    target_type _type;			/* Types are different...	*/
+    Type _type;				/* Types are different...	*/
     union {				/* ...so we use a  union	*/
 	LQIO::DOM::Call* _call;		/* ...instead of dynamic_cast	*/
 	LQIO::DOM::ExternalVariable* _extvar;

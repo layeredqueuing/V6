@@ -1,6 +1,6 @@
-# lqsim 5.19
+# lqsim 6.1
 # lqsim --confidence=1.0,1000 --seed=1049217653 --parseable --output=62-semaphore.p 62-semaphore.in
-# $Id: 62-semaphore.p 14124 2020-11-24 17:06:19Z greg $
+# $Id: 62-semaphore.p 14130 2020-11-25 01:11:25Z greg $
 V y
 C 0.760146
 I 4
@@ -8,9 +8,9 @@ PP 2
 NP 1
 
 #!Comment: Semaphore called from forwarding chain.
-#!User:  0:39:24.000
-#!Sys:   0:18:18.000
-#!Real:  0:58:59.000
+#!User:  0:00:12.080
+#!Sys:   0:00:03.425
+#!Real:  0:00:15.528
 
 B 5
 customer       :customer        0.37037     
@@ -21,13 +21,13 @@ semaphore      :signal          3.33333
 -1
 
 W 2
-customer       :customer        app_wait        4.00449     -1 
-                                            %95 0.0245619   -1 
-                                            %99 0.0450867   -1 
+customer       :customer        app_wait        4.00449      -1 
+                                            %95 0.0245619    -1 
+                                            %99 0.0450867    -1 
                 -1 
-app_wait       :app_wait        wait            0.298974    -1 
-                                            %95 0.00105923  -1 
-                                            %99 0.00194436  -1 
+app_wait       :app_wait        wait            0.298974     -1 
+                                            %95 0.00105923   -1 
+                                            %99 0.00194436   -1 
                 -1 
 -1
 
@@ -57,9 +57,9 @@ app_wait       :app_wait        app_signal      0
 -1
 
 Z 1
-app_signal     :app_signal      signal          1.29756     -1 
-                                            %95 0.00308461  -1 
-                                            %99 0.00566223  -1 
+app_signal     :app_signal      signal          1.29756      -1 
+                                            %95 0.00308461   -1 
+                                            %99 0.00566223   -1 
                 -1 
 -1
 

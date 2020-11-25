@@ -1,6 +1,6 @@
-# lqsim 5.19
+# lqsim 6.1
 # lqsim --confidence=1.0,1000 --seed=1049217653 --parseable --output=60-semaphore.p 60-semaphore.in
-# $Id: 60-semaphore.p 14124 2020-11-24 17:06:19Z greg $
+# $Id: 60-semaphore.p 14130 2020-11-25 01:11:25Z greg $
 V y
 C 0.551708
 I 3
@@ -8,9 +8,9 @@ PP 2
 NP 2
 
 #!Comment: Semaphore called from a sequence of phases.
-#!User:  0:43:51.000
-#!Sys:   0:20:34.000
-#!Real:  1:05:49.000
+#!User:  0:00:13.152
+#!Sys:   0:00:03.551
+#!Real:  0:00:16.728
 
 B 5
 customer       :customer        0.27027     
@@ -21,16 +21,16 @@ semaphore      :signal          3.33333
 -1
 
 W 3
-customer       :customer        app_wait        4.22149     0           -1 
-                                            %95 0.0174769   0           -1 
-                                            %99 0.040311    0           -1 
-                customer        app_signal      0           0           -1 
-                                            %95 0           0           -1 
-                                            %99 0           0           -1 
+customer       :customer        app_wait        4.22149      0            -1 
+                                            %95 0.0174769    0            -1 
+                                            %99 0.040311     0            -1 
+                customer        app_signal      0            0            -1 
+                                            %95 0            0            -1 
+                                            %99 0            0            -1 
                 -1 
-app_wait       :app_wait        wait            1.52142     0           -1 
-                                            %95 0.00837843  0           -1 
-                                            %99 0.0193251   0           -1 
+app_wait       :app_wait        wait            1.52142      0            -1 
+                                            %95 0.00837843   0            -1 
+                                            %99 0.0193251    0            -1 
                 -1 
 -1
 
@@ -49,9 +49,9 @@ app_wait       :app_wait        wait            0.693554     0            -1
 -1
 
 Z 1
-app_signal     :app_signal      signal          0.799949    0           -1 
-                                            %95 0.00540156  0           -1 
-                                            %99 0.0124589   0           -1 
+app_signal     :app_signal      signal          0.799949     0            -1 
+                                            %95 0.00540156   0            -1 
+                                            %99 0.0124589    0            -1 
                 -1 
 -1
 

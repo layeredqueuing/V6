@@ -11,11 +11,10 @@
  *
  * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqsim/processor.cc $
  *
- * $Id: processor.cc 14028 2020-10-28 15:08:52Z greg $
+ * $Id: processor.cc 14131 2020-11-25 02:17:53Z greg $
  * ------------------------------------------------------------------------
  */
 
-#include <iomanip> 
 #include <parasol.h>
 #include <cassert>
 #include <algorithm>
@@ -68,7 +67,7 @@ Processor::find( const std::string& processor_name  )
     if ( processor_name.size() == 0 ) return 0;
     std::set<Processor *,ltProcessor>::const_iterator nextProcessor = find_if( ::processor.begin(), ::processor.end(), eqProcStr( processor_name ) );
     if ( nextProcessor == processor.end() ) {
-	return NULL;
+	return nullptr;
     } else {
 	return *nextProcessor;
     }

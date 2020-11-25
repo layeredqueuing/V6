@@ -2,7 +2,7 @@
  * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqsim/group.h $
  * Global vars for simulation.
  *
- * $Id: group.h 14000 2020-10-25 12:50:53Z greg $
+ * $Id: group.h 14131 2020-11-25 02:17:53Z greg $
  */
 
 /************************************************************************/
@@ -17,8 +17,6 @@
 #define GROUP_H
 
 #include <lqio/dom_group.h>
-#include "model.h"
-#include "entry.h"
 #include "task.h"
 
 class Group 

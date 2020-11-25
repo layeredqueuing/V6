@@ -10,7 +10,7 @@
 /*
  * Input output processing.
  *
- * $Id: instance.cc 14112 2020-11-20 20:42:27Z greg $
+ * $Id: instance.cc 14131 2020-11-25 02:17:53Z greg $
  */
 
 /*
@@ -64,7 +64,7 @@ Instance::Instance( Task * cp, const char * task_name, long task_id )
 {
     assert ( _std_port < MAX_PORTS );
 
-    _entry.assign( cp->n_entries(), NULL );
+    _entry.assign( cp->n_entries(), nullptr );
     _join_done.assign( cp->max_activities(), false );
     
     object_tab[task_id] = this;
@@ -217,7 +217,7 @@ Instance::server_cycle ( Entry * ep, Message * msg, bool reschedule )
     if ( end_msg ) {
 	if ( end_msg->reply_port == -1 ) {
 	    _cp->free_message( end_msg );
-	} else if ( ep->_join_list == NULL && _cp->is_sync_server() ) {
+	} else if ( ep->_join_list == nullptr && _cp->is_sync_server() ) {
 	    LQIO::solution_error( LQIO::ERR_REPLY_NOT_GENERATED, ep->name() );
 	}
     }
@@ -1281,7 +1281,7 @@ srn_timeout_worker::do_forwarding1 ( Message * msg, const Entry * ep ,bool dofor
 
 	    timeline_trace( SYNC_INTERACTION_REPLIES, ep, msg->client );
 
-	    ps_send( reply_port, 0, (char *)msg->init( ep, NULL ), ps_my_std_port );
+	    ps_send( reply_port, 0, (char *)msg->init( ep, nullptr ), ps_my_std_port );
 
 	} else {
 
@@ -1621,7 +1621,7 @@ srn_retry_queue::go_abort ( Message * msg, long entry_id,  bool doforwarding)
 	    long reply_port  = msg->reply_port;	/* Local copy	*/
 
 	    timeline_trace( SYNC_INTERACTION_REPLIES, ep, msg->client );
-	    ps_send( reply_port, 0, (char *)msg->init( ep, NULL ), ps_my_std_port );
+	    ps_send( reply_port, 0, (char *)msg->init( ep, nullptr ), ps_my_std_port );
 
 	} else {
 
@@ -1651,7 +1651,7 @@ srn_retry_queue::go_abort ( Message * msg, long entry_id,  bool doforwarding)
 Message *
 Instance::wait_for_message( long& entry_id )
 {
-    Message *msg = NULL;
+    Message *msg = nullptr;
 
     ps_my_schedule_time = ps_now;		/* In case we don't block...	*/
 
@@ -1660,7 +1660,7 @@ Instance::wait_for_message( long& entry_id )
     for ( std::list<Message *>::iterator i = _cp->_pending_msgs.begin(); i != _cp->_pending_msgs.end(); ++i ) {
 	msg = *i;					/* This is returned!			*/
 	Entry * ep = msg->target->entry();
-	if ( ep->_join_list == NULL ) {			/* Entry is available to receive.	*/
+	if ( ep->_join_list == nullptr ) {			/* Entry is available to receive.	*/
 	    entry_id = ep->entry_id();			/* This is returned!			*/
 	    _cp->_pending_msgs.erase(i);		/* Remove Message from queue		*/
 	    return msg;					/* All done.				*/
@@ -1688,7 +1688,7 @@ Instance::wait_for_message( long& entry_id )
 	/* Is entry busy? !JOIN! */
 
 	const Entry * ep = Entry::entry_table[entry_id];
-	if ( ep->_join_list == NULL ) break;		/* Entry available - done!		*/
+	if ( ep->_join_list == nullptr ) break;		/* Entry available - done!		*/
 
 	_cp->_pending_msgs.push_back( msg ); 	    	/* queue message and try again.		*/
     }
@@ -1699,7 +1699,7 @@ Instance::wait_for_message( long& entry_id )
 Message *
 Instance::wait_for_message2( long& entry_id )
 {
-    Message * msg = NULL;	/* Message from client		*/
+    Message * msg = nullptr;	/* Message from client		*/
     double time_stamp;		/* time message sent.		*/
     long reply_port;		/* reply port			*/
 
@@ -1798,21 +1798,21 @@ Instance::do_forwarding ( Message * msg, const Entry * ep )
 	    long reply_port  = msg->reply_port;	/* Local copy	*/
 
 	    timeline_trace( SYNC_INTERACTION_REPLIES, ep, msg->client );
-	    ps_send( reply_port, 0, (char *)msg->init( ep, NULL ), ps_my_std_port );
+	    ps_send( reply_port, 0, (char *)msg->init( ep, nullptr ), ps_my_std_port );
 	}else if ((_cp->type()==Task::RETRY_QUEUE)){
 			    /* Reply to sender	*/
 
 	    long reply_port  = msg->reply_port;	/* Local copy	*/
 
 	    timeline_trace( SYNC_INTERACTION_REPLIES, ep, msg->client );
-	    ps_send( reply_port, 0, (char *)msg->init( ep, NULL ), std_port() );
+	    ps_send( reply_port, 0, (char *)msg->init( ep, nullptr ), std_port() );
 	}else if ((_cp->type()==Task::TIMEOUT_QUEUE)){
 			    /* Reply to sender	*/
 
 	    long reply_port  = msg->reply_port;	/* Local copy	*/
 
 	    timeline_trace( SYNC_INTERACTION_REPLIES, ep, msg->client );
-	    ps_send( reply_port, 0, (char *)msg->init( ep, NULL ), ps_my_std_port );
+	    ps_send( reply_port, 0, (char *)msg->init( ep, nullptr ), ps_my_std_port );
 	}else{
 				
 	    timeline_trace( SYNC_INTERACTION_FORWARDED, ep, msg->client, tp->entry() );
@@ -2070,8 +2070,8 @@ Instance::execute_activity( Entry * ep, Activity * ap, bool& reschedule )
 Activity * 
 Instance::next_activity( Entry * ep, Activity * ap_in, bool reschedule )
 {
-    Activity * ap_out = NULL;
-    InputActivityList * fork_list = NULL;
+    Activity * ap_out = nullptr;
+    InputActivityList * fork_list = nullptr;
 
     if ( ap_in->_output != 0 ) {
 
@@ -2082,8 +2082,8 @@ Instance::next_activity( Entry * ep, Activity * ap_in, bool reschedule )
 
 	AndJoinActivityList * join_list = dynamic_cast<AndJoinActivityList *>(ap_in->_output);
 
-	if ( join_list != NULL ) {
-	    if ( _cp->is_sync_server() && join_list->join_type_is( AndJoinActivityList::JOIN_SYNCHRONIZATION ) ) {
+	if ( join_list != nullptr ) {
+	    if ( _cp->is_sync_server() && join_list->join_type_is( AndJoinActivityList::Join::SYNCHRONIZATION ) ) {
 		if ( root_ptr()->all_activities_done( ap_in ) ) {
 		    double delta = ps_now - _cp->_join_start_time;
 		    ps_record_stat( join_list->r_join.raw, delta );
@@ -2096,18 +2096,18 @@ Instance::next_activity( Entry * ep, Activity * ap_in, bool reschedule )
 		    
 		    for ( std::vector<Entry *>::const_iterator e = _cp->_entry.begin(); e != _cp->_entry.end(); ++e ) {
 			if ( (*e)->_join_list == join_list ) {
-			    (*e)->_join_list = NULL;
+			    (*e)->_join_list = nullptr;
 			}
 		    }
 		} else {
 		    /* Mark entry busy */
 		    ep->_join_list = join_list;
 		    _cp->_join_start_time = ps_now;
-		    return NULL;	/* Do not execute output list. */
+		    return nullptr;	/* Do not execute output list. */
 		}
 	    } else {
 		/* tomari:quorum,  Histogram binning needs to be done here. */
-		return NULL;	/* Thread complete. */
+		return nullptr;	/* Thread complete. */
 	    }
 	}
 	fork_list = ap_in->_output->get_next();
@@ -2120,7 +2120,7 @@ Instance::next_activity( Entry * ep, Activity * ap_in, bool reschedule )
 
 again_1:
     if ( fork_list ) {
-	if ( fork_list->get_type() == ACT_AND_FORK_LIST ) {
+	if ( fork_list->get_type() == ActivityList::Type::AND_FORK_LIST ) {
 	    AndForkActivityList * and_fork_list = dynamic_cast<AndForkActivityList *>(fork_list);
 	    const double fork_start = ps_now;
 	    double thread_K_outOf_N_end_compute_time = 0;
@@ -2153,13 +2153,13 @@ again_1:
 		timeline_trace( ACTIVITY_JOIN, fork_list->front(), fork_list );
 
 	    } else {
-		fork_list = NULL;
+		fork_list = nullptr;
 	    }
 	    ps_my_end_compute_time = ps_now;				/* BUG 321 */
 	    ps_my_schedule_time    = ps_now;				/* BUG 259 */
 	    goto again_1;
 
-	} else if ( fork_list->get_type() == ACT_OR_FORK_LIST ) {
+	} else if ( fork_list->get_type() == ActivityList::Type::OR_FORK_LIST ) {
 
 	    assert ( fork_list->size() > 0 );
 	    const double exit_value = ps_random;
@@ -2171,7 +2171,7 @@ again_1:
 	    }
 	    ap_out = fork_list->at(i);
 
-	} else if ( fork_list->get_type() == ACT_FORK_LIST ) {
+	} else if ( fork_list->get_type() == ActivityList::Type::FORK_LIST ) {
 	    assert( fork_list->size() <= 1 );
 	    if ( fork_list->size() == 1 ) {
 		ap_out = fork_list->front();
@@ -2223,7 +2223,7 @@ Instance::spawn_activities( const long entry_id, ActivityList * fork_list )
 
 	/* Reap any pending threads if possible */
 
-	while ( thread_wait( IMMEDIATE, (char **)&msg, false, NULL ) ) {
+	while ( thread_wait( IMMEDIATE, (char **)&msg, false, nullptr ) ) {
 	    timeline_trace( THREAD_REAP, msg );
 	}
 
@@ -2240,7 +2240,7 @@ Instance::spawn_activities( const long entry_id, ActivityList * fork_list )
 	    timeline_trace( THREAD_CREATE, id );
 	    ps_resume( id  );
 	    active_threads += 1;
-	    thread_wait( NEVER, &msg, false, NULL );
+	    thread_wait( NEVER, &msg, false, nullptr );
 
 	}
 
@@ -2266,7 +2266,7 @@ Instance::flush_threads()
     while ( active_threads > 0  ) {
 	Activity * ap;
 
-	thread_wait( NEVER, (char **)&ap, true, NULL );
+	thread_wait( NEVER, (char **)&ap, true, nullptr );
     }
 }
 

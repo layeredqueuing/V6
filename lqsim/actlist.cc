@@ -10,7 +10,7 @@
  * Activities are arcs in the graph that do work.
  * Nodes are points in the graph where splits and joins take place.
  *
- * $Id: actlist.cc 14128 2020-11-24 22:50:18Z greg $
+ * $Id: actlist.cc 14131 2020-11-25 02:17:53Z greg $
  */
 
 #include <sstream>
@@ -19,17 +19,14 @@
 #include <numeric>
 #include <parasol.h>
 #include "lqsim.h"
-#include <stdarg.h>
-#include <string.h>
-#include <limits.h>
 #include <assert.h>
 #include <lqio/error.h>
 #include <lqio/input.h>
-#include "model.h"
 #include "activity.h"
-#include "task.h"
-#include "instance.h"
+#include "actlist.h"
 #include "errmsg.h"
+#include "instance.h"
+#include "task.h"
 
 using namespace std;
   
@@ -43,15 +40,15 @@ ActivityList::get_name() const
     std::string sep;
 
     switch ( get_type() ) {
-    case ACT_OR_FORK_LIST:
-    case ACT_OR_JOIN_LIST:
+    case Type::OR_FORK_LIST:
+    case Type::OR_JOIN_LIST:
 	sep = "+";
 	break;
-    case ACT_AND_FORK_LIST:
-    case ACT_AND_JOIN_LIST:
+    case Type::AND_FORK_LIST:
+    case Type::AND_JOIN_LIST:
 	sep = "&";
 	break;
-    case ACT_LOOP_LIST:
+    case Type::LOOP_LIST:
 	sep = "*";
 	break;
     }
@@ -73,13 +70,13 @@ ActivityList::initialize()
 }
 
 
-AndJoinActivityList::AndJoinActivityList( list_type type, LQIO::DOM::ActivityList * dom )
+AndJoinActivityList::AndJoinActivityList( ActivityList::Type type, LQIO::DOM::ActivityList * dom )
     : OutputActivityList(type,dom),
       _fork(),
       _source(),
-      _join_type(AndJoinActivityList::JOIN_UNDEFINED),
+      _join_type(AndJoinActivityList::Join::UNDEFINED),
       _quorum_count(0),
-      _hist_data(NULL)
+      _hist_data(nullptr)
 {
     if ( get_DOM()->hasHistogram() ) {
 	// _hist_data = new Histogram();
@@ -89,7 +86,7 @@ AndJoinActivityList::AndJoinActivityList( list_type type, LQIO::DOM::ActivityLis
 
 AndJoinActivityList::~AndJoinActivityList()
 {
-    if ( _hist_data != NULL ) {
+    if ( _hist_data != nullptr ) {
 	delete _hist_data;
     }
 }
@@ -104,7 +101,7 @@ AndJoinActivityList&
 AndJoinActivityList::push_back( Activity * activity )
 {
     ActivityList::push_back( activity );
-    _source.push_back( NULL );
+    _source.push_back( nullptr );
     return *this;
 }
 
@@ -186,7 +183,7 @@ LoopActivityList::configure()
 double
 OutputActivityList::find_children( std::deque<Activity *>& activity_stack, std::deque<AndForkActivityList *>& fork_stack, const Entry * ep )
 {
-    if ( _next != NULL ) {
+    if ( _next != nullptr ) {
 	return _next->find_children( activity_stack, fork_stack, ep );
     } else {
 	return 0.0;
@@ -234,7 +231,7 @@ AndJoinActivityList::find_children( std::deque<Activity *>& activity_stack, std:
 
 		    /* Set type for join */
 	    
-		    if ( !set_join_type( JOIN_INTERNAL_FORK_JOIN ) ) {
+		    if ( !set_join_type( Join::INTERNAL_FORK_JOIN ) ) {
 			activity_path_error( LQIO::ERR_JOIN_BAD_PATH, this, activity_stack );
 		    }
 
@@ -261,7 +258,7 @@ AndJoinActivityList::find_children( std::deque<Activity *>& activity_stack, std:
 		}
 		
 	    } else {
-		if ( !set_join_type( JOIN_SYNCHRONIZATION ) ) {
+		if ( !set_join_type( Join::SYNCHRONIZATION ) ) {
 		    activity_path_error( LQIO::ERR_JOIN_BAD_PATH, this, activity_stack );
 		} else {
 		    Server_Task * cp = dynamic_cast<Server_Task *>(ep->task());
@@ -341,7 +338,7 @@ double
 LoopActivityList::find_children( std::deque<Activity *>& activity_stack, std::deque<AndForkActivityList *>& fork_stack, const Entry * ep )
 {
     double sum = 0.0;;
-    if ( _exit != NULL ) {
+    if ( _exit != nullptr ) {
 	sum += _exit->find_children( activity_stack, fork_stack, ep );
     }
 
@@ -361,7 +358,7 @@ LoopActivityList::find_children( std::deque<Activity *>& activity_stack, std::de
 bool
 AndJoinActivityList::add_to_join_list( unsigned i, Activity * activity )
 {
-    if ( _source[i] == NULL ) { 
+    if ( _source[i] == nullptr ) { 
 	_source[i] = activity;
     } else if ( _source[i] != activity ) {
 	return false;
@@ -383,7 +380,7 @@ void
 OutputActivityList::join_backtrack( std::deque<AndForkActivityList *>& fork_stack, std::deque<AndJoinActivityList *>& join_stack, std::set<AndForkActivityList *>& result_set ) 
 {
     for ( std::vector<Activity *>::iterator i = _list.begin(); i != _list.end(); ++i ) {
-	if ( (*i)->_input == NULL ) continue;
+	if ( (*i)->_input == nullptr ) continue;
 	(*i)->_input->fork_backtrack( fork_stack, join_stack, result_set );
     }
 }
@@ -439,7 +436,7 @@ AndJoinActivityList::cycle_error::fold( const std::string& s1, const Activity * 
 double
 OutputActivityList::collect( std::deque<Activity *>& activity_stack, ActivityList::Collect& data ) const
 {
-    if ( _next != NULL ) {
+    if ( _next != nullptr ) {
 	return _next->collect( activity_stack, data );
     } else {
 	return 0.0;
@@ -450,7 +447,7 @@ double
 AndJoinActivityList::collect( std::deque<Activity *>& activity_stack, ActivityList::Collect& data ) const
 {
     /* If it is a sync point... */
-    if ( _join_type == JOIN_SYNCHRONIZATION ) {
+    if ( _join_type == Join::SYNCHRONIZATION ) {
 	return OutputActivityList::collect( activity_stack, data );
     } else {
 	return 0.0;
@@ -560,9 +557,9 @@ ActivityList::shuffle()
  */
 
 bool
-AndJoinActivityList::set_join_type( join_type type )
+AndJoinActivityList::set_join_type( Join type )
 {
-    if ( _join_type == AndJoinActivityList::JOIN_UNDEFINED ) {
+    if ( _join_type == AndJoinActivityList::Join::UNDEFINED ) {
 	_join_type = type;
 	return true;
     } else {
@@ -620,7 +617,7 @@ print_activity_connectivity( FILE * output, Activity * ap )
 	    }
 	    fprintf( output, "\n" );
 	    switch ( op->type ) {
-	    case ACT_LOOP_LIST:
+	    case Type::LOOP_LIST:
 		if ( op->u.loop.endlist ) {
 		    fprintf( output, "\tcalls      : %s\n",
 			     op->u.loop.endlist->name() );
@@ -688,7 +685,7 @@ void complete_activity_connections ()
     for (iter = Activity::actConnections.begin(); iter != Activity::actConnections.end(); ++iter) {
 	ActivityList* src = Activity::domToNative[iter->first];
 	ActivityList* dst = Activity::domToNative[iter->second];
-	assert(src != NULL && dst != NULL);
+	assert(src != nullptr && dst != nullptr);
 	act_connect(src, dst);
     }
 }

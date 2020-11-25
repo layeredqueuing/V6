@@ -10,13 +10,14 @@
  * November 2020.
  *
  * ------------------------------------------------------------------------
- * $Id: actlist.h 14127 2020-11-24 22:44:16Z greg $
+ * $Id: actlist.h 14131 2020-11-25 02:17:53Z greg $
  * ------------------------------------------------------------------------
  */
 
 #ifndef ACTLIST_H
 #define ACTLIST_H
 
+#include <set>
 #include "result.h"
 
 class Entry;
@@ -24,17 +25,6 @@ class Activity;
 class Histogram;
 class Task;
 class Activity;
-
-typedef enum list_type
-{
-    ACT_FORK_LIST,
-    ACT_OR_FORK_LIST,
-    ACT_AND_FORK_LIST,
-    ACT_LOOP_LIST,
-    ACT_JOIN_LIST,
-    ACT_AND_JOIN_LIST,
-    ACT_OR_JOIN_LIST
-} list_type;
 
 class InputActivityList;
 class AndForkActivityList;
@@ -52,9 +42,19 @@ private:
 	const std::string& _op;
     };
 
-protected:
-
 public:
+    enum class Type
+    {
+	FORK_LIST,
+	OR_FORK_LIST,
+	AND_FORK_LIST,
+	LOOP_LIST,
+	JOIN_LIST,
+	AND_JOIN_LIST,
+	OR_JOIN_LIST
+    };
+
+
     typedef std::vector<Activity *>::const_iterator const_iterator;
     
     struct Collect
@@ -69,7 +69,7 @@ public:
 	fptr _f;
     };
 	
-    ActivityList( list_type type, LQIO::DOM::ActivityList* dom )
+    ActivityList( Type type, LQIO::DOM::ActivityList* dom )
 	: _type(type),
 	  _dom(dom),
 	  _list()
@@ -77,7 +77,7 @@ public:
     virtual ~ActivityList() {}
 
     size_t size() const { return _list.size(); }
-    list_type get_type() const { return _type; }
+    Type get_type() const { return _type; }
     Activity * at( size_t ix ) const { return _list[ix]; }
     Activity * front() const { return _list.front(); }
     Activity * back() const { return _list.back(); }
@@ -94,7 +94,7 @@ public:
     ActivityList& initialize();
 
 private:
-    const list_type _type;
+    const Type _type;
     LQIO::DOM::ActivityList* _dom;
 
 protected:
@@ -104,7 +104,7 @@ protected:
 class InputActivityList : public ActivityList
 {
 public:
-    InputActivityList( list_type type, LQIO::DOM::ActivityList * dom )
+    InputActivityList( Type type, LQIO::DOM::ActivityList * dom )
 	: ActivityList(type,dom),
 	  _prev(NULL)
 	{}
@@ -122,7 +122,7 @@ private:
 class ForkActivityList : public InputActivityList
 {
 public:
-    ForkActivityList( list_type type, LQIO::DOM::ActivityList * dom )
+    ForkActivityList( Type type, LQIO::DOM::ActivityList * dom )
 	: InputActivityList(type,dom),
 	  _join(NULL),
 	  _visits(0)
@@ -146,7 +146,7 @@ class OrForkActivityList : public ForkActivityList
 {
 
 public:
-    OrForkActivityList( list_type type, LQIO::DOM::ActivityList * dom )
+    OrForkActivityList( Type type, LQIO::DOM::ActivityList * dom )
 	: ForkActivityList(type,dom),
 	  _prob()
 	{}
@@ -165,7 +165,7 @@ private:
 class AndForkActivityList : public ForkActivityList
 {
 public:
-    AndForkActivityList( list_type type, LQIO::DOM::ActivityList * dom )
+    AndForkActivityList( Type type, LQIO::DOM::ActivityList * dom )
 	: ForkActivityList(type,dom)
 	{}
 
@@ -179,7 +179,7 @@ public:
 class LoopActivityList : public InputActivityList
 {
 public:
-    LoopActivityList( list_type type, LQIO::DOM::ActivityList * dom )
+    LoopActivityList( Type type, LQIO::DOM::ActivityList * dom )
 	: InputActivityList(type,dom),
 	  _exit(NULL),
 	  _count(),
@@ -207,7 +207,7 @@ private:
 class OutputActivityList : public ActivityList
 {
 public:
-    OutputActivityList( list_type type, LQIO::DOM::ActivityList * dom )
+    OutputActivityList( Type type, LQIO::DOM::ActivityList * dom )
 	: ActivityList(type,dom),
 	  _next(NULL)
 	{}
@@ -235,21 +235,21 @@ private:
     };
     
 public:
-    typedef enum join_type
+    enum class Join
     {
-	JOIN_UNDEFINED,
-	JOIN_INTERNAL_FORK_JOIN,
-	JOIN_SYNCHRONIZATION
-    } join_type;
+	UNDEFINED,
+	INTERNAL_FORK_JOIN,
+	SYNCHRONIZATION
+    };
 
-    AndJoinActivityList( list_type type, LQIO::DOM::ActivityList * dom );
+    AndJoinActivityList( Type type, LQIO::DOM::ActivityList * dom );
     virtual ~AndJoinActivityList();
 
     virtual AndJoinActivityList& configure();
     virtual AndJoinActivityList& push_back( Activity * activity );
 
-    bool set_join_type( join_type type );
-    bool join_type_is( join_type type ) const { return type == _join_type; }
+    bool set_join_type( Join type );
+    bool join_type_is( Join type ) const { return type == _join_type; }
     bool add_to_join_list( unsigned i, Activity * activity );
     unsigned int get_quorum_count() const { return _quorum_count; }
 
@@ -262,12 +262,12 @@ public:
 private:
     const AndForkActivityList * _fork;		/* Link to join from fork.	*/
     std::vector<Activity *> _source;		/* Link to source activity 	*/
-    join_type _join_type;
+    Join _join_type;
     unsigned int _quorum_count; 		/* tomari quorum		*/
 
 public:
-    result_t r_join;			/* results for join delays	*/
-    result_t r_join_sqr;		/* results for delays.		*/
+    result_t r_join;				/* results for join delays	*/
+    result_t r_join_sqr;			/* results for delays.		*/
     Histogram * _hist_data;
 };
 

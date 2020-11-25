@@ -9,10 +9,9 @@
 /*
  * Input output processing.
  *
- * $Id: group.cc 14000 2020-10-25 12:50:53Z greg $
+ * $Id: group.cc 14131 2020-11-25 02:17:53Z greg $
  */
-#include <iostream>
-#include <iomanip>
+
 #include <cstdlib>
 #include <algorithm>
 #include <parasol.h>
@@ -116,7 +115,7 @@ Group::find( const std::string& group_name  )
     if ( group_name.size() == 0 ) return 0;
     std::set<Group *,ltGroup>::const_iterator nextGroup = find_if( ::group.begin(), ::group.end(), eqGroupStr( group_name ) );
     if ( nextGroup == group.end() ) {
-	return 0;
+	return nullptr;
     } else {
 	return *nextGroup;
     }

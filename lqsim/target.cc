@@ -1,7 +1,7 @@
 /* target.cc	-- Greg Franks Tue Jun 23 2009
  *
  * ------------------------------------------------------------------------
- * $Id: target.cc 14107 2020-11-18 18:51:51Z greg $
+ * $Id: target.cc 14131 2020-11-25 02:17:53Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -18,16 +18,6 @@
 #include "message.h"
 #include "instance.h"
 #include "pragma.h"
-
-tar_t::tar_t()
-  : _entry(0),
-    _link(-1),
-    _tprob(0.0),
-    _calls(0),
-    _reply(0),
-    _type(undefined)
-{
-}
 
 /*
  * Rendezvous message.  Recycle message.
@@ -105,10 +95,10 @@ tar_t::configure()
 {
     if ( _entry->task()->is_reference_task() ) {
 	LQIO::solution_error( LQIO::ERR_REFERENCE_TASK_IS_RECEIVER, _entry->task()->name(), _entry->name() );
-    } else if ( _type == call ) {
+    } else if ( _type == Type::call ) {
 	_calls = _dom._call->getCallMeanValue();
 	_reply = (_dom._call->getCallType() == LQIO::DOM::Call::Type::RENDEZVOUS || _dom._call->getCallType() == LQIO::DOM::Call::Type::FORWARD);
-    } else if ( _type != constant ) {
+    } else if ( _type != Type::constant ) {
 	abort();
     }
 }
@@ -172,7 +162,7 @@ tar_t::print( FILE * output ) const
 tar_t&
 tar_t::insertDOMResults()
 {
-    if ( _type != call ) return *this;
+    if ( _type != Type::call ) return *this;
 
     double meanDelay, meanDelayVariance;
     const double meanLossProbability = r_loss_prob.mean();

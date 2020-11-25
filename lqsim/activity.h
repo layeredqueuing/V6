@@ -9,7 +9,7 @@
 /*
  * Activities (and phases).
  *
- * $Id: activity.h 14107 2020-11-18 18:51:51Z greg $
+ * $Id: activity.h 14131 2020-11-25 02:17:53Z greg $
  */
 
 #ifndef ACTIVITY_H
@@ -95,7 +95,7 @@ private:
     ActivityList * act_and_fork_list( ActivityList * activityList, LQIO::DOM::ActivityList * dom_activitylist );
     ActivityList * act_or_fork_list( ActivityList * activityList, LQIO::DOM::ActivityList * dom_activitylist );
     ActivityList * act_loop_list( ActivityList * activity_list, LQIO::DOM::ActivityList * dom_activitylist );
-    ActivityList * realloc_list ( const list_type type, const ActivityList * input_list,  LQIO::DOM::ActivityList * dom_activitylist );
+    ActivityList * realloc_list ( const ActivityList::Type type, const ActivityList * input_list,  LQIO::DOM::ActivityList * dom_activitylist );
     bool find_reply( const Entry * ep ) const;
 
 private:

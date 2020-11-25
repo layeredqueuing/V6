@@ -12,26 +12,25 @@
  *
  * $URL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqsim/entry.cc $
  *
- * $Id: entry.cc 14108 2020-11-19 17:15:02Z greg $
+ * $Id: entry.cc 14131 2020-11-25 02:17:53Z greg $
  */
 
 #include <parasol.h>
 #include "lqsim.h"
 #include <cmath>
 #include <algorithm>
-#include <stdarg.h>
 #include <string.h>
 #include <limits.h>
 #include <lqio/input.h>
 #include <lqio/error.h>
-#include "errmsg.h"
-#include "entry.h"
 #include "activity.h"
-#include "task.h"
+#include "entry.h"
+#include "errmsg.h"
 #include "instance.h"
-#include "processor.h"
 #include "model.h"
 #include "pragma.h"
+#include "processor.h"
+#include "task.h"
 
 unsigned int open_arrival_count = 0;
 
@@ -52,11 +51,11 @@ Entry::Entry( LQIO::DOM::Entry* dom, Task * task )
       _entry_id(::entry.size() + 1),
       _local_id(task->n_entries()),
       _port(-1),
-      _activity(NULL),
-      _recv(RECEIVE_NONE),
+      _activity(nullptr),
+      _recv(Type::NONE),
       _task(task),
       _fwd(),
-      _join_list(NULL)
+      _join_list(nullptr)
 {
     entry_table[_entry_id] = this;
     
@@ -186,7 +185,7 @@ Entry::initialize()
 	print_debug_info();
     }
 		
-    _join_list = NULL;		/* Reset */
+    _join_list = nullptr;		/* Reset */
     
     r_cycle.init( SAMPLE, "Entry %-11.11s  - Cycle Time      ", name() );
 
@@ -283,7 +282,7 @@ Entry::is_w_lock() const
 bool
 Entry::has_lost_messages() const
 {
-    return find_if( _phase.begin(), _phase.end(), Predicate<Activity>( &Activity::has_lost_messages ) ) != _phase.end();
+    return std::any_of( _phase.begin(), _phase.end(), Predicate<Activity>( &Activity::has_lost_messages ) );
 }
 
 /*
@@ -301,9 +300,9 @@ Entry::test_and_set( LQIO::DOM::Entry::Type type )
 }
 
 bool
-Entry::test_and_set_recv( receive_type recv ) 
+Entry::test_and_set_recv( Type recv ) 
 {
-    if ( _recv != RECEIVE_NONE && _recv != recv ) {
+    if ( _recv != Type::NONE && _recv != recv ) {
 	input_error2( LQIO::ERR_OPEN_AND_CLOSED_CLASSES, name() );
 	return false;
     } else {
@@ -335,7 +334,7 @@ Entry::test_and_set_rwlock( LQIO::DOM::Entry::RWLock rw )
 Entry& 
 Entry::set_DOM( unsigned p, LQIO::DOM::Phase* phaseInfo )
 {
-    if (phaseInfo == NULL) return *this;
+    if (phaseInfo == nullptr) return *this;
     assert( 0 < p && p <= _phase.size() );
     _phase[p-1].set_DOM(phaseInfo);
     return *this;
@@ -345,7 +344,7 @@ Entry::set_DOM( unsigned p, LQIO::DOM::Phase* phaseInfo )
 Entry& 
 Entry::add_forwarding( Entry* to_entry, LQIO::DOM::Call * call )
 {
-    if ( !to_entry->test_and_set_recv( Entry::RECEIVE_RENDEZVOUS ) ) return *this;
+    if ( !to_entry->test_and_set_recv( Entry::Type::RENDEZVOUS ) ) return *this;
 
     /* Do some checks for sanity */
     if ( task()->is_reference_task() ) {
@@ -634,7 +633,7 @@ Entry::add( LQIO::DOM::Entry* domEntry, Task * task )
 Entry&
 Entry::add_open_arrival_task()
 {
-    if ( !_dom || !_dom->hasOpenArrivalRate() || !test_and_set_recv( Entry::RECEIVE_SEND_NO_REPLY ) || dynamic_cast<Pseudo_Entry *>(this) != NULL ) return *this;	/* Not necessary due to override */
+    if ( !_dom || !_dom->hasOpenArrivalRate() || !test_and_set_recv( Entry::Type::SEND_NO_REPLY ) || dynamic_cast<Pseudo_Entry *>(this) != nullptr ) return *this;	/* Not necessary due to override */
 
     char * task_name = new char[strlen( name() ) + 20];
     (void) sprintf( task_name, "(%s)", name() );
@@ -681,8 +680,8 @@ Entry::add_call( const unsigned int p, LQIO::DOM::Call* domCall )
     Entry * to_entry = Entry::find( to_entry_name );
     if ( !to_entry ) return;
     if ( !test_and_set( LQIO::DOM::Entry::Type::STANDARD ) ) return;
-    if ( domCall->getCallType() == LQIO::DOM::Call::Type::RENDEZVOUS && !to_entry->test_and_set_recv( Entry::RECEIVE_RENDEZVOUS ) ) return;
-    if ( (domCall->getCallType() == LQIO::DOM::Call::Type::SEND_NO_REPLY || domCall->getCallType() == LQIO::DOM::Call::Type::QUASI_SEND_NO_REPLY) && !to_entry->test_and_set_recv( Entry::RECEIVE_SEND_NO_REPLY ) ) return;
+    if ( domCall->getCallType() == LQIO::DOM::Call::Type::RENDEZVOUS && !to_entry->test_and_set_recv( Entry::Type::RENDEZVOUS ) ) return;
+    if ( (domCall->getCallType() == LQIO::DOM::Call::Type::SEND_NO_REPLY || domCall->getCallType() == LQIO::DOM::Call::Type::QUASI_SEND_NO_REPLY) && !to_entry->test_and_set_recv( Entry::Type::SEND_NO_REPLY ) ) return;
 
     _phase.at(p-1)._calls.store_target_info( to_entry, domCall );
 }
@@ -697,7 +696,7 @@ Entry::find( const char * entry_name )
     std::set<Entry *>::const_iterator nextEntry = find_if( ::entry.begin(), ::entry.end(), eqEntryStr( entry_name ) );
     if ( nextEntry == ::entry.end() ) {
 	input_error2( LQIO::ERR_NOT_DEFINED, entry_name );
-	return 0;
+	return nullptr;
     } else {
 	return *nextEntry;
     }
