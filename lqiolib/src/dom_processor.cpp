@@ -23,8 +23,8 @@ namespace LQIO {
 	Processor::Processor(const Document * document, const std::string& name, scheduling_type scheduling_flag,
 			     ExternalVariable* n_cpus, ExternalVariable* n_replicas )
 	    : Entity(document, name, scheduling_flag, n_cpus, n_replicas ),
-	      _processorRate(NULL),
-	      _processorQuantum(NULL),
+	      _processorRate(nullptr),
+	      _processorQuantum(nullptr),
 	      _taskList(),
 	      _groupList(),
 	      _resultUtilization(0.0),
@@ -72,7 +72,7 @@ namespace LQIO {
 	void Processor::setRateValue(const double value)
 	{
 	    /* Store the new processor rate */
-	    if ( _processorRate == NULL ) {
+	    if ( _processorRate == nullptr ) {
 		_processorRate = new ConstantExternalVariable( value );
 	    } else {
 		_processorRate->set(value);
@@ -103,7 +103,7 @@ namespace LQIO {
 	void Processor::setQuantumValue(const double value )
 	{
 	    /* Store the new CPU Time Quantum */
-	    if ( _processorQuantum == NULL ) {
+	    if ( _processorQuantum == nullptr ) {
 		_processorQuantum = new ConstantExternalVariable( value );
 	    } else {
 		_processorQuantum->set(value);

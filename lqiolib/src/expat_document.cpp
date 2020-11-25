@@ -1431,7 +1431,7 @@ namespace LQIO {
                 if ( !processor ) {
                     group = dynamic_cast<Group *>(object);
                     if ( !group ) {
-                        return 0;
+                        return nullptr;
                     } else {
                         processor = const_cast<Processor *>(group->getProcessor());
                     }

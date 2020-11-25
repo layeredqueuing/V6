@@ -24,7 +24,7 @@ namespace LQIO {
 	}
     
 	Group::Group(const Group& src ) 
-	    : DocumentObject(src.getDocument(),""), _processor(NULL), _groupShare(src.getGroupShare()), _cap(src.getCap())
+	    : DocumentObject(src.getDocument(),""), _processor(nullptr), _groupShare(src.getGroupShare()), _cap(src.getCap())
 	{ 
 	}
     
@@ -68,7 +68,7 @@ namespace LQIO {
     
 	void Group::setGroupShareValue(const double value)
 	{
-	    if ( _groupShare == NULL ) {
+	    if ( _groupShare == nullptr ) {
 		_groupShare = new ConstantExternalVariable(value);
 	    } else {
 		_groupShare->set(value);

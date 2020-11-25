@@ -112,7 +112,7 @@ namespace LQIO {
 	Common_IO::is_default_value( const LQIO::DOM::ExternalVariable * var, double default_value ) 
 	{
 	    double value = 0.0;
-	    return var == NULL || (var->wasSet() && var->getValue(value) && value == default_value);
+	    return var == nullptr || (var->wasSet() && var->getValue(value) && value == default_value);
 	}
 
 	CPUTime

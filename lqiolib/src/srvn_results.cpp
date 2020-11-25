@@ -869,12 +869,12 @@ srvn_find_activity( const char * task_name, const char * activity_name )
     const LQIO::DOM::Task * task = LQIO::DOM::__document->getTaskByName( task_name );
     if ( !task ) {
 	results_error2( LQIO::ERR_NOT_DEFINED, task_name );
-	return 0;
+	return nullptr;
     } else {
 	LQIO::DOM::Activity* activity = task->getActivity(activity_name);
 	if ( !activity ) {
 	    results_error2( LQIO::ERR_NOT_DEFINED, activity_name );
-	    return 0;
+	    return nullptr;
 	}
 	return activity;
     }
@@ -1209,7 +1209,7 @@ namespace LQIO {
 	    if ( filename == "-" ) {
 		resultin = stdin;
 		resultparse();
-	    } else if ( ( resultin = fopen( filename.c_str(), "r" ) ) != NULL ) {
+	    } else if ( ( resultin = fopen( filename.c_str(), "r" ) ) != nullptr ) {
 		results_file_name = filename.c_str();
 		resultlineno = 1;
 #if HAVE_MMAP

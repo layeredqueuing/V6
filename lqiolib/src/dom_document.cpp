@@ -817,7 +817,7 @@ namespace LQIO {
 		return document;
 	    } else {
 		delete document;
-		return 0;
+		return nullptr;
 	    }
 	}
 

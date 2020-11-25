@@ -99,7 +99,7 @@ namespace LQIO {
 	{
 	    /* Check for a valid variable (if set).  Return the var */
 	    double value = floor_value;
-	    if ( var != NULL && var->wasSet() && ( var->getValue(value) != true || std::isinf(value) || value != rint(value) || value < floor_value ) ) {
+	    if ( var != nullptr && var->wasSet() && ( var->getValue(value) != true || std::isinf(value) || value != rint(value) || value < floor_value ) ) {
 		throw std::domain_error( "invalid integer" );
 	    }
 	    return var;
@@ -109,7 +109,7 @@ namespace LQIO {
 	{
 	    /* Return a valid integer */
 	    double value = floor_value;
-	    if ( var == NULL ) return floor_value;
+	    if ( var == nullptr ) return floor_value;
 	    if ( var->wasSet() != true ) throw std::domain_error( "not set" );
 	    if ( var->getValue(value) != true ) throw std::domain_error( "not a number" );	/* Sets value for return! */
 	    if ( std::isinf(value) ) throw std::domain_error( "infinity" );
@@ -126,7 +126,7 @@ namespace LQIO {
 	{
 	    /* Check for a valid variable (if set).  Return the var */
 	    double value = floor_value;
-	    if ( var != NULL && var->wasSet() && ( var->getValue(value) != true || std::isinf(value) || value < floor_value || (floor_value < ceiling_value && ceiling_value < value) ) ){
+	    if ( var != nullptr && var->wasSet() && ( var->getValue(value) != true || std::isinf(value) || value < floor_value || (floor_value < ceiling_value && ceiling_value < value) ) ){
 		throw std::domain_error( "invalid double" );
 	    }
 	    return var;
@@ -136,7 +136,7 @@ namespace LQIO {
 	{
 	    /* Return a valid double */
 	    double value = floor_value;
-	    if ( var == NULL ) return floor_value;
+	    if ( var == nullptr ) return floor_value;
 	    if ( var->wasSet() != true ) throw std::domain_error( "not set" );
 	    if ( var->getValue(value) != true ) throw std::domain_error( "not a number" );	/* Sets value for return! */
 	    if ( std::isinf(value) ) throw std::domain_error( "infinity" );

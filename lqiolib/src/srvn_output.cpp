@@ -751,7 +751,7 @@ namespace LQIO {
 	}
 
 	const char * comment = document.getModelCommentString();
-	if ( comment != NULL && comment[0] != '\0' ) {
+	if ( comment != nullptr && comment[0] != '\0' ) {
 	    output << "#!Comment: " << print_comment( comment ) << endl;
 	}
 	if ( document.getResultUserTime() > 0.0 ) {
@@ -1982,10 +1982,10 @@ namespace LQIO {
         if ( !rwlock ) return;
 
         const std::vector<DOM::Entry *>& entries = task.getEntryList();
-        DOM::Entry * r_lock_entry = NULL;
-        DOM::Entry * r_unlock_entry = NULL;
-        DOM::Entry * w_lock_entry = NULL;
-        DOM::Entry * w_unlock_entry = NULL;
+        DOM::Entry * r_lock_entry = nullptr;
+        DOM::Entry * r_unlock_entry = nullptr;
+        DOM::Entry * w_lock_entry = nullptr;
+        DOM::Entry * w_unlock_entry = nullptr;
 
         for (int i=0;i<4;i++){
             switch (entries[i]->getRWLockFlag()) {
@@ -2257,7 +2257,7 @@ namespace LQIO {
         }
 
         const std::map<std::string,DOM::Activity*>& activities = task->getActivities();
-        if ( activities.size() > 0 && _activityFunc != NULL ) {
+        if ( activities.size() > 0 && _activityFunc != nullptr ) {
             std::map<std::string,DOM::Activity*>::const_iterator nextActivity;
             bool found;
             if ( _testFunc ) {
@@ -2275,7 +2275,7 @@ namespace LQIO {
                 }
             }
         }
-        if ( _activityFunc != NULL && print_task_name == false && __parseable ) {
+        if ( _activityFunc != nullptr && print_task_name == false && __parseable ) {
             _output << setw(__maxStrLen) << " " << activityEOF << newline;
         }
         _output.flags(oldFlags);
@@ -2297,7 +2297,7 @@ namespace LQIO {
     void
     SRVN::EntryOutput::printEntryCoefficientOfVariation( const DOM::Entry & entry, const DOM::Entity & entity, bool& print_task_name  ) const
     {
-        if ( entry.getStartActivity() == NULL ) {
+        if ( entry.getStartActivity() == nullptr ) {
 	    _output << entity_name( entity, print_task_name ) << entry_name( entry ) << coefficient_of_variation( entry ) << newline;
         }
     }
@@ -2305,7 +2305,7 @@ namespace LQIO {
     void
     SRVN::EntryOutput::printEntryDemand( const DOM::Entry & entry, const DOM::Entity & entity, bool& print_task_name ) const
     {
-        if ( entry.getStartActivity() == NULL ) {
+        if ( entry.getStartActivity() == nullptr ) {
 	    _output << entity_name( entity, print_task_name ) << entry_name( entry ) << service_demand( entry ) << newline;
         }
     }
@@ -2321,7 +2321,7 @@ namespace LQIO {
     void
     SRVN::EntryOutput::printEntryPhaseType( const DOM::Entry & entry, const DOM::Entity & entity, bool& print_task_name  ) const
     {
-        if ( entry.getStartActivity() == NULL ) {
+        if ( entry.getStartActivity() == nullptr ) {
             _output << entity_name( entity, print_task_name ) << entry_name( entry ) << phase_type( entry ) << newline;
         }
     }
@@ -2329,7 +2329,7 @@ namespace LQIO {
     void
     SRVN::EntryOutput::printEntryThinkTime( const DOM::Entry & entry, const DOM::Entity & entity, bool& print_task_name  ) const
     {
-        if ( entry.getStartActivity() == NULL ) {
+        if ( entry.getStartActivity() == nullptr ) {
 	    _output << entity_name( entity, print_task_name ) << entry_name( entry ) << think_time( entry ) << newline;
         }
     }
@@ -2916,7 +2916,7 @@ namespace LQIO {
                 break;
 
             case DOM::ActivityList::Type::REPEAT:
-                if ( precedence.getParameter( activity ) == NULL ) {
+                if ( precedence.getParameter( activity ) == nullptr ) {
                     end_activity = activity;
                     continue;
                 }
@@ -2998,7 +2998,7 @@ namespace LQIO {
                 const std::vector<DOM::Call *>& calls = activity->getCalls();
                 for ( std::vector<DOM::Call*>::const_iterator nextCall = calls.begin(); nextCall != calls.end(); ++nextCall ) {
                     const DOM::Call * call = *nextCall;
-		    if ( call == NULL || !(call->*_testFunc)() ) {
+		    if ( call == nullptr || !(call->*_testFunc)() ) {
 			continue;
 		    } else if ( _meanFunc ) {
 			const DOM::Entry * dest = call->getDestinationEntry();

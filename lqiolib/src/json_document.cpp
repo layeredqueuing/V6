@@ -147,7 +147,7 @@ namespace LQIO {
 		if ( program_text.size() ) {
 		    /* If we have an LQX program, then we need to compute */
 		    LQX::Program* program = LQX::Program::loadFromText(input_file_name.c_str(), document.getLQXProgramLineNumber(), program_text.c_str());
-		    if (program == NULL) {
+		    if (program == nullptr) {
 			LQIO::solution_error( LQIO::ERR_LQX_COMPILATION, input_file_name.c_str() );
 		    }
 		    document.setLQXProgram( program );
@@ -453,7 +453,7 @@ namespace LQIO {
 			    throw duplicate_symbol( group_name );
 			}
 			Processor * processor = dynamic_cast<Processor *>(parent);
-			assert( processor != NULL );
+			assert( processor != nullptr );
 			group = new Group( &_document, group_name.c_str(), processor );
 			_document.addGroup( group );
 			processor->addGroup( group );
@@ -632,7 +632,7 @@ namespace LQIO {
 			    if ( i->second.is<std::string>() ) {
 				const std::string& name = i->second.get<std::string>();
 				Task * task = const_cast<Task *>(entry->getTask());
-				assert( task != NULL );
+				assert( task != nullptr );
 				Activity * activity = task->getActivity( name.c_str(), true );
 				entry->setStartActivity( activity );
 				_document.db_check_set_entry(entry, entry->getName(), Entry::Type::ACTIVITY);
@@ -920,7 +920,7 @@ namespace LQIO {
 
 		/* Deferred op -- set quorum */
 		for ( std::map<const char *,picojson::value>::const_iterator i = deferred.begin(); i != deferred.end(); ++i ) {
-		    if ( dynamic_cast<AndJoinActivityList *>(pre_list) == NULL ) {
+		    if ( dynamic_cast<AndJoinActivityList *>(pre_list) == nullptr ) {
 			LQIO::solution_error( LQIO::ERR_UNEXPECTED_ATTRIBUTE, Xprecedence, i->first );
 		    } else if ( i->first == Xquorum && i->second.is<double>() && _createObjects ) {
 			dynamic_cast<AndJoinActivityList *>(pre_list)->setQuorumCountValue( static_cast<int>(i->second.get<double>()) );
@@ -1446,7 +1446,7 @@ namespace LQIO {
 		}
 	    }
 	    invalid_argument( name, attr->second.to_str().c_str() );		// throws.
-	    return 0;
+	    return 0.;
 	}
 
 	/* static */ const picojson::value&
@@ -3117,12 +3117,12 @@ namespace LQIO {
 	    }
 
 	    const std::vector<Call*>& calls = phase.getCalls();
-	    if ( find_if( calls.begin(), calls.end(), has_synch_call ) != calls.end() ) {
+	    if ( std::any_of( calls.begin(), calls.end(), has_synch_call ) ) {
 		_output << next_begin_array( Xsynch_call );
 		for_each( calls.begin(), calls.end(), ExportCall( _output, Call::Type::RENDEZVOUS, _conf_95 ) );
 		_output << end_array();
 	    }
-	    if ( find_if( calls.begin(), calls.end(), has_asynch_call ) != calls.end() ) {
+	    if ( std::any_of( calls.begin(), calls.end(), has_asynch_call ) ) {
 		_output << next_begin_array( Xasynch_call );
 		for_each( calls.begin(), calls.end(), ExportCall( _output, Call::Type::SEND_NO_REPLY, _conf_95 ) );
 		_output << end_array();

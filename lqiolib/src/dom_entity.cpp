@@ -81,7 +81,7 @@ namespace LQIO {
 	void Entity::setCopiesValue( const unsigned int value )
 	{
 	    /* Set the number of copies */
-	    if ( _copies == NULL ) {
+	    if ( _copies == nullptr ) {
 		_copies = new ConstantExternalVariable(value);
 	    } else {
 		_copies->set(value);
@@ -92,7 +92,7 @@ namespace LQIO {
 	{
 	    /* Set the number of copies.  Allow infinity (so don't use checkIntegerVariable) */
 	    double value = 1.;
-	    if ( var != NULL && var->wasSet() && ( var->getValue(value) != true || value != rint(value) || value < 1. ) ) {
+	    if ( var != nullptr && var->wasSet() && ( var->getValue(value) != true || value != rint(value) || value < 1. ) ) {
 		throw std::domain_error( "invalid integer" );
 	    }
 	    _copies = var;
@@ -118,7 +118,7 @@ namespace LQIO {
 	void Entity::setReplicasValue( const unsigned int value )
 	{
 	    /* Set the number of replicas */
-	    if ( _replicas == NULL ) {
+	    if ( _replicas == nullptr ) {
 		_replicas = new ConstantExternalVariable(value);
 	    } else {
 		_replicas->set(value);

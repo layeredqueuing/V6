@@ -115,7 +115,7 @@ namespace LQIO {
 
 	void Call::setCallMeanValue(double value)
 	{
-	    if ( _callMean == NULL ) {
+	    if ( _callMean == nullptr ) {
 		_callMean = new ConstantExternalVariable( value );
 	    } else {
 		_callMean->set(value);

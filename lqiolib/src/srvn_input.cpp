@@ -77,7 +77,7 @@ static inline bool schedule_customer( scheduling_type scheduling_flag )
 static inline bool is_infinity( const LQIO::DOM::ExternalVariable * n )
 {
     double value = 0.0;
-    return n != NULL && (n->wasSet() && n->getValue(value) && std::isinf(value));
+    return n != nullptr && (n->wasSet() && n->getValue(value) && std::isinf(value));
 }
     
 static void set_phase_name( const LQIO::DOM::Entry * entry, LQIO::DOM::Phase * phase, const unsigned i )
@@ -104,7 +104,7 @@ srvn_add_processor( const char *processor_name, scheduling_type scheduling_flag,
 
     if ( LQIO::DOM::__document->getProcessorByName(processor_name) ) {
 	LQIO::input_error2( LQIO::ERR_DUPLICATE_SYMBOL, "Processor", processor_name );
-	return 0;
+	return nullptr;
     } 
 
     processor = new LQIO::DOM::Processor( LQIO::DOM::__document, processor_name, scheduling_flag );
@@ -133,19 +133,19 @@ srvn_add_group( const char *group_name, void * group_share, const char *processo
 {
     /* Locate the appropriate resources, and spit out a warning if they cannot be found... */
     LQIO::DOM::Processor* processor = LQIO::DOM::__document->getProcessorByName(processor_name);
-    if (processor == NULL) {
-	return 0;
+    if (processor == nullptr) {
+	return nullptr;
     }
     
     /* Check if this group exists yet */
-    if (LQIO::DOM::__document->getGroupByName(group_name) != NULL) {
+    if (LQIO::DOM::__document->getGroupByName(group_name) != nullptr) {
 	LQIO::input_error2( LQIO::ERR_DUPLICATE_SYMBOL, "Group", group_name );
-	return 0;
+	return nullptr;
     }
 
     if ( processor->getSchedulingType() != SCHEDULE_CFS ) {
 	LQIO::input_error2( LQIO::WRN_NON_CFS_PROCESSOR, group_name, processor_name );
-	return 0;		/* Ignore group */
+	return nullptr;		/* Ignore group */
     }
     
     /* Store the group inside of the Document */
@@ -163,17 +163,17 @@ srvn_add_task (const char * task_name, const scheduling_type scheduling, const v
     LQIO::DOM::Processor* processor = LQIO::DOM::__document->getProcessorByName(processor_name);
     if ( processor == nullptr ) {
 	LQIO::input_error2( LQIO::ERR_NOT_DEFINED, processor_name );
-	return 0;
+	return nullptr;
     }
 
     LQIO::DOM::Task* task = 0;
     if ( LQIO::DOM::__document->getTaskByName(task_name) ) {
 	LQIO::input_error2( LQIO::ERR_DUPLICATE_SYMBOL, "Task", task_name );
-	return 0;
+	return nullptr;
 
     } else if ( entries == nullptr ) {
 	LQIO::input_error2( LQIO::ERR_NO_ENTRIES_DEFINED_FOR_TASK, task_name );
-	return 0;
+	return nullptr;
     } else if ( scheduling == SCHEDULE_SEMAPHORE ) {
 	task = new LQIO::DOM::SemaphoreTask( LQIO::DOM::__document, task_name, *static_cast<const std::vector<LQIO::DOM::Entry *>*>(entries), processor );
     } else if ( scheduling == SCHEDULE_RWLOCK ) {
@@ -238,7 +238,7 @@ void *
 srvn_get_entry( const char * entry_name )
 {
     LQIO::DOM::Entry * entry = LQIO::DOM::__document->getEntryByName(entry_name);
-    if ( entry == NULL ) {
+    if ( entry == nullptr ) {
 	LQIO::input_error2( LQIO::ERR_NOT_DEFINED, entry_name );
 	/* Define it to suppress additional errors */
 	entry = new LQIO::DOM::Entry(LQIO::DOM::__document, entry_name );
@@ -410,7 +410,7 @@ srvn_store_prob_forward_data ( void * from_entry_v, void * to_entry_v, void * pr
 {
     LQIO::DOM::Entry* from_entry = static_cast<LQIO::DOM::Entry *>(from_entry_v);
     LQIO::DOM::Entry* to_entry = static_cast<LQIO::DOM::Entry *>(to_entry_v);
-    if ( from_entry == NULL || to_entry == NULL) {
+    if ( from_entry == nullptr || to_entry == nullptr) {
 	return;
     } else if ( from_entry == to_entry ) {
         LQIO::input_error2( LQIO::ERR_SRC_EQUALS_DST, from_entry->getName().c_str(), to_entry->getName().c_str() );
@@ -422,7 +422,7 @@ srvn_store_prob_forward_data ( void * from_entry_v, void * to_entry_v, void * pr
     
     /* Build a variable for the storage of the P(fwd) and set it on the originator */
     LQIO::DOM::Call * call = from_entry->getForwardingToTarget(to_entry);
-    if ( call == NULL ) {
+    if ( call == nullptr ) {
 	LQIO::DOM::Call* call = new LQIO::DOM::Call(LQIO::DOM::__document, from_entry, to_entry, static_cast<LQIO::DOM::ExternalVariable *>(prob) );
 	from_entry->addForwardingCall(call);
 	std::string name = from_entry->getName();
@@ -441,7 +441,7 @@ srvn_store_rnv_data (void * from_entry_v, void * to_entry_v, unsigned n_phases, 
     LQIO::DOM::Entry* from_entry = static_cast<LQIO::DOM::Entry *>(from_entry_v);
     LQIO::DOM::Entry* to_entry = static_cast<LQIO::DOM::Entry *>(to_entry_v);
 
-    if ( from_entry == NULL || to_entry == NULL) {
+    if ( from_entry == nullptr || to_entry == nullptr) {
 	return;
     } else if ( from_entry == to_entry ) {
         LQIO::input_error2( LQIO::ERR_SRC_EQUALS_DST, from_entry->getName().c_str(), to_entry->getName().c_str() );
@@ -464,7 +464,7 @@ srvn_store_rnv_data (void * from_entry_v, void * to_entry_v, unsigned n_phases, 
 	LQIO::DOM::Call* call = from_entry->getCallToTarget(to_entry, i);
         
 	/* Check the existence */
-	if (call == NULL) {
+	if (call == nullptr) {
 	    call = new LQIO::DOM::Call(LQIO::DOM::__document, LQIO::DOM::Call::Type::RENDEZVOUS, phase, to_entry, ev);
 	    phase->addCall( call );
 	    std::string name = phase->getName();
@@ -493,7 +493,7 @@ srvn_store_snr_data ( void * from_entry_v, void * to_entry_v, unsigned n_phases,
     LQIO::DOM::Entry* from_entry = static_cast<LQIO::DOM::Entry *>(from_entry_v);
     LQIO::DOM::Entry* to_entry = static_cast<LQIO::DOM::Entry *>(to_entry_v);
 
-    if ( from_entry == NULL || to_entry == NULL) {
+    if ( from_entry == nullptr || to_entry == nullptr) {
 	return;
     } else if ( from_entry == to_entry ) {
 	LQIO::input_error2( LQIO::ERR_SRC_EQUALS_DST, from_entry->getName().c_str(), to_entry->getName().c_str() );
@@ -516,7 +516,7 @@ srvn_store_snr_data ( void * from_entry_v, void * to_entry_v, unsigned n_phases,
 	LQIO::DOM::Call* call = from_entry->getCallToTarget(to_entry, i);
         
 	/* Check the existence */
-	if (call == NULL) {
+	if (call == nullptr) {
 	    call = new LQIO::DOM::Call(LQIO::DOM::__document,LQIO::DOM::Call::Type::SEND_NO_REPLY, phase, to_entry, ev);
 	    phase->addCall( call );
 	    std::string name = phase->getName();
@@ -660,7 +660,7 @@ srvn_set_task_tokens( void * task_v, int tokens )
 void *
 srvn_find_activity( void * task, const char * name )
 {
-    if ( !task ) return NULL;
+    if ( !task ) return nullptr;
     LQIO::DOM::Activity * activity = static_cast<LQIO::DOM::Task *>(task)->getActivity(name, false);
     if ( !activity ) {
 	input_error2( LQIO::ERR_NOT_DEFINED, name );
@@ -675,7 +675,7 @@ srvn_find_activity( void * task, const char * name )
 void *
 srvn_get_activity( void * task, const char * name )
 {
-    if ( !task ) return NULL;
+    if ( !task ) return nullptr;
     return static_cast<LQIO::DOM::Task *>(task)->getActivity(name, true);
 }
 
@@ -703,7 +703,7 @@ void  *
 srvn_store_activity_rnv_data ( void * activity, void * dst_entry_v, void * calls ) 
 {
     LQIO::DOM::Entry* dst_entry = static_cast<LQIO::DOM::Entry *>(dst_entry_v);
-    if ( !activity || !dst_entry ) return NULL;
+    if ( !activity || !dst_entry ) return nullptr;
     LQIO::DOM::Document::db_check_set_entry(dst_entry, dst_entry->getName());
     
     LQIO::DOM::Call* call = new LQIO::DOM::Call(LQIO::DOM::__document, LQIO::DOM::Call::Type::RENDEZVOUS, static_cast<LQIO::DOM::Activity *>(activity), dst_entry,
@@ -724,7 +724,7 @@ void *
 srvn_store_activity_snr_data ( void * activity, void * dst_entry_v, void * calls ) 
 {
     LQIO::DOM::Entry* dst_entry = static_cast<LQIO::DOM::Entry *>(dst_entry_v);
-    if ( !activity || !dst_entry ) return 0;
+    if ( !activity || !dst_entry ) return nullptr;
     LQIO::DOM::Document::db_check_set_entry(dst_entry, dst_entry->getName());
     
     LQIO::DOM::Call* call = new LQIO::DOM::Call(LQIO::DOM::__document, LQIO::DOM::Call::Type::SEND_NO_REPLY, static_cast<LQIO::DOM::Activity *>(activity), dst_entry,
@@ -779,11 +779,11 @@ srvn_act_add_reply ( const void * task, const void * entry, void * entry_list )
 {
     const LQIO::DOM::Task* domTask = static_cast<const LQIO::DOM::Task*>(task);
     const LQIO::DOM::Entry* domEntry = static_cast<const LQIO::DOM::Entry*>(entry);
-    if (task == NULL || entry == NULL) return entry_list;
+    if (task == nullptr || entry == nullptr) return entry_list;
     /* This one is kinda neat since lots happens... */
     /* This method provides an initially NULL entry list and wants it back... */
     std::vector<LQIO::DOM::Entry*>* localEntryList = static_cast<std::vector<LQIO::DOM::Entry*>*>(entry_list);
-    if (localEntryList == NULL) { localEntryList = new std::vector<LQIO::DOM::Entry*>(); }
+    if (localEntryList == nullptr) { localEntryList = new std::vector<LQIO::DOM::Entry*>(); }
     
     /* Now we need to find an entry for the given name */
     if ( domEntry->getTask() != task ) {
@@ -798,7 +798,7 @@ srvn_act_add_reply ( const void * task, const void * entry, void * entry_list )
 void * 
 srvn_act_and_fork_list ( const void * aTask, void * activity, void * pActivityList )
 {
-    if ( !aTask || !activity ) return NULL;
+    if ( !aTask || !activity ) return nullptr;
     return LQIO::DOM::act_and_fork_list( static_cast<const LQIO::DOM::Task *>(aTask), static_cast<LQIO::DOM::Activity *>(activity), 
 					 static_cast<LQIO::DOM::ActivityList *>(pActivityList), 0 );
 }
@@ -806,7 +806,7 @@ srvn_act_and_fork_list ( const void * aTask, void * activity, void * pActivityLi
 void * 
 srvn_act_and_join_list ( const void * aTask, void * activity, void * pActivityList, void * quorum_count )
 {
-    if ( !aTask || !activity ) return NULL;
+    if ( !aTask || !activity ) return nullptr;
     return LQIO::DOM::act_and_join_list( static_cast<const LQIO::DOM::Task *>(aTask), static_cast<LQIO::DOM::Activity *>(activity), 
 					 static_cast<LQIO::DOM::ActivityList *>(pActivityList), 
 					 static_cast<LQIO::DOM::ExternalVariable *>(quorum_count), 0 );
@@ -815,21 +815,21 @@ srvn_act_and_join_list ( const void * aTask, void * activity, void * pActivityLi
 void * 
 srvn_act_fork_item ( const void * aTask, void * activity )
 {
-    if ( !aTask || !activity ) return NULL;
+    if ( !aTask || !activity ) return nullptr;
     return LQIO::DOM::act_fork_item( static_cast<const LQIO::DOM::Task *>(aTask), static_cast<LQIO::DOM::Activity *>(activity), 0 );
 }
 
 void * 
 srvn_act_join_item ( const void * aTask, void * activity )
 {
-    if ( !aTask || !activity ) return NULL;
+    if ( !aTask || !activity ) return nullptr;
     return LQIO::DOM::act_join_item( static_cast<const LQIO::DOM::Task *>(aTask), static_cast<LQIO::DOM::Activity *>(activity), 0 );
 }
 
 void * 
 srvn_act_or_fork_list ( const void * aTask, void * probability, void * activity, void * pActivityList)
 {
-    if ( !aTask || !activity ) return NULL;
+    if ( !aTask || !activity ) return nullptr;
     return LQIO::DOM::act_or_fork_list( static_cast<const LQIO::DOM::Task *>(aTask), static_cast<LQIO::DOM::Activity *>(activity), 
 					static_cast<LQIO::DOM::ActivityList *>(pActivityList), 
 					static_cast<LQIO::DOM::ExternalVariable *>(probability), 0 );
@@ -838,7 +838,7 @@ srvn_act_or_fork_list ( const void * aTask, void * probability, void * activity,
 void * 
 srvn_act_or_join_list ( const void * aTask, void * activity, void * pActivityList )
 {
-    if ( !aTask || !activity ) return NULL;
+    if ( !aTask || !activity ) return nullptr;
     return LQIO::DOM::act_or_join_list( static_cast<const LQIO::DOM::Task *>(aTask), static_cast<LQIO::DOM::Activity *>(activity), 
 					      static_cast<LQIO::DOM::ActivityList *>(pActivityList), 0 );
 }
@@ -846,7 +846,7 @@ srvn_act_or_join_list ( const void * aTask, void * activity, void * pActivityLis
 void * 
 srvn_act_loop_list ( const void * aTask, void * count, void * activity, void * pActivityList )
 {
-    if ( !aTask || !activity ) return NULL;
+    if ( !aTask || !activity ) return nullptr;
     return LQIO::DOM::act_loop_list( static_cast<const LQIO::DOM::Task *>(aTask), static_cast<LQIO::DOM::Activity *>(activity), 
 				     static_cast<LQIO::DOM::ActivityList *>(pActivityList), 
 				     static_cast<LQIO::DOM::ExternalVariable *>(count), 0 );
@@ -872,9 +872,9 @@ srvn_act_connect ( const void *, void * src, void * dst )
     LQIO::DOM::ActivityList* dstList = static_cast<LQIO::DOM::ActivityList*>(dst);
     
     /* Make the connection */
-    if (src != NULL) {
+    if (src != nullptr) {
 	srcList->setNext(dstList);
-    } if (dst != NULL) {
+    } if (dst != nullptr) {
 	dstList->setPrevious(srcList);
     }
 }
@@ -937,7 +937,7 @@ void * srvn_int_constant( const int i )
     if ( i > 0 ) {
 	return new LQIO::DOM::ConstantExternalVariable( static_cast<double>(i) );
     } else {
-	return NULL;
+	return nullptr;
     }
 }
 
@@ -951,13 +951,13 @@ void * srvn_real_constant( const double d )
     if ( d > 0. ) {
 	return new LQIO::DOM::ConstantExternalVariable( d );
     } else { 
-	return NULL;
+	return nullptr;
     }
 }
 
 void * srvn_variable( const char * s )
 {
-    return LQIO::DOM::__document->db_build_parameter_variable(s,NULL);
+    return LQIO::DOM::__document->db_build_parameter_variable(s,nullptr);
 }
 
 
@@ -975,7 +975,7 @@ srvn_get_infinity()
 void *
 srvn_null_to_inf( void * arg )
 {
-    if ( arg == NULL ) {
+    if ( arg == nullptr ) {
 	return static_cast<void *>(new LQIO::DOM::ConstantExternalVariable( srvn_get_infinity() ));
     } else {
 	return arg;
@@ -991,7 +991,7 @@ namespace LQIO {
 			    ActivityList * activityList, const void * element )
 	{
 	    /* Make sure we have a task */
-	    if (domTask == NULL || activity == NULL) { return activityList; }
+	    if (domTask == nullptr || activity == nullptr) { return activityList; }
 
 	    /* Configure the activity */
 	    if (activity->isStartActivity()) {
@@ -1013,10 +1013,10 @@ namespace LQIO {
 			    ActivityList * activityList, ExternalVariable * quorum_count, const void * element  )
 	{
 	    /* Make sure we have a task */
-	    if (domTask == NULL || activity == NULL) { return activityList; }
+	    if (domTask == nullptr || activity == nullptr) { return activityList; }
 
 	    /* Create the AND join list */
-	    if (activityList == NULL) {
+	    if (activityList == nullptr) {
 		activityList = new AndJoinActivityList(LQIO::DOM::__document,domTask,quorum_count);
 	    }
 	    activityList->add(activity);
@@ -1033,8 +1033,8 @@ namespace LQIO {
 	act_fork_item ( const Task * domTask, Activity * activity, const void * element  )
 	{
 	    /* Make sure we have a task */
-	    if (domTask == NULL || activity == NULL ) { return NULL; }
-	    ActivityList* activityList = NULL;
+	    if (domTask == nullptr || activity == nullptr ) { return nullptr; }
+	    ActivityList* activityList = nullptr;
 
 	    /* Configure the activity */
 	    activityList = new ActivityList(LQIO::DOM::__document,domTask,ActivityList::Type::FORK);
@@ -1049,8 +1049,8 @@ namespace LQIO {
 	act_join_item ( const Task * domTask, Activity * activity, const void * element  )
 	{
 	    /* Make sure we have a task */
-	    if (domTask == NULL || activity == NULL)  { return NULL; }
-	    ActivityList* activityList = NULL;
+	    if (domTask == nullptr || activity == nullptr)  { return nullptr; }
+	    ActivityList* activityList = nullptr;
 
 	    /* Configure the activity */
 	    activityList = new ActivityList(LQIO::DOM::__document,domTask,ActivityList::Type::JOIN);
@@ -1066,7 +1066,7 @@ namespace LQIO {
 			  ExternalVariable * probability, const void * element )
 	{
 	    /* Make sure we have a task */
-	    if (domTask == NULL || !activity) { return activityList; }
+	    if (domTask == nullptr || !activity) { return activityList; }
 
 	    /* Configure the activity */
 	    double value = 0.;
@@ -1076,7 +1076,7 @@ namespace LQIO {
 		if (activity->isStartActivity()) {
 		    input_error2( ERR_IS_START_ACTIVITY, activity->getTask()->getName().c_str(), activity->getName().c_str() );
 		} else {
-		    if (activityList == NULL) {
+		    if (activityList == nullptr) {
 			activityList = new ActivityList(LQIO::DOM::__document,domTask,ActivityList::Type::OR_FORK);
 		    }
 		    activityList->add(activity, probability);
@@ -1093,10 +1093,10 @@ namespace LQIO {
 			  ActivityList * activityList, const void * element  )
 	{
 	    /* Make sure we have a task */
-	    if (domTask == NULL || activity == NULL) { return activityList; }
+	    if (domTask == nullptr || activity == nullptr) { return activityList; }
 
 	    /* Configure the activity */
-	    if (activityList == NULL) {
+	    if (activityList == nullptr) {
 		activityList = new ActivityList(LQIO::DOM::__document,domTask,ActivityList::Type::OR_JOIN);
 	    }
 	    activityList->add(activity);
@@ -1112,10 +1112,10 @@ namespace LQIO {
 		       LQIO::DOM::ExternalVariable * count, const void * element )
 	{
 	    /* Make sure we have a task */
-	    if (domTask == NULL || activity == NULL) { return activityList; }
+	    if (domTask == nullptr || activity == nullptr) { return activityList; }
 
 	    /* Configure the activity */
-	    if (activityList == NULL) {
+	    if (activityList == nullptr) {
 		activityList = new ActivityList(LQIO::DOM::__document,domTask,ActivityList::Type::REPEAT);
 	    }
 	    activityList->add(activity, count);
@@ -1134,14 +1134,14 @@ bool LQIO::SRVN::load(LQIO::DOM::Document& document, const std::string& input_fi
 	LQIO_in = stdin;
     } else if (!( LQIO_in = fopen( input_filename.c_str(), "r" ) ) ) {
 	std::cerr << LQIO::io_vars.lq_toolname << ": Cannot open input file " << input_filename << " - " << strerror( errno ) << std::endl;
-	return 0;
+	return false;
     } 
     int LQIO_in_fd = fileno( LQIO_in );
 
     struct stat statbuf;
     if ( isatty( LQIO_in_fd ) ) {
 	std::cerr << LQIO::io_vars.lq_toolname << ": Input from terminal is not allowed." << std::endl;
-	return 0;
+	return false;
     } else if ( fstat( LQIO_in_fd, &statbuf ) != 0 ) {
 	std::cerr << LQIO::io_vars.lq_toolname << ": Cannot stat " << input_filename << " - " << strerror( errno ) << std::endl;
 	return false;
