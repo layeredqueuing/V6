@@ -1,6 +1,6 @@
 /* label.cc	-- Greg Franks Wed Jan 29 2003
  * 
- * $Id: label.cc 14137 2020-11-25 18:29:59Z greg $
+ * $Id: label.cc 14138 2020-11-25 18:35:41Z greg $
  */
 
 #include "lqn2ps.h"
@@ -220,7 +220,7 @@ Label::appendDM( const DoubleManip& m )
 Label& 
 Label::appendD( const double aDouble )
 {
-    if ( !isfinite( aDouble ) ) {
+    if ( !std::isfinite( aDouble ) ) {
 	if ( aDouble < 0.0 ) {
 	    _lines.back() << '-'; 
 	}
@@ -469,7 +469,7 @@ LabelEMF::appendS( const std::string& s )
 Label& 
 LabelEMF::appendD( const double aDouble )
 {
-    if ( !isfinite( aDouble ) ) {
+    if ( !std::isfinite( aDouble ) ) {
 	if ( aDouble < 0.0 ) {
 	    appendC( '-' ); 
 	}
