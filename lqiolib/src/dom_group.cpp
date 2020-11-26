@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_group.cpp 14132 2020-11-25 13:11:04Z greg $
+ *  $Id: dom_group.cpp 14144 2020-11-26 19:37:10Z greg $
  *
  *  Created by Martin Mroz on 1/07/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -30,6 +30,7 @@ namespace LQIO {
     
 	Group::~Group()
 	{
+	    if ( _groupShare != nullptr ) delete _groupShare;
 	}
     
 	const Processor* Group::getProcessor() const

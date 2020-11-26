@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_phase.cpp 14132 2020-11-25 13:11:04Z greg $
+ *  $Id: dom_phase.cpp 14144 2020-11-26 19:37:10Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -63,10 +63,10 @@ namespace LQIO {
 	    for ( std::vector<Call*>::iterator call = _calls.begin(); call != _calls.end(); ++call) {
 		delete *call;
 	    }
-	    _calls.clear();
-	    if ( _histogram ) {
-		delete _histogram;
-	    }
+	    if ( _serviceTime != nullptr ) delete _serviceTime;
+	    if ( _thinkTime != nullptr ) delete _thinkTime;
+	    if ( _coeffOfVariationSq != nullptr ) delete _coeffOfVariationSq;
+	    if ( _histogram != nullptr ) delete _histogram;
 	}
 
 	/* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- [Input Values] -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */

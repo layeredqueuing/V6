@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: entity.cc 14141 2020-11-25 20:57:44Z greg $
+ * $Id: entity.cc 14144 2020-11-26 19:37:10Z greg $
  *
  * Everything you wanted to know about a task or processor, but were
  * afraid to ask.
@@ -438,7 +438,7 @@ Entity::deltaUtilization() const
 {
     const double thisUtilization = utilization();
     double delta;
-    if ( isinf( thisUtilization ) && isinf( _lastUtilization ) ) {
+    if ( std::isinf( thisUtilization ) && std::isinf( _lastUtilization ) ) {
 	delta = 0.0;
     } else {
 	delta = thisUtilization - _lastUtilization;
@@ -828,7 +828,7 @@ Entity::openModelInfinity() const
     bool rc = false;
     const Server * station = serverStation();
     for ( unsigned int e = 1; e <= nEntries(); ++e ) {
-	if ( !isfinite( station->R(e,0) ) && station->V(e,0) != 0 && station->S(e,0) != 0 ) {
+	if ( !std::isfinite( station->R(e,0) ) && station->V(e,0) != 0 && station->S(e,0) != 0 ) {
 	    LQIO::solution_error( ERR_ARRIVAL_RATE, station->V(e,0), entryAt(e-1)->name().c_str(), station->mu()/station->S(e,0) );
 	    rc = true;
 	}
@@ -963,7 +963,7 @@ Entity::saveServerResults( const MVASubmodel& submodel, double relax )
 
 	if ( isInClosedModel() && submodel.closedModel ) {
 	    const double tput = submodel.closedModel->entryThroughput( *station, e );
-	    if ( isfinite( tput ) ) {
+	    if ( std::isfinite( tput ) ) {
 		lambda += tput;
 	    } else if ( tput < 0.0 ) {
 		throw std::domain_error( "MVASubmodel::saveServerResults" );

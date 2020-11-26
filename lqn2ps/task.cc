@@ -10,7 +10,7 @@
  * January 2001
  *
  * ------------------------------------------------------------------------
- * $Id: task.cc 14137 2020-11-25 18:29:59Z greg $
+ * $Id: task.cc 14143 2020-11-26 16:49:48Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -531,20 +531,23 @@ Task::addPrecedence( ActivityList * aPrecedence )
  * call graph.  Returns -1 otherwise.  Used by the topological sorter.
  */
 
-int
+Task::root_level_t
 Task::rootLevel() const
 {
-    int level = -1;
+    root_level_t level = root_level_t::IS_NON_REFERENCE;
     for ( std::vector<Entry *>::const_iterator entry = entries().begin(); entry != entries().end(); ++entry ) {
 	const requesting_type callType = (*entry)->isCalled();
 	switch ( callType ) {
 
 	case OPEN_ARRIVAL_REQUEST:	/* Root task, but at lower level */
-	    level = Model::SERVER_LEVEL;
+	    level = root_level_t::HAS_OPEN_ARRIVALS;
 	    break;
 
 	case RENDEZVOUS_REQUEST:	/* Non-root task. 		*/
 	case SEND_NO_REPLY_REQUEST:	/* Non-root task. 		*/
+	    return root_level_t::IS_NON_REFERENCE;
+	    break;
+	    
 	case NOT_CALLED:		/* No operation.		*/
 	    break;
 	}
@@ -1040,7 +1043,7 @@ size_t
 Task::findChildren( CallStack& callStack, const unsigned directPath )
 {
     size_t max_depth = std::max( callStack.size(), level() );
-    const Entry * dstEntry = callStack.back() ? callStack.back()->dstEntry() : 0;
+    const Entry * dstEntry = callStack.back() ? callStack.back()->dstEntry() : nullptr;
 
     setLevel( max_depth ).addPath( directPath );
 
@@ -1161,7 +1164,7 @@ Task::topologicalSort()
 	try {
 	    maxLevel = std::max( maxLevel, anActivity->findActivityChildren( activityStack, forkStack, (*entry), 0, 1, 1.0  ) );
 	}
-	catch ( const activity_cycle& error ) {
+	catch ( const Activity::cycle_error& error ) {
 	    maxLevel = std::max( maxLevel, error.depth()+1 );
 	}
     }
@@ -2199,11 +2202,6 @@ Task::setClientDemand( LQIO::PMIF_Document::Station& station, const std::vector<
 ReferenceTask::ReferenceTask( const LQIO::DOM::Task* dom, const Processor * aProc, const Share * aShare, const std::vector<Entry *>& entries )
     : Task( dom, aProc, aShare, entries )
 {
-}
-
-int ReferenceTask::rootLevel() const
-{
-    return Model::CLIENT_LEVEL;
 }
 
 ReferenceTask *

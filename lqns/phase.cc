@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: phase.cc 14141 2020-11-25 20:57:44Z greg $
+ * $Id: phase.cc 14147 2020-11-26 21:59:05Z greg $
  *
  * Everything you wanted to know about an phase, but were afraid to ask.
  *
@@ -251,7 +251,11 @@ Phase::Phase( const std::string& name )
       _processorCall(nullptr),
       _thinkCall(nullptr),
       _processorEntry(nullptr),
+      _procEntryDOM(nullptr),
+      _procCallDOM(nullptr),
       _thinkEntry(nullptr),
+      _thinkEntryDOM(nullptr),
+      _thinkCallDOM(nullptr),
       _prOvertaking(0.),
       _cfs_delay(0.0),
       _cfs_delay_upperbound(0.0),
@@ -267,7 +271,11 @@ Phase::Phase()
       _processorCall(nullptr),
       _thinkCall(nullptr),
       _processorEntry(nullptr),
+      _procEntryDOM(nullptr),
+      _procCallDOM(nullptr),
       _thinkEntry(nullptr),
+      _thinkEntryDOM(nullptr),
+      _thinkCallDOM(nullptr),
       _prOvertaking(0.),
       _cfs_delay(0.0),
       _cfs_delay_upperbound(0.0),
@@ -282,14 +290,12 @@ Phase::Phase()
 
 Phase::~Phase()
 {
-    if ( _processorCall ) {
-	const LQIO::DOM::Call* callDOM = _processorCall->getDOM();
-	if ( callDOM ) delete callDOM;
-    }
-    if ( _thinkCall ) {
-	const LQIO::DOM::Call* callDOM = _thinkCall->getDOM();
-	if ( callDOM ) delete callDOM;
-    }
+    if ( _processorCall ) delete _processorCall;
+    if ( _procCallDOM != nullptr ) delete _procCallDOM;
+    if ( _procEntryDOM != nullptr ) delete _procEntryDOM;
+/*    if ( _thinkCall ) delete _thinkCall;	Don't do this as it is in the callList */
+    if ( _thinkCallDOM != nullptr ) delete _thinkCallDOM;
+    if ( _thinkEntryDOM != nullptr ) delete _thinkEntryDOM;
 
     /* Release forward links */
     for ( std::set<Call *>::const_iterator call = callList().begin(); call != callList().end(); ++call ) {
@@ -754,14 +760,6 @@ Phase::forward( const Entry * toEntry ) const
 }
 
 
-
-ProcessorCall *
-Phase::newProcessorCall( Entry * procEntry )
-{
-    return new ProcessorCall( this, procEntry );
-}
-
-
 /*
  * Return the sum of all calls from the receiver.  Forwarded calls are
  * not counted because they are pseudo calls from this entry.  Note
@@ -796,7 +794,7 @@ double
 Phase::utilization() const
 {
     const double f = throughput();
-    if ( isfinite( f ) && f > 0.0 ) {
+    if ( std::isfinite( f ) && f > 0.0 ) {
 	const double t = elapsedTime();
 	return f * t;
     } else {
@@ -1460,7 +1458,7 @@ Phase::recalculateDynamicValues()
 double
 Phase::computeVariance()
 {
-    if ( !isfinite( elapsedTime() ) ) {
+    if ( !std::isfinite( elapsedTime() ) ) {
 	_variance = elapsedTime();
     } else switch ( Pragma::variance() ) {
 
@@ -1529,12 +1527,12 @@ Phase::stochastic_phase() const
 	const double blocking_mean = (*call)->wait(); //includes service ph 1
 	// + Positive( (*call)->dstEntry()->elapsedTime(1) );
 	/* mean delay for one of these calls */
-	if ( !isfinite( blocking_mean ) ) {
+	if ( !std::isfinite( blocking_mean ) ) {
 	    return blocking_mean;
 	}
 
 	const double blocking_var = (*call)->variance();		/* BUG_655 */
-	if ( !isfinite( blocking_var ) ) {
+	if ( !std::isfinite( blocking_var ) ) {
 	    return blocking_var;
 	}
 	// this includes variance due to service
@@ -1637,7 +1635,7 @@ Phase::deterministic_phase() const
 
     for ( std::set<Call *>::const_iterator call = callList().begin(); call != callList().end(); ++call ) {
 	const double var = (*call)->variance();
-	if ( isfinite( var ) ) {
+	if ( std::isfinite( var ) ) {
 	    variance += (*call)->fanOut() * (*call)->rendezvous() * var;
 	}
     }
@@ -1710,8 +1708,8 @@ Phase::initProcessor()
 	double nCalls = numberOfSlices();
 		
 	const LQIO::DOM::Document * aDocument = getDOM()->getDocument();
-	_processorEntry = new DeviceEntry( new LQIO::DOM::Entry(aDocument, entry_name.c_str()), Model::__entry.size() + 1,
-					    const_cast<Processor *>( processor ) );
+	_procEntryDOM   = new LQIO::DOM::Entry( aDocument, entry_name );
+	_processorEntry = new DeviceEntry( _procEntryDOM, Model::__entry.size() + 1, const_cast<Processor *>( processor ) );
 	Model::__entry.insert( _processorEntry );
 		
 	_processorEntry->setServiceTime( serviceTime() / nCalls )
@@ -1722,14 +1720,14 @@ Phase::initProcessor()
 	/*
 	 * We may have to change this at some point.  However, we can't do
 	 * priority by class in the analytic solver anyway - only by
-	 * chain.
+	 * chain.  Note - _procCallDOM is NOT stored in the DOM, so we delete it.
 	 */	
 
-	_processorCall = newProcessorCall( _processorEntry );
-	LQIO::DOM::Call* processorCallDom = new LQIO::DOM::Call(aDocument, LQIO::DOM::Call::Type::QUASI_RENDEZVOUS,
-								nullptr, _processorEntry->getDOM(),
-								new LQIO::DOM::ConstantExternalVariable(nCalls));
-	_processorCall->rendezvous( processorCallDom );
+	_processorCall = new ProcessorCall( this, _processorEntry );
+	_procCallDOM = new LQIO::DOM::Call(aDocument, LQIO::DOM::Call::Type::QUASI_RENDEZVOUS,
+					   getDOM(), _processorEntry->getDOM(),
+					   new LQIO::DOM::ConstantExternalVariable(nCalls));
+	_processorCall->rendezvous( _procCallDOM );
     }
 
     /*
@@ -1744,19 +1742,19 @@ Phase::initProcessor()
 	think_entry_name += name();
 
 	const LQIO::DOM::Document * aDocument = getDOM()->getDocument();
-	_thinkEntry = new DeviceEntry(new LQIO::DOM::Entry(aDocument, think_entry_name.c_str()), Model::__entry.size() + 1,
+	_thinkEntryDOM = new LQIO::DOM::Entry( aDocument, think_entry_name );
+	_thinkEntry = new DeviceEntry( _thinkEntryDOM, Model::__entry.size() + 1,
 				       Model::thinkServer );
 	Model::__entry.insert( _thinkEntry );
 		
 	_thinkEntry->setServiceTime(thinkTime()).setCV_sqr(1.0);
 	_thinkEntry->initVariance();
 
-	_thinkCall = newProcessorCall( _thinkEntry );
-	LQIO::DOM::Call* thinkCallDom = new LQIO::DOM::Call(aDocument, LQIO::DOM::Call::Type::QUASI_RENDEZVOUS,
-							    nullptr, _thinkEntry->getDOM(),
-							    new LQIO::DOM::ConstantExternalVariable(1));
-
-	_thinkCall->rendezvous( thinkCallDom );
+	_thinkCall = new ProcessorCall( this, _thinkEntry );
+	_thinkCallDOM = new LQIO::DOM::Call(aDocument, LQIO::DOM::Call::Type::QUASI_RENDEZVOUS,
+					    getDOM(), _thinkEntry->getDOM(),
+					    new LQIO::DOM::ConstantExternalVariable(1));
+	_thinkCall->rendezvous( _thinkCallDOM );
 	addSrcCall( _thinkCall );
     }
 
@@ -1781,21 +1779,20 @@ Phase::initCFSProcessor()
 	think_entry_name += "-";
 	think_entry_name += name();
 	const LQIO::DOM::Document * aDocument = getDOM()->getDocument();
-	_thinkEntry = new DeviceEntry(new LQIO::DOM::Entry(aDocument, think_entry_name.c_str()), Model::__entry.size() + 1,
+	_thinkEntryDOM = new LQIO::DOM::Entry( aDocument, think_entry_name );
+	_thinkEntry = new DeviceEntry( _thinkEntryDOM, Model::__entry.size() + 1,
 				       Model::thinkServer );
 	Model::__entry.insert( _thinkEntry );
 		
 	_thinkEntry->setServiceTime( 0.00001 ).setCV_sqr(1.0);
 	_thinkEntry->initVariance();
 
-	_thinkCall = newProcessorCall( _thinkEntry );
-	LQIO::DOM::Call* thinkCallDom = new LQIO::DOM::Call(aDocument, LQIO::DOM::Call::Type::QUASI_RENDEZVOUS,
-							    nullptr, _thinkEntry->getDOM(),
-							    new LQIO::DOM::ConstantExternalVariable(1));
-
-	_thinkCall->rendezvous( thinkCallDom );
+	_thinkCall = new ProcessorCall( this, _thinkEntry );
+	_thinkCallDOM = new LQIO::DOM::Call(aDocument, LQIO::DOM::Call::Type::QUASI_RENDEZVOUS,
+					    nullptr, _thinkEntry->getDOM(),
+					    new LQIO::DOM::ConstantExternalVariable(1));
+	_thinkCall->rendezvous( _thinkCallDOM );
 	addSrcCall( _thinkCall );
-	//cout<<"Think entry "<<think_entry_name<<" is created. "<<endl;
     }
 
     _cfs_delay=0.00001;

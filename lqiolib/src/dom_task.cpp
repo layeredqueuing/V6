@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_task.cpp 14111 2020-11-20 16:30:03Z greg $
+ *  $Id: dom_task.cpp 14147 2020-11-26 21:59:05Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -78,6 +78,15 @@ namespace LQIO {
 	{
 	    deleteActivities();
 	    deleteActivityLists();
+	    if ( _priority != nullptr ) delete _priority;
+	    if ( _queueLength != nullptr ) delete _queueLength;
+	    if ( _thinkTime != nullptr ) delete _thinkTime;
+	    for ( std::map<const std::string, LQIO::DOM::ExternalVariable *>::const_iterator fan_out = _fanOut.begin(); fan_out != _fanOut.end(); ++fan_out ) {
+		delete fan_out->second;
+	    }
+	    for ( std::map<const std::string, LQIO::DOM::ExternalVariable *>::const_iterator fan_in = _fanIn.begin(); fan_in != _fanIn.end(); ++fan_in ) {
+		delete fan_in->second;
+	    }
 	}
 
 	/* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- [Input Values] -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */
@@ -590,8 +599,14 @@ namespace LQIO {
 	      _resultVarianceHoldingTime(0.),
 	      _resultVarianceHoldingTimeVariance(0.),
 	      _resultHoldingUtilization(0.),
-	      _resultHoldingUtilizationVariance(0.)
+	      _resultHoldingUtilizationVariance(0.),
+	      _histogram(nullptr)
 	{
+	}
+
+	SemaphoreTask::~SemaphoreTask()
+	{
+	    if ( _histogram != nullptr ) delete _histogram;
 	}
 
 	void SemaphoreTask::setInitialState(InitialState state)
@@ -690,10 +705,12 @@ namespace LQIO {
 	    : Task(document, name, SCHEDULE_TIMEOUT, entryList, processor,
 		   queue_length, priority,
 		   n_copies, n_replicas, group ),
+	      _abort(nullptr), _timeout(nullptr),
 	      _resultTimeoutProbability(0.),
 	      _resultSuccessProbability(0.),
 	      _resultTimeoutProbabilityVariance(0.),
-	      _resultSuccessProbabilityVariance(0.)//,
+	      _resultSuccessProbabilityVariance(0.),
+	      _decision(nullptr), _histogram(nullptr)
 	{
 	}
 
@@ -717,10 +734,18 @@ namespace LQIO {
 	}
 
 
+	TimeoutTask::~TimeoutTask()
+	{
+	    if ( _abort != nullptr ) delete _abort;
+	    if ( _timeout != nullptr ) delete _timeout;
+	    if ( _decision != nullptr ) delete _decision;
+	    if ( _histogram != nullptr ) delete _histogram;
+	}
+
+
 	void TimeoutTask::setDecision(Decision * aDecision)
 	{
-	    if (_decision )
-	        return;
+	    if (_decision ) return;
 	    _decision = aDecision;
 
 	    /* update variables */
@@ -833,6 +858,15 @@ namespace LQIO {
 	{
 	}
 
+
+	RetryTask::~RetryTask()
+	{
+	    if ( _sleep != nullptr ) delete _sleep;
+	    if ( _maxRetries != nullptr ) delete _maxRetries;
+	    if ( _abort != nullptr ) delete _abort;
+	    if ( _decision != nullptr ) delete _decision;
+	    if ( _histogram != nullptr ) delete _histogram;
+	}
 
 	void RetryTask::setDecision(Decision * aDecision)
 	{

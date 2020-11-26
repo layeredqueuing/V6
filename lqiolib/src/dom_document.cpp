@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_document.cpp 14132 2020-11-25 13:11:04Z greg $
+ *  $Id: dom_document.cpp 14144 2020-11-26 19:37:10Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -77,21 +77,24 @@ namespace LQIO {
 	Document::~Document() 
 	{
 	    /* Delete all of the processors (deletes tasks) */
-	    std::map<std::string, Processor*>::iterator procIter;
-	    for (procIter = _processors.begin(); procIter != _processors.end(); ++procIter) {
-		delete(procIter->second);
+
+	    for ( std::map<std::string, Processor*>::iterator proc = _processors.begin(); proc != _processors.end(); ++proc ) {
+		delete proc->second;
 	    }
       
 	    /* Make sure that we only delete entries once */
-	    std::map<std::string, Entry*>::iterator entryIter;
-	    for (entryIter = _entries.begin(); entryIter != _entries.end(); ++entryIter) {
-		delete(entryIter->second);
+	    for ( std::map<std::string, Entry*>::iterator entry = _entries.begin(); entry != _entries.end(); ++entry ) {
+		delete entry->second;
 	    }
       
 	    /* Now, delete all of the groups */
-	    std::map<std::string, Group*>::iterator groupIter;
-	    for (groupIter = _groups.begin(); groupIter != _groups.end(); ++groupIter) {
-		delete(groupIter->second);
+	    
+	    for ( std::map<std::string, Group*>::iterator group = _groups.begin(); group != _groups.end(); ++group ) {
+		delete group->second;
+	    }
+
+	    for ( std::map<const char *, ExternalVariable*>::const_iterator var = _controlVariables.begin(); var != _controlVariables.end(); ++var ) {
+		delete var->second;
 	    }
 
 	    __document = nullptr;

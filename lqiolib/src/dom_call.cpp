@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_call.cpp 14132 2020-11-25 13:11:04Z greg $
+ *  $Id: dom_call.cpp 14144 2020-11-26 19:37:10Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -53,9 +53,8 @@ namespace LQIO {
 	Call::~Call()
 	{
 	    /* Delete the variables */
-	    if ( _histogram ) {
-		delete _histogram;
-	    }
+	    if ( _callMean != nullptr ) delete _callMean;
+	    if ( _histogram != nullptr ) delete _histogram;
 	}
     
 	Call * Call::clone() const

@@ -10,7 +10,7 @@
  * November, 1994
  *
  * ------------------------------------------------------------------------
- * $Id: task.cc 14141 2020-11-25 20:57:44Z greg $
+ * $Id: task.cc 14144 2020-11-26 19:37:10Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -90,6 +90,9 @@ Task::~Task()
     }
     for ( std::vector<Activity *>::const_iterator activity = activities().begin(); activity != activities().end(); ++activity ) {
 	delete *activity;
+    }
+    for ( Vector<Server *>::const_iterator station = _clientStation.begin(); station != _clientStation.end(); ++station ) {
+	delete *station;
     }
 }
 
@@ -284,7 +287,7 @@ Task::initPopulation()
     std::set<Task *> sources;		/* Cltn of tasks already visited. */
     _population = countCallers( sources );
 
-    if ( isInClosedModel() && ( _population == 0 || !isfinite( _population ) ) ) {
+    if ( isInClosedModel() && ( _population == 0 || !std::isfinite( _population ) ) ) {
 	LQIO::solution_error( ERR_BOGUS_COPIES, _population, name().c_str() );
     }
     return *this;
@@ -589,7 +592,7 @@ Task::countCallers( std::set<Task *>& reject ) const
 		    delta = static_cast<double>(client->copies());
 		    const_cast<Task *>(this)->isInClosedModel( true );
 		}
-		if ( isfinite( sum ) ) {
+		if ( std::isfinite( sum ) ) {
 		    sum += delta * static_cast<double>(fanIn( client ));
 		}
 
@@ -601,7 +604,7 @@ Task::countCallers( std::set<Task *>& reject ) const
 	}
     }
 
-    if ( !isInfinite() && (sum > copies() || isInOpenModel() || !isfinite( sum ) || hasSecondPhase() ) ) {
+    if ( !isInfinite() && (sum > copies() || isInOpenModel() || !std::isfinite( sum ) || hasSecondPhase() ) ) {
 	sum = static_cast<double>(copies());
     } else if ( isInfinite() && hasSecondPhase() && sum > 0.0 ) {
 	sum = 100000;		/* Should be a pragma. */
@@ -1993,7 +1996,7 @@ ServerTask::configure( const unsigned nSubmodels )
 bool
 ServerTask::hasInfinitePopulation() const
 {
-    return isInfinite() && !isfinite(population());
+    return isInfinite() && !std::isfinite(population());
 }
 
 

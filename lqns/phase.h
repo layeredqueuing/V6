@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: phase.h 14141 2020-11-25 20:57:44Z greg $
+ * $Id: phase.h 14144 2020-11-26 19:37:10Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -274,7 +274,6 @@ protected:
     virtual Call * findOrAddFwdCall( const Entry * anEntry, const Call * fwdCall );
 
     double processorVariance() const;
-    virtual ProcessorCall * newProcessorCall( Entry * procEntry );
 
 private:
     Phase const& addForwardingRendezvous( Call::stack& callStack ) const;
@@ -296,8 +295,12 @@ protected:
     ProcessorCall * _thinkCall;		/* Link to processor.                   */
 
 private:
-    DeviceEntry * _processorEntry;     /*                                      */
-    DeviceEntry * _thinkEntry;         /*                                      */
+    DeviceEntry * _processorEntry;     	/*                                      */
+    LQIO::DOM::Entry * _procEntryDOM;	/* Only for ~Phase			*/
+    LQIO::DOM::Call * _procCallDOM;	/* Only for ~Phase			*/
+    DeviceEntry * _thinkEntry;         	/*                                      */
+    LQIO::DOM::Entry * _thinkEntryDOM;	/* Only for ~Phase			*/
+    LQIO::DOM::Call * _thinkCallDOM;	/* Only for ~Phase			*/
 
     VectorMath<double> _surrogateDelay;	/* Saved old surrogate delay. REP N-R	*/
     Probability _prOvertaking;

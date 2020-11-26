@@ -1,7 +1,7 @@
 /* -*- c++ -*-
  * lqn2ps.h	-- Greg Franks
  *
- * $Id: lqn2ps.h 14135 2020-11-25 18:22:02Z greg $
+ * $Id: lqn2ps.h 14143 2020-11-26 16:49:48Z greg $
  *
  */
 
@@ -380,31 +380,29 @@ struct Options
 
 /* ------------------------------------------------------------------------ */
 
-class class_error : public std::exception 
+class class_error : public std::logic_error
 {
 public:
-    class_error( const std::string& aStr, const char * file, const unsigned line, const char * anError );
+    class_error( const std::string& method, const char * file, const unsigned line, const std::string& error );
     virtual ~class_error() throw() = 0;
-    virtual const char* what() const throw();
-
 private:
-    std::string myMsg;
+    static std::string message( const std::string& method, const char * file, const unsigned line, const std::string& );
 };
 
 
 class subclass_responsibility : public class_error 
 {
 public:
-    subclass_responsibility( const std::string& aStr, const char * file, const unsigned line )
-	: class_error( aStr, file, line, "Subclass responsibility." ) {}
+    subclass_responsibility( const std::string& method, const char * file, const unsigned line )
+	: class_error( method, file, line, "Subclass responsibility." ) {}
     virtual ~subclass_responsibility() throw() {}
 };
 
 class not_implemented  : public class_error 
 {
 public:
-    not_implemented( const std::string& aStr, const char * file, const unsigned line )
-	: class_error( aStr, file, line, "Not implemented." ) {}
+    not_implemented( const std::string& method, const char * file, const unsigned line )
+	: class_error( method, file, line, "Not implemented." ) {}
     virtual ~not_implemented() throw() {}
 };
 
@@ -412,8 +410,8 @@ public:
 class should_not_implement  : public class_error 
 {
 public:
-    should_not_implement( const std::string& aStr, const char * file, const unsigned line )
-	: class_error( aStr, file, line, "Should not implement." ) {}
+    should_not_implement( const std::string& method, const char * file, const unsigned line )
+	: class_error( method, file, line, "Should not implement." ) {}
     virtual ~should_not_implement() throw() {}
 };
 

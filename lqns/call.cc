@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: call.cc 14141 2020-11-25 20:57:44Z greg $
+ * $Id: call.cc 14144 2020-11-26 19:37:10Z greg $
  *
  * Everything you wanted to know about a call to an entry, but were afraid to ask.
  *
@@ -329,7 +329,7 @@ double
 Call::queueingTime() const
 {
     if ( hasRendezvous() ) {
-	if ( isinf( _wait ) ) return _wait;
+	if ( std::isinf( _wait ) ) return _wait;
 	const double q = _wait - elapsedTime();
 	if ( q <= 0.000001 ) {
 	    return 0.0;
@@ -670,7 +670,7 @@ Call::saveILWait( const unsigned k, const unsigned p, const double )
 	    diff = (_wait-eps) * (1- aStation->nILRate[e][k]);
 	}
     } else {
-	if ( isinf( _wait ) && isinf( eps ) ) {
+	if ( std::isinf( _wait ) && std::isinf( eps ) ) {
 	    diff = 0;
 	} else {
 	    diff = (_wait -eps);

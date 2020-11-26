@@ -1,6 +1,6 @@
 /* -*- c++ -*-
  * submodel.C	-- Greg Franks Wed Dec 11 1996
- * $Id: submodel.cc 14141 2020-11-25 20:57:44Z greg $
+ * $Id: submodel.cc 14144 2020-11-26 19:37:10Z greg $
  *
  * MVA submodel creation and solution.  This class is the interface
  * between the input model consisting of processors, tasks, and entries,
@@ -391,7 +391,7 @@ MVASubmodel::rebuild()
 	    for ( unsigned i = 1; i <= threads; ++i ) {
 		k += 1;				// Add one chain.
 
-		if ( isfinite( (*client)->population() ) ) {
+		if ( std::isfinite( (*client)->population() ) ) {
 		    _customers[k] = static_cast<unsigned>((*client)->population());
 		} else {
 		    _customers[k] = 0;
@@ -416,7 +416,7 @@ MVASubmodel::rebuild()
 		for ( unsigned i = 1; i <= threads; ++i ) {
 		    k += 1;
 
-		    if ( isfinite( (*client)->population() ) ) {
+		    if ( std::isfinite( (*client)->population() ) ) {
 			_customers[k] = static_cast<unsigned>((*client)->population()) * (*server)->fanIn(*client);
 		    } else {
 			_customers[k] = 0;
@@ -500,7 +500,7 @@ MVASubmodel::makeChains()
 		k += 1;				// Add one chain.
 
 		(*client)->addClientChain( number(), k );	// Set my chain number.
-		if ( isfinite( (*client)->population() ) ) {
+		if ( std::isfinite( (*client)->population() ) ) {
 		    _customers[k] = static_cast<unsigned>((*client)->population());
 		} else {
 		    _customers[k] = 0;
@@ -539,7 +539,7 @@ MVASubmodel::makeChains()
 		    (*client)->addClientChain( number(), k );
 		    (*server)->addServerChain( k );
 		    _priority[k]  = (*client)->priority();
-		    if ( isfinite( (*client)->population() ) ) {
+		    if ( std::isfinite( (*client)->population() ) ) {
 			_customers[k] = static_cast<unsigned>((*client)->population()) * (*server)->fanIn((*client));
 		    } else {
 			_customers[k] = 0;
@@ -565,7 +565,7 @@ double
 MVASubmodel::nrFactor( const Server * aStation, const unsigned e, const unsigned k ) const
 {
     const double s = aStation->S( e, k, 1 );
-    if ( isfinite( s ) && closedModel ) {  //tomari
+    if ( std::isfinite( s ) && closedModel ) {  //tomari
 	//Solution for replicated models with open arrivals.
 	// See bug # 87.
 

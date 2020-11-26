@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: slice.cc 14141 2020-11-25 20:57:44Z greg $
+ * $Id: slice.cc 14144 2020-11-26 19:37:10Z greg $
  *
  * Everything you wanted to know about a slice, but were afraid to ask.
  *
@@ -154,7 +154,7 @@ Slice_Info::setRates( const double xj, const Probability& prA )
 
     Probability q[7];
 	
-    if ( !isfinite(temp) ) {
+    if ( !std::isfinite(temp) ) {
 	q[0] = 1.0;
 	q[3] = 0.0;
     } else if ( temp ) { 
@@ -166,7 +166,7 @@ Slice_Info::setRates( const double xj, const Probability& prA )
     }
 	
     temp = xj + slice;
-    if ( !isfinite( temp ) ) {
+    if ( !std::isfinite( temp ) ) {
 	q[1] = 0.0;
 	q[5] = 1.0;
     } else if ( temp ) {

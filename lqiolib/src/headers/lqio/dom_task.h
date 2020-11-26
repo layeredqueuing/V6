@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- *  $Id: dom_task.h 14108 2020-11-19 17:15:02Z greg $
+ *  $Id: dom_task.h 14144 2020-11-26 19:37:10Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -17,7 +17,7 @@
 
 namespace LQIO {
     namespace DOM {
-    
+
 	class Activity;
 	class ActivityList;
 	class ExternalVariable;
@@ -48,22 +48,22 @@ namespace LQIO {
 
 	public:
 	    /* Designated initializer for the Task entity */
-	    Task(const Document * document, const std::string& name, const scheduling_type scheduling,  
+	    Task(const Document * document, const std::string& name, const scheduling_type scheduling,
 		 const std::vector<DOM::Entry *>& entryList,
-		 const Processor* processor=NULL, ExternalVariable* queue_length=NULL, ExternalVariable * priority=NULL, 
-		 ExternalVariable* n_copies=NULL, ExternalVariable* n_replicas=NULL,
-		 const Group * group=NULL );
+		 const Processor* processor=nullptr, ExternalVariable* queue_length=nullptr, ExternalVariable * priority=nullptr,
+		 ExternalVariable* n_copies=nullptr, ExternalVariable* n_replicas=nullptr,
+		 const Group * group=nullptr );
 
 	    Task( const Task& );
 	    virtual ~Task();
-      
+
 	    /* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- [Input Values] -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */
 
 	    /* Accessors and Mutators */
 	    const char * getTypeName() const { return __typeName; }
 
 	    const std::vector<Entry*>& getEntryList() const;
-      
+
 	    /* Variable Accessors and Mutators */
 	    unsigned int getQueueLengthValue() const;
 	    ExternalVariable * getQueueLength() const;
@@ -90,7 +90,7 @@ namespace LQIO {
 	    ExternalVariable * getFanIn( const std::string& ) const;
 	    unsigned int getFanInValue( const std::string& ) const;
 	    const std::map<const std::string,ExternalVariable *>& getFanIns() const;
-      
+
 	    /* Access to the "constant" elements */
 	    void setProcessor( Processor * );		// Used for cloning only.
 	    const Processor* getProcessor() const;
@@ -109,10 +109,10 @@ namespace LQIO {
 	    const std::set<ActivityList*>& getActivityLists() const;
 	    void deleteActivityLists();
 	    bool hasAndJoinActivityList() const;
-      
-      
+
+
 	    /* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- [Result Values] -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= */
-      
+
 	    /* Storing the Result Parameters */
 	    unsigned getResultPhaseCount() const;
 	    double getResultPhasePUtilization( const unsigned ) const;
@@ -153,9 +153,9 @@ namespace LQIO {
 
 	private:
 	    Task& operator=( const Task& );
-      
+
 	private:
-      
+
 	    /* Input Variables from the Document */
 	    std::vector<Entry*> _entryList;
 	    ExternalVariable * _queueLength;
@@ -163,7 +163,7 @@ namespace LQIO {
 	    ExternalVariable * _priority;
 	    ExternalVariable * _thinkTime;
 	    Group * _group;
-  	  
+  	
 	    /* Variables for Activities */
 	    std::map<std::string,Activity*> _activities;
 	    std::set<ActivityList *> _precedences;
@@ -171,7 +171,7 @@ namespace LQIO {
 	    /* Variables for replication */
 	    std::map<const std::string, LQIO::DOM::ExternalVariable *> _fanOut;
 	    std::map<const std::string, LQIO::DOM::ExternalVariable *> _fanIn;
-  	  
+  	
 	    /* Computation Results from LQNS */
 	    unsigned int _resultPhaseCount;
 	    double _resultPhaseUtilizations[Phase::MAX_PHASE];
@@ -192,12 +192,13 @@ namespace LQIO {
 	public:
 	    /* Different types of calls */
 	    enum class InitialState { EMPTY, FULL };
-      
-	    SemaphoreTask(const Document * document, const char * name, const std::vector<DOM::Entry *>& entryList, 
-			  const Processor* processor, ExternalVariable* queue_length=NULL, ExternalVariable * priority=NULL, 
-			  ExternalVariable* n_copies=NULL, ExternalVariable* n_replicas=NULL,
-			  const Group * group=NULL );
+
+	    SemaphoreTask(const Document * document, const char * name, const std::vector<DOM::Entry *>& entryList,
+			  const Processor* processor, ExternalVariable* queue_length=nullptr, ExternalVariable * priority=nullptr,
+			  ExternalVariable* n_copies=nullptr, ExternalVariable* n_replicas=nullptr,
+			  const Group * group=nullptr );
 	    SemaphoreTask( const SemaphoreTask& );
+	    virtual ~SemaphoreTask();
 
 	    const InitialState getInitialState() const;
 	    void setInitialState(InitialState);
@@ -236,11 +237,11 @@ namespace LQIO {
 
 	class RWLockTask : public Task {
 	public:
-	    
-	    RWLockTask(const Document * document, const char * name, const std::vector<DOM::Entry *>& entryList, 
-		       const Processor* processor, ExternalVariable* queue_length=NULL, ExternalVariable * priority=NULL, 
-		       ExternalVariable* n_copies=NULL, ExternalVariable* n_replicas=NULL,
-		       const Group * group=NULL );
+	
+	    RWLockTask(const Document * document, const char * name, const std::vector<DOM::Entry *>& entryList,
+		       const Processor* processor, ExternalVariable* queue_length=nullptr, ExternalVariable * priority=nullptr,
+		       ExternalVariable* n_copies=nullptr, ExternalVariable* n_replicas=nullptr,
+		       const Group * group=nullptr );
 	    //  n_copies is the number of concurrent readers
 
 	    RWLockTask( const RWLockTask& );
@@ -262,7 +263,7 @@ namespace LQIO {
 	    virtual double getResultVarianceWriterHoldingTimeVariance() const { return _resultVarianceWriterHoldingTimeVariance; }
 	    virtual RWLockTask& setResultVarianceReaderHoldingTimeVariance( const double resultVarianceReaderHoldingTimeVariance) { _resultVarianceReaderHoldingTimeVariance = resultVarianceReaderHoldingTimeVariance; return *this; }
 	    virtual RWLockTask& setResultVarianceWriterHoldingTimeVariance( const double resultVarianceWriterHoldingTimeVariance) { _resultVarianceWriterHoldingTimeVariance = resultVarianceWriterHoldingTimeVariance; return *this; }
-	    
+	
 	    /* rwlock holding time utilization */
 	    virtual double getResultReaderHoldingUtilization() const { return _resultReaderHoldingUtilization; }
 	    virtual RWLockTask& setResultReaderHoldingUtilization( const double resultReaderHoldingUtilization ) { _resultReaderHoldingUtilization = resultReaderHoldingUtilization; return *this; }
@@ -334,31 +335,32 @@ namespace LQIO {
 	class TimeoutTask : public Task {
 	public:
 
-	    TimeoutTask(const Document * document, const char * name, const std::vector<DOM::Entry *>& entryList, 
-			const Processor* processor, 
-			ExternalVariable *  timeout, ExternalVariable *  abort, 
-			ExternalVariable* queue_length=NULL, ExternalVariable * priority=NULL, 
-			ExternalVariable* n_copies=NULL, ExternalVariable* n_replicas=NULL,
-			const Group * group=NULL );
+	    TimeoutTask(const Document * document, const char * name, const std::vector<DOM::Entry *>& entryList,
+			const Processor* processor,
+			ExternalVariable *  timeout, ExternalVariable *  abort,
+			ExternalVariable* queue_length=nullptr, ExternalVariable * priority=nullptr,
+			ExternalVariable* n_copies=nullptr, ExternalVariable* n_replicas=nullptr,
+			const Group * group=nullptr );
 
-	    TimeoutTask(const Document * document, const char * name, const std::vector<DOM::Entry *>& entryList, 
-			const Processor* processor, 
-			ExternalVariable* queue_length=NULL, ExternalVariable * priority=NULL, 
-			ExternalVariable* n_copies=NULL, ExternalVariable* n_replicas=NULL,
-			const Group * group=NULL );
+	    TimeoutTask(const Document * document, const char * name, const std::vector<DOM::Entry *>& entryList,
+			const Processor* processor,
+			ExternalVariable* queue_length=nullptr, ExternalVariable * priority=nullptr,
+			ExternalVariable* n_copies=nullptr, ExternalVariable* n_replicas=nullptr,
+			const Group * group=nullptr );
 
+	    virtual ~TimeoutTask();
 	    //TimeoutTask( const TimeoutTask& );
-	  	  
-	    virtual void setDecision(Decision * aDecision);// {_decision = aDecision ; }
-	    virtual Decision * getDecision() const { return _decision ; }
+	  	
+	    virtual void setDecision(Decision * aDecision);// {_decision = aDecision; }
+	    virtual Decision * getDecision() const { return _decision; }
 
-	    virtual void setAbort( ExternalVariable *  abort)  ;
-	    virtual void setAbortValue( double abort)  ;
-	    virtual void setTimeout( ExternalVariable *  timeout ) ; 
-	    virtual void setTimeoutValue( double timeout ) ;
-	    virtual ExternalVariable *  getAbort() const ;
-	    virtual double getAbortValue() const ;
-	    virtual ExternalVariable *  getTimeout() const;
+	    virtual void setAbort( ExternalVariable *  abort);
+	    virtual void setAbortValue( double abort);
+	    virtual void setTimeout( ExternalVariable *  timeout );
+	    virtual void setTimeoutValue( double timeout );
+	    virtual ExternalVariable * getAbort() const;
+	    virtual double getAbortValue() const;
+	    virtual ExternalVariable * getTimeout() const;
 	    virtual double getTimeoutValue() const;
 
 
@@ -384,28 +386,27 @@ namespace LQIO {
 	    double _resultTimeoutProbabilityVariance;
 	    double _resultSuccessProbabilityVariance;
 	    Decision * _decision;
-
 	    Histogram* _histogram;
 	};
 
 	class RetryTask : public Task {
 	public:
 
-	    RetryTask(const Document * document, const char * name, const std::vector<DOM::Entry *>& entryList, 
-		      const Processor* processor, 
-		      ExternalVariable * abort, ExternalVariable *  maxreties, 
-		      ExternalVariable * sleeptime, 
-		      ExternalVariable * queue_length=NULL, ExternalVariable * priority=NULL, 
-		      ExternalVariable * n_copies=NULL, ExternalVariable* n_replicas=NULL,
-		      const Group * group=NULL );
+	    RetryTask(const Document * document, const char * name, const std::vector<DOM::Entry *>& entryList,
+		      const Processor* processor,
+		      ExternalVariable * abort, ExternalVariable *  maxreties,
+		      ExternalVariable * sleeptime,
+		      ExternalVariable * queue_length=nullptr, ExternalVariable * priority=nullptr,
+		      ExternalVariable * n_copies=nullptr, ExternalVariable* n_replicas=nullptr,
+		      const Group * group=nullptr );
 
-	    RetryTask(const Document * document, const char * name, const std::vector<DOM::Entry *>& entryList, 
-		      const Processor * processor, 
-		      ExternalVariable * queue_length=NULL, ExternalVariable * priority=NULL, 
-		      ExternalVariable * n_copies=NULL, ExternalVariable* n_replicas=NULL,
-		      const Group * group=NULL );
+	    RetryTask(const Document * document, const char * name, const std::vector<DOM::Entry *>& entryList,
+		      const Processor * processor,
+		      ExternalVariable * queue_length=nullptr, ExternalVariable * priority=nullptr,
+		      ExternalVariable * n_copies=nullptr, ExternalVariable* n_replicas=nullptr,
+		      const Group * group=nullptr );
 	    //RetryTask( const RetryTask& );
-	  	  
+	    ~RetryTask();
 
 	    virtual Decision * getDecision() const { return _decision; }
 	    virtual void setDecision(Decision * aDecision);//{_decision = aDecision;}
@@ -456,7 +457,6 @@ namespace LQIO {
 	    double _resultNumberOfRetriesVariance;
 
 	    Decision * _decision;
-
 	    Histogram* _histogram;
 
 	};

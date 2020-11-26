@@ -1,5 +1,5 @@
 /*  -*- C++ -*-
- * $Id: server.cc 14141 2020-11-25 20:57:44Z greg $
+ * $Id: server.cc 14144 2020-11-26 19:37:10Z greg $
  *
  * Copyright the Real-Time and Distributed Systems Group,
  * Department of Systems and Computer Engineering,
@@ -553,7 +553,7 @@ Server::S( const MVA& solver, const Population& N ) const
 	}
     }
 
-    if ( !isfinite( sumOfV ) ) {							/* BUG_26 */
+    if ( !std::isfinite( sumOfV ) ) {							/* BUG_26 */
 	return 0;
     } else if ( sumOfV > 0.0 ) {
 	return sumOfS / sumOfV;
@@ -1619,7 +1619,7 @@ HVFCFS_Server::r( const unsigned e, const unsigned k, const unsigned p ) const
     if ( service == 0.0 ) {
 	return 0.0;
 
-    } else if ( !isfinite(service) ) {
+    } else if ( !std::isfinite(service) ) {
 	return service;
 
     } else if (getMaxCustomers(e, k) == 1.){
