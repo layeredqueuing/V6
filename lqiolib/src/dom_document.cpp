@@ -15,6 +15,7 @@
 #include <cstdlib>
 #include <cmath>
 #include <algorithm>
+#include <numeric>
 #include "glblerr.h"
 #if HAVE_LIBEXPAT
 #include "expat_document.h"
@@ -279,22 +280,6 @@ namespace LQIO {
 	    }
 	}
     
-	const std::string* Document::getTaskNames(unsigned& count) const
-	{
-	    /* Copy all of the keys */
-	    count = _tasks.size();
-	    std::string* names = new std::string[_tasks.size()+1];      
-	    std::map<std::string, Task*>::const_iterator iter;
-	    int i = 0;
-      
-	    /* Copy in each of the processors names to the list */
-	    for (iter = _tasks.begin(); iter != _tasks.end(); ++iter) {
-		names[i++] = iter->first;
-	    }
-      
-	    return names;
-	}
-    
 	const std::map<std::string,Task*>& Document::getTasks() const
 	{
 	    /* Return the pointer */
@@ -426,29 +411,21 @@ namespace LQIO {
     
 	bool Document::areAllExternalVariablesAssigned() const
 	{
-	    /* Check to make sure all external variables were set */
-	    for (std::map<std::string, SymbolExternalVariable*>::const_iterator iter = _variables.begin(); iter != _variables.end(); ++iter) {
-		SymbolExternalVariable* current = iter->second;
-		if (current->wasSet() == false) {
-		    return false;
-		}
-	    }
-      
-	    return true;
+	    return std::all_of( _variables.begin(), _variables.end(), &Document::var_was_set );
 	}
     
 	std::vector<std::string> Document::getUndefinedExternalVariables() const
 	{
-	    /* Returns a list of all undefined external variables as a string */
 	    std::vector<std::string> names;
-	    for (std::map<std::string, SymbolExternalVariable*>::const_iterator iter = _variables.begin(); iter != _variables.end(); ++iter) {
-		SymbolExternalVariable* current = iter->second;
-		if (current->wasSet() == false) {
-		    names.push_back(iter->first);
-		}
-	    }
+	    return std::accumulate( _variables.begin(), _variables.end(), names, &Document::var_was_not_set );
+	}
+
+	std::vector<std::string>& Document::var_was_not_set( std::vector<std::string>& names, const std::pair<std::string, SymbolExternalVariable*>& var )
+	{
+	    if ( !var.second->wasSet() ) names.push_back(var.first);
 	    return names;
 	}
+	
     
 	void Document::setLQXProgramText(const std::string& program)
 	{

@@ -62,7 +62,6 @@ namespace LQIO {
 	    Processor* getProcessorByName(const std::string& name) const;
 	    void addTaskEntity(Task* task);
 	    Task* getTaskByName(const std::string& name) const;
-	    const std::string* getTaskNames(unsigned& count) const;
 	    void addEntry(Entry* entry);
 	    Entry* getEntryByName(const std::string& name) const;
 	    void addGroup(Group* group);
@@ -220,7 +219,9 @@ namespace LQIO {
 	private:
 	    const double getValue( const char * ) const;
 	    const ExternalVariable * get( const char * ) const;
-
+	    static bool var_was_set( const std::pair<std::string, SymbolExternalVariable*>& var ) { return var.second->wasSet(); }
+	    static std::vector<std::string>& var_was_not_set( std::vector<std::string>& names, const std::pair<std::string, SymbolExternalVariable*>& var );
+	    
 	public:
 	    /* Names of document attributes */
 	    static const char * XComment;
