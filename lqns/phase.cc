@@ -1770,9 +1770,9 @@ Phase::initProcessor()
 void
 Phase::initCFSProcessor()
 {	
-    if (! owner()->getProcessor()->isCFSserver() ) return;
+    if ( !owner()->getProcessor()->isCFSserver() ) return;
 
-    if ( ! hasThinkTime() ) {
+    if ( !hasThinkTime() ) {
 
 	std::string think_entry_name;
 	think_entry_name = Model::thinkServer->name();
