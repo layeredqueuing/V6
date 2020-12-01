@@ -1,6 +1,6 @@
 /* model.cc	-- Greg Franks Mon Feb  3 2003
  *
- * $Id: model.cc 14143 2020-11-26 16:49:48Z greg $
+ * $Id: model.cc 14153 2020-11-30 18:03:53Z greg $
  *
  * Load, slice, and dice the lqn model.
  */
@@ -969,8 +969,8 @@ Model::topologicalSort()
 	    ) continue;
 
 	try {
-	    CallStack callStack;
-	    if ( (*task)->rootLevel() == Task::HAS_OPEN_ARRIVALS ) callStack.push_back( nullptr );
+	    CallStack callStack;	/* Open arrivals start at level 1 */
+	    if ( (*task)->rootLevel() == Task::root_level_t::HAS_OPEN_ARRIVALS ) callStack.push_back( nullptr );
 	    max_depth = std::max( (*task)->findChildren( callStack, i ), max_depth );
 	}
 	catch( const Call::cycle_error& error ) {

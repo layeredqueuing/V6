@@ -1,4 +1,4 @@
-/* $Id: para_protos.h 14125 2020-11-24 19:53:30Z greg $ */
+/* $Id: para_protos.h 14153 2020-11-30 18:03:53Z greg $ */
 
 /************************************************************************/
 /*	para_protos.h - PARASOL library prototype and macro file	*/
@@ -999,7 +999,8 @@ SYSCALL	ps_record_stat2(
 	  /*	return(BAD_PARAM("stat")); */
 	  return(SYSERR);
 
-	switch((sp = stat_ptr(stat))->type) {
+	sp = stat_ptr(stat);
+	switch(sp->type) {
 	
 	case SAMPLE:	
 		(sp->values.sam.count)++;

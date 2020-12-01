@@ -1,4 +1,4 @@
-/* $Id: para_library.c 14126 2020-11-24 21:25:31Z greg $ */
+/* $Id: para_library.c 14153 2020-11-30 18:03:53Z greg $ */
 
 /************************************************************************/
 /*	para_library.c - PARASOL library source file			*/
@@ -495,11 +495,11 @@ SYSCALL	ps_create2(
 	tp = ps_task_ptr(task);			/* task pointer		*/
 
 #if	HAVE_MAKECONTEXT && !defined(__OSX_AVAILABLE_BUT_DEPRECATED) && !defined(__POWERPC__)
-	stacksize = (unsigned long)(stackscale * (double)0xC000);	/* lqsim uses about 12,000.  32,000 should be enough */
+	stacksize = (unsigned long)(stackscale * (double)0x80000);	/* lqsim uses about 12,000.  32,000 should be enough */
 #elif	HAVE_SIGALTSTACK && !_WIN32 && !_WIN64
-	stacksize = (unsigned long)(stackscale * (double)0x10000);	/* punt... */
+	stacksize = (unsigned long)(stackscale * (double)0x80000);	/* punt... */
 #else
-	stacksize = (unsigned long)(stackscale * (double)sp_dss) + 0x100;
+	stacksize = (unsigned long)(stackscale * (double)sp_dss) + 0x1000;
 	stacksize -= stacksize % sizeof(double);
 
 /* 	Two step test necessary because of gcc bug!			*/
@@ -1245,7 +1245,9 @@ SYSCALL	ps_suspend(
 
 	if(task >= ps_task_tab.tab_size || task < 1)
 		return(BAD_PARAM("task"));
-	switch(old_state = (tp = ps_task_ptr(task))->state) {
+	tp = ps_task_ptr(task);
+	old_state = tp->state;
+	switch(old_state) {
 
 	case TASK_SYNC:
 		SET_TASK_STATE(tp, TASK_SYNC_SUSPEND);
@@ -2833,7 +2835,8 @@ SYSCALL	ps_get_stat(
 	if(stat < 0 || stat >= ps_stat_tab.used)
 		return(BAD_PARAM("stat"));
 
-	switch((sp = stat_ptr(stat))->type) {
+	sp = stat_ptr(stat);
+	switch(sp->type) {
 
 	case SAMPLE:
 		
@@ -2897,7 +2900,8 @@ SYSCALL	ps_open_stat(
 		ps_abort("Insufficient memory");
 	strcpy(sp->name, name);
 	sp->resid = 0.0;
-	switch (sp->type = type) {
+	sp->type = type;
+	switch (type) {
 
 	case SAMPLE:
 		sp->values.sam.count = 0;
@@ -2977,7 +2981,8 @@ SYSCALL	ps_add_stat(
 	if(stat < 0 || stat >= ps_stat_tab.used)
 		return(BAD_PARAM("stat"));
 
-	switch((sp = stat_ptr(stat))->type) {
+	sp = stat_ptr(stat);
+	switch(sp->type) {
 	
 	case SAMPLE:	
 		sp->resid += value;
@@ -3010,7 +3015,8 @@ SYSCALL	ps_reset_stat(
 	if(stat < 0 || stat >= ps_stat_tab.used)
 		return(BAD_PARAM("stat"));
 
-	switch((sp = stat_ptr(stat))->type) {
+	sp = stat_ptr(stat);
+	switch(sp->type) {
 
 	case SAMPLE:
 		sp->values.sam.count = 0;
@@ -3122,7 +3128,8 @@ SYSCALL	ps_record_stat2(
 	  /*	return(BAD_PARAM("stat")); */
 	  return(SYSERR);
 
-	switch((sp = stat_ptr(stat))->type) {
+	sp = stat_ptr(stat);
+	switch(sp->type) {
 	
 	case SAMPLE:	
 		(sp->values.sam.count)++;
@@ -3782,6 +3789,7 @@ SYSCALL	ps_run_parasol(
 	init_table(&ps_pool_tab, DEFAULT_MAX_POOLS, sizeof(ps_buf_t));
 	init_table(&ps_dye_tab, DEFAULT_MAX_DYES, sizeof(ps_dye_t));
 
+	memset(&d_context,0,sizeof(mctx_t));	/* driver context	*/
 
 /*	Seed the random number generator 				*/
 

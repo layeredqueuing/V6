@@ -9,7 +9,7 @@
 /*
  * Input processing.
  *
- * $Id: model.cc 14131 2020-11-25 02:17:53Z greg $
+ * $Id: model.cc 14153 2020-11-30 18:03:53Z greg $
  */
 
 /* Debug Messages for Loading */
@@ -83,7 +83,7 @@ bool deferred_exception = false;	/* domain error detected during run.. throw aft
  */
 
 Model::Model( LQIO::DOM::Document* document, const std::string& input_file_name, const std::string& output_file_name ) 
-    : _document(document), _input_file_name(input_file_name), _output_file_name(output_file_name), _parameters()
+    : _document(document), _input_file_name(input_file_name), _output_file_name(output_file_name), _parameters(), _confidence(0.0)
 {
     __model = this;
 
@@ -334,7 +334,7 @@ Model::create()
  */
 
 void
-Model::print( const bool valid, const double confidence, const bool backup )
+Model::print()
 {
     /* Parasol statistics if desired */
 
@@ -449,10 +449,10 @@ Model::print( const bool valid, const double confidence, const bool backup )
  */
 
 void
-Model::print_intermediate( const bool valid, const double confidence )
+Model::print_intermediate()
 {
-    _document->setResultConvergenceValue(confidence)
-	.setResultValid(valid)
+    _document->setResultConvergenceValue(_confidence)
+	.setResultValid(_confidence <= _parameters._precision)
 	.setResultIterations(number_blocks);
 
     const std::string directoryName = createDirectory();
@@ -554,12 +554,12 @@ Model::print_raw_stats( FILE * output ) const
  */
 
 void 
-Model::insertDOMResults( const bool valid, const double confidence )
+Model::insertDOMResults()
 {
     /* Insert general information about simulation run */
 
-    _document->setResultConvergenceValue(confidence)
-	.setResultValid(valid)
+    _document->setResultConvergenceValue(_confidence)
+	.setResultValid( _confidence <= _parameters._precision || _parameters._precision == 0.0 )
 	.setResultIterations(number_blocks);
 
     LQIO::DOM::CPUTime stop_time;
@@ -686,6 +686,25 @@ Model::start()
 
     deferred_exception = false;
     ps_run_parasol( _parameters._run_time+1.0, _parameters._seed, simulation_flags );	/* Calls ps_genesis */
+
+    /*
+     * Run completed.
+     * Print final results
+     */
+
+    print();
+    if ( _confidence > _parameters._precision && _parameters._precision > 0.0 ) {
+	LQIO::solution_error( ADV_PRECISION, _parameters._precision, _parameters._block_period * number_blocks + _parameters._initial_delay, _confidence );
+    }
+    if ( messages_lost ) {
+	for ( std::set<Task *,ltTask>::const_iterator nextTask = task.begin(); nextTask != task.end(); ++nextTask ) {
+	    const Task * cp = *nextTask;
+	    if ( cp->has_lost_messages() )  {
+		LQIO::solution_error( LQIO::ADV_MESSAGES_DROPPED, cp->name() );
+	    }
+	}
+    }
+    
     if ( check_stacks ) {
 #if HAVE_MCHECK
 	mcheck_check_all();
@@ -695,7 +714,7 @@ Model::start()
     }
 
     for ( unsigned i = 1; i <= total_tasks; ++i ) {
-	Instance * ip = object_tab[i];
+	Instance * ip = object_tab.at(i);
 	if ( !ip ) continue;
 	delete ip;
 	object_tab[i] = 0;
@@ -811,9 +830,7 @@ Model::run( int task_id )
 	     * Accumulate statistical data.
 	     */
 
-	    double confidence = 0.0;
-	    bool valid = false;		/* Results valid? 		*/
-	    bool backup = true;		/* Only back up a file once. 	*/
+	    bool valid = false;
 	    for ( number_blocks = 1; !valid && number_blocks <= _parameters._max_blocks; number_blocks += 1 ) {
 	    
 		if ( verbose_flag ) {
@@ -821,47 +838,30 @@ Model::run( int task_id )
 		}
 
 		ps_sleep( _parameters._block_period );
-		if ( deferred_exception ) throw std::runtime_error( "terminating" );
 		accumulate_data();
 
 		if ( number_blocks > 2 ) {
-		    confidence = rms_confidence();
+		    _confidence = rms_confidence();
 		    if ( verbose_flag ) {
-			(void) fprintf( stderr, "[%.2g]", confidence );
+			(void) fprintf( stderr, "[%.2g]", _confidence );
 			if ( number_blocks % 10 == 0 ) {
 			    (void) putc( '\n', stderr );
 			}
 		    }
-		    valid = ( confidence < _parameters._precision );
+		    valid = _confidence <= _parameters._precision;
 		}
 
-		insertDOMResults( valid || _parameters._precision == 0.0, confidence );
+		insertDOMResults();
 
 		if ( !valid && print_interval > 0 && number_blocks % print_interval == 0 ) {
-		    print_intermediate( valid, confidence );
-		    backup = false;
+		    print_intermediate();
 		}
+
+		if ( deferred_exception ) throw std::runtime_error( "terminating" );
 	    }
 
 	    if ( verbose_flag || trace_driver ) (void) putc( '\n', stderr );
 
-	    /*
-	     * Run completed.
-	     * Print final results
-	     */
-
-	    print( (valid || _parameters._precision == 0.0), confidence, backup );
-	    if ( !valid && _parameters._precision > 0.0 ) {
-		LQIO::solution_error( ADV_PRECISION, _parameters._precision, _parameters._block_period * number_blocks + _parameters._initial_delay, confidence );
-	    }
-	    if ( messages_lost ) {
-		for ( std::set<Task *,ltTask>::const_iterator nextTask = task.begin(); nextTask != task.end(); ++nextTask ) {
-		    const Task * cp = *nextTask;
-		    if ( cp->has_lost_messages() )  {
-			LQIO::solution_error( LQIO::ADV_MESSAGES_DROPPED, cp->name() );
-		    }
-		}
-	    }
 	    rc = true;
 	}
     }

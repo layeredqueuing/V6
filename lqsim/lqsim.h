@@ -1,3 +1,4 @@
+/* -*- c++ -*- */
 /************************************************************************/
 /* Copyright the Real-Time and Distributed Systems Group,		*/
 /* Department of Systems and Computer Engineering,			*/
@@ -13,7 +14,7 @@
  *
  * $URL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqsim/lqsim.h $
  *
- * $Id: lqsim.h 13831 2020-09-18 12:51:41Z greg $
+ * $Id: lqsim.h 14153 2020-11-30 18:03:53Z greg $
  */
 
 #if defined(HAVE_CONFIG_H)

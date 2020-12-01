@@ -10,7 +10,7 @@
 /*
  * Input output processing.
  *
- * $Id: instance.cc 14131 2020-11-25 02:17:53Z greg $
+ * $Id: instance.cc 14153 2020-11-30 18:03:53Z greg $
  */
 
 /*
@@ -41,7 +41,7 @@
 
 
 volatile int client_init_count = 0;	/* Semaphore for -C...*/
-Instance * object_tab[MAX_TASKS];	/* object table		*/
+std::vector<Instance *> object_tab(MAX_TASKS+1);	/* object table		*/
 
 Instance::Instance( Task * cp, const char * task_name, long task_id )
     : r_e_execute(-1),

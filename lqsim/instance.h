@@ -2,7 +2,7 @@
  * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqsim/instance.h $
  * Global vars for simulation.
  *
- * $Id: instance.h 13351 2018-06-25 15:42:29Z greg $
+ * $Id: instance.h 14153 2020-11-30 18:03:53Z greg $
  */
 
 /************************************************************************/
@@ -18,6 +18,7 @@
 #ifndef	INSTANCE_H
 #define INSTANCE_H
 
+#include <vector>
 #include "task.h"
 
 class Entry;
@@ -366,5 +367,5 @@ public:
     void server_cycle_retry(  long, Message * msg, bool reschedule );
 
 };
-extern Instance *object_tab[MAX_TASKS];	/* object table		*/
+extern std::vector<Instance *> object_tab;	/* object table		*/
 #endif

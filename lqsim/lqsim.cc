@@ -7,9 +7,10 @@
 /************************************************************************/
 
 /*
- * $Id: lqsim.cc 14133 2020-11-25 13:51:31Z greg $
+ * $Id: lqsim.cc 14153 2020-11-30 18:03:53Z greg $
  */
 
+#define STACK_TESTING
 
 #include "lqsim.h"
 #include <cstdlib>
@@ -152,7 +153,7 @@ static const struct option longopts[] =
     { "debug-lqx",        no_argument,       0, 256+'l' },
     { "debug-xml",        no_argument,       0, 256+'x' },
     { "debug-json",	  no_argument,	     0, 256+'j' },
-#if STACK_TESTING
+#if defined(STACK_TESTING)
     { "check-stacks",	  no_argument,	     0, 256+'s' },
 #endif
     { 0, 0, 0, 0 }
@@ -195,7 +196,7 @@ static const char * opthelp[]  = {
     /* "debug-lqx"	*/    "Output debugging information while parsing LQX input.",
     /* "debug-xml"	*/    "Output debugging information while parsing XML input.",
     /* debug-json"	*/    "Output debugging information while parsing JSON input.",
-#if STACK_TESTING
+#if defined(STACK_TESTING)
     /* check-stacks	*/    "Check stack size after simulation run.",
 #endif
     0
@@ -334,7 +335,7 @@ main( int argc, char * argv[] )
     LQIO::io_vars.init( VERSION, basename( argv[0] ), severity_action, local_error_messages, LSTLCLERRMSG-LQIO::LSTGBLERRMSG );
 
     command_line = LQIO::io_vars.lq_toolname;
-    (void) sscanf( "$Date: 2020-11-25 08:51:31 -0500 (Wed, 25 Nov 2020) $", "%*s %s %*s", copyright_date );
+    (void) sscanf( "$Date: 2020-11-30 13:03:53 -0500 (Mon, 30 Nov 2020) $", "%*s %s %*s", copyright_date );
     stddbg    = stdout;
 
     /* Stuff set from the input file.				*/
@@ -494,7 +495,6 @@ main( int argc, char * argv[] )
 		    override_print_int = true;
 		}
 		break;
-		break;
 		
 	    case 'o':
 		output_file = optarg;
@@ -549,7 +549,7 @@ main( int argc, char * argv[] )
 		fprintf(stdout, "\ndebug interactive stepping option is turned on\n" ) ; 
 		break;
 			
-#if STACK_TESTING
+#if defined(STACK_TESTING)
 	    case 256+'s':
 		check_stacks = true;
 		break;
