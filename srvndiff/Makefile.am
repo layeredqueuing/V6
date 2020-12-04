@@ -1,11 +1,11 @@
 #
-# $Id: Makefile.am 13136 2017-11-01 02:15:35Z greg $
+# $Id: Makefile.am 14160 2020-12-03 23:12:45Z greg $
 #----------------------------------------------------------------------
 
 AUTOMAKE_OPTIONS = foreign
 ACLOCAL_AMFLAGS=-I ../config
 AM_CPPFLAGS	= -I..
-srvndiff_CXXFLAGS = -Wall -Wno-format -Wno-format-security
+srvndiff_CXXFLAGS = -std=c++11 -Wall -Wno-format -Wno-format-security
 bin_PROGRAMS 	= srvndiff
 srvndiff_SOURCES = srvndiff.cc symtbl.cc getopt2.cc srvn_result_scan.l srvn_result_gram.y commandline.cc confidence_intervals.cc error.cc srvn_results.cc getsbopt.cc parseable.cc json_document.cc
 noinst_HEADERS  = confidence_intervals.h commandline.h config.h error.h expat_document.h getopt2.h getsbopt.h srvndiff.h srvn_result_gram.h srvn_results.h symtbl.h parseable.h json_document.h

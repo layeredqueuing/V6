@@ -1,6 +1,6 @@
 /* srvn2eepic.c	-- Greg Franks Sun Jan 26 2003
  *
- * $Id: main.cc 14143 2020-11-26 16:49:48Z greg $
+ * $Id: main.cc 14163 2020-12-04 16:08:10Z greg $
  */
 
 #include "lqn2ps.h"
@@ -10,13 +10,7 @@
 #include <cmath>
 #include <cstring>
 #include <sstream>
-#if HAVE_IEEEFP_H
-#include <ieeefp.h>
-#endif
 #include <libgen.h>
-#if !HAVE_GETSUBOPT
-#include <lqio/getsbopt.h>
-#endif
 #include <lqio/dom_object.h>
 #include <lqio/json_document.h>
 #include "layer.h"

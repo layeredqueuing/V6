@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: model.cc 14141 2020-11-25 20:57:44Z greg $
+ * $Id: model.cc 14159 2020-12-03 18:00:47Z greg $
  *
  * Layer-ization of model.  The basic concept is from the reference
  * below.  However, model partioning is more complex than task vs device.
@@ -1155,13 +1155,13 @@ Model::createDirectory() const
 unsigned
 Model::topologicalSort()
 {
-    Call::stack callStack;
     unsigned max_depth = 0;
     static const NullCall null_call;				/* Place holder */
 
     /* Only do reference tasks or those with open arrivals */
     
     for ( std::set<Task *>::const_iterator task = __task.begin(); task != __task.end(); ++task ) {
+	Call::stack callStack;
 	switch ( (*task)->rootLevel() ) {
 	case Task::root_level_t::IS_NON_REFERENCE: continue;
 	case Task::root_level_t::HAS_OPEN_ARRIVALS: callStack.push_back(&null_call); break;	/* Open arrivals start at 1 */

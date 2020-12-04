@@ -10,7 +10,7 @@
 /************************************************************************/
 
 /*
- * $Id: srvndiff.h 14000 2020-10-25 12:50:53Z greg $
+ * $Id: srvndiff.h 14161 2020-12-04 03:20:30Z greg $
  */
 
 #if	!defined(SRVNDIFF_H)
@@ -306,11 +306,9 @@ extern std::map<int, std::set<int> > proc_task_tab;		/* Input mapping */
 extern unsigned pass;				/* src = 0,1, dst = 2 */
 
 void set_max_phase( const unsigned p );
-unsigned int find_or_add_processor( const char * processor, const char * task );
 unsigned int find_or_add_processor( const char * processor );
 unsigned int find_or_add_group( const char * group );
 unsigned int find_or_add_task( const char * task );
-unsigned int find_or_add_entry( const char * task, const char * entry );
 unsigned int find_or_add_entry( const char * name );
 unsigned int find_or_add_activity( const char * task, const char * name );
 

@@ -12,14 +12,12 @@
  * Comparison of srvn output results.
  * By Greg Franks.  August, 1991.
  *
- * $Id: srvndiff.cc 14121 2020-11-24 15:04:43Z greg $
+ * $Id: srvndiff.cc 14163 2020-12-04 16:08:10Z greg $
  */
 
 #define DIFFERENCE_MODE	1
 
-#if defined(HAVE_CONFIG_H)
-#include <config.h>
-#endif
+#include "config.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstdarg>
@@ -29,6 +27,7 @@
 #include <algorithm>
 #include <string>
 #include <cassert>
+#include <regex>
 #if HAVE_FENV_H && defined(DEBUG)
 #if (defined(__GNUC__) && defined(linux)) || (defined(__INTEL_COMPILER) && (__INTEL_COMPILER >= 700))
 #define __USE_GNU
@@ -39,11 +38,6 @@
 #include <glob.h>
 #else
 #include <dirent.h>
-#endif
-#if HAVE_REGEX_H
-extern "C" {
-#include <regex.h>
-}
 #endif
 #if HAVE_IEEEFP_H
 #include <ieeefp.h>
@@ -71,16 +65,6 @@ extern "C" {
 #include "json_document.h"
 #include "srvndiff.h"
 #include "parseable.h"
-
-#if	!HAVE_FINITE
-#define finite(d) (1)
-#elif defined(__GNUC__) || (defined(__INTEL_COMPILER) && (__INTEL_COMPILER >= 700))
-
-/*
- * Curious --- finite is found in libm, but NOT defined in a .h file.
- */
-extern int finite( double );
-#endif
 
 extern "C" int resultdebug;
 extern "C" int resultlineno;	/* Line number of current parse line in input file */
@@ -125,9 +109,6 @@ typedef void (*forwarding_waiting_func)( const result_str_t result, const unsign
 					 unsigned i, unsigned k, std::vector<stats_buf>*, ... );
 typedef void (*activity_waiting_func)( const result_str_t result, const unsigned passes,
 				       unsigned i, unsigned k, std::vector<stats_buf>*, ... );
-#if HAVE_REGEX_H && HAVE_REGCOMP
-static bool regexec_check( int, regex_t * );
-#endif
 
 /*
  * We use the mean, abs and rms total_error arrays for
@@ -255,7 +236,7 @@ std::map<int, activity_info> activity_tab[MAX_PASS];
 std::map<int, std::map<int, join_info_t> > join_tab[MAX_PASS];
 std::map<int, std::map<int, ot *> > overtaking_tab[MAX_PASS];
 std::map<int, std::set<int> > task_entry_tab;	/* Input mapping */
-std::map<int, std::set<int> > proc_task_tab;		/* Input mapping */
+std::map<int, std::set<int> > proc_task_tab;	/* Input mapping */
 
 unsigned pass;				/* src = 0,1, dst = 2 */
 static char header[LINE_WIDTH];
@@ -330,15 +311,14 @@ static const char * separator_format	= " ";
 static int separator_width	= 1;
 static const char * rms_format		= "%-*s %-12.11s%-12.11s";
 
-static const char * aggregate_opts[] = {
-#define	AGGR_TASK	0
-    "task",
-#define	AGGR_PROC	1
+/* See symtbl.h */
+static const char * st_namespace_names[] = {
     "processor",
-#define	AGGR_ENTRY	2
+    "group",
+    "task",
     "entry",
-#define LAST_AGGREGATE	3
-    0
+    "activity",
+    nullptr
 };
 
 static const char * format_opts[] = {
@@ -398,7 +378,6 @@ static bool print_results_only 		= false;
 static bool print_rms_error_only 	= false;
 static bool print_total_rms_error 	= true;
 static bool print_totals_only 		= false;
-static bool normalize_processor_util	= false;
 
 static bool ignore_invalid_result_error = false;
 
@@ -413,12 +392,7 @@ static unsigned file_name_width = 12;
 static bool verbose_flag = false;
 bool no_replication = false;
 
-#if HAVE_GLOB
-static const char * file_pattern = "*";		/* GLOB style pattern */
-#elif HAVE_REGEX_H
-static regex_t file_pattern;
-#endif
-static bool file_pattern_flag = false;
+static std::string file_pattern;
 static FILE * list_of_files = 0;
 
 static struct {
@@ -430,7 +404,6 @@ static struct {
     const bool * value;
 } flag_info[] = {
     { "files",                       '@', false, required_argument, "List of files for input.", nullptr },
-    { "results",                     'A', true,  no_argument,       "Print all/no results.", nullptr },
     { "no-confidence-intervals",     'C', false, no_argument, 	    "Print confidence intervals.", &print_confidence_intervals },
 #if DIFFERENCE_MODE
     { "difference",                  'D', false, no_argument,       "Output absolute difference between two files in parseable output format.", nullptr },
@@ -441,16 +414,15 @@ static struct {
     { "ignore-errors",               'I', false, no_argument,       "Ignore invalid input file errors.", &ignore_invalid_result_error },
     { "file-label",                  'L', false, required_argument, "File label.", nullptr },
     { "mean-absolute-errors",        'M', false, no_argument,       "Print mean absolute values errors.", &print_error_absolute_value },
-    { "normalize-utilization",       'P', false, no_argument,       "Normalize processor utiliation.", &normalize_processor_util },
     { "quiet",                       'Q', false, no_argument,       "Quiet - print only if differences found.", &print_quiet },
     { "rms-errors",                  'R', false, no_argument,       "Print RMS errors only.", &print_rms_error_only },
     { "error-threshold",             'S', false, required_argument, "Set error threShold for output to N.n.", nullptr },
     { "total-rms-errors",            'T', false, no_argument,       "Print total RMS errors.", &print_total_rms_error },
     { "totals-only",                 'U', false, no_argument,       "Print totals only.", &print_totals_only },
     { "version",                     'V', false, no_argument,       "Print tool Version.", &print_copyright },
-    { "rwlock-utilization",	     'W', true,  no_argument,       "Print rwlock utilization.", &print_rwlock_util },
     { "exclude",                     'X', false, required_argument, "Exclude <obj> with <regex> from results.  Object can be task, processor, or entry.", nullptr },
-    { "aggregate",                   'a', false, required_argument, "Aggregate results for <obj> using <regex>.  Object is either task or processor.", nullptr },
+    { "include",		     'Y', false, required_argument, "Include only <obj> with <regex> from results.  Object can be task, processor, or entry.", nullptr },
+    { "results",                     'a', true,  no_argument,       "Print all/no results.", nullptr },
     { "processor-waiting",           'b', true,  no_argument,       "Print processor waiting times.", &print_processor_waiting },
     { "coefficient-of-variation",    'c', true,  no_argument,       "Pring coefficient of variation results.", &print_cv_square },
     { "asynch-send-variance",        'd', true,  no_argument,       "Print send-no-reply waiting time variance.", &print_snr_waiting_variance },
@@ -463,6 +435,7 @@ static struct {
     { "join-delay-variance",         'k', true,  no_argument,       "Print join join delay variances.", &print_join_variance },
     { "loss-probability",            'l', true,  no_argument,       "Print message Loss probability.", &print_loss_probability },
     { "mva-wait",		     'm', true,  no_argument,	    "Print the number of times the MVA wait() function was called.", &print_mva_waits },
+    { "rwlock-utilization",	     'n', true,  no_argument,       "Print rwlock utilization.", &print_rwlock_util },
     { "output",                      'o', false, required_argument, "Redirect output to ARG.", nullptr },
     { "processor-utilization",       'p', true,  no_argument,       "Print processor utilization results.", &print_processor_util },
     { "queue-length",                'q', true,  no_argument,       "Print queue length for open arrival results.", &print_open_wait },
@@ -475,7 +448,7 @@ static struct {
     { "service-time-exceeded",       'x', true,  no_argument,       "Print max service time exceeded.", &print_exceeded },
     { "waiting-time-variances",      'y', true,  no_argument,       "Print waiting time variance results.", &print_waiting_variance },
     { "asynch-send-waits",           'z', true,  no_argument,       "Print send-no-reply waiting time results.", &print_snr_waiting },
-    { "compact",		 512+'C', false, no_argument,	    "Use a more compact format for output.", nullptr },
+    { "compact",		 512+'k', false, no_argument,	    "Use a more compact format for output.", nullptr },
     { "print-comment",		 512+'c', false, no_argument,	    "Print model comment field.", nullptr },
     { "latex",			 512+'l', false, no_argument,	    "Format output for LaTeX.", nullptr },
     { "heading",		 512+'h', false, required_argument, "Set column heading <col> to <string>.", nullptr },
@@ -492,23 +465,15 @@ static struct {
  * For output munging...
  */
 
-#define MAX_AGGREGATE	10
-
-#if HAVE_REGEX_H
-static struct {
-    regex_t pattern;
-    const char * string;
-} aggregate[LAST_AGGREGATE][MAX_AGGREGATE];
-
-static unsigned n_aggregate[MAX_AGGREGATE];
-
-static struct {
-    regex_t pattern;
-    const char * string;
-} exclude[LAST_AGGREGATE][MAX_AGGREGATE];
-
-static unsigned n_exclude[MAX_AGGREGATE];
-#endif
+struct match {
+    match( const char * name ) : _name(name) {}
+    bool operator()( const std::regex& r ) const { return std::regex_match( _name, r ); }
+private:
+    const char * _name;
+};
+    
+std::vector<std::regex> exclude[ST_SYMTBL_TYPES];
+std::vector<std::regex> include[ST_SYMTBL_TYPES];
 
 /*
  * Local functions.
@@ -608,14 +573,6 @@ main (int argc, char * const argv[])
     feenableexcept( FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW );
 #endif
 
-    for ( unsigned int i = 0; i < MAX_AGGREGATE; ++i ) {
-#if HAVE_REGEX_T
-	n_aggregate[i] = 0;
-	n_exclude[i] = 0;
-#endif
-    }
-
-
     for ( ;; ) {
 #if HAVE_GETOPT_LONG
 #if __cplusplus < 201103L
@@ -632,106 +589,37 @@ main (int argc, char * const argv[])
 	command_line.append( c, optarg );
 
 	switch( c ) {
-#if HAVE_REGEX_H && HAVE_REGCOMP
 	case 'a':
-
-	    /* Aggregation.   Confidence levels are probably wrong when aggregating */
-
-	    options = optarg;
-	    while ( *options ) {
-		switch( getsubopt( &options, const_cast<char **>(aggregate_opts), const_cast<char **>(&value) ) ) {
-		case AGGR_ENTRY:
-		    if ( n_aggregate[AGGR_ENTRY] >= MAX_AGGREGATE ) {
-			/* table full */
-		    } else {
-			if ( !value ) value = ".*";
-			aggregate[AGGR_ENTRY][n_aggregate[AGGR_ENTRY]].string  = value;
-			regexec_check( regcomp( &aggregate[AGGR_ENTRY][n_aggregate[AGGR_ENTRY]].pattern, value, REG_EXTENDED ),
-				       &aggregate[AGGR_ENTRY][n_aggregate[AGGR_ENTRY]].pattern );
-			n_aggregate[AGGR_ENTRY] += 1;
-		    }
-		    break;
-
-		case AGGR_TASK:
-		    if ( n_aggregate[AGGR_TASK] >= MAX_AGGREGATE ) {
-			/* table full */
-		    } else {
-			if ( !value ) value = ".*";
-			aggregate[AGGR_TASK][n_aggregate[AGGR_TASK]].string  = value;
-			regexec_check( regcomp( &aggregate[AGGR_TASK][n_aggregate[AGGR_TASK]].pattern, value, REG_EXTENDED ),
-				       &aggregate[AGGR_TASK][n_aggregate[AGGR_TASK]].pattern );
-			n_aggregate[AGGR_TASK] += 1;
-		    }
-		    break;
-
-		case AGGR_PROC:
-		    if ( n_aggregate[AGGR_PROC] >= MAX_AGGREGATE ) {
-		    } else {
-			if ( !value ) value = ".*";
-			aggregate[AGGR_PROC][n_aggregate[AGGR_PROC]].string  = value;
-			regexec_check( regcomp( &aggregate[AGGR_PROC][n_aggregate[AGGR_PROC]].pattern, value, REG_EXTENDED ),
-				       &aggregate[AGGR_PROC][n_aggregate[AGGR_PROC]].pattern );
-			n_aggregate[AGGR_PROC] += 1;
-		    }
-		    break;
-
-		default:
-		    (void) fprintf( stderr, "%s: invalid argument to -a -- %s\n", lq_toolname, value );
-		    usage( false );
-		    exit( 1 );
+	    if ( all_flag_count == 0 ) {
+		print_loss_probability = enable;
+		print_join_delay = enable;
+		print_sema_util = enable;
+		print_rwlock_util = enable;
+		print_group_util = enable;
+		print_open_wait = enable;
+		print_processor_util = enable;
+		print_processor_waiting = enable;
+		print_service = enable;
+		print_snr_waiting = enable;
+		print_task_throughput = enable;
+		print_task_util = enable;
+		print_waiting = enable;
+		if ( enable ) {
+		    all_flag_count = 1;
+		}
+	    } else {
+		print_entry_throughput = enable;
+		print_cv_square = enable;
+		print_join_variance = enable;
+		print_snr_waiting_variance = enable;
+		print_variance = enable;
+		print_exceeded = enable;
+		print_waiting_variance = enable;
+		if ( !enable ) {
+		    all_flag_count = 0;
 		}
 	    }
 	    break;
-#endif
-
-#if HAVE_REGEX_H && HAVE_REGCOMP
-	case 'X':
-
-	    /* Exclusion.   Ignore these tasks/processors */
-
-	    options = optarg;
-	    while ( *options ) {
-	        switch( getsubopt( &options, const_cast<char **>(aggregate_opts), const_cast<char **>(&value) ) ) {
-		case AGGR_ENTRY:
-		    if ( n_exclude[AGGR_ENTRY] >= MAX_AGGREGATE ) {
-		    } else {
-			if ( !value ) value = ".*";
-			exclude[AGGR_ENTRY][n_exclude[AGGR_ENTRY]].string  = value;
-			regexec_check( regcomp( &exclude[AGGR_ENTRY][n_exclude[AGGR_ENTRY]].pattern, value, REG_EXTENDED ),
-				       &exclude[AGGR_ENTRY][n_exclude[AGGR_ENTRY]].pattern );
-			n_exclude[AGGR_ENTRY] += 1;
-		    }
-		    break;
-
-		case AGGR_TASK:
-		    if ( n_exclude[AGGR_TASK] >= MAX_AGGREGATE ) {
-		    } else {
-			if ( !value ) value = ".*";
-			exclude[AGGR_TASK][n_exclude[AGGR_TASK]].string  = value;
-			regexec_check( regcomp( &exclude[AGGR_TASK][n_exclude[AGGR_TASK]].pattern, value, REG_EXTENDED ),
-				       &exclude[AGGR_TASK][n_exclude[AGGR_TASK]].pattern );
-			n_exclude[AGGR_TASK] += 1;
-		    }
-		    break;
-
-		case AGGR_PROC:
-		    if ( n_exclude[AGGR_PROC] < MAX_AGGREGATE ) {
-			if ( !value ) value = ".*";
-			exclude[AGGR_PROC][n_exclude[AGGR_PROC]].string  = value;
-			regexec_check( regcomp( &exclude[AGGR_PROC][n_exclude[AGGR_PROC]].pattern, value, REG_EXTENDED ),
-				       &exclude[AGGR_PROC][n_exclude[AGGR_PROC]].pattern );
-			n_exclude[AGGR_PROC] += 1;
-		    }
-		    break;
-
-		default:
-		    (void) fprintf( stderr, "%s: invalid argument to -x -- %s\n", lq_toolname, value );
-		    usage( false );
-		    exit( 1 );
-		}
-	    }
-	    break;
-#endif
 
 	case 'b':
 	    print_processor_waiting = enable;
@@ -844,6 +732,10 @@ main (int argc, char * const argv[])
 	    print_mva_waits = enable;
 	    break;
 
+	case 'n':				/* rwlock */
+	    print_rwlock_util = enable;
+	    break;
+
 	case 'o':
 	    output = my_fopen( optarg, "w" );
 	    break;
@@ -888,10 +780,6 @@ main (int argc, char * const argv[])
 	    print_exceeded = enable;
 	    break;
 
-	case 'W':				/* rwlock */
-	    print_rwlock_util = enable;
-	    break;
-
 	case 'y':
 	    print_waiting_variance = enable;
 	    break;
@@ -908,49 +796,12 @@ main (int argc, char * const argv[])
 	    }
 	    break;
 
-	case 'A':
-	    if ( all_flag_count == 0 ) {
-		print_loss_probability = enable;
-		print_join_delay = enable;
-		print_sema_util = enable;
-		print_rwlock_util = enable;
-		print_group_util = enable;
-		print_open_wait = enable;
-		print_processor_util = enable;
-		print_processor_waiting = enable;
-		print_service = enable;
-		print_snr_waiting = enable;
-		print_task_throughput = enable;
-		print_task_util = enable;
-		print_waiting = enable;
-		if ( enable ) {
-		    all_flag_count = 1;
-		}
-	    } else {
-		print_entry_throughput = enable;
-		print_cv_square = enable;
-		print_join_variance = enable;
-		print_snr_waiting_variance = enable;
-		print_variance = enable;
-		print_exceeded = enable;
-		print_waiting_variance = enable;
-		if ( !enable ) {
-		    all_flag_count = 0;
-		}
-	    }
-	    break;
-
 	case 'C':
 	    print_confidence_intervals = false;
 	    break;
 
 	case 'F':
-#if HAVE_GLOB
 	    file_pattern = optarg;
-	    file_pattern_flag = true;
-#elif HAVE_REGEX_H && HAVE_REGCOMP
-	    file_pattern_flag = regexec_check( regcomp( &file_pattern, optarg, REG_EXTENDED ), &file_pattern );
-#endif
 	    break;
 
 	case 'I':
@@ -965,11 +816,6 @@ main (int argc, char * const argv[])
 
 	case 'M':
 	    print_error_absolute_value = true;
-	    break;
-
-	case 'P':
-	    print_processor_util = enable;
-	    normalize_processor_util = true;
 	    break;
 
 	case 'Q':
@@ -1001,7 +847,41 @@ main (int argc, char * const argv[])
 	    print_copyright = true;
 	    break;
 
-	case (512+'C'):
+	case 'X':
+
+	    /* Exclusion.   Ignore these tasks/processors */
+
+	    options = optarg;
+	    while ( *options ) {
+		int index = getsubopt( &options, const_cast<char **>(st_namespace_names), const_cast<char **>(&value) );
+		if ( index != -1 ) {
+		    exclude[index].emplace_back( value );
+		} else {
+		    (void) fprintf( stderr, "%s: invalid argument to --exclude -- %s\n", lq_toolname, value );
+		    usage( false );
+		    exit( 1 );
+		}
+	    }
+	    break;
+
+	case 'Y':
+
+	    /* Inclusion.   Only include these tasks/processors */
+
+	    options = optarg;
+	    while ( *options ) {
+		int index = getsubopt( &options, const_cast<char **>(st_namespace_names), const_cast<char **>(&value) );
+		if ( index != -1 ) {
+		    include[index].emplace_back( value );
+		} else {
+		    (void) fprintf( stderr, "%s: invalid argument to --include -- %s\n", lq_toolname, value );
+		    usage( false );
+		    exit( 1 );
+		}
+	    }
+	    break;
+
+	case (512+'k'):
 	    compact_flag = true;
 	    compact_format();
 	    break;
@@ -1057,7 +937,7 @@ main (int argc, char * const argv[])
 
     if ( print_copyright ) {
 	char copyright_date[20];
-	sscanf( "$Date: 2020-11-24 10:04:43 -0500 (Tue, 24 Nov 2020) $", "%*s %s %*s", copyright_date );
+	sscanf( "$Date: 2020-12-04 11:08:10 -0500 (Fri, 04 Dec 2020) $", "%*s %s %*s", copyright_date );
 	(void) fprintf( stdout, "SRVN Difference, Version %s\n", VERSION );
 	(void) fprintf( stdout, "  Copyright %s the Real-Time and Distributed Systems Group,\n", copyright_date );
 	(void) fprintf( stdout, "  Department of Systems and Computer Engineering,\n" );
@@ -1082,8 +962,8 @@ main (int argc, char * const argv[])
 	print_error_only      = true;
 	print_results_only    = false;
     }
-    if ( list_of_files && file_pattern_flag ) {
-	(void) fprintf( stderr, "%s: -F and -L are mutually exclusive.\n", lq_toolname );
+    if ( list_of_files && !file_pattern.empty() ) {
+	(void) fprintf( stderr, "%s: -F and -@ are mutually exclusive.\n", lq_toolname );
 	exit( 1 );
     }
 
@@ -1422,18 +1302,18 @@ compare_directories (unsigned n, char * const dirs[])
 
 	for ( i = 0; i < n; ++i ) {
 	    int rc;
-	    sprintf( path, "%s/%s.p", dirs[i], file_pattern );
+	    sprintf( path, "%s/%s.p", dirs[i], file_pattern.c_str() );
 	    rc = glob( path, 0, NULL, &dir_list[i] );
 	    if ( dir_list[i].gl_pathc == 0 ) {
-		sprintf( path, "%s/%s.lqxo", dirs[i], file_pattern );
+		sprintf( path, "%s/%s.lqxo", dirs[i], file_pattern.c_str() );
 		rc = glob( path, 0, NULL, &dir_list[i] );
 	    }
 	    if ( dir_list[i].gl_pathc == 0 ) {
-		sprintf( path, "%s/%s.lqjo", dirs[i], file_pattern );
+		sprintf( path, "%s/%s.lqjo", dirs[i], file_pattern.c_str() );
 		rc = glob( path, 0, NULL, &dir_list[i] );
 	    }
 	    if ( dir_list[i].gl_pathc == 0 ) {
-		sprintf( path, "%s/%s", dirs[i], file_pattern );
+		sprintf( path, "%s/%s", dirs[i], file_pattern.c_str() );
 		rc = glob( path, 0, NULL, &dir_list[i] );
 	    }
 	    if ( rc == GLOB_NOSPACE ) {
@@ -1576,17 +1456,14 @@ build_file_list (const char *dir, glob_t *dir_list)
 	if ( !p || (strcmp( p, ".p" ) != 0 && strcmp( p, ".lqxo" ) != 0 && strcmp( p, ".lqjo" ) != 0 ) ) {
 	    continue;	/* Ignore non .p files.	*/
 	}
-#if HAVE_REGEX_H && HAVE_REGCOMP
-	if ( file_pattern_flag ) {
+	if ( !file_pattern.empty() ) {
 	    char c = *p;
 	    *p = '\0';	/* Set end of string */
-	    if ( regexec( &file_pattern, d->d_name, 0, 0, 0 ) == REG_NOMATCH ) {
+	    if ( !std::regex_match( d->d_name, std::regex( file_pattern ) ) ) {
 		continue;	/* check for match file list */
 	    }
 	    *p = c;	/* reset value */
 	}
-#endif
-
 	if ( !dir_list->gl_offs ) {
 	    dir_list->gl_offs = 50;
 	    dir_list->gl_pathv = (char **)malloc( sizeof( char * ) * dir_list->gl_offs );
@@ -2894,11 +2771,11 @@ print_entry_activity( double value[], double conf_value[], const unsigned passes
 	(*delta)[j].update( value[0] );
     } else {
 	double error;
-	if ( static_cast<bool>(finite( value[j] )) && static_cast<bool>(finite( value[FILE1] )) ) {
+	if ( std::isfinite( value[j] ) && std::isfinite( value[FILE1] ) ) {
 	    error = value[j] - value[FILE1];
-	} else if ( !static_cast<bool>(finite( value[j] )) && static_cast<bool>(finite( value[FILE1] )) ) {
+	} else if ( !std::isfinite( value[j] ) && std::isfinite( value[FILE1] ) ) {
 	    error = value[j];
-	} else if ( static_cast<bool>(finite( value[j] )) && !static_cast<bool>(finite( value[FILE1] )) ) {
+	} else if ( std::isfinite( value[j] ) && !std::isfinite( value[FILE1] ) ) {
 	    error = -value[FILE1];
 	} else {
 	    error = 0.0;
@@ -3442,11 +3319,7 @@ get_putl( double value[], double conf_value[], unsigned i, unsigned j, unsigned 
 {
     std::map<int,processor_info>::const_iterator p_i = processor_tab[j].find(i);
     if ( p_i != processor_tab[j].end() ) {
-	if ( normalize_processor_util ) {
-	    value[j]  = processor_tab[j][i].utilization / processor_tab[j][i].n_tasks;
-	} else {
-	    value[j]  = processor_tab[j][i].utilization;
-	}
+	value[j] = processor_tab[j][i].utilization;
 	conf_value[j] = processor_tab[j][i].utilization_conf;
     }
 }
@@ -3909,212 +3782,45 @@ commonize (unsigned n, char *const dirs[])
 /*		 	Adding Data to the Lists			*/
 /*----------------------------------------------------------------------*/
 
-unsigned int
-find_or_add_processor( const char * processor, const char * task ) 
+static unsigned int
+find_or_add( st_etypes type, const char * name )
 {
-    unsigned int p = find_or_add_processor( processor );
-    if ( pass == FILE1 ) {
-	unsigned int t = find_or_add_task( task );
-	proc_task_tab[p].insert(t);
-    }
-    return p;
-}
+    if ( std::any_of( exclude[type].begin(), exclude[type].end(), match( name ) ) 
+	 || ( !include[type].empty() && std::none_of( include[type].begin(), include[type].end(), match( name ) ) ) ) return 0;
 
-
-unsigned int
-find_or_add_processor( const char * processor )
-{
-    unsigned int p = 0;
-#if HAVE_REGEX_H && HAVE_REGCOMP
-    /* Aggregate before exclude */
-
-    for ( unsigned int i = 0; i < n_aggregate[AGGR_PROC]; ++i ) {
-	if ( regexec( &aggregate[AGGR_PROC][i].pattern, processor, 0, 0, 0 ) != REG_NOMATCH ) {
-	    p = find_symbol_name( aggregate[AGGR_PROC][i].string, ST_PROCESSOR );
-	    if ( !p ) {
-		p = add_symbol( aggregate[AGGR_PROC][i].string, ST_PROCESSOR );
-	    }
-	    return p;
-	}
-    }
-
-    /* Exclude */
-
-    for ( unsigned int i = 0; i < n_exclude[AGGR_PROC]; ++i ) {
-	if ( regexec( &exclude[AGGR_PROC][i].pattern, processor, 0, 0, 0 ) != REG_NOMATCH ) {
-	    return 0;
-	}
-    }
-#endif
-
-    p = find_symbol_name( processor, ST_PROCESSOR );
-    if ( !p  ) {
+    unsigned int x = find_symbol_name( name, type );
+    if ( x == 0 ) {
 	if ( pass != FILE1 ) {
-	    results_warning( "Processor %s not found in source file", processor );
+	    results_warning( "%s %s not found in source file", st_namespace_names[type], name );
 	} else {
-	    p = add_symbol( processor, ST_PROCESSOR );
+	    x = add_symbol( name, type );
 	}
     }
-    return p;
-
-}
-
-unsigned int
-find_or_add_group( const char * group )
-{
-    unsigned int p = 0;
-#if 0
-#if HAVE_REGEX_H && HAVE_REGCOMP
-    /* Aggregate before exclude */
-
-    for ( unsigned int i = 0; i < n_aggregate[AGGR_PROC]; ++i ) {
-	if ( regexec( &aggregate[AGGR_PROC][i].pattern, group, 0, 0, 0 ) != REG_NOMATCH ) {
-	    p = find_symbol_name( aggregate[AGGR_PROC][i].string, ST_GROUP );
-	    if ( !p ) {
-		p = add_symbol( aggregate[AGGR_PROC][i].string, ST_GROUP );
-	    }
-	    return p;
-	}
-    }
-
-    /* Exclude */
-
-    for ( unsigned int i = 0; i < n_exclude[AGGR_PROC]; ++i ) {
-	if ( regexec( &exclude[AGGR_PROC][i].pattern, group, 0, 0, 0 ) != REG_NOMATCH ) {
-	    return 0;
-	}
-    }
-#endif
-#endif
-
-    p = find_symbol_name( group, ST_GROUP );
-    if ( !p  ) {
-	if ( pass != FILE1 ) {
-	    results_warning( "Group %s not found in source file", group );
-	} else {
-	    p = add_symbol( group, ST_GROUP );
-	}
-    }
-    return p;
-
-}
-
-unsigned int
-find_or_add_task( const char * task )
-{
-    unsigned t;
-
-    /* Aggregate before exclude */
-
-#if HAVE_REGEX_H && HAVE_REGCOMP
-    for ( unsigned int i = 0; i < n_aggregate[AGGR_TASK]; ++i ) {
-	if ( regexec( &aggregate[AGGR_TASK][i].pattern, task, 0, 0, 0 ) != REG_NOMATCH ) {
-	    t = find_symbol_name( aggregate[AGGR_TASK][i].string, ST_TASK );
-	    if ( !t ) {
-		t = add_symbol( aggregate[AGGR_TASK][i].string, ST_TASK );
-	    }
-	    return t;
-	}
-    }
-
-    for ( unsigned int i = 0; i < n_exclude[AGGR_TASK]; ++i ) {
-	if ( regexec( &exclude[AGGR_TASK][i].pattern, task, 0, 0, 0 ) != REG_NOMATCH ) {
-	    return 0;
-	}
-    }
-#endif
-
-    t = find_symbol_name( task, ST_TASK );
-    if ( !t ) {
-	if ( pass != FILE1 ) {
-	    results_warning( "Task %s not found in source file", task );
-	} else {
-	    t = add_symbol( task, ST_TASK );
-	}
-    }
-    return t;
+    return x;
 }
 
 
-
-unsigned int
-find_or_add_entry( const char * task, const char * entry )
-{
-    int e = find_or_add_entry( entry );
-    if ( pass == FILE1 ) {
-	unsigned int t = find_or_add_task( task );
-	task_entry_tab[t].insert(e);
-    }
-    return e;
-}
-
-unsigned int
-find_or_add_entry( const char * name )
-{
-    unsigned int e;
-#if HAVE_REGEX_H && HAVE_REGCOMP
-    /* Aggregate before exclude */
-
-    for ( unsigned i = 0; i < n_aggregate[AGGR_ENTRY]; ++i ) {
-	if ( regexec( &aggregate[AGGR_ENTRY][i].pattern, name, 0, 0, 0 ) != REG_NOMATCH ) {
-	    e = find_symbol_name( aggregate[AGGR_ENTRY][i].string, ST_ENTRY );
-	    if ( !e ) {
-		e = add_symbol( aggregate[AGGR_ENTRY][i].string, ST_ENTRY );
-	    }
-	    return e;
-	}
-    }
-
-    /*
-     * Check exclude list for this entry.
-     */
-
-    for ( unsigned i = 0; i < n_exclude[AGGR_ENTRY]; ++i ) {
-	if ( regexec( &exclude[AGGR_ENTRY][i].pattern, name, 0, 0, 0 ) != REG_NOMATCH ) {
-	    return 0;
-	}
-    }
-#endif
-
-    /*
-     * Now look for it.
-     */
-
-    e = find_symbol_name( name, ST_ENTRY );
-    if ( !e ) {
-	if ( pass != FILE1 ) {
-	    results_warning( "Entry %s not found in source file", name );
-	} else {
-	    e = add_symbol( name, ST_ENTRY );
-	}
-    }
-
-    return e;
-}
+unsigned int find_or_add_processor( const char * processor ) { return find_or_add( ST_PROCESSOR, processor ); }
+unsigned int find_or_add_group( const char * group ) { return find_or_add( ST_GROUP, group ); }
+unsigned int find_or_add_task( const char * task ) { return find_or_add( ST_TASK, task ); }
+unsigned int find_or_add_entry( const char * entry ) { return find_or_add( ST_ENTRY, entry ); }
 
 
 unsigned int
-find_or_add_activity( const char * task, const char * name )
+find_or_add_activity( const char * task, const char * activity )
 {
     char buf[132];
     unsigned a;
 
-#if HAVE_REGEX_H && HAVE_REGCOMP
-    /* Check if we are excluding the task from output */
+    if ( std::any_of( exclude[ST_TASK].begin(), exclude[ST_TASK].end(), match( task ) ) ) return 0;
+    if ( !include[ST_TASK].empty() && std::none_of( include[ST_TASK].begin(), include[ST_TASK].end(), match( task ) ) ) return 0;
 
-    for ( unsigned i = 0; i < n_exclude[AGGR_TASK]; ++i ) {
-	if ( regexec( &exclude[AGGR_TASK][i].pattern, (char *)task, 0, 0, 0 ) != REG_NOMATCH ) {
-	    return 0;
-	}
-    }
-#endif
-
-    sprintf( buf, "%s:%s", task, name );
+    sprintf( buf, "%s:%s", task, activity );
 
     a = find_symbol_name( buf, ST_ACTIVITY );
-    if ( !a ) {
+    if ( a == 0 ) {
 	if ( pass != FILE1 ) {
-	    results_warning( "Activity %s:%s not found in source file", task, name );
+	    results_warning( "Task %s, activity %s not found in source file", task, activity );
 	} else {
 	    a = add_symbol( buf, ST_ACTIVITY );
 	}
@@ -4231,7 +3937,7 @@ rms_error ( const std::vector<stats_buf>& stats, std::vector<double>& rms )
     for ( s = stats.begin(), r = rms.begin(); s != stats.end() && r != rms.end(); ++s, ++r ) {
 	if ( s->n_ == 0 ) {
 	    (*r) = 0.0;
-	} else if ( finite( s->sum_sqr ) ) {
+	} else if ( std::isfinite( s->sum_sqr ) ) {
 	    (*r) = sqrt( s->sum_sqr / static_cast<double>(s->n_) );
 	} else {
 	    (*r) = s->sum_sqr;
@@ -4258,7 +3964,7 @@ stats_buf::update ( double value, bool ok )
 	values[n_] = value;
     }
     n_ += 1;
-    if ( finite( value ) ) {
+    if ( std::isfinite( value ) ) {
 	sum_    += value;
 	sum_sqr += value * value;
 	sum_abs += fabs( value );
@@ -4286,7 +3992,7 @@ stats_buf::stddev() const
 {
     if ( n_ < 2 ) {
 	return 0.0;
-    } else if ( finite( sum_sqr ) ) {
+    } else if ( std::isfinite( sum_sqr ) ) {
 	double mean_sqr = ( sum_ * sum_ ) / n_;
 	if ( mean_sqr > 0 ) {
 	    return sqrt( ( sum_sqr - mean_sqr ) / n_ );
@@ -4391,7 +4097,7 @@ relative_error( const double a, const double b )
 	return 0;
     } else if ( b == 0 ) {
 	return get_infinity();
-    } else if ( finite( a ) ) { 			/* BUG_171 */
+    } else if ( std::isfinite( a ) ) { 			/* BUG_171 */
 	return a * 100.0 / b;
     } else {
 	return a;
@@ -4399,21 +4105,6 @@ relative_error( const double a, const double b )
 }
 
 
-#if HAVE_REGEX_H && HAVE_REGCOMP
-static bool
-regexec_check( int errcode, regex_t *r )
-{
-    if ( errcode ) {
-	char buf[BUFSIZ];
-	regerror( errcode, r, buf, BUFSIZ );
-	fprintf( stderr, "%s: %s\n", lq_toolname, buf );
-	exit( 2 );
-	return false;
-    } else {
-	return true;
-    }
-}
-#endif
 
 extern "C" {
     int yywrap();
