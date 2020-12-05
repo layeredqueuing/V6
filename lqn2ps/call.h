@@ -10,7 +10,7 @@
  * May 2010
  *
  * ------------------------------------------------------------------------
- * $Id: call.h 14152 2020-11-29 16:38:49Z greg $
+ * $Id: call.h 14168 2020-12-04 20:17:22Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -256,7 +256,6 @@ protected:
 
 private:
     size_t numberOfPhases() const { return _rendezvous.size(); }
-    Call& deleteCall( LQIO::DOM::Call * call );
     
 private:
     /* Input */

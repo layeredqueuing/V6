@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_entry.cpp 14144 2020-11-26 19:37:10Z greg $
+ *  $Id: dom_entry.cpp 14168 2020-12-04 20:17:22Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -385,6 +385,14 @@ namespace LQIO {
 	    _forwarding.push_back(call);
 	}
     
+	void Entry::eraseForwardingCall(Call * call)
+	{
+	    std::vector<Call*>::iterator iter = std::find( _forwarding.begin(), _forwarding.end(), call );
+	    if ( iter != _forwarding.end() ) {
+		_forwarding.erase( iter );
+	    }
+	}
+	
 	const std::vector<Call *>& Entry::getForwarding() const
 	{
 	    /* Return a const ref to the map */

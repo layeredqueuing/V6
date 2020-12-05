@@ -1,6 +1,6 @@
 /* group.cc	-- Greg Franks Thu Mar 24 2005
  *
- * $Id: group.cc 14135 2020-11-25 18:22:02Z greg $
+ * $Id: group.cc 14171 2020-12-05 14:37:37Z greg $
  */
 
 #include "group.h"
@@ -229,32 +229,22 @@ Group::draw( std::ostream& output ) const
     return output;
 }
 
-#if HAVE_REGEX_T
-GroupByRegex::GroupByRegex( const std::string& s )
-    : Group( s )
+GroupByRegex::GroupByRegex( unsigned int n, const std::string& s )
+    : Group( n, s ), _pattern(s)
 {
-    myPattern = static_cast<regex_t *>(malloc( sizeof( regex_t ) ));
-    if ( myPattern ) {
-	myErrorCode = regcomp( myPattern, s.c_str(), REG_EXTENDED );
-    }
 }
 
 
 GroupByRegex::~GroupByRegex()
 {
-    if ( myPattern ) {
-	regfree( myPattern );
-	::free( myPattern );
-    }
 }
 
 
 bool
 GroupByRegex::match( const std::string& s ) const
 {
-    return regexec( myPattern, const_cast<char *>(s.c_str()), 0, 0, 0 ) != REG_NOMATCH;
+    return std::regex_match( s, _pattern );
 }
-#endif
 
 GroupByProcessor::GroupByProcessor( const unsigned nLayers, const Processor * processor )
   : Group( nLayers, processor->name() ), myProcessor( processor )

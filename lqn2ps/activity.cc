@@ -1,6 +1,6 @@
 /* activity.cc	-- Greg Franks Thu Apr  3 2003
  *
- * $Id: activity.cc 14143 2020-11-26 16:49:48Z greg $
+ * $Id: activity.cc 14168 2020-12-04 20:17:22Z greg $
  */
 
 #include "activity.h"
@@ -323,7 +323,6 @@ Activity::replies( const std::vector<Entry *>& aList )
 }
 
 
-
 /*
  * We always have to rebuild the replyArcList for all replies added from src.
  */
@@ -590,8 +589,8 @@ Activity::aggregateService( Entry * anEntry, const unsigned p, const double rate
 	std::map<Entry *,Reply *>::iterator reply = _replyArcs.find(anEntry);
 	if ( reply != replyArcs().end() ) {
 	    anEntry->deleteActivityReplyArc( reply->second );
-	    _replyArcs.erase( reply );
 	    delete reply->second;
+	    _replyArcs.erase( reply );
 	    std::vector<Entry *>::iterator entry = find( _replies.begin(), _replies.end(), anEntry );
 	    if ( entry != replies().end() ) {
 		_replies.erase( entry );

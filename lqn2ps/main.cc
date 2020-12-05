@@ -1,6 +1,6 @@
 /* srvn2eepic.c	-- Greg Franks Sun Jan 26 2003
  *
- * $Id: main.cc 14163 2020-12-04 16:08:10Z greg $
+ * $Id: main.cc 14171 2020-12-05 14:37:37Z greg $
  */
 
 #include "lqn2ps.h"
@@ -51,9 +51,7 @@ double Flags::entry_width              	= DEFAULT_ICON_HEIGHT;		/* 45 */
 double Flags::icon_height               = DEFAULT_ICON_HEIGHT;
 double Flags::icon_width               	= DEFAULT_ICON_HEIGHT * 1.6;	/* 72 */
 
-#if HAVE_REGEX_T
-regex_t * Flags::client_tasks		= 0;
-#endif
+std::regex * Flags::client_tasks	= nullptr;
 
 sort_type Flags::sort	 		= FORWARD_SORT;
 
@@ -309,18 +307,6 @@ class_error::message( const std::string& method, const char * file, const unsign
     return ss.str();
 }
 
-#if HAVE_REGEX_T
-void 
-regexp_check( const int errcode, regex_t * r ) throw( runtime_error )
-{
-    if ( errcode ) {
-	char buf[BUFSIZ];
-	regerror( errcode, r, buf, BUFSIZ );
-	throw runtime_error( buf );
-    }
-}
-#endif
-
 bool
 process_pragma( const char * p )
 {

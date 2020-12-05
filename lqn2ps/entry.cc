@@ -8,7 +8,7 @@
  * January 2003
  *
  * ------------------------------------------------------------------------
- * $Id: entry.cc 14143 2020-11-26 16:49:48Z greg $
+ * $Id: entry.cc 14168 2020-12-04 20:17:22Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -75,8 +75,8 @@ Entry::Entry( const LQIO::DOM::DocumentObject * dom )
       _isCalled(NOT_CALLED),
       _calls(),
       _callers(),
-      _startActivity(0),
-      myActivityCall(0),
+      _startActivity(nullptr),
+      myActivityCall(nullptr),
       myActivityCallers()
 {
     /* Allocate phases */
@@ -107,8 +107,8 @@ Entry::Entry( const Entry& src )
       _isCalled(src._isCalled),
       _calls(),
       _callers(),
-      _startActivity(0),
-      myActivityCall(0),
+      _startActivity(nullptr),
+      myActivityCall(nullptr),
       myActivityCallers()
 {
     myNode = Node::newNode( Flags::entry_width, Flags::entry_height );
@@ -512,6 +512,7 @@ Entry&
 Entry::setStartActivity( Activity * anActivity )
 {
     _startActivity = anActivity;
+    if ( myActivityCall ) delete myActivityCall;
     myActivityCall = Arc::newArc();
     anActivity->rootEntry( this, myActivityCall );
     _maxPhase = 1;
@@ -1228,9 +1229,11 @@ Entry::aggregateService( const Activity * anActivity, const unsigned p, const do
     
     Phase::merge( *phase, *anActivity->getDOM(), rate );
 
-    for ( std::vector<Call *>::const_iterator call = anActivity->calls().begin(); call != anActivity->calls().end(); ++call ) {
+    const std::vector<Call *>& calls = anActivity->calls();
+    for ( std::vector<Call *>::const_iterator call = calls.begin(); call != calls.end(); ++call ) {
 	Entry * dstEntry = const_cast<Entry *>((*call)->dstEntry());
-
+	dstEntry->removeDstCall( (*call) );
+	
 	/* Aggregate the calls made by the activity to the entry */
 
 	Call * dstCall;
@@ -1240,9 +1243,11 @@ Entry::aggregateService( const Activity * anActivity, const unsigned p, const do
 	    dstCall = findOrAddCall( dstEntry );
 	}
 	dstCall->merge( getPhase(p), p, **call, rate );
-//	anActivity->removeDstCall( *call );	/* Unlink the activity's call. */
     }
 
+    const_cast<std::vector<Call *>&>(calls).clear();
+    const std::vector<LQIO::DOM::Call*>& dom_calls = anActivity->getDOM()->getCalls();
+    const_cast<std::vector<LQIO::DOM::Call *>&>(dom_calls).clear();
     return *this;
 }
 
@@ -1430,7 +1435,6 @@ Entry::aggregate()
 	case AGGREGATE_ENTRIES:
 	    startActivity()->aggregate( this, 1, next_p, 1.0, activityStack, &Activity::aggregateService );
 	    _startActivity = nullptr;
-	    myActivityCall = nullptr;
 	    const_cast<LQIO::DOM::Entry *>(dom)->setStartActivity( nullptr );
 	    const_cast<LQIO::DOM::Entry *>(dom)->setEntryType( LQIO::DOM::Entry::Type::STANDARD );
 	    break;
@@ -1448,10 +1452,10 @@ Entry::aggregate()
     /* Convert entry if necessary */
 
     if ( dom->getEntryType() == LQIO::DOM::Entry::Type::STANDARD ) {
-	_startActivity = 0;
+	_startActivity = nullptr;
 	if ( myActivityCall ) {
 	    delete myActivityCall;
-	    myActivityCall = 0;
+	    myActivityCall = nullptr;
 	}
 	myActivityCallers.clear();
     }

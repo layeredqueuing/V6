@@ -1,7 +1,7 @@
 /* -*- c++ -*-
  * lqn2ps.h	-- Greg Franks
  *
- * $Id: lqn2ps.h 14143 2020-11-26 16:49:48Z greg $
+ * $Id: lqn2ps.h 14171 2020-12-05 14:37:37Z greg $
  *
  */
 
@@ -27,11 +27,9 @@
 #include <string>
 #include <stdexcept>
 #include <deque>
+#include <regex>
 #include <lqio/input.h>
 #include <lqio/dom_extvar.h>
-#if HAVE_REGEX_H
-#include <regex.h>
-#endif
 #if defined(HAVE_VALUES_H)
 #include <values.h>
 #endif
@@ -242,9 +240,7 @@ typedef struct
     union {
 	int i;
 	bool b;
-#if HAVE_REGEX_H
-	regex_t * r;
-#endif
+	std::regex * r;
 	char * s;
 	double f;
     } value;
@@ -354,9 +350,7 @@ struct Flags
     static justification_type node_justification;
     static graphical_output_style_type graphical_output_style;
     static option_type print[];
-#if HAVE_REGEX_H
-    static regex_t * client_tasks;
-#endif
+    static std::regex * client_tasks;
     static sort_type sort;
     static unsigned long span;
 };

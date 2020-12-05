@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- *  $Id: dom_entry.h 14111 2020-11-20 16:30:03Z greg $
+ *  $Id: dom_entry.h 14168 2020-12-04 20:17:22Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -114,6 +114,7 @@ namespace LQIO {
 
 	    /* Forwarding Probabilities */
 	    void addForwardingCall(Call *);
+	    void eraseForwardingCall(Call *);
 	    const std::vector<Call*>& getForwarding() const;
 	    Call* getForwardingToTarget(const Entry* target) const;
 	    bool hasForwarding() const;

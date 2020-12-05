@@ -4,7 +4,7 @@
  * this is all the stuff printed after the ':'.  For xml output, this
  * is all of the precendence stuff.
  * 
- * $Id: actlist.cc 14137 2020-11-25 18:29:59Z greg $
+ * $Id: actlist.cc 14164 2020-12-04 17:42:49Z greg $
  */
 
 
@@ -69,8 +69,8 @@ bool ActivityList::first = true;
 /*               Activity Lists -- Abstract Superclass                  */
 /* -------------------------------------------------------------------- */
 
-ActivityList::ActivityList( const Task * owner, const LQIO::DOM::ActivityList * dom_activitylist )
-    : myOwner(owner), myDOM(dom_activitylist) 
+ActivityList::ActivityList( const Task * owner, const LQIO::DOM::ActivityList * dom )
+    : _owner(owner), _dom(dom) 
 {
     if ( owner ) {
 	const_cast<Task *>(owner)->addPrecedence(this);
@@ -85,7 +85,7 @@ ActivityList::~ActivityList()
 ActivityList&
 ActivityList::setOwner( const Task * owner ) 
 {
-    myOwner = owner;
+    _owner = owner;
     return *this;
 }
 
@@ -1288,8 +1288,11 @@ OrJoinActivityList::setChain( std::deque<const Activity *>& activityStack, unsig
 /* -------------------------------------------------------------------- */
 
 AndJoinActivityList::AndJoinActivityList( const Task * owner, const LQIO::DOM::ActivityList * dom_activitylist ) 
-    : AndOrJoinActivityList( owner, dom_activitylist ), 
-      myJoinType(JOIN_NOT_DEFINED)
+    : AndOrJoinActivityList( owner, dom_activitylist ),
+      myLabel(nullptr),
+      _joinType(JoinType::NOT_DEFINED),
+      _forkList(nullptr),
+      _depth(0)
 {
     myLabel = Label::newLabel();
     if ( myLabel ) {
@@ -1299,9 +1302,9 @@ AndJoinActivityList::AndJoinActivityList( const Task * owner, const LQIO::DOM::A
     if ( dom && dom->hasQuorumCount() ) {
 	char buf[10];
 	sprintf( buf, "%d", dom->getQuorumCountValue() );
-	myTypeStr = buf;
+	_typeStr = buf;
     } else {
-	myTypeStr = "&";		/* Can be changed if quorum is set. */
+	_typeStr = "&";		/* Can be changed if quorum is set. */
     }
 }
 
@@ -1334,13 +1337,13 @@ AndJoinActivityList::add( Activity * anActivity )
 
 
 bool
-AndJoinActivityList::joinType( const join_type aType ) 
+AndJoinActivityList::joinType( const JoinType aType ) 
 {
-    if ( myJoinType == JOIN_NOT_DEFINED ) {
-	myJoinType = aType;
+    if ( _joinType == JoinType::NOT_DEFINED ) {
+	_joinType = aType;
 	return true;
     } else {
-	return aType == myJoinType;
+	return aType == _joinType;
     }
 }
 
@@ -1349,7 +1352,7 @@ AndJoinActivityList::joinType( const join_type aType )
 const char * 
 AndJoinActivityList::typeStr() const
 {
-    return myTypeStr.c_str();
+    return _typeStr.c_str();
 }
 
 
@@ -1372,9 +1375,9 @@ AndJoinActivityList::quorumCount(int quorumCount)
     if ( quorumCount > 0 && graphical_output() ) {
 	char buf[10];
 	sprintf( buf, "%d", quorumCount );
-	myTypeStr = buf;
+	_typeStr = buf;
     } else {
-	myTypeStr = "&";
+	_typeStr = "&";
     }
     return *this; 
 }
@@ -1417,13 +1420,13 @@ AndJoinActivityList::findActivityChildren( std::deque<const Activity *>& activit
 	    for ( std::deque<const AndForkActivityList *>::const_reverse_iterator fork_list = forkStack.rbegin(); fork_list != forkStack.rend() && forkList() == nullptr; ++fork_list ) {
 		if ( resultSet.find( *fork_list ) == resultSet.end() ) continue;
 	    
-		if ( !const_cast<AndJoinActivityList *>(this)->joinType( INTERNAL_FORK_JOIN  ) ) {
+		if ( !const_cast<AndJoinActivityList *>(this)->joinType( JoinType::INTERNAL_FORK_JOIN  ) ) {
 		    throw bad_internal_join( *this );
 		}
 		const_cast<AndForkActivityList *>(*fork_list)->myJoinList = this;		/* Random choice :-) */
 		const_cast<AndJoinActivityList *>(this)->_forkList = *fork_list;
 	    }
-	} else if ( !const_cast<AndJoinActivityList *>(this)->joinType( SYNCHRONIZATION_POINT ) ) {
+	} else if ( !const_cast<AndJoinActivityList *>(this)->joinType( JoinType::SYNCHRONIZATION_POINT ) ) {
 	    throw bad_internal_join( *this );
 	}
     }

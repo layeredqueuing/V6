@@ -1,6 +1,6 @@
 /* model.cc	-- Greg Franks Mon Feb  3 2003
  *
- * $Id: model.cc 14153 2020-11-30 18:03:53Z greg $
+ * $Id: model.cc 14171 2020-12-05 14:37:37Z greg $
  *
  * Load, slice, and dice the lqn model.
  */
@@ -962,11 +962,7 @@ Model::topologicalSort()
     unsigned int i = 1;			/* Client path number */
     for ( std::set<Task *>::const_iterator task = Task::__tasks.begin(); task != Task::__tasks.end(); ++task ) {
 	if ( (*task)->rootLevel() == Task::root_level_t::IS_NON_REFERENCE 
-
-#if HAVE_REGEX_T
-	     || (Flags::client_tasks != nullptr && regexec( Flags::client_tasks, const_cast<char *>((*task)->name().c_str()), 0, 0, 0 ) == REG_NOMATCH )
-#endif
-	    ) continue;
+	     || (Flags::client_tasks != nullptr && regex_match( (*task)->name(), *Flags::client_tasks ) ) ) continue;
 
 	try {
 	    CallStack callStack;	/* Open arrivals start at level 1 */

@@ -1,6 +1,6 @@
 /* layer.cc	-- Greg Franks Tue Jan 28 2003
  *
- * $Id: layer.cc 14135 2020-11-25 18:22:02Z greg $
+ * $Id: layer.cc 14168 2020-12-04 20:17:22Z greg $
  *
  * A layer consists of a set of tasks with the same nesting depth from
  * reference tasks.  Reference tasks are in layer 1, the immediate
@@ -526,15 +526,15 @@ Layer::aggregate()
 		}
 		EntityCall * new_call = client->findOrAddCall( server, predicate );	/* create a call... */
 		TaskCall * task_call = dynamic_cast<TaskCall * >(new_call);
-		if ( task_call != NULL ) {
-		    /* Set rate on call? By phase? */
-		    if ( call->hasForwarding() ) {
-			task_call->taskForward( LQIO::DOM::ConstantExternalVariable( call->forward() ) );
-		    } else if ( call->hasSendNoReply() ) {
-			task_call->sendNoReply( LQIO::DOM::ConstantExternalVariable( 1.0 ) );	/* Set value to force type. */
-		    } else {
-			task_call->rendezvous( LQIO::DOM::ConstantExternalVariable( 1.0 ) );	/* Set value to force type. */
-		    }
+		if ( task_call == NULL ) continue;
+
+		/* Set rate on call? By phase? */
+		if ( call->hasForwarding() ) {
+		    task_call->taskForward( LQIO::DOM::ConstantExternalVariable( call->forward() ) );
+		} else if ( call->hasSendNoReply() ) {
+		    task_call->sendNoReply( LQIO::DOM::ConstantExternalVariable( 1.0 ) );	/* Set value to force type. */
+		} else {
+		    task_call->rendezvous( LQIO::DOM::ConstantExternalVariable( 1.0 ) );	/* Set value to force type. */
 		}
 #if defined(PMIF_OUTPUT)
 		server->addDemand( task_call, call );				/* add visits and service time to call */
