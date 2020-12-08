@@ -11,7 +11,7 @@
  * July 2007
  *
  * ------------------------------------------------------------------------
- * $Id: activity.cc 14141 2020-11-25 20:57:44Z greg $
+ * $Id: activity.cc 14176 2020-12-07 17:26:28Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -420,8 +420,8 @@ Activity::estimateQuorumJoinCDFs (DiscretePoints & sumTotal,
 #if HAVE_LIBGSL && HAVE_LIBGSLCBLAS
     if ( localQuorumDelay() ) {
 
-	switch ( pragma.getQuorumDistribution() ) {
-	case THREEPOINT_QUORUM_DISTRIBUTION:
+	switch ( Pragma::getQuorumDistribution() ) {
+	case Pragma::QuorumDistribution::THREEPOINT:
 	    estimateThreepointQuorumCDF(level1Mean, level2Mean,
 					avgNumCallsToLevel2Tasks, sumTotal, sumLocal, sumRemote, quorumCDFs, 
 					localCDFs, remoteCDFs, isThereQuorumDelayedThreads, 
@@ -429,7 +429,7 @@ Activity::estimateQuorumJoinCDFs (DiscretePoints & sumTotal,
 	    break;
 
 	default: //GAMMA_QUORUM_DISTRIBUTION
-	    estimateGammaQuorumCDF(PHASE_DETERMINISTIC ,level1Mean, level2Mean,
+	    estimateGammaQuorumCDF(LQIO::DOM::Phase::Type::DETERMINISTIC ,level1Mean, level2Mean,
 				   avgNumCallsToLevel2Tasks, sumTotal, sumLocal, sumRemote, quorumCDFs, 
 				   localCDFs,remoteCDFs,  isThereQuorumDelayedThreads, isQuorumDelayedThreadsActive);
 	}
@@ -437,17 +437,17 @@ Activity::estimateQuorumJoinCDFs (DiscretePoints & sumTotal,
     } else {
 
 	switch (phaseTypeFlag()){
-	case PHASE_DETERMINISTIC:
-	    switch ( pragma.getQuorumDistribution() ) {
+	case LQIO::DOM::Phase::Type::DETERMINISTIC:
+	    switch ( Pragma::getQuorumDistribution() ) {
 
-	    case THREEPOINT_QUORUM_DISTRIBUTION:
+	    case Pragma::QuorumDistribution::THREEPOINT:
 		estimateThreepointQuorumCDF(level1Mean, level2Mean,
 					    avgNumCallsToLevel2Tasks, sumTotal, sumLocal, sumRemote, quorumCDFs, 
 					    localCDFs, remoteCDFs, isThereQuorumDelayedThreads, 
 					    isQuorumDelayedThreadsActive );
 		break;
 
-	    case CLOSEDFORM_DETRMINISTIC_QUORUM_DISTRIBUTION:
+	    case Pragma::QuorumDistribution::CLOSEDFORM_DETRMINISTIC:
 		estimateClosedFormDetQuorumCDF(level1Mean, level2Mean,
 					       avgNumCallsToLevel2Tasks, sumTotal, sumLocal, sumRemote, quorumCDFs, 
 					       localCDFs, remoteCDFs, isThereQuorumDelayedThreads, 
@@ -455,7 +455,7 @@ Activity::estimateQuorumJoinCDFs (DiscretePoints & sumTotal,
 		break;
 
 	    default: //GAMMA_QUORUM_DISTRIBUTION:
-		estimateGammaQuorumCDF(PHASE_DETERMINISTIC ,level1Mean, level2Mean,
+		estimateGammaQuorumCDF(LQIO::DOM::Phase::Type::DETERMINISTIC ,level1Mean, level2Mean,
 				       avgNumCallsToLevel2Tasks, sumTotal, sumLocal, sumRemote, quorumCDFs, 
 				       localCDFs,remoteCDFs,  isThereQuorumDelayedThreads, isQuorumDelayedThreadsActive);
 	    }
@@ -463,17 +463,17 @@ Activity::estimateQuorumJoinCDFs (DiscretePoints & sumTotal,
 	    break;
 
 	default: //PHASE_STOCHASTIC:
-	    switch ( pragma.getQuorumDistribution() ) {
+	    switch ( Pragma::getQuorumDistribution() ) {
 
-	    case THREEPOINT_QUORUM_DISTRIBUTION:
+	    case Pragma::QuorumDistribution::THREEPOINT:
 		estimateThreepointQuorumCDF(level1Mean, level2Mean,
 					    avgNumCallsToLevel2Tasks, sumTotal, sumLocal, sumRemote, quorumCDFs, 
 					    localCDFs, remoteCDFs, isThereQuorumDelayedThreads, 
 					    isQuorumDelayedThreadsActive );
 		break;
 
-	    case GAMMA_QUORUM_DISTRIBUTION:
-		estimateGammaQuorumCDF(PHASE_STOCHASTIC ,level1Mean, level2Mean,
+	    case Pragma::QuorumDistribution::GAMMA:
+		estimateGammaQuorumCDF(LQIO::DOM::Phase::Type::STOCHASTIC ,level1Mean, level2Mean,
 				       avgNumCallsToLevel2Tasks, sumTotal, sumLocal, sumRemote, quorumCDFs, 
 				       localCDFs,remoteCDFs,  isThereQuorumDelayedThreads, isQuorumDelayedThreadsActive);
 		break;
@@ -526,14 +526,14 @@ Activity::estimateThreepointQuorumCDF(double level1Mean,
 
 #if HAVE_LIBGSL && HAVE_LIBGSLCBLAS
     if ( isThereQuorumDelayedThreads && 
-	 pragma.getQuorumDelayedCalls() == KEEP_ALL_QUORUM_DELAYED_CALLS) {
+	 Pragma::getQuorumDelayedCalls() == Pragma::QuorumDelayedCalls::KEEP_ALL) {
 	//Three-point is not the recommended distribution to be used with quorum anyways. 
 	//But this might be used only for comparison purposes to other distributions.
 
 	sumLocal.mean(level1Mean); //mean=k*theta for a gamma distribution.
 	sumRemote.mean(level2Mean * avgNumCallsToLevel2Tasks);
 
-	if (phaseTypeFlag() == PHASE_DETERMINISTIC )  {
+	if (phaseTypeFlag() == LQIO::DOM::Phase::Type::DETERMINISTIC )  {
 	    //the sum of deterministic number of exponentially distributed RVs is Erlang or Gamma.
 	    sumLocal.variance( level1Mean * level1Mean / (avgNumCallsToLevel2Tasks +1 )  );	  
 	} else {
@@ -580,7 +580,7 @@ Activity::estimateThreepointQuorumCDF(double level1Mean,
 
 #if HAVE_LIBGSL && HAVE_LIBGSLCBLAS
 bool 
-Activity::estimateGammaQuorumCDF(phase_type phaseTypeFlag,
+Activity::estimateGammaQuorumCDF(LQIO::DOM::Phase::Type phaseTypeFlag,
 				 double level1Mean,  double level2Mean,  double avgNumCallsToLevel2Tasks,
 				 DiscretePoints & sumTotal, DiscretePoints & sumLocal, 
 				 DiscretePoints & sumRemote, DiscreteCDFs & quorumCDFs, 
@@ -594,12 +594,12 @@ Activity::estimateGammaQuorumCDF(phase_type phaseTypeFlag,
 	std::cout <<"\nGamma fitting for quorum is used." << std::endl; 
     }
     if ( isThereQuorumDelayedThreads && 
-	 pragma.getQuorumDelayedCalls() == KEEP_ALL_QUORUM_DELAYED_CALLS ) {
+	 Pragma::getQuorumDelayedCalls() == Pragma::QuorumDelayedCalls::KEEP_ALL ) {
 
 	sumLocal.mean(level1Mean); //mean=k*theta for a gamma distribution.
 	sumRemote.mean(level2Mean * avgNumCallsToLevel2Tasks);
 
-	if (phaseTypeFlag == PHASE_DETERMINISTIC ) {
+	if (phaseTypeFlag == LQIO::DOM::Phase::Type::DETERMINISTIC ) {
 	    //the sum of deterministic number of exponentially distributed RVs is Erlang or Gamma.
 	    sumLocal.variance( level1Mean * level1Mean / (avgNumCallsToLevel2Tasks + 1 )  );      					}
 	else {
@@ -660,7 +660,7 @@ Activity::estimateClosedFormDetQuorumCDF(double level1Mean,
 
 
     if (isThereQuorumDelayedThreads 
-	&& pragma.getQuorumDelayedCalls() == KEEP_ALL_QUORUM_DELAYED_CALLS) {
+	&& Pragma::getQuorumDelayedCalls() == Pragma::QuorumDelayedCalls::KEEP_ALL) {
 
 	localCDFs.addCDF(sumLocal.closedFormDetPoints(0, level1Mean,0 ));
 	remoteCDFs.addCDF(sumRemote.closedFormDetPoints(avgNumCallsToLevel2Tasks,
@@ -695,7 +695,7 @@ Activity::estimateClosedFormGeoQuorumCDF(double level1Mean,
     }
 
     if (isThereQuorumDelayedThreads 
-	&& pragma.getQuorumDelayedCalls() == KEEP_ALL_QUORUM_DELAYED_CALLS) {
+	&& Pragma::getQuorumDelayedCalls() == Pragma::QuorumDelayedCalls::KEEP_ALL) {
           
 	// The sum of a geometric number of exponentially distributed random variables
 	// is exponentially distributed.
@@ -777,7 +777,7 @@ Activity::checkReplies( Activity::Count_If& data ) const
 {
     const Entry * entry = data.entry();
     if ( repliesTo( entry ) ) {
-	if (  entry->isCalledUsing( SEND_NO_REPLY_REQUEST ) || entry->isCalledUsing( OPEN_ARRIVAL_REQUEST ) ) {
+	if (  entry->isCalledUsing( Entry::RequestType::SEND_NO_REPLY ) || entry->isCalledUsing( Entry::RequestType::OPEN_ARRIVAL ) ) {
 	    LQIO::solution_error( LQIO::ERR_REPLY_SPECIFIED_FOR_SNR_ENTRY, owner()->name().c_str(), name().c_str(), entry->name().c_str() );
 	} else if ( !data.canReply() || data.rate() != 1 ) {
 	    LQIO::solution_error( LQIO::ERR_INVALID_REPLY, owner()->name().c_str(), name().c_str(), entry->name().c_str() );

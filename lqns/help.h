@@ -1,14 +1,14 @@
 /* -*- C++ -*-
  * help.h	-- Greg Franks
  *
- * $Id: help.h 14141 2020-11-25 20:57:44Z greg $
+ * $Id: help.h 14176 2020-12-07 17:26:28Z greg $
  */
 
 #ifndef _HELP_H
 #define _HELP_H
 
+//#include "dim.h"
 #include <config.h>
-#include "dim.h"
 #include <map>
 #include "lqns.h"
 
@@ -223,15 +223,17 @@ public:
     std::ostream& pragmaLayering( std::ostream& output, bool verbose ) const;
     std::ostream& pragmaMultiserver( std::ostream& output, bool verbose ) const;
     std::ostream& pragmaMVA( std::ostream& output, bool verbose ) const;
+    std::ostream& pragmaOvertaking( std::ostream& output, bool verbose ) const;
+    std::ostream& pragmaProcessor( std::ostream& output, bool verbose ) const;
 #if HAVE_LIBGSL && HAVE_LIBGSLCBLAS
     std::ostream& pragmaQuorumDistribution( std::ostream& output, bool verbose ) const;
     std::ostream& pragmaQuorumDelayedCalls( std::ostream& output, bool verbose ) const;
     std::ostream& pragmaIdleTime( std::ostream& output, bool verbose ) const;
 #endif
-    std::ostream& pragmaOvertaking( std::ostream& output, bool verbose ) const;
-    std::ostream& pragmaProcessor( std::ostream& output, bool verbose ) const;
 #if RESCHEDULE
     std::ostream& pragmaReschedule( std::ostream& output, bool verbose ) const;
+    std::ostream& pragmaRescheduleTrue( std::ostream& output, bool verbose ) const;
+    std::ostream& pragmaRescheduleFalse( std::ostream& output, bool verbose ) const;
 #endif
     std::ostream& pragmaTau( std::ostream& output, bool verbose ) const;
     std::ostream& pragmaThreads( std::ostream& output, bool verbose ) const;
@@ -345,6 +347,9 @@ private:
     static parameter_map_t  __overtaking_args;
     static parameter_map_t  __processor_args;
     static parameter_map_t  __prune_args;
+#if RESCHEDULE
+    static parameter_map_t  __reschedule_args;
+#endif
     static parameter_map_t  __spex_header_args;
     static parameter_map_t  __stop_on_message_loss_args;
     static parameter_map_t  __threads_args;

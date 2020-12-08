@@ -11,7 +11,7 @@
  * July 2007
  *
  * ------------------------------------------------------------------------
- * $Id: activity.h 14118 2020-11-23 17:30:44Z greg $
+ * $Id: activity.h 14176 2020-12-07 17:26:28Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -197,7 +197,7 @@ public:
     Activity& add_reply_list();
     Activity& add_activity_lists();
 
-    const std::set<const Entry *>& replyList() { return _replyList; }
+    const std::set<const Entry *>& replyList() const { return _replyList; }
 
     virtual Call * findOrAddCall( const Entry *, const queryFunc = 0 );
     virtual Call * findOrAddFwdCall( const Entry * anEntry );
@@ -242,7 +242,7 @@ public:
 				     const bool isThereQuorumDelayedThreads, 
 				     bool & isQuorumDelayedThreadsActive);
 #if HAVE_LIBGSL
-    bool estimateGammaQuorumCDF(phase_type phaseTypeFlag, double level1Mean, 
+    bool estimateGammaQuorumCDF(LQIO::DOM::Phase::Type phaseTypeFlag, double level1Mean, 
 				double level2Mean,  double avgNumCallsToLevel2Tasks,
 				DiscretePoints & sumTotal, DiscretePoints & sumLocal, 
 				DiscretePoints & sumRemote, DiscreteCDFs & quorumCDFs, 

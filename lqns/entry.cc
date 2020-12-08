@@ -12,7 +12,7 @@
  * July 2007.
  *
  * ------------------------------------------------------------------------
- * $Id: entry.cc 14152 2020-11-29 16:38:49Z greg $
+ * $Id: entry.cc 14172 2020-12-06 14:23:14Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -61,7 +61,7 @@ Entry::Entry( LQIO::DOM::Entry* dom, const unsigned id, const unsigned index )
       _index(index+1),
       _entryType(LQIO::DOM::Entry::Type::NOT_DEFINED),
       _semaphoreType(dom ? dom->getSemaphoreFlag() : LQIO::DOM::Entry::Semaphore::NONE),
-      _calledBy(NOT_CALLED),
+      _calledBy(RequestType::NOT_CALLED),
       _throughput(0.0),
       _throughputBound(0.0),
       _callerList()
@@ -198,7 +198,7 @@ Entry::configure( const unsigned nSubmodels )
 	std::deque<const Activity *> activityStack; // (dynamic_cast<const Task *>(owner())->activities().size());
 	Activity::Count_If data( this, &Activity::checkReplies );
 	const double replies = _startActivity->count_if( activityStack, data ).sum();
-	if ( isCalledUsing( RENDEZVOUS_REQUEST ) ) {
+	if ( isCalledUsing( RequestType::RENDEZVOUS ) ) {
 	    if ( replies == 0.0 ) {
 		//tomari: disable to allow a quorum use the default reply which
 		//is after all threads completes exection.
@@ -364,7 +364,7 @@ Entry::setEntryInformation( LQIO::DOM::Entry * entryInfo )
 {
     /* Open arrival stuff. */
     if ( hasOpenArrivals() ) {
-	setIsCalledBy( OPEN_ARRIVAL_REQUEST );
+	setIsCalledBy( RequestType::OPEN_ARRIVAL );
     }
     return *this;
 }
@@ -401,9 +401,9 @@ Entry::addServiceTime( const unsigned p, const double value )
  */
 
 bool
-Entry::setIsCalledBy(const requesting_type callType )
+Entry::setIsCalledBy( const RequestType callType )
 {
-    if ( _calledBy != NOT_CALLED && _calledBy != callType ) {
+    if ( _calledBy != RequestType::NOT_CALLED && _calledBy != callType ) {
 	LQIO::solution_error( LQIO::ERR_OPEN_AND_CLOSED_CLASSES, name().c_str() );
 	return false;
     } else {

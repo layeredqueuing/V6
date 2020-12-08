@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: entry.h 14141 2020-11-25 20:57:44Z greg $
+ * $Id: entry.h 14172 2020-12-06 14:23:14Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -47,8 +47,6 @@ class Submodel;
 class MVASubmodel;
 class Task;
 typedef Vector<unsigned> ChainVector;
-
-typedef enum { NOT_CALLED, RENDEZVOUS_REQUEST, SEND_NO_REPLY_REQUEST, OPEN_ARRIVAL_REQUEST } requesting_type;
 
 /* */
 
@@ -114,6 +112,9 @@ class Entry
     friend class Entity;		/* To access phase */
 
 public:
+    enum class RequestType { NOT_CALLED, RENDEZVOUS, SEND_NO_REPLY, OPEN_ARRIVAL };
+
+    
     class CallExec {
     public:
 	CallExec( callFunc f, unsigned submodel, unsigned k=0 ) : _f(f), _submodel(submodel), _k(k)  {}
@@ -270,9 +271,9 @@ public:
     double openArrivalRate() const;
     double computeCV_sqr() const;
     int priority() const;
-    bool setIsCalledBy( const requesting_type callType );
-    bool isCalledUsing( const requesting_type callType ) const { return callType == _calledBy; }
-    bool isCalled() const { return _calledBy != NOT_CALLED; }
+    bool setIsCalledBy( const RequestType callType );
+    bool isCalledUsing( const RequestType callType ) const { return callType == _calledBy; }
+    bool isCalled() const { return _calledBy != RequestType::NOT_CALLED; }
     Entry& setEntryInformation( LQIO::DOM::Entry * entryInfo );
     virtual Entry& setDOM( unsigned phase, LQIO::DOM::Phase* phaseInfo );
     Entry& setForwardingInformation( Entry* toEntry, LQIO::DOM::Call *);
@@ -452,7 +453,7 @@ private:
     const unsigned short _index;		/* My index (for mva)		*/
     LQIO::DOM::Entry::Type _entryType;
     LQIO::DOM::Entry::Semaphore _semaphoreType;	/* Extra type information	*/
-    requesting_type _calledBy;			/* true if entry referenced.	*/
+    RequestType _calledBy;			/* true if entry referenced.	*/
     double _throughput;				/* Computed throughput.		*/
     double _throughputBound;			/* Type 1 throughput bound.	*/
 	

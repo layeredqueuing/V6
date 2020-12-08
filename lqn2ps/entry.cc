@@ -8,7 +8,7 @@
  * January 2003
  *
  * ------------------------------------------------------------------------
- * $Id: entry.cc 14168 2020-12-04 20:17:22Z greg $
+ * $Id: entry.cc 14179 2020-12-07 22:02:52Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -758,7 +758,7 @@ Entry::isSelectedIndirectly() const
 	return true;
     }
 
-    return find_if( calls().begin(), calls().end(), ::Predicate<GenericCall>( &GenericCall::isSelected ) ) != calls().end();
+    return std::any_of( calls().begin(), calls().end(), ::Predicate<GenericCall>( &GenericCall::isSelected ) );
 }
 
 
@@ -909,7 +909,7 @@ Entry::Cv_sqr() const
 bool
 Entry::hasHistogram() const
 {
-    return find_if( _phases.begin(), _phases.end(), Predicate<Phase>( &Phase::hasHistogram ) ) != _phases.end();
+    return std::any_of( _phases.begin(), _phases.end(), Predicate<Phase>( &Phase::hasHistogram ) );
 }
 
 
@@ -921,7 +921,7 @@ Entry::hasHistogram() const
 bool
 Entry::hasRendezvous() const
 {
-    return find_if( calls().begin(), calls().end(), ::Predicate<GenericCall>( &GenericCall::hasRendezvous ) ) != calls().end();
+    return std::any_of( calls().begin(), calls().end(), ::Predicate<GenericCall>( &GenericCall::hasRendezvous ) );
 }
 
 
@@ -933,7 +933,7 @@ Entry::hasRendezvous() const
 bool
 Entry::hasSendNoReply() const
 {
-    return find_if( calls().begin(), calls().end(), ::Predicate<GenericCall>( &GenericCall::hasSendNoReply ) ) != calls().end();
+    return std::any_of( calls().begin(), calls().end(), ::Predicate<GenericCall>( &GenericCall::hasSendNoReply ) );
 }
 
 
@@ -945,7 +945,7 @@ Entry::hasSendNoReply() const
 bool
 Entry::hasForwarding() const
 {
-    return find_if( calls().begin(), calls().end(), ::Predicate<GenericCall>( &GenericCall::hasForwarding ) ) != calls().end();
+    return std::any_of( calls().begin(), calls().end(), ::Predicate<GenericCall>( &GenericCall::hasForwarding ) );
 }
 
 
@@ -969,7 +969,7 @@ Entry::hasOpenArrivalRate() const
 bool
 Entry::hasForwardingLevel() const
 {
-    return find_if( calls().begin(), calls().end(), ::Predicate<GenericCall>( &GenericCall::hasForwardingLevel ) ) != calls().end();
+    return std::any_of( calls().begin(), calls().end(), ::Predicate<GenericCall>( &GenericCall::hasForwardingLevel ) );
 }
 
 
@@ -977,7 +977,7 @@ Entry::hasForwardingLevel() const
 bool
 Entry::isForwardingTarget() const
 {
-    return find_if( callers().begin(), callers().end(), ::Predicate<GenericCall>( &GenericCall::hasForwardingLevel ) ) != callers().end();
+    return std::any_of( callers().begin(), callers().end(), ::Predicate<GenericCall>( &GenericCall::hasForwardingLevel ) );
 }
 
 
@@ -989,7 +989,7 @@ Entry::isForwardingTarget() const
 bool
 Entry::hasCalls( const callPredicate predicate ) const
 {
-    return find_if( calls().begin(), calls().end(), ::Predicate<GenericCall>( predicate ) ) != calls().end();
+    return std::any_of( calls().begin(), calls().end(), ::Predicate<GenericCall>( predicate ) );
 }
 
 
@@ -1008,7 +1008,7 @@ Entry::maxServiceTime( const unsigned p ) const
 bool
 Entry::hasMaxServiceTime() const
 {
-    return find_if( _phases.begin(), _phases.end(), Predicate<Phase>( &Phase::hasMaxServiceTime ) ) != _phases.end();
+    return std::any_of( _phases.begin(), _phases.end(), Predicate<Phase>( &Phase::hasMaxServiceTime ) );
 }
 
 
@@ -1020,7 +1020,7 @@ Entry::hasMaxServiceTime() const
 bool
 Entry::hasDeterministicPhases() const
 {
-    return find_if( _phases.begin(), _phases.end(), Predicate<Phase>( &Phase::isDeterministic ) ) != _phases.end();
+    return std::any_of( _phases.begin(), _phases.end(), Predicate<Phase>( &Phase::isDeterministic ) );
 }
 
 
@@ -1032,7 +1032,7 @@ Entry::hasDeterministicPhases() const
 bool
 Entry::hasNonExponentialPhases() const
 {
-    return find_if( _phases.begin(), _phases.end(), Predicate<Phase>( &Phase::isNonExponential ) ) != _phases.end();
+    return std::any_of( _phases.begin(), _phases.end(), Predicate<Phase>( &Phase::isNonExponential ) );
 }
 
 
@@ -1043,7 +1043,7 @@ Entry::hasNonExponentialPhases() const
 bool
 Entry::hasThinkTime() const
 {
-    return find_if( _phases.begin(), _phases.end(), Predicate<Phase>( &Phase::hasThinkTime ) ) != _phases.end();
+    return std::any_of( _phases.begin(), _phases.end(), Predicate<Phase>( &Phase::hasThinkTime ) );
 }
 
 
@@ -1088,7 +1088,7 @@ Entry::queueingTime( const unsigned p ) const
 bool
 Entry::hasQueueingTime() const
 {
-    return find_if( _phases.begin(), _phases.end(), Predicate<Phase>( &Phase::hasQueueingTime ) ) != _phases.end();
+    return std::any_of( _phases.begin(), _phases.end(), Predicate<Phase>( &Phase::hasQueueingTime ) );
 }
 
 
@@ -1101,7 +1101,7 @@ Call *
 Entry::findCall( const Entry * anEntry, const callPredicate aFunc ) const
 {
     const std::vector<Call *>::const_iterator call = find_if( calls().begin(), calls().end(), Call::PredicateAndEntry( anEntry, aFunc ) );
-    return call != calls().end() ? *call : 0;
+    return call != calls().end() ? *call : nullptr;
 }
 
 
@@ -1114,7 +1114,7 @@ Call *
 Entry::findCall( const Task * aTask ) const
 {
     const std::vector<Call *>::const_iterator call = find_if( calls().begin(), calls().end(), Call::PredicateAndTask( aTask, &Call::isPseudoCall ) );
-    return call != calls().end() ? *call : 0;
+    return call != calls().end() ? *call : nullptr;
 }
 
 
@@ -1544,7 +1544,7 @@ Entry::referenceTasks( std::vector<Entity *> &clients, Element * dst ) const
 {
     if ( owner()->isReferenceTask() ) {
 //!!! Check for phase 2, except reference task.
-	if ( find_if( clients.begin(), clients.end(), EQ<Element>(owner()) ) == clients.end() ) {
+	if ( std::none_of( clients.begin(), clients.end(), EQ<Element>(owner()) ) ) {
 	    clients.push_back(const_cast<Task *>(owner()));
 	}
 //!!! Need to create the pseudo arc to the task.
@@ -1578,7 +1578,7 @@ Entry::clients( std::vector<Entity *> &clients, const callPredicate aFunc ) cons
 {
     for ( std::vector<GenericCall *>::const_iterator call = callers().begin(); call != callers().end(); ++call ) {
 	const Entity * task = (*call)->srcTask();
-	if ( (*call)->isSelected() && (!aFunc || ((*call)->*aFunc)()) && task->pathTest() && find_if( clients.begin(), clients.end(), EQ<Element>(task) ) == clients.end() ) {
+	if ( (*call)->isSelected() && (!aFunc || ((*call)->*aFunc)()) && task->pathTest() && std::none_of( clients.begin(), clients.end(), EQ<Element>(task) ) ) {
 	    clients.push_back( const_cast<Entity *>(task) );
 	}
     }

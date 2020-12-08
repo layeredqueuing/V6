@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: phase.cc 14152 2020-11-29 16:38:49Z greg $
+ * $Id: phase.cc 14173 2020-12-06 14:35:22Z greg $
  *
  * Everything you wanted to know about an phase, but were afraid to ask.
  *
@@ -596,7 +596,7 @@ Phase::rendezvous( const Entity * task ) const
 Phase&
 Phase::rendezvous( Entry * toEntry, const LQIO::DOM::Call* callDOM )
 {
-    if ( callDOM != nullptr && toEntry->setIsCalledBy( RENDEZVOUS_REQUEST ) ) {
+    if ( callDOM != nullptr && toEntry->setIsCalledBy( Entry::RequestType::RENDEZVOUS ) ) {
 	Task * client = const_cast<Task *>(dynamic_cast<const Task *>(owner()));
 	if ( client != nullptr ) {
 	    client->isPureServer( false );
@@ -654,7 +654,7 @@ Phase::sumOfRendezvous() const
 Phase&
 Phase::sendNoReply( Entry * toEntry, const LQIO::DOM::Call* callDOM )
 {
-    if ( callDOM != nullptr && toEntry->setIsCalledBy( SEND_NO_REPLY_REQUEST ) ) {
+    if ( callDOM != nullptr && toEntry->setIsCalledBy( Entry::RequestType::SEND_NO_REPLY ) ) {
 	Task * client = const_cast<Task *>(dynamic_cast<const Task *>(owner()));
 	if ( client != nullptr ) {
 	    client->isPureServer( false );
@@ -700,7 +700,7 @@ Phase&
 Phase::forwardedRendezvous( const Call * fwdCall, const double value )
 {
     const Entry * toEntry = fwdCall->dstEntry();
-    if ( value > 0.0 && const_cast<Entry *>(toEntry)->setIsCalledBy( RENDEZVOUS_REQUEST ) ) {
+    if ( value > 0.0 && const_cast<Entry *>(toEntry)->setIsCalledBy( Entry::RequestType::RENDEZVOUS ) ) {
 	if ( owner() ) {
 	    const_cast<Entity *>(owner())->isPureServer( false );
 	}
@@ -723,7 +723,7 @@ Phase::forwardedRendezvous( const Call * fwdCall, const double value )
 Phase&
 Phase::forward( Entry * toEntry, const LQIO::DOM::Call* callDOM )
 {
-    if ( callDOM != nullptr && toEntry->setIsCalledBy( RENDEZVOUS_REQUEST ) ) {
+    if ( callDOM != nullptr && toEntry->setIsCalledBy( Entry::RequestType::RENDEZVOUS ) ) {
 	Task * client = const_cast<Task *>(dynamic_cast<const Task *>(owner()));
 	if ( client != nullptr ) {
 	    client->isPureServer( false );
@@ -1462,7 +1462,7 @@ Phase::computeVariance()
 	_variance = elapsedTime();
     } else switch ( Pragma::variance() ) {
 
-	case Pragma::MOL_VARIANCE:
+	case Pragma::Variance::MOL:
 	    if ( phaseTypeFlag() == LQIO::DOM::Phase::Type::STOCHASTIC ) {
 		_variance =  mol_phase();
 		break;
@@ -1471,7 +1471,7 @@ Phase::computeVariance()
 	    }
 	    break;
 
-	case Pragma::STOCHASTIC_VARIANCE:
+	case Pragma::Variance::STOCHASTIC:
 	    if ( phaseTypeFlag() == LQIO::DOM::Phase::Type::STOCHASTIC ) {
 		_variance =  stochastic_phase();
 		break;
@@ -1480,7 +1480,7 @@ Phase::computeVariance()
 	    }
 	    break;
 		
-	case Pragma::DEFAULT_VARIANCE:
+	case Pragma::Variance::DEFAULT:
 	    if ( phaseTypeFlag() == LQIO::DOM::Phase::Type::STOCHASTIC ) {
 		_variance =  stochastic_phase();
 	    } else {

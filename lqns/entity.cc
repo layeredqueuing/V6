@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: entity.cc 14152 2020-11-29 16:38:49Z greg $
+ * $Id: entity.cc 14175 2020-12-07 17:04:30Z greg $
  *
  * Everything you wanted to know about a task or processor, but were
  * afraid to ask.
@@ -114,7 +114,7 @@ Entity::configure( const unsigned nSubmodels )
 {
     std::for_each( entries().begin(), entries().end(), Exec1<Entry,unsigned>( &Entry::configure, nSubmodels ) );
     if ( std::any_of( entries().begin(), entries().end(), Predicate<Entry>( &Entry::hasDeterministicPhases ) ) ) attributes.deterministic = 1;
-    if ( !Pragma::variance(Pragma::NO_VARIANCE)
+    if ( !Pragma::variance(Pragma::Variance::NONE)
 	 && ((nEntries() > 1 && Pragma::entry_variance())
 	     || std::any_of( entries().begin(), entries().end(), Predicate<Entry>( &Entry::hasVariance ) )) ) attributes.variance = 1;
     _maxPhase = (*std::max_element( entries().begin(), entries().end(), Entry::max_phase ))->maxPhase();
@@ -371,7 +371,7 @@ Entity::markovOvertaking() const
 {
     return (bool)( hasSecondPhase()
 		   && !isInfinite()
-		   && Pragma::overtaking( Pragma::MARKOV_OVERTAKING ) );
+		   && Pragma::overtaking( Pragma::Overtaking::MARKOV ) );
 }
 
 
@@ -914,7 +914,7 @@ Entity::initServerStation( MVASubmodel& submodel )
 
     std::for_each( clients.begin(), clients.end(), ConstExec2<Task,const MVASubmodel&,const Entity *>( &Task::modifyParentClientServiceTime, submodel, this ) );
 
-    if ( hasSynchs() && !Pragma::threads(Pragma::NO_THREADS) ) {
+    if ( hasSynchs() && !Pragma::threads(Pragma::Threads::NONE) ) {
 	joinOverlapFactor( submodel );
     }
     return *this;

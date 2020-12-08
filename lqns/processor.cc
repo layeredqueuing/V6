@@ -10,7 +10,7 @@
  * November, 1994
  *
  * ------------------------------------------------------------------------
- * $Id: processor.cc 14141 2020-11-25 20:57:44Z greg $
+ * $Id: processor.cc 14186 2020-12-08 14:25:53Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -84,14 +84,9 @@ Processor::check() const
 	getDOM()->setSchedulingType(defaultScheduling());
     }
 
-    if ( scheduling() == SCHEDULE_DELAY ) {
-	if ( copies() != 1 ) {
-	    solution_error( LQIO::WRN_INFINITE_MULTI_SERVER, "Processor", name().c_str(), copies() );
-	    getDOM()->setCopies(new LQIO::DOM::ConstantExternalVariable(1.0));
-	}
-    } else if ( !Pragma::defaultProcessorScheduling() && copies() == 1 ) {
-	/* Change scheduling type for uni-processors (usually from FCFS to PS) */
-	getDOM()->setSchedulingType(Pragma::processorScheduling());
+    if ( copies() != 1 && scheduling() == SCHEDULE_DELAY ) {
+	solution_error( LQIO::WRN_INFINITE_MULTI_SERVER, "Processor", name().c_str(), copies() );
+	getDOM()->setCopies(new LQIO::DOM::ConstantExternalVariable(1.0));
     }
     return rc;
 }
@@ -113,6 +108,11 @@ Processor::configure( const unsigned nSubmodels )
 	return *this;
     }
 
+    if ( copies() == 1 && scheduling() != SCHEDULE_DELAY && !Pragma::defaultProcessorScheduling() ) {
+	/* Change scheduling type for uni-processors (usually from FCFS to PS) */
+	getDOM()->setSchedulingType(Pragma::processorScheduling());
+    }
+
     std::vector<Entry *>::const_iterator entry = entries().begin();
     double minS = (*entry)->serviceTime();
     double maxS = (*entry)->serviceTime();
@@ -125,7 +125,7 @@ Processor::configure( const unsigned nSubmodels )
 	LQIO::solution_error( ADV_SERVICE_TIME_RANGE, getDOM()->getTypeName(), name().c_str(), minS, maxS );
     }
     Entity::configure( nSubmodels );
-    if ( Pragma::forceMultiserver( Pragma::FORCE_PROCESSORS ) ) {
+    if ( Pragma::forceMultiserver( Pragma::ForceMultiserver::PROCESSORS ) ) {
 	attributes.variance = 0;
     }
     
@@ -186,6 +186,7 @@ Processor::fanIn( const Task * aClient ) const
     return aClient->replicas() / replicas();
 }
 
+
 /*
  * Processors don't have a fanout ever 
  */
@@ -196,6 +197,7 @@ Processor::fanOut( const Entity * aServer ) const
     throw should_not_implement( "Entity::fanOut", __FILE__, __LINE__ );
     return 1;
 }
+
 
 /*
  * Return true if we want to keep this processor.  Interesting processors
@@ -230,7 +232,7 @@ Processor::isInteresting() const
 bool
 Processor::hasVariance() const
 {
-    if ( Pragma::variance(Pragma::NO_VARIANCE)
+    if ( Pragma::variance(Pragma::Variance::NONE)
 	 || !Pragma::defaultProcessorScheduling()
 	 || scheduling() == SCHEDULE_PS
 	 || isMultiServer()
@@ -287,10 +289,10 @@ Processor::makeServer( const unsigned nChains )
 
 	/* ---------------- Infinite Servers ---------------- */
 
-	if ( dynamic_cast<Infinite_Server *>(_station) ) return 0;
+	if ( dynamic_cast<Infinite_Server *>(_station) ) return nullptr;
 	_station = new Infinite_Server( nEntries(), nChains, maxPhase() );
 
-    } else if ( isMultiServer() || Pragma::forceMultiserver( Pragma::FORCE_PROCESSORS ) ) {
+    } else if ( isMultiServer() || Pragma::forceMultiserver( Pragma::ForceMultiserver::PROCESSORS ) ) {
 
 	/* ---------------- Multi Servers ---------------- */
 
@@ -298,18 +300,18 @@ Processor::makeServer( const unsigned nChains )
 
 	    switch ( Pragma::multiserver() ) {
 	    default:
-	    case Pragma::DEFAULT_MULTISERVER:
-	    case Pragma::CONWAY_MULTISERVER:
-	    case Pragma::REISER_MULTISERVER:
-	    case Pragma::REISER_PS_MULTISERVER:
-	    case Pragma::SCHMIDT_MULTISERVER:
-		if ( dynamic_cast<Reiser_PS_Multi_Server *>(_station) && _station->marginalProbabilitiesSize() == copies()) return 0;
+	    case Pragma::Multiserver::DEFAULT:
+	    case Pragma::Multiserver::CONWAY:
+	    case Pragma::Multiserver::REISER:
+	    case Pragma::Multiserver::REISER_PS:
+	    case Pragma::Multiserver::SCHMIDT:
+		if ( dynamic_cast<Reiser_PS_Multi_Server *>(_station) && _station->marginalProbabilitiesSize() == copies()) return nullptr;
 		_station = new Reiser_PS_Multi_Server( copies(), nEntries(), nChains );
 		break;
 
-	    case Pragma::ROLIA_PS_MULTISERVER:
-	    case Pragma::ROLIA_MULTISERVER:
-		if ( dynamic_cast<Rolia_PS_Multi_Server *>(_station) ) return 0;
+	    case Pragma::Multiserver::ROLIA_PS:
+	    case Pragma::Multiserver::ROLIA:
+		if ( dynamic_cast<Rolia_PS_Multi_Server *>(_station) ) return nullptr;
 		_station = new Rolia_PS_Multi_Server( copies(), nEntries(), nChains );
 		break;
 	    }
@@ -318,48 +320,48 @@ Processor::makeServer( const unsigned nChains )
 
 	    switch ( Pragma::multiserver() ) {
 	    default:
-	    case Pragma::DEFAULT_MULTISERVER:
+	    case Pragma::Multiserver::DEFAULT:
 		if ( copies() < 20 && nChains <= 5 ) {
-		    if ( dynamic_cast<Conway_Multi_Server *>(_station) && _station->marginalProbabilitiesSize() == copies()) return 0;
+		    if ( dynamic_cast<Conway_Multi_Server *>(_station) && _station->marginalProbabilitiesSize() == copies()) return nullptr;
 		    _station = new Conway_Multi_Server( copies(), nEntries(), nChains );
 		} else {
-		    if ( dynamic_cast<Rolia_Multi_Server *>(_station) ) return 0;
+		    if ( dynamic_cast<Rolia_Multi_Server *>(_station) ) return nullptr;
 		    _station = new Rolia_Multi_Server(  copies(), nEntries(), nChains );
 		}
 		break;
 
-	    case Pragma::CONWAY_MULTISERVER:
-		if ( dynamic_cast<Conway_Multi_Server *>(_station) && _station->marginalProbabilitiesSize() == copies()) return 0;
+	    case Pragma::Multiserver::CONWAY:
+		if ( dynamic_cast<Conway_Multi_Server *>(_station) && _station->marginalProbabilitiesSize() == copies()) return nullptr;
 		_station = new Conway_Multi_Server( copies(), nEntries(), nChains );
 		break;
 
-	    case Pragma::REISER_MULTISERVER:
-		if ( dynamic_cast<Reiser_Multi_Server *>(_station) && _station->marginalProbabilitiesSize() == copies()) return 0;
+	    case Pragma::Multiserver::REISER:
+		if ( dynamic_cast<Reiser_Multi_Server *>(_station) && _station->marginalProbabilitiesSize() == copies()) return nullptr;
 		_station = new Reiser_Multi_Server( copies(), nEntries(), nChains );
 		break;
 
-	    case Pragma::REISER_PS_MULTISERVER:
-		if ( dynamic_cast<Reiser_PS_Multi_Server *>(_station) && _station->marginalProbabilitiesSize() == copies()) return 0;
+	    case Pragma::Multiserver::REISER_PS:
+		if ( dynamic_cast<Reiser_PS_Multi_Server *>(_station) && _station->marginalProbabilitiesSize() == copies()) return nullptr;
 		_station = new Reiser_PS_Multi_Server( copies(), nEntries(), nChains );
 		break;
 
-	    case Pragma::ROLIA_MULTISERVER:
-		if ( dynamic_cast<Rolia_Multi_Server *>(_station) ) return 0;
+	    case Pragma::Multiserver::ROLIA:
+		if ( dynamic_cast<Rolia_Multi_Server *>(_station) ) return nullptr;
 		_station = new Rolia_Multi_Server( copies(), nEntries(), nChains );
 		break;
 
-	    case Pragma::ROLIA_PS_MULTISERVER:
-		if ( dynamic_cast<Rolia_PS_Multi_Server *>(_station) ) return 0;
+	    case Pragma::Multiserver::ROLIA_PS:
+		if ( dynamic_cast<Rolia_PS_Multi_Server *>(_station) ) return nullptr;
 		_station = new Rolia_PS_Multi_Server( copies(), nEntries(), nChains );
 		break;
 
-	    case Pragma::BRUELL_MULTISERVER:
-		if ( dynamic_cast<Bruell_Multi_Server *>(_station) && _station->marginalProbabilitiesSize() == copies()) return 0;
+	    case Pragma::Multiserver::BRUELL:
+		if ( dynamic_cast<Bruell_Multi_Server *>(_station) && _station->marginalProbabilitiesSize() == copies()) return nullptr;
 		_station = new Bruell_Multi_Server( copies(), nEntries(), nChains );
 		break;
 
-	    case Pragma::SCHMIDT_MULTISERVER:
-		if ( dynamic_cast<Schmidt_Multi_Server *>(_station) && _station->marginalProbabilitiesSize() == copies()) return 0;
+	    case Pragma::Multiserver::SCHMIDT:
+		if ( dynamic_cast<Schmidt_Multi_Server *>(_station) && _station->marginalProbabilitiesSize() == copies()) return nullptr;
 		_station = new Schmidt_Multi_Server( copies(), nEntries(), nChains );
 		break;
 	    }
@@ -369,51 +371,51 @@ Processor::makeServer( const unsigned nChains )
 	default:
 	case SCHEDULE_FIFO:
 	    if ( hasVariance() ) {
-		if ( dynamic_cast<HVFCFS_Server *>(_station) ) return 0;
+		if ( dynamic_cast<HVFCFS_Server *>(_station) ) return nullptr;
 		_station = new HVFCFS_Server( nEntries(), nChains, maxPhase() );
 	    } else {
-		if ( dynamic_cast<FCFS_Server *>(_station) ) return 0;
+		if ( dynamic_cast<FCFS_Server *>(_station) ) return nullptr;
 		_station = new FCFS_Server( nEntries(), nChains, maxPhase() );
 	    }
 	    break;
 
 	case SCHEDULE_PPR:
 	    if ( hasVariance() ) {
-		if ( dynamic_cast<PR_HVFCFS_Server *>(_station) ) return 0;
+		if ( dynamic_cast<PR_HVFCFS_Server *>(_station) ) return nullptr;
 		_station = new PR_HVFCFS_Server( nEntries(), nChains, maxPhase() );
 	    } else {
-		if ( dynamic_cast<PR_FCFS_Server *>(_station) ) return 0;
+		if ( dynamic_cast<PR_FCFS_Server *>(_station) ) return nullptr;
 		_station = new PR_FCFS_Server( nEntries(), nChains, maxPhase() );
 	    }
 	    break;
 
 	case SCHEDULE_HOL:
 	    if ( hasVariance() ) {
-		if ( dynamic_cast<HOL_HVFCFS_Server *>(_station) ) return 0;
+		if ( dynamic_cast<HOL_HVFCFS_Server *>(_station) ) return nullptr;
 		_station = new HOL_HVFCFS_Server( nEntries(), nChains, maxPhase() );
 	    } else {
-		if ( dynamic_cast<HOL_FCFS_Server *>(_station) ) return 0;
+		if ( dynamic_cast<HOL_FCFS_Server *>(_station) ) return nullptr;
 		_station = new HOL_FCFS_Server( nEntries(), nChains, maxPhase() );
 	    }
 	    break;
 
 	case SCHEDULE_PS:
-	    if ( dynamic_cast<PS_Server *>(_station) ) return 0;
+	    if ( dynamic_cast<PS_Server *>(_station) ) return nullptr;
 	    _station = new PS_Server( nEntries(), nChains, maxPhase() );
 	    break;
 
 	case SCHEDULE_PS_HOL:
-	    if ( dynamic_cast<HOL_PS_Server *>(_station) ) return 0;
+	    if ( dynamic_cast<HOL_PS_Server *>(_station) ) return nullptr;
 	    _station = new HOL_PS_Server( nEntries(), nChains, maxPhase() );
 	    break;
 
 	case SCHEDULE_PS_PPR:
-	    if ( dynamic_cast<PR_PS_Server *>(_station) ) return 0;
+	    if ( dynamic_cast<PR_PS_Server *>(_station) ) return nullptr;
 	    _station = new PR_PS_Server( nEntries(), nChains, maxPhase() );
 	    break;
 
 	case SCHEDULE_CFS:
-	    if ( dynamic_cast<HVFCFS_Server *>(_station) ) return 0;
+	    if ( dynamic_cast<HVFCFS_Server *>(_station) ) return nullptr;
 	    _station = new CFS_Server( nEntries(), nChains, maxPhase() );
 
 	    break;

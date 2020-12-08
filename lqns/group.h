@@ -9,7 +9,7 @@
  *
  * November, 2008
  *
- * $Id: group.h 14141 2020-11-25 20:57:44Z greg $
+ * $Id: group.h 14172 2020-12-06 14:23:14Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -35,11 +35,7 @@ private:
     Group& operator=( const Group& );
     
 public:
-#if __cplusplus >= 201103L
     enum class status_t { RECEIVING=-1, THROTTLE=0, CONTRIBUTING=1 };
-#else
-    typedef enum { RECEIVING=-1, THROTTLE=0, CONTRIBUTING=1 } status_t;
-#endif
     
     Group( LQIO::DOM::Group *, const CFS_Processor * );
     virtual ~Group();

@@ -1,6 +1,6 @@
 /* layer.cc	-- Greg Franks Tue Jan 28 2003
  *
- * $Id: layer.cc 14168 2020-12-04 20:17:22Z greg $
+ * $Id: layer.cc 14179 2020-12-07 22:02:52Z greg $
  *
  * A layer consists of a set of tasks with the same nesting depth from
  * reference tasks.  Reference tasks are in layer 1, the immediate
@@ -515,7 +515,7 @@ Layer::aggregate()
 		if ( !call ) continue;
 		Task * client = const_cast<Task *>(call->srcTask());
 		Task * server = const_cast<Task *>(call->dstTask());
-		if ( find_if( _clients.begin(), _clients.end(), EQ<Element>(client) ) == _clients.end() ) {
+		if ( std::none_of( _clients.begin(), _clients.end(), EQ<Element>(client) ) ) {
 		    _clients.push_back( client );				/* add the client to my clients */
 		}
 		callPredicate predicate = NULL;

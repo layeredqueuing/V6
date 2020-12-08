@@ -1,5 +1,5 @@
 /* thread.cc	-- Greg Franks Fri May  2 2003
- * $Id: entrythread.cc 14141 2020-11-25 20:57:44Z greg $
+ * $Id: entrythread.cc 14179 2020-12-07 22:02:52Z greg $
  *
  */
 
@@ -125,9 +125,9 @@ Thread::setIdleTime( const double relax )
 	z = 0.0;
     } else if ( throughput() > 0.0 ) {
 #if HAVE_LIBGSL && HAVE_LIBGSLCBLAS
-	switch ( pragma.getIdleTime() ) {
+	switch ( Pragma::getQuorumIdleTime() ) {
 
-	case JOINDELAY_IDLETIME:
+	case Pragma::QuorumIdleTime::JOINDELAY:
 	    //The idle time of the thread in an AND fork activity list should not
 	    //depend on the delay incurred outside the fork join list.... Bug 257
 	    if (joinDelayThroughput != 0.0) {
@@ -141,7 +141,6 @@ Thread::setIdleTime( const double relax )
 	    z = ( owner()->population() - utilization() ) /  throughput();
 	    break;
 	}
-	/// end tomari quorum
 #else
 	z = ( owner()->population() - utilization() ) /  throughput();
 #endif
@@ -151,12 +150,12 @@ Thread::setIdleTime( const double relax )
     }
 
     if ( flags.trace_idle_time || flags.trace_throughput  ) {
-	std::cout <<"\nThread::setIdleTime(): " << name() << std::endl ;
-	std::cout <<"utilization=" << utilization();
-	std::cout <<", population=" << owner()->population();
-	std::cout <<", calculated (root Entry) throughput= " << throughput();
-	std::cout <<", \njoinDelayThroughput= " << joinDelayThroughput << std::endl;
-	std::cout << "Idle Time: " << z << std::endl;
+	std::cout << "Thread::setIdleTime(): " << name() << std::endl
+		  << "  utilization=" << utilization()
+		  << ", population=" << owner()->population()
+		  << ", calculated (root Entry) throughput= " << throughput()
+		  << ",  joinDelayThroughput= " << joinDelayThroughput << std::endl
+		  << " Idle Time: " << z << std::endl;
     }
     under_relax( myThinkTime, z, relax );
     return *this;

@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: actlist.h 14080 2020-11-11 14:50:20Z greg $
+ * $Id: actlist.h 14176 2020-12-07 17:26:28Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -276,9 +276,9 @@ private:
 protected:    
     std::vector<Entry *> _entryList;
     mutable const AndForkActivityList * _parentForkList;
+    const AndOrJoinActivityList * _joinList;
     
 private:
-    const AndOrJoinActivityList * _joinList;
     ActivityList * _prev;
 };
 
@@ -334,7 +334,7 @@ protected:
 
 private:
 #if HAVE_LIBGSL
-    bool saveQuorumDelayedThreadsServiceTime( Stack<Entry *>& entryStack,
+    bool saveQuorumDelayedThreadsServiceTime( std::deque<Entry *>& entryStack,
 					      DiscretePoints & quorumJoin,DiscreteCDFs & quorumCDFs,
 					      DiscreteCDFs & localCDFs,DiscreteCDFs & remoteCDFs,
 					      double probQuorumDelaySeqExecution) ;
@@ -414,7 +414,7 @@ private:
 class AndJoinActivityList : public AndOrJoinActivityList
 {
 public:
-    typedef enum { JOIN_NOT_DEFINED, INTERNAL_FORK_JOIN, SYNCHRONIZATION_POINT } join_type;
+    enum class JoinType { NOT_DEFINED, INTERNAL_FORK_JOIN, SYNCHRONIZATION_POINT };
 
     AndJoinActivityList( Task * owner, LQIO::DOM::ActivityList * dom );
 
@@ -425,8 +425,8 @@ public:
     void quorumCount ( unsigned quorumCount) { myQuorumCount = quorumCount; }
     unsigned quorumCount () const { return myQuorumCount;}
 
-    virtual bool isSync() const { return _joinType == SYNCHRONIZATION_POINT; }
-    bool joinType( const join_type );
+    virtual bool isSync() const { return _joinType == JoinType::SYNCHRONIZATION_POINT; }
+    bool joinType( const JoinType );
     bool hasQuorum() const { return 0 < quorumCount() && quorumCount() < activityList().size(); }
 	
     virtual void followInterlock( Interlock::CollectTable& ) const;
@@ -440,7 +440,7 @@ protected:
     virtual const char * typeStr() const { return "&"; }
 
 private:
-    join_type _joinType;		/* Barrier synch point.	*/
+    JoinType _joinType;		/* Barrier synch point.	*/
     mutable unsigned myQuorumCount;
     unsigned  myQuorumListNum;
 };

@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: model.cc 14159 2020-12-03 18:00:47Z greg $
+ * $Id: model.cc 14176 2020-12-07 17:26:28Z greg $
  *
  * Layer-ization of model.  The basic concept is from the reference
  * below.  However, model partioning is more complex than task vs device.
@@ -121,35 +121,36 @@ Model::createModel( const LQIO::DOM::Document * document, const std::string& inp
 
 	extendModel();			/* Do this before initProcessors() */
 
-	if( check_model )
+	if ( check_model ) {
 	    initProcessors();		/* Set Processor Service times.	*/
+	}
 
 	switch ( Pragma::layering() ) {
-	case Pragma::BATCHED_LAYERS: 
+	case Pragma::Layering::BATCHED: 
 	    aModel = new Batch_Model( document, inputFileName, outputFileName );
 	    break;
 
-	case Pragma::BACKPROPOGATE_LAYERS:
+	case Pragma::Layering::BACKPROPOGATE_BATCHED:
 	    aModel = new BackPropogate_Batch_Model( document, inputFileName, outputFileName );
 	    break;
 
-	case Pragma::METHOD_OF_LAYERS:
+	case Pragma::Layering::METHOD_OF_LAYERS:
 	    aModel = new MOL_Model( document, inputFileName, outputFileName );
 	    break;
 
-	case Pragma::BACKPROPOGATE_METHOD_OF_LAYERS:
+	case Pragma::Layering::BACKPROPOGATE_METHOD_OF_LAYERS:
 	    aModel = new BackPropogate_MOL_Model( document, inputFileName, outputFileName );
 	    break;
 
-	case Pragma::SRVN_LAYERS:
+	case Pragma::Layering::SRVN:
 	    aModel = new SRVN_Model( document, inputFileName, outputFileName );
 	    break;
 
-	case Pragma::SQUASHED_LAYERS:
+	case Pragma::Layering::SQUASHED:
 	    aModel = new Squashed_Model( document, inputFileName, outputFileName );
 	    break;
 
-	case Pragma::HWSW_LAYERS:
+	case Pragma::Layering::HWSW:
 	    aModel = new HwSw_Model( document, inputFileName, outputFileName );
 	    break;
 	}
@@ -537,7 +538,7 @@ Model::generate()
     initialize();			/* Init MVA values (pop&waits). */		/* -- Step 2 -- */
 
     if ( Options::Debug::layers() ) {
-	printLayers( std::cout );		/* Print out layers... 		*/
+	printLayers( std::cout );	/* Print out layers... 		*/
     }
 
     return  !LQIO::io_vars.anError();
@@ -565,7 +566,7 @@ Model::extendModel()
 	}
 
 #if HAVE_LIBGSL && HAVE_LIBGSLCBLAS
-	if ( pragma.getQuorumDelayedCalls() == KEEP_ALL_QUORUM_DELAYED_CALLS &&
+	if ( Pragma::getQuorumDelayedCalls() == Pragma::QuorumDelayedCalls::KEEP_ALL &&
 	     aTask->hasForks() && !flags.disable_expanding_quorum_tree ) {
 	    aTask->expandQuorumGraph();
 	}

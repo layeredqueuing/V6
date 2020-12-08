@@ -1,7 +1,7 @@
 /* pragma.cc	-- Greg Franks Tue Sep  1 2009
  *
  * ------------------------------------------------------------------------
- * $Id: pragma.cc 14000 2020-10-25 12:50:53Z greg $
+ * $Id: pragma.cc 14179 2020-12-07 22:02:52Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -135,11 +135,11 @@ Pragma::usage( std::ostream& output )
 
     for ( std::map<std::string, Pragma::fptr>::const_iterator p = Pragma::__set_pragma.begin(); p != Pragma::__set_pragma.end(); ++p  ) {
 	output << "\t" << std::setw(20) << p->first;
-	const std::set<std::string>* args = LQIO::DOM::Pragma::getValues( p->first );
+	const std::set<const std::string>* args = LQIO::DOM::Pragma::getValues( p->first );
 	if ( args && args->size() > 1 ) {
 	    output << " = {";
 
-	    for ( std::set<std::string>::const_iterator q = args->begin(); q != args->end(); ++q ) {
+	    for ( std::set<const std::string>::const_iterator q = args->begin(); q != args->end(); ++q ) {
 		if ( q != args->begin() ) output << ",";
 		output << *q;
 	    }

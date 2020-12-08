@@ -1,6 +1,6 @@
 /* activity.cc	-- Greg Franks Thu Apr  3 2003
  *
- * $Id: activity.cc 14168 2020-12-04 20:17:22Z greg $
+ * $Id: activity.cc 14179 2020-12-07 22:02:52Z greg $
  */
 
 #include "activity.h"
@@ -765,13 +765,13 @@ Activity::findOrAddFwdCall( Entry * anEntry )
 bool
 Activity::hasRendezvous() const
 {
-    return find_if( calls().begin(), calls().end(), ::Predicate<GenericCall>( &GenericCall::hasRendezvous ) ) != calls().end();
+    return std::any_of( calls().begin(), calls().end(), ::Predicate<GenericCall>( &GenericCall::hasRendezvous ) );
 }
 
 bool
 Activity::hasSendNoReply() const
 {
-    return find_if( calls().begin(), calls().end(), ::Predicate<GenericCall>( &GenericCall::hasSendNoReply ) ) != calls().end();
+    return std::any_of( calls().begin(), calls().end(), ::Predicate<GenericCall>( &GenericCall::hasSendNoReply ) );
 }
 
 
@@ -821,7 +821,7 @@ Activity::serviceTimeForSRVNInput() const
 bool
 Activity::hasCalls( const callPredicate predicate ) const
 {
-    return find_if( calls().begin(), calls().end(), GenericCall::PredicateAndSelected( predicate ) ) != calls().end();
+    return std::any_of( calls().begin(), calls().end(), GenericCall::PredicateAndSelected( predicate ) );
 }
 
 
@@ -838,7 +838,7 @@ Activity::isSelectedIndirectly() const
     } else if ( owner()->isSelected() ) {
 	return true;
     }
-    return find_if( calls().begin(), calls().end(), ::Predicate<GenericCall>( &GenericCall::isSelected ) ) != calls().end();
+    return std::any_of( calls().begin(), calls().end(), ::Predicate<GenericCall>( &GenericCall::isSelected ) );
 }
 
 

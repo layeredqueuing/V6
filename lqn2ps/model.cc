@@ -1,6 +1,6 @@
 /* model.cc	-- Greg Franks Mon Feb  3 2003
  *
- * $Id: model.cc 14171 2020-12-05 14:37:37Z greg $
+ * $Id: model.cc 14179 2020-12-07 22:02:52Z greg $
  *
  * Load, slice, and dice the lqn model.
  */
@@ -506,7 +506,7 @@ Model::process()
     /* Simplify to tasks (for queueing models) */
 
     if ( Flags::print[AGGREGATION].value.i == AGGREGATE_ENTRIES ) {
-	for_each( _layers.begin(), _layers.end(), ::Exec<Layer>( &Layer::aggregate ) );
+//	for_each( _layers.begin(), _layers.end(), ::Exec<Layer>( &Layer::aggregate ) );
     }
 
     if ( Flags::print[SUMMARY].value.b || Flags::print_submodels ) {

@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: pragma.h 14141 2020-11-25 20:57:44Z greg $
+ * $Id: pragma.h 14185 2020-12-08 14:14:28Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -31,13 +31,18 @@ class Pragma {
 public:
     typedef void (Pragma::*fptr)(const std::string&);
 
-    typedef enum { BACKPROPOGATE_LAYERS, BATCHED_LAYERS, METHOD_OF_LAYERS, BACKPROPOGATE_METHOD_OF_LAYERS, SRVN_LAYERS, SQUASHED_LAYERS, HWSW_LAYERS } pragma_layering;
-    typedef enum { LINEARIZER_MVA, EXACT_MVA, SCHWEITZER_MVA, FAST_MVA, ONESTEP_MVA, ONESTEP_LINEARIZER } pragma_mva;
-    typedef enum { DEFAULT_MULTISERVER, CONWAY_MULTISERVER, REISER_MULTISERVER, REISER_PS_MULTISERVER, ROLIA_MULTISERVER, ROLIA_PS_MULTISERVER, BRUELL_MULTISERVER, SCHMIDT_MULTISERVER, SURI_MULTISERVER } pragma_multiserver;
-    typedef enum { MARKOV_OVERTAKING, ROLIA_OVERTAKING, SIMPLE_OVERTAKING, SPECIAL_OVERTAKING, NO_OVERTAKING } pragma_overtaking;
-    typedef enum { DEFAULT_VARIANCE, NO_VARIANCE, STOCHASTIC_VARIANCE, MOL_VARIANCE } pragma_variance;
-    typedef enum { MAK_LUNDSTROM_THREADS, HYPER_THREADS, NO_THREADS } pragma_threads;
-    typedef enum { FORCE_NONE=0x00, FORCE_PROCESSORS=0x01, FORCE_TASKS=0x02, FORCE_ALL=0x03 } pragma_force_multiserver;
+    enum class Layering { BACKPROPOGATE_BATCHED, BATCHED, METHOD_OF_LAYERS, BACKPROPOGATE_METHOD_OF_LAYERS, SRVN, SQUASHED, HWSW };
+    enum class MVA { LINEARIZER, EXACT, SCHWEITZER, FAST, ONESTEP, ONESTEP_LINEARIZER };
+    enum class Multiserver { DEFAULT, CONWAY, REISER, REISER_PS, ROLIA, ROLIA_PS, BRUELL, SCHMIDT, SURI };
+    enum class Overtaking { MARKOV, ROLIA, SIMPLE, SPECIAL, NONE };
+#if HAVE_LIBGSL && HAVE_LIBGSLCBLAS
+    enum class QuorumDistribution { DEFAULT, THREEPOINT, GAMMA, CLOSEDFORM_GEOMETRIC, CLOSEDFORM_DETRMINISTIC };
+    enum class QuorumDelayedCalls { DEFAULT, KEEP_ALL, ABORT_ALL, ABORT_LOCAL_ONLY, ABORT_REMOTE_ONLY };
+    enum class QuorumIdleTime { DEFAULT, JOINDELAY, ROOTENTRY };
+#endif
+    enum class Variance { DEFAULT, NONE, STOCHASTIC, MOL };
+    enum class Threads { MAK_LUNDSTROM, HYPER, NONE };
+    enum class ForceMultiserver { NONE, PROCESSORS, TASKS, ALL };
 
 private:
     Pragma();
@@ -59,10 +64,11 @@ public:
 	    return __cache->_exponential_paths;
 	}
 
-    static bool forceMultiserver( pragma_force_multiserver arg )
+    static bool forceMultiserver( Pragma::ForceMultiserver arg )
 	{
 	    assert( __cache != nullptr );
-	    return __cache->_force_multiserver & arg != 0x00;
+	    return (__cache->_force_multiserver != ForceMultiserver::NONE && arg == __cache->_force_multiserver)
+		|| (__cache->_force_multiserver == ForceMultiserver::ALL  && arg != ForceMultiserver::NONE );
 	}
     
     static bool interlock()
@@ -71,31 +77,31 @@ public:
 	    return __cache->_interlock;
 	}
     
-    static pragma_layering layering()
+    static Layering layering()
 	{
 	    assert( __cache != nullptr );
 	    return __cache->_layering;
 	}
 
-    static pragma_multiserver multiserver()
+    static Multiserver multiserver()
 	{
 	    assert( __cache != nullptr );
 	    return __cache->_multiserver;
 	}
 
-    static pragma_mva mva() 
+    static MVA mva() 
 	{
 	    assert( __cache != nullptr );
 	    return __cache->_mva;
 	}
 
-    static pragma_overtaking overtaking()
+    static Overtaking overtaking()
 	{
 	    assert( __cache != nullptr );
 	    return __cache->_overtaking;
 	}
     
-    static bool overtaking( pragma_overtaking arg )
+    static bool overtaking( Overtaking arg )
 	{
 	    return overtaking() == arg;
 	}
@@ -118,6 +124,32 @@ public:
 	    return __cache->_processor_scheduling;
 	}
     
+#if HAVE_LIBGSL && HAVE_LIBGSLCBLAS
+    static QuorumDistribution getQuorumDistribution()
+	{
+	    assert( __cache != nullptr );
+	    return __cache->_quorumDistribution;
+	}
+    
+    static QuorumDelayedCalls getQuorumDelayedCalls()
+	{
+	    assert( __cache != nullptr );
+	    return __cache->_quorumDelayedCalls;
+	}
+    static QuorumIdleTime getQuorumIdleTime()
+	{
+	    assert( __cache != nullptr );
+	    return __cache->_quorumIdleTime;
+	}
+#endif
+#if RESCHEDULE
+    static bool getRescheduleOnAsyncSend()
+	{
+	    assert( __cache != nullptr );
+	    return __cache->_reschedule_on_async_send;
+	}
+#endif
+
     static LQIO::severity_t severityLevel()
 	{
 	    assert( __cache != nullptr );
@@ -148,24 +180,24 @@ public:
 	    return __cache->_tau;
 	}
 
-    static pragma_threads threads()
+    static Threads threads()
 	{
 	    assert( __cache != nullptr );
 	    return __cache->_threads;
 	}
 
-    static bool threads( pragma_threads arg ) 
+    static bool threads( Threads arg ) 
 	{
 	    return threads() == arg;
 	}
 
-    static pragma_variance variance()
+    static Variance variance()
 	{
 	    assert( __cache != nullptr );
 	    return __cache->_variance;
 	}
 
-    static bool variance( pragma_variance arg )
+    static bool variance( Variance arg )
 	{
 	    assert( __cache != nullptr );
 	    return variance() == arg;
@@ -193,6 +225,14 @@ private:
     void setMva(const std::string&);
     void setOvertaking(const std::string&);
     void setProcessorScheduling(const std::string&);
+#if HAVE_LIBGSL && HAVE_LIBGSLCBLAS
+    void setQuorumDistribution(const std::string&);
+    void setQuorumDelayedCalls(const std::string&);
+    void setQuorumIdleTime(const std::string&);
+#endif
+#if RESCHEDULE
+    void setRescheduleOnAsyncSend(const std::string&);
+#endif
     void setSeverityLevel(const std::string&);
     void setSpexHeader(const std::string&);
     void setStopOnBogusUtilization(const std::string&);
@@ -201,45 +241,38 @@ private:
     void setThreads(const std::string&);
     void setVariance(const std::string&);
     
-
     static bool isTrue(const std::string&);
-
-#if HAVE_LIBGSL && HAVE_LIBGSLCBLAS
-/// start tomari quorum
-
-    PRAGMA_QUORUM_DISTRIBUTION getQuorumDistribution() const { return _quorumDistribution; }
-    PRAGMA_QUORUM_DELAYED_CALLS getQuorumDelayedCalls() const { return _quorumDelayedCalls; }
-    PRAGMA_IDLETIME getIdleTime() const { return _idletime; }
-//// end tomari quorum idle time
-#endif
-
-
-#if RESCHEDULE
-    PRAGMA_RESCHEDULE  getReschedule() const { return _reschedule; }
-#endif
 
 public:
     static void set( const std::map<std::string,std::string>& );
     static std::ostream& usage( std::ostream&  );
-    static const std::map<std::string,Pragma::fptr>& getPragmas() { return __set_pragma; }
+    static const std::map<const std::string,const Pragma::fptr>& getPragmas() { return __set_pragma; }
     
 private:
     bool _allow_cycles;
     bool _exponential_paths;
-    pragma_force_multiserver _force_multiserver;
+    ForceMultiserver _force_multiserver;
     bool _interlock;
-    pragma_layering  _layering;
-    pragma_multiserver _multiserver;
-    pragma_mva _mva;
-    pragma_overtaking _overtaking;
+    Layering  _layering;
+    Multiserver _multiserver;
+    MVA _mva;
+    Overtaking _overtaking;
     scheduling_type _processor_scheduling;
+#if HAVE_LIBGSL && HAVE_LIBGSLCBLAS
+    QuorumDistribution _quorumDistribution; 
+    QuorumDelayedCalls _quorumDelayedCalls;
+    QuorumIdleTime _quorumIdleTime;           
+#endif
+#if RESCHEDULE
+    bool _reschedule_on_async_send;
+#endif
     LQIO::severity_t _severity_level;
     bool _spex_header;
     double _stop_on_bogus_utilization;
     bool _stop_on_message_loss;
     unsigned  _tau;
-    pragma_threads _threads;
-    pragma_variance _variance;
+    Threads _threads;
+    Variance _variance;
     /* bonus */
     bool _default_processor_scheduling;
     bool _disable_processor_cfs;
@@ -247,18 +280,18 @@ private:
     bool _init_variance_only;
     
     /* --- */
-    
-
-#if HAVE_LIBGSL && HAVE_LIBGSLCBLAS
-    PRAGMA_QUORUM_DISTRIBUTION  _quorumDistribution;
-    PRAGMA_QUORUM_DELAYED_CALLS  _quorumDelayedCalls;
-    PRAGMA_IDLETIME  _idletime;
-#endif
-#if RESCHEDULE
-    PRAGMA_RESCHEDULE   _reschedule;
-#endif
 
     static Pragma * __cache;
-    static std::map<std::string,Pragma::fptr> __set_pragma;
+    static const std::map<const std::string,const Pragma::fptr> __set_pragma;
+
+    static const std::map<const std::string,const Pragma::ForceMultiserver> __force_multiserver;
+    static const std::map<const std::string,const Pragma::Layering> __layering_pragma;
+    static const std::map<const std::string,const Pragma::MVA> __mva_pragma;
+    static const std::map<const std::string,const Pragma::Multiserver> __multiserver_pragma;
+    static const std::map<const std::string,const Pragma::Overtaking> __overtaking_pragma;
+    static const std::map<const std::string,const scheduling_type> __processor_scheduling_pragma;
+    static const std::map<const std::string,const LQIO::severity_t> __serverity_level_pragma;
+    static const std::map<const std::string,const Pragma::Threads> __threads_pragma;
+    static const std::map<const std::string,const Pragma::Variance> __variance_pragma;
 };
 #endif
