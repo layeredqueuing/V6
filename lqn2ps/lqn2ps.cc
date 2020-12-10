@@ -881,16 +881,12 @@ lqn2ps( int argc, char *argv[] )
 	}
     }
 
-#if HAVE_REGEX_T
     if ( Flags::print[INCLUDE_ONLY].value.r ) {
-	regfree( Flags::print[INCLUDE_ONLY].value.r );
-	free( Flags::print[INCLUDE_ONLY].value.r );
+	delete Flags::print[INCLUDE_ONLY].value.r;
     }
     if ( Flags::client_tasks ) {
-	regfree( Flags::client_tasks );
-	free( Flags::client_tasks );
+	delete Flags::client_tasks );
     }
-#endif
 
     return 0;
 }

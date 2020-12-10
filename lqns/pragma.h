@@ -8,8 +8,9 @@
  * Carleton University, Ottawa, Ontario, Canada. K1S 5B6
  *
  * November, 1994
+ * December, 2020
  *
- * $Id: pragma.h 14185 2020-12-08 14:14:28Z greg $
+ * $Id: pragma.h 14198 2020-12-10 11:43:03Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -46,7 +47,7 @@ public:
 
 private:
     Pragma();
-    virtual ~Pragma() 
+    virtual ~Pragma()
 	{
 	    __cache = nullptr;
 	}
@@ -70,13 +71,13 @@ public:
 	    return (__cache->_force_multiserver != ForceMultiserver::NONE && arg == __cache->_force_multiserver)
 		|| (__cache->_force_multiserver == ForceMultiserver::ALL  && arg != ForceMultiserver::NONE );
 	}
-    
+
     static bool interlock()
 	{
 	    assert( __cache != nullptr );
 	    return __cache->_interlock;
 	}
-    
+
     static Layering layering()
 	{
 	    assert( __cache != nullptr );
@@ -89,7 +90,7 @@ public:
 	    return __cache->_multiserver;
 	}
 
-    static MVA mva() 
+    static MVA mva()
 	{
 	    assert( __cache != nullptr );
 	    return __cache->_mva;
@@ -100,7 +101,7 @@ public:
 	    assert( __cache != nullptr );
 	    return __cache->_overtaking;
 	}
-    
+
     static bool overtaking( Overtaking arg )
 	{
 	    return overtaking() == arg;
@@ -111,35 +112,35 @@ public:
 	    assert( __cache != nullptr );
 	    return __cache->_default_processor_scheduling;
 	}
-    
+
     static bool disableProcessorCFS()
 	{
 	    assert( __cache != nullptr );
 	    return __cache->_disable_processor_cfs;
 	}
-    
+
     static scheduling_type processorScheduling()
 	{
 	    assert( __cache != nullptr );
 	    return __cache->_processor_scheduling;
 	}
-    
+
 #if HAVE_LIBGSL && HAVE_LIBGSLCBLAS
     static QuorumDistribution getQuorumDistribution()
 	{
 	    assert( __cache != nullptr );
-	    return __cache->_quorumDistribution;
+	    return __cache->_quorum_distribution;
 	}
-    
+
     static QuorumDelayedCalls getQuorumDelayedCalls()
 	{
 	    assert( __cache != nullptr );
-	    return __cache->_quorumDelayedCalls;
+	    return __cache->_quorum_delayed_calls;
 	}
     static QuorumIdleTime getQuorumIdleTime()
 	{
 	    assert( __cache != nullptr );
-	    return __cache->_quorumIdleTime;
+	    return __cache->_quorum_idle_time;
 	}
 #endif
 #if RESCHEDULE
@@ -155,7 +156,7 @@ public:
 	    assert( __cache != nullptr );
 	    return __cache->_severity_level;
 	}
-    
+
     static bool spexHeader()
 	{
 	    assert( __cache != nullptr );
@@ -186,7 +187,7 @@ public:
 	    return __cache->_threads;
 	}
 
-    static bool threads( Threads arg ) 
+    static bool threads( Threads arg )
 	{
 	    return threads() == arg;
 	}
@@ -240,14 +241,14 @@ private:
     void setTau(const std::string&);
     void setThreads(const std::string&);
     void setVariance(const std::string&);
-    
+
     static bool isTrue(const std::string&);
 
 public:
     static void set( const std::map<std::string,std::string>& );
     static std::ostream& usage( std::ostream&  );
     static const std::map<const std::string,const Pragma::fptr>& getPragmas() { return __set_pragma; }
-    
+
 private:
     bool _allow_cycles;
     bool _exponential_paths;
@@ -259,9 +260,9 @@ private:
     Overtaking _overtaking;
     scheduling_type _processor_scheduling;
 #if HAVE_LIBGSL && HAVE_LIBGSLCBLAS
-    QuorumDistribution _quorumDistribution; 
-    QuorumDelayedCalls _quorumDelayedCalls;
-    QuorumIdleTime _quorumIdleTime;           
+    QuorumDistribution _quorum_distribution;
+    QuorumDelayedCalls _quorum_delayed_calls;
+    QuorumIdleTime _quorum_idle_time;
 #endif
 #if RESCHEDULE
     bool _reschedule_on_async_send;
@@ -278,7 +279,7 @@ private:
     bool _disable_processor_cfs;
     bool _entry_variance;
     bool _init_variance_only;
-    
+
     /* --- */
 
     static Pragma * __cache;
@@ -290,8 +291,14 @@ private:
     static const std::map<const std::string,const Pragma::Multiserver> __multiserver_pragma;
     static const std::map<const std::string,const Pragma::Overtaking> __overtaking_pragma;
     static const std::map<const std::string,const scheduling_type> __processor_scheduling_pragma;
+#if HAVE_LIBGSL && HAVE_LIBGSLCBLAS
+    static const std::map<const std::string,const Pragma::QuorumDistribution> __quorum_distribution_pragma;
+    static const std::map<const std::string,const Pragma::QuorumDelayedCalls> __quorum_delayed_calls_pragma;
+    static const std::map<const std::string,const Pragma::QuorumIdleTime> __quorum_idle_time_pragma;
+#endif
     static const std::map<const std::string,const LQIO::severity_t> __serverity_level_pragma;
     static const std::map<const std::string,const Pragma::Threads> __threads_pragma;
     static const std::map<const std::string,const Pragma::Variance> __variance_pragma;
+
 };
 #endif

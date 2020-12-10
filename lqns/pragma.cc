@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: pragma.cc 14185 2020-12-08 14:14:28Z greg $ *
+ * $Id: pragma.cc 14200 2020-12-10 15:44:22Z greg $ *
  * Pragma processing and definitions.
  *
  * Copyright the Real-Time and Distributed Systems Group,
@@ -46,7 +46,7 @@ const std::map<const std::string,const Pragma::fptr> Pragma::__set_pragma =
     { LQIO::DOM::Pragma::_threads_,			&Pragma::setThreads },
     { LQIO::DOM::Pragma::_variance_,			&Pragma::setVariance }
 };
-
+
 /*
  * Set default values in the constructor.  Defaults are used below.
  */
@@ -62,9 +62,9 @@ Pragma::Pragma() :
     _overtaking(Overtaking::MARKOV),
     _processor_scheduling(SCHEDULE_PS),
 #if HAVE_LIBGSL && HAVE_LIBGSLCBLAS
-    _quorumDistribution(QuorumDistribution::DEFAULT),
-    _quorumDelayedCalls(QuorumDelayedCalls::DEFAULT),
-    _quorumIdleTime(QuorumIdleTime::DEFAULT),
+    _quorum_distribution(QuorumDistribution::DEFAULT),
+    _quorum_delayed_calls(QuorumDelayedCalls::DEFAULT),
+    _quorum_idle_time(QuorumIdleTime::DEFAULT),
 #endif
 #if RESCHEDULE
     _reschedule_on_async_send(false),
@@ -154,6 +154,10 @@ void Pragma::setLayering(const std::string& value)
     const std::map<const std::string,const Pragma::Layering>::const_iterator pragma = __layering_pragma.find( value );
     if ( pragma != __layering_pragma.end() ) {
 	_layering = pragma->second;
+#if 0
+    } else if ( value == LQIO::DOM::Pragma::_prune_infinite_servers_ ) {
+	/* NOP */
+#endif
     } else {
 	throw std::domain_error( value.c_str() );
     } 
@@ -189,7 +193,7 @@ const std::map<const std::string,const Pragma::MVA> Pragma::__mva_pragma =
     { LQIO::DOM::Pragma::_schweitzer_, 	MVA::SCHWEITZER },
     { LQIO::DOM::Pragma::_fast_, 	MVA::FAST },
     { LQIO::DOM::Pragma::_one_step_, 	MVA::ONESTEP },
-    { LQIO::DOM::Pragma::_one_step_linearizer_, MVA::ONESTEP_LINEARIZER },
+    { LQIO::DOM::Pragma::_one_step_linearizer_, MVA::ONESTEP_LINEARIZER }
 };
 
 void Pragma::setMva(const std::string& value)
@@ -248,6 +252,64 @@ void Pragma::setProcessorScheduling(const std::string& value)
     }
 }
 
+#if HAVE_LIBGSL && HAVE_LIBGSLCBLAS
+const std::map<const std::string,const Pragma::QuorumDistribution> __quorum_distribution_pragma =
+{
+    { LQIO::DOM::Pragma::_threepoint_,  	Pragma::QuorumDistribution::THREEPOINT },
+    { LQIO::DOM::Pragma::_gamma_,  		Pragma::QuorumDistribution::GAMMA },
+    { LQIO::DOM::Pragma::_geometric_,  		Pragma::QuorumDistribution::CLOSEDFORM_GEOMETRIC },
+    { LQIO::DOM::Pragma::_deterministic_,  	Pragma::QuorumDistribution::CLOSEDFORM_DETRMINISTIC },
+    { LQIO::DOM::Pragma::_default_,  		Pragma::QuorumDistribution::DEFAULT }
+};
+
+void Pragma::setQuorumDistribution(const std::string& value)
+{
+    const std::map<const std::string,const Pragma::QuorumDistribution>::const_iterator pragma = __quorum_distribution_pragma.find( value );
+    if ( pragma != __quorum_distribution_pragma.end() ) {
+	_quorum_distribution = pragma->second;
+    } else {
+	throw std::domain_error( value.c_str() );
+    }
+}
+    
+
+static const std::map<const std::string,const Pragma::QuorumDelayedCalls> __quorum_delayed_calls_pragma =
+{
+    { LQIO::DOM::Pragma::_keep_all_,		Pragma::QuorumDelayedCalls::KEEP_ALL },
+    { LQIO::DOM::Pragma::_abort_all_,		Pragma::QuorumDelayedCalls::ABORT_ALL },
+    { LQIO::DOM::Pragma::_abort_local_,		Pragma::QuorumDelayedCalls::ABORT_LOCAL_ONLY },
+    { LQIO::DOM::Pragma::_abort_remote_,	Pragma::QuorumDelayedCalls::ABORT_REMOTE_ONLY },
+    { LQIO::DOM::Pragma::_default_,		Pragma::QuorumDelayedCalls::DEFAULT }
+};
+
+void Pragma::setQuorumDelayedCalls(const std::string& value)
+{
+    const std::map<const std::string,const Pragma::QuorumDelayedCalls>::const_iterator pragma = __quorum_delayed_calls_pragma.find( value );
+    if ( pragma != __quorum_delayed_calls_pragma.end() ) {
+	_quorum_delayed_calls = pragma->second;
+    } else {
+	throw std::domain_error( value.c_str() );
+    }
+}
+
+
+const std::map<const std::string,const Pragma::QuorumIdleTime> __quorum_idle_time_pragma =
+{
+    { LQIO::DOM::Pragma::_default_, 	Pragma::QuorumIdleTime::DEFAULT },
+    { LQIO::DOM::Pragma::_join_delay_,	Pragma::QuorumIdleTime::JOINDELAY }
+};
+
+void Pragma::setQuorumIdleTime(const std::string& value)
+{
+    const std::map<const std::string,const Pragma::QuorumIdleTime>::const_iterator pragma = __quorum_idle_time_pragma.find( value );
+    if ( pragma != __quorum_idle_time_pragma.end() ) {
+	_quorum_idle_time = pragma->second;
+    } else {
+	throw std::domain_error( value.c_str() );
+    }
+}
+#endif
+
 
 #if RESCHEDULE
 void Pragma::setRescheduleOnAsyncSend(const std::string& value)
@@ -285,10 +347,9 @@ void Pragma::setSeverityLevel(const std::string& value)
 void Pragma::setStopOnBogusUtilization(const std::string& value)
 {
     char * endptr = nullptr;
-    _stop_on_bogus_utilization = std::strtod( value.c_str(), &endptr );
-    if ( (_stop_on_bogus_utilization < 1 && _stop_on_bogus_utilization != 0) || *endptr != '\0' ) {
-	throw std::domain_error( value.c_str() );
-    }
+    const double temp = std::strtod( value.c_str(), &endptr );
+    if ( (temp < 1 && temp != 0) || *endptr != '\0' ) throw std::domain_error( value.c_str() );
+    _stop_on_bogus_utilization = temp;
 }
 
 
@@ -301,10 +362,9 @@ void Pragma::setStopOnMessageLoss(const std::string& value)
 void Pragma::setTau(const std::string& value)
 {
     char * endptr = nullptr;
-    _tau = std::strtol( value.c_str(), &endptr, 10 );
-    if ( _tau > 20 || *endptr != '\0' ) {
-	throw std::domain_error( value.c_str() );
-    }
+    const unsigned int temp = std::strtol( value.c_str(), &endptr, 10 );
+    if ( temp > 20 || *endptr != '\0' ) throw std::domain_error( value.c_str() );
+    _tau = temp;
 }
 
 
