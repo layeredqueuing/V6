@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_entry.cpp 14168 2020-12-04 20:17:22Z greg $
+ *  $Id: dom_entry.cpp 14215 2020-12-14 19:09:04Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -48,7 +48,7 @@ namespace LQIO {
 	    : DocumentObject( src ),
 	      _type(src._type), _phases(),
 	      _maxPhase(src._maxPhase), _task(nullptr), _histograms(),
-	      _openArrivalRate(src._openArrivalRate), _entryPriority(src._entryPriority),
+	      _openArrivalRate(src._openArrivalRate->clone()), _entryPriority(src._entryPriority->clone()),
 	      _semaphoreType(src._semaphoreType), _rwlockType(src._rwlockType), _forwarding(src._forwarding),
 	      _startActivity(nullptr),
 	      _resultWaitingTime(0.0), _resultWaitingTimeVariance(0.0),

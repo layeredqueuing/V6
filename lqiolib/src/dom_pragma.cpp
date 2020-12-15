@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_pragma.cpp 14181 2020-12-07 22:40:47Z greg $
+ *  $Id: dom_pragma.cpp 14215 2020-12-14 19:09:04Z greg $
  *
  *  Created by Martin Mroz on 16/04/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -10,6 +10,7 @@
 #include <config.h>
 #endif
 #include <ctype.h>
+#include <cstdlib>
 #include <algorithm>
 #include "dom_pragma.h"
 #include "labels.h"
@@ -87,9 +88,9 @@ namespace LQIO {
 	    }
 	}
 	
-	const std::set<const std::string>* Pragma::getValues( const std::string& s )
+	const std::set<std::string>* Pragma::getValues( const std::string& s )
 	{
-	    const std::map<const std::string,const std::set<const std::string>*>::const_iterator i = __pragmas.find(s);
+	    const std::map<const std::string,const std::set<std::string>*>::const_iterator i = __pragmas.find(s);
 	    if ( i != __pragmas.end() ) {
 		return i->second;
 	    } else {
@@ -105,13 +106,13 @@ namespace LQIO {
 
 	bool Pragma::check( const std::string& param, const std::string& value ) const
 	{
-	    const std::map<const std::string,const std::set<const std::string>*>::const_iterator i = __pragmas.find( param );
+	    const std::map<const std::string,const std::set<std::string>*>::const_iterator i = __pragmas.find( param );
 	    if ( i == __pragmas.end() ) {
 		LQIO::solution_error( LQIO::WRN_PRAGMA_UNKNOWN, param.c_str() );
 		return false;
 	    } else if ( i->second != nullptr ) {
-		const std::set<const std::string>& values = *i->second;
-		std::set<const std::string>::const_iterator j = values.find( value );
+		const std::set<std::string>& values = *i->second;
+		std::set<std::string>::const_iterator j = values.find( value );
 		if ( j == values.end() ) {
 		    LQIO::solution_error( LQIO::WRN_PRAGMA_ARGUMENT_INVALID, param.c_str(), value.c_str() );
 		    return false;
@@ -125,6 +126,29 @@ namespace LQIO {
 		}
 	    }
 	    return true;
+	}
+
+
+	/* 
+	 * Return true or false depending on value.   Throw on anything not allowed
+	 */
+	
+	bool Pragma::isTrue(const std::string& value)
+	{
+	    static std::map<std::string,bool> __true_false_arg;
+	    if ( __true_false_arg.empty() ) {
+		__true_false_arg[LQIO::DOM::Pragma::_true_]  = true;
+		__true_false_arg[LQIO::DOM::Pragma::_yes_]   = true;
+		__true_false_arg[LQIO::DOM::Pragma::_false_] = false;
+		__true_false_arg[LQIO::DOM::Pragma::_no_]    = false;
+		__true_false_arg["t"] = true;
+		__true_false_arg["y"] = true;
+		__true_false_arg["f"] = false;
+		__true_false_arg["n"] = false;
+	    }
+	    const std::map<std::string,bool>::const_iterator x = __true_false_arg.find( value );
+	    if ( x == __true_false_arg.end() ) throw std::domain_error( value.c_str() );
+	    return x->second;
 	}
 
 	/* Labels */
@@ -218,25 +242,25 @@ namespace LQIO {
 
 	/* Args */
 	
-	const std::set<const std::string> Pragma::__force_multiserver_args = { _none_, _processors_, _tasks_, _all_ };
-	const std::set<const std::string> Pragma::__layering_args = { _batched_, _batched_back_, _mol_, _mol_back_, _squashed_, _srvn_, _hwsw_ };
-	const std::set<const std::string> Pragma::__multiserver_args = { _bruell_, _conway_, _default_, _reiser_, _reiser_ps_, _rolia_, _rolia_ps_, _schmidt_, _suri_ };
-	const std::set<const std::string> Pragma::__mva_args = { _linearizer_, _exact_, _schweitzer_, _fast_, _one_step_, _one_step_linearizer_ };
-	const std::set<const std::string> Pragma::__overtaking_args = { _markov_, _rolia_, _simple_, _special_, _none_ };
-	const std::set<const std::string> Pragma::__processor_args = { _default_, _no_cfs_, scheduling_label[SCHEDULE_DELAY].XML, scheduling_label[SCHEDULE_FIFO].XML, scheduling_label[SCHEDULE_HOL].XML, scheduling_label[SCHEDULE_PPR].XML, scheduling_label[SCHEDULE_PS].XML, scheduling_label[SCHEDULE_RAND].XML };
-	const std::set<const std::string> Pragma::__quorum_delayed_calls_args = { _keep_all_, _abort_all_, _abort_local_, _abort_remote_ };
-	const std::set<const std::string> Pragma::__quorum_distribution_args = { _threepoint_, _gamma_, _geometric_, _deterministic_ };
-	const std::set<const std::string> Pragma::__quorum_idle_time_args = { _default_, _join_delay_ };
-	const std::set<const std::string> Pragma::__scheduling_model_args = { _default_, _default_natural_, _custom_, _custom_natural_ };
-	const std::set<const std::string> Pragma::__task_args = { _default_, scheduling_label[SCHEDULE_DELAY].XML, scheduling_label[SCHEDULE_FIFO].XML, scheduling_label[SCHEDULE_HOL].XML, scheduling_label[SCHEDULE_RAND].XML };
-	const std::set<const std::string> Pragma::__threads_args = { _hyper_, _mak_, _none_, _exponential_ };
-	const std::set<const std::string> Pragma::__true_false_arg = { "true", "false", _yes_, _no_ };
-	const std::set<const std::string> Pragma::__variance_args = { _default_, _none_, _stochastic_, _mol_, _no_entry_, _init_only_ };
-	const std::set<const std::string> Pragma::__warning_args = { _all_, _warning_, _advisory_, _run_time_ };
+	const std::set<std::string> Pragma::__force_multiserver_args = { _none_, _processors_, _tasks_, _all_ };
+	const std::set<std::string> Pragma::__layering_args = { _batched_, _batched_back_, _mol_, _mol_back_, _squashed_, _srvn_, _hwsw_ };
+	const std::set<std::string> Pragma::__multiserver_args = { _bruell_, _conway_, _default_, _reiser_, _reiser_ps_, _rolia_, _rolia_ps_, _schmidt_, _suri_ };
+	const std::set<std::string> Pragma::__mva_args = { _linearizer_, _exact_, _schweitzer_, _fast_, _one_step_, _one_step_linearizer_ };
+	const std::set<std::string> Pragma::__overtaking_args = { _markov_, _rolia_, _simple_, _special_, _none_ };
+	const std::set<std::string> Pragma::__processor_args = { _default_, _no_cfs_, scheduling_label[SCHEDULE_DELAY].XML, scheduling_label[SCHEDULE_FIFO].XML, scheduling_label[SCHEDULE_HOL].XML, scheduling_label[SCHEDULE_PPR].XML, scheduling_label[SCHEDULE_PS].XML, scheduling_label[SCHEDULE_RAND].XML };
+	const std::set<std::string> Pragma::__quorum_delayed_calls_args = { _keep_all_, _abort_all_, _abort_local_, _abort_remote_ };
+	const std::set<std::string> Pragma::__quorum_distribution_args = { _threepoint_, _gamma_, _geometric_, _deterministic_ };
+	const std::set<std::string> Pragma::__quorum_idle_time_args = { _default_, _join_delay_ };
+	const std::set<std::string> Pragma::__scheduling_model_args = { _default_, _default_natural_, _custom_, _custom_natural_ };
+	const std::set<std::string> Pragma::__task_args = { _default_, scheduling_label[SCHEDULE_DELAY].XML, scheduling_label[SCHEDULE_FIFO].XML, scheduling_label[SCHEDULE_HOL].XML, scheduling_label[SCHEDULE_RAND].XML };
+	const std::set<std::string> Pragma::__threads_args = { _hyper_, _mak_, _none_, _exponential_ };
+	const std::set<std::string> Pragma::__true_false_arg = { "true", "false", _yes_, _no_ };
+	const std::set<std::string> Pragma::__variance_args = { _default_, _none_, _stochastic_, _mol_, _no_entry_, _init_only_ };
+	const std::set<std::string> Pragma::__warning_args = { _all_, _warning_, _advisory_, _run_time_ };
 
 	/* Pragmas */
 	
-	const std::map<const std::string,const std::set<const std::string>*> Pragma::__pragmas = {
+	const std::map<const std::string,const std::set<std::string>*> Pragma::__pragmas = {
 	    { _block_period_,      	    nullptr },			    /* lqsim */
 	    { _cycles_,  	    	    &__true_false_arg },	    /* lqns */
 	    { _force_multiserver_, 	    &__force_multiserver_args },    /* lqns */

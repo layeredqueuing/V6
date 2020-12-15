@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_entity.cpp 14144 2020-11-26 19:37:10Z greg $
+ *  $Id: dom_entity.cpp 14215 2020-12-14 19:09:04Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -29,7 +29,7 @@ namespace LQIO {
 	    DocumentObject(src),
 	    _entityId(const_cast<Document *>(src.getDocument())->getNextEntityId()), 
 	    _entitySchedulingType(src._entitySchedulingType),
-	    _copies(src._copies), _replicas(src._replicas)
+	    _copies(src._copies->clone()), _replicas(src._replicas->clone())
 	{
 	}
 
