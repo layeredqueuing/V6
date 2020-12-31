@@ -1,7 +1,8 @@
 /*
- * $Id: qnsolver.cc 14141 2020-11-25 20:57:44Z greg $
+ * $Id: qnsolver.cc 14310 2020-12-31 17:16:57Z greg $
  */
 
+#include <config.h>
 #include <lqio/pmif_document.h>
 #include <algorithm>
 #include <iostream>
@@ -9,12 +10,11 @@
 #include <cstdlib>
 #include <getopt.h>
 #include <libgen.h>
-#include "dim.h"
-#include "fpgoop.h"
-#include "mva.h"
-#include "vector.h"
-#include "server.h"
-#include "prob.h"
+#include <mva/fpgoop.h>
+#include <mva/mva.h>
+#include <mva/vector.h>
+#include <mva/server.h>
+#include <mva/prob.h>
 
 
 typedef enum {EXACT_MVA, LINEARIZER, LINEARIZER2, BARD_SCHWEITZER, EXPERIMENTAL } solver_type;
@@ -355,7 +355,7 @@ usage()
 	if ( *(s+1) == ':' ) {
 	    ++s;
 	} else {
-	    cerr.put( *s );
+	    std::cerr.put( *s );
 	}
     }
     std::cerr << ']';
@@ -372,27 +372,3 @@ usage()
 #endif
     std::cerr << std::endl;
 }
-
-#include <vector.cc>
-
-template class Vector<double>;
-template class Vector<unsigned int>;
-template class Vector<unsigned long>;
-template class Vector<Server *>;
-template class VectorMath<unsigned int>;
-template class VectorMath<double>;
-template class Vector<Vector<unsigned> >;
-template class Vector<VectorMath<double> >;
-template class Vector<VectorMath<unsigned> >;
-
-#if 0
-template class Vector<Probability>;
-template class VectorMath<Probability>;
-
-template std::ostream& operator<<( std::ostream& output, const Vector<unsigned int>& self );
-template std::ostream& operator<<( std::ostream& output, const VectorMath<unsigned int>& self );
-template std::ostream& operator<<( std::ostream& output, const VectorMath<double>& self );
-#endif
-#if 0
-template ostream& operator<< ( ostream& output, const VectorMath<Probability>& self );
-#endif

@@ -1,6 +1,6 @@
 /* open.cc	-- Greg Franks Tue Feb 18 2003
  *
- * $Id: open.cc 14176 2020-12-07 17:26:28Z greg $
+ * $Id: open.cc 14235 2020-12-17 13:56:55Z greg $
  */
 
 #include "lqn2ps.h"
@@ -61,15 +61,6 @@ OpenArrivalSource::isSelectedIndirectly() const
     } else {
 	return myEntry().owner()->isSelected();
     }
-}
-
-
-
-OpenArrivalSource& 
-OpenArrivalSource::processor( const Processor * )
-{
-    throw should_not_implement( "OpenArrivalSource::processor()", __FILE__, __LINE__ );
-    return *this;
 }
 
 

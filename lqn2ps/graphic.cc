@@ -1,12 +1,13 @@
 /* graphic.cc	-- Greg Franks Wed Feb 12 2003
  *
- * $Id: graphic.cc 14135 2020-11-25 18:22:02Z greg $
+ * $Id: graphic.cc 14235 2020-12-17 13:56:55Z greg $
  */
 
 #include <cassert>
 #include <cmath>
 #include <sstream>
 #include <cstdlib>
+#include <lqio/input.h>
 #include "graphic.h"
 #include "point.h"
 #if HAVE_GD_H

@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: phase.cc 14135 2020-11-25 18:22:02Z greg $
+ * $Id: phase.cc 14235 2020-12-17 13:56:55Z greg $
  *
  * Everything you wanted to know about a phase, but were afraid to ask.
  *
@@ -197,6 +197,18 @@ Phase::utilization() const
     return dom ? dom->getResultUtilization() : 0.0;
 }
 
+
+
+/*
+ * I only visit the processor once for all intents and purposes.
+ */
+
+/* static */ Demand
+Phase::accumulate_demand( const Demand& augend, const std::pair<unsigned,Phase>& p )
+{
+    return augend + Demand( to_double(p.second.serviceTime()), 1 );
+}
+
 /* --- */
 
 bool 
@@ -386,7 +398,7 @@ Phase::serviceTimeForSRVNInput() const
 
 	/* Add in processor queueing if it isn't selected */
 
-	if ( !owner()->processor()->isSelected() ) {
+	if ( std::any_of( owner()->processors().begin(), owner()->processors().end(), Predicate<Processor>( &Processor::isSelected ) ) ) {
 	    time += queueingTime();		/* queueing time is already multiplied my nRendezvous.  See lqns/parasrvn. */
 	}
     }

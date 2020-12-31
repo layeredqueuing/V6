@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: entry.h 14172 2020-12-06 14:23:14Z greg $
+ * $Id: entry.h 14310 2020-12-31 17:16:57Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -22,9 +22,9 @@
 #include <lqio/dom_entry.h>
 #include <set>
 #include <vector>
-#include "prob.h"
+#include <mva/prob.h>
+#include <mva/vector.h>
 #include "call.h"
-#include "vector.h"
 #include "phase.h"
 #include "activity.h"
 #include "interlock.h"

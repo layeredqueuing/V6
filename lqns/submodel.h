@@ -7,7 +7,7 @@
  *
  * June 2007
  *
- * $Id: submodel.h 14141 2020-11-25 20:57:44Z greg $
+ * $Id: submodel.h 14310 2020-12-31 17:16:57Z greg $
  */
 
 #ifndef _SUBMODEL_H
@@ -18,8 +18,8 @@
 #include <set>
 #include <cstdlib>
 #include <lqio/input.h>
-#include "vector.h"
-#include "pop.h"
+#include <mva/vector.h>
+#include <mva/pop.h>
 #include "task.h"
 
 class Call;

@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: entity.h 14141 2020-11-25 20:57:44Z greg $
+ * $Id: entity.h 14310 2020-12-31 17:16:57Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -21,8 +21,8 @@
 #include <vector>
 #include <lqio/input.h>
 #include <lqio/dom_processor.h>
-#include "vector.h"
-#include "prob.h"
+#include <mva/prob.h>
+#include <mva/vector.h>
 #include "call.h"
 
 class Entity;

@@ -10,7 +10,7 @@
  * April 2010.
  *
  * ------------------------------------------------------------------------
- * $Id: task.h 14143 2020-11-26 16:49:48Z greg $
+ * $Id: task.h 14241 2020-12-22 21:19:14Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -68,8 +68,11 @@ public:
     virtual ~Task();
     virtual Task * clone( unsigned int, const std::string& aName, const Processor * aProcessor, const Share * aShare ) const = 0;
 
-    virtual Entity& processor( const Processor * aProcessor ) { _processor = aProcessor; return *this; }
-    virtual const Processor * processor() const { return _processor; }
+    Entity& addProcessor( const Processor * aProcessor ) { _processors.insert(aProcessor); return *this; }
+    const std::set<const Processor *>& processors() const { return _processors; }
+    bool hasProcessor( const Processor * ) const;
+    const Processor * processor() const;
+    
     const Share * share() const { return _share; }
     bool hasPriority() const;
 
@@ -139,10 +142,17 @@ public:
     const std::vector<EntityCall *>& calls() const { return _calls; }
     EntityCall * findOrAddCall( Task *, const callPredicate aFunc );
     EntityCall * findOrAddPseudoCall( Entity * );		// For -Lclient
+#if defined(BUG_270)
+    void addSrcCall( EntityCall * );
+#endif
 
     virtual bool isInOpenModel( const std::vector<Entity *>& servers ) const;
     virtual bool isInClosedModel( const std::vector<Entity *>& servers  ) const;
 
+#if defined(BUG_270)
+    virtual void accumulateDemand( std::map<const Task *,Demand>& ) const;
+#endif
+    static Demand accumulate_demand( const Demand&, const Task * );
     /* Activities */
     
     unsigned generate();
@@ -167,6 +177,13 @@ public:
     virtual Task& squishName();
     Task& aggregate();
 
+#if defined(BUG_270)
+    bool canPrune() const;
+    Task& linkToClients();
+    Task& unlinkFromServers();
+    Task& unlinkFromProcessor();
+
+#endif
 #if defined(REP2FLAT)
     virtual Task& removeReplication();
     Task& expandTask();
@@ -225,7 +242,7 @@ private:
     Task& operator=( const Task& );
 
 private:
-    const Processor * _processor;		/* proc. allocated to task.  	*/
+    std::set<const Processor *> _processors;	/* proc(s). allocated to task. 	*/
     const Share * _share;			/* share for this task.		*/
     mutable unsigned _maxPhase;			/* Max phase over all entries	*/
     std::vector<EntityCall *> _calls;		/* Arc calling processor	*/

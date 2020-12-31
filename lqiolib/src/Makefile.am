@@ -1,10 +1,12 @@
-# $Id: Makefile.am 14102 2020-11-16 20:16:57Z greg $
+# $Id: Makefile.am 14302 2020-12-31 13:11:17Z greg $
 # -------------------------------------------------------------------- [Libtool libsrvnio2]
 
 # This project uses Libtool to generate a product
 SUBDIRS = headers/lqio
 lib_LTLIBRARIES = liblqio.la
-liblqio_la_SOURCES = commandline.cpp \
+liblqio_la_SOURCES = bcmp_document.cpp \
+	bcmp_to_lqn.cpp \
+	commandline.cpp \
 	common_io.cpp \
 	confidence_intervals.cpp \
 	dom_activity.cpp \
@@ -27,17 +29,22 @@ liblqio_la_SOURCES = commandline.cpp \
 	filename.cpp \
 	getsbopt.cc \
 	glblerr.cpp \
+	jmva_document.cpp \
 	json_document.cpp \
 	labels.cpp \
 	pmif_document.cpp \
+	qnap2_document.cpp \
+	srvn_gram.y \
 	srvn_input.cpp \
 	srvn_output.cpp \
-	srvn_results.cpp \
-	srvn_spex.cpp \
-	srvn_scan.l \
-	srvn_gram.y \
 	srvn_result_scan.l \
-	srvn_result_gram.y
+	srvn_results.cpp \
+	srvn_scan.l \
+	srvn_spex.cpp \
+	srvn_result_gram.y \
+	xml_input.cpp \
+	xml_output.cpp
+
 noinst_HEADERS = srvn_gram.h  srvn_result_gram.h
 
 #liblqio_la_LIBADD = ../../lqx/libsrc/liblqx.la 

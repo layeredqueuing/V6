@@ -10,7 +10,7 @@
  * February 1997
  *
  * ------------------------------------------------------------------------
- * $Id: actlist.cc 14177 2020-12-07 17:43:08Z greg $
+ * $Id: actlist.cc 14310 2020-12-31 17:16:57Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -25,11 +25,12 @@
 #include <cmath>
 #include <iostream>
 #include <iomanip>
-#include <lqio/input.h>
-#include <lqio/error.h>
 #if HAVE_IEEEFP_H
 #include <ieeefp.h>
 #endif
+#include <lqio/input.h>
+#include <lqio/error.h>
+#include <mva/fpgoop.h>
 #include "errmsg.h"
 #include "lqns.h"
 #include "actlist.h"

@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- *  $Id: dom_document.h 14152 2020-11-29 16:38:49Z greg $
+ *  $Id: dom_document.h 14302 2020-12-31 13:11:17Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -33,7 +33,7 @@ namespace LQIO {
 
 	public:
 	    typedef enum { DEFAULT_OUTPUT, LQN_OUTPUT, XML_OUTPUT, JSON_OUTPUT, RTF_OUTPUT, PARSEABLE_OUTPUT } output_format;
-	    typedef enum { AUTOMATIC_INPUT, LQN_INPUT, XML_INPUT, JSON_INPUT } input_format;
+	    typedef enum { AUTOMATIC_INPUT, LQN_INPUT, XML_INPUT, JSON_INPUT, JMVA_INPUT } input_format;
 
 	private:
 	    enum class cached { SET_FALSE, SET_TRUE, NOT_SET };
@@ -109,9 +109,8 @@ namespace LQIO {
 	    void clearPragmaList();
 
 	    /* Model Parameters */
-	    const std::string& getExtraComment() const;
-	    Document& setExtraComment( const std::string& );		/* Does not show up in input file. */
-
+	    const std::string& getDocumentComment() const;
+	    Document& setDocumentComment( const std::string& );
 	    const ExternalVariable * getModelComment() const { return get( XComment ); }
 	    const char * getModelCommentString() const;
 	    Document& setModelComment( ExternalVariable * );
@@ -233,6 +232,10 @@ namespace LQIO {
 	    static const char * XSpexUnderrelaxation;
 
 	private:
+	    /* Parameter Information */
+	    const std::string _modelComment;
+	    std::string _documentComment;
+
 	    /* List of Objects */
 
 	    std::map<std::string, Processor*> _processors;    	/* processor.name -> Processor */
@@ -250,10 +253,6 @@ namespace LQIO {
 
 	    unsigned _nextEntityId;                           	/* for sorting, see _entities 	*/
 	    const input_format _format;				/* input format 		*/
-
-	    /* Parameter Information */
-	    static const std::string __comment;
-	    std::string _comment2;
 
 	    /* The stored LQX program, if any */
 	    std::string _lqxProgram;

@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- *  $Id: expat_document.h 14110 2020-11-20 15:37:56Z greg $
+ *  $Id: expat_document.h 14302 2020-12-31 13:11:17Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  */
@@ -38,8 +38,8 @@ namespace LQIO {
 
 	    struct parse_stack_t
 	    {
-		parse_stack_t(const XML_Char * e, start_fptr sh, DocumentObject * o, DocumentObject * r=NULL) : element(e), start(sh), end(NULL), object(o), extra_object(r) {}
-		parse_stack_t(const XML_Char * e, start_fptr sh, end_fptr eh, DocumentObject * o ) : element(e), start(sh), end(eh), object(o), extra_object(NULL) {}
+		parse_stack_t(const XML_Char * e, start_fptr sh, DocumentObject * o, DocumentObject * r=nullptr) : element(e), start(sh), end(nullptr), object(o), extra_object(r) {}
+		parse_stack_t(const XML_Char * e, start_fptr sh, end_fptr eh, DocumentObject * o ) : element(e), start(sh), end(eh), object(o), extra_object(nullptr) {}
 		bool operator==( const XML_Char * ) const;
 
 		const std::basic_string<XML_Char> element;
@@ -115,18 +115,6 @@ namespace LQIO {
 
 		friend std::ostream& operator<<(std::ostream & os, const XMLCharDoubleManip& m ) { return m._f(os,m._a,m._v); }
 	    };
-
-	    class ExternalVariableManip {
-	    public:
-		ExternalVariableManip( std::ostream& (*f)(std::ostream&, const XML_Char *, const ExternalVariable& ), const XML_Char * a, const ExternalVariable& v ) : _f(f), _a(a), _v(v) {}
-	    private:
-		std::ostream& (*_f)( std::ostream&, const XML_Char *, const ExternalVariable& );
-		const XML_Char * _a;
-		const ExternalVariable& _v;
-
-		friend std::ostream& operator<<(std::ostream & os, const ExternalVariableManip& m ) { return m._f(os,m._a,m._v); }
-	    };
-
 
 	    class EntryResultsManip {
 	    public:
@@ -233,8 +221,8 @@ namespace LQIO {
 
 	    void serializeDOM( std::ostream& output ) const;
 	    
-	    static bool load( Document&, const std::string&, unsigned int & errorCode, const bool load_results );		// Factory.
-	    static bool loadResults( Document&, const std::string&, unsigned& errorCode );
+	    static bool load( Document&, const std::string&, const bool load_results );		// Factory.
+	    static bool loadResults( Document&, const std::string& );
 
 	private:
 	    Expat_Document( const Expat_Document& );
@@ -249,7 +237,6 @@ namespace LQIO {
 	    static int handle_encoding( void * data, const XML_Char *name, XML_Encoding *info );
 
 	private:
-	    void initialize();
 	    bool parse();
 	    void input_error( const char * fmt, ... ) const;
 
@@ -326,18 +313,10 @@ namespace LQIO {
 	    Histogram * findOrAddHistogram( DocumentObject * object, unsigned int phase, Histogram::Type type, unsigned int n_bins, double min, double max );
 
 	    bool checkAttributes( const XML_Char * element, const XML_Char ** attributes, const std::set<const XML_Char *,Expat_Document::attribute_table_t>& table ) const;
-
-	    LQIO::DOM::ExternalVariable * getVariableAttribute( const XML_Char ** attributes, const XML_Char * argument, const XML_Char * default_value=NULL ) const;
 	    LQIO::DOM::ExternalVariable * getOptionalAttribute( const XML_Char ** attributes, const XML_Char * argument ) const;
-	    const XML_Char * getStringAttribute( const XML_Char ** attributes, const XML_Char * Xcomment, const XML_Char * default_value=NULL ) const;
-	    const double getDoubleAttribute( const XML_Char ** attributes, const XML_Char * Xconv_val, const double default_value=-1.0 ) const;
-	    const long getLongAttribute( const XML_Char ** attributes, const XML_Char * Xprint_int, const long default_value=-1 ) const;
-	    const bool getBoolAttribute( const XML_Char ** attributes, const XML_Char * Xprint_int, const bool default_value=false ) const;
-	    const double getTimeAttribute( const XML_Char ** attributes, const XML_Char * Xprint_int ) const;
-	    const scheduling_type getSchedulingAttribute( const XML_Char ** attributes, const scheduling_type ) const;
+	    LQIO::DOM::ExternalVariable * getVariableAttribute( const XML_Char ** attributes, const XML_Char * argument, const XML_Char * default_value=nullptr ) const;
+	    static const scheduling_type getSchedulingAttribute( const XML_Char ** attributes, const scheduling_type );
 	  //  const decision_type getDecisionTypeAttribute( const XML_Char ** attributes, const decision_type ) const;
-
-	    double get_double( const char *, const char * ) const;
 
 	    void exportHeader( std::ostream& output ) const;
 	    void exportSPEXParameters( std::ostream& output ) const;
@@ -358,28 +337,8 @@ namespace LQIO {
 	  //	    void exportDecision( std::ostream& output,const Decision & ) const;
 	  //	    void exportDecisionPath( std::ostream& output,const DecisionPath & ) const;
 	    static void init_tables();
-	    static std::ostream& printIndent( std::ostream& output, const int i );
-	    static std::ostream& printStartElement( std::ostream& output, const XML_Char * a, const bool b );
-	    static std::ostream& printEndElement( std::ostream& output, const XML_Char * a, const bool b );
-	    static std::ostream& printAttribute( std::ostream& output, const XML_Char * a, const XML_Char * v );
-	    static std::ostream& printAttribute( std::ostream& output, const XML_Char * a, const double v );
-	    static std::ostream& printAttribute( std::ostream& output, const XML_Char * a, const ExternalVariable& v );
-	    static std::ostream& printComment( std::ostream& output, const std::string& s );
-	    static std::ostream& printTime( std::ostream& output, const XML_Char * a, const double v );
 	    static std::ostream& printEntryPhaseResults( std::ostream& output, const Entry & entry, const XML_Char ** attributes, const doubleEntryFunc func, const ConfidenceIntervals * );
 	    static std::ostream& printTaskPhaseResults( std::ostream& output, const Task & task, const XML_Char ** attributes, const doubleTaskFunc func, const ConfidenceIntervals * );
-
-	    static IntegerManip indent( const int i ) { return IntegerManip( &printIndent, i ); }
-	    static XMLCharManip attribute( const XML_Char *a, const XML_Char * v ) { return XMLCharManip( &printAttribute, a, v ); }
-	    static XMLCharManip attribute( const XML_Char *a, const std::string& v ) { return XMLCharManip( &printAttribute, a, v.c_str() ); }
-	    static StringManip comment( const std::string& s ) { return StringManip( &printComment, s ); }
-	    static ExternalVariableManip attribute( const XML_Char *a, const ExternalVariable& v ) { return ExternalVariableManip( &printAttribute, a, v ); }
-	    static XMLCharDoubleManip attribute( const XML_Char *a, const double v ) { return XMLCharDoubleManip( &printAttribute, a, v ); }
-	    static XMLCharDoubleManip time_attribute( const XML_Char *a, const double v ) { return XMLCharDoubleManip( &printTime, a, v ); }
-	    static XMLCharBoolManip start_element( const XML_Char * e, const bool b=true ) { return XMLCharBoolManip( &printStartElement, e, b ); }
-	    static XMLCharBoolManip end_element( const XML_Char * e, const bool b=true ) { return XMLCharBoolManip( &printEndElement, e, b ); }
-	    static XMLCharBoolManip simple_element( const XML_Char * e ) { return XMLCharBoolManip( &printStartElement, e, false ); }
-
 	    static EntryResultsManip entry_phase_results( const Entry& t, const XML_Char ** l, doubleEntryFunc f, const ConfidenceIntervals * c=0 ) { return EntryResultsManip( &printEntryPhaseResults, t, l, f, c ); }
 	    static TaskResultsManip task_phase_results( const Task& t, const XML_Char ** l, doubleTaskFunc f, const ConfidenceIntervals * c=0 ) { return TaskResultsManip( &printTaskPhaseResults, t, l, f, c ); }
 
@@ -402,8 +361,6 @@ namespace LQIO {
 	    std::set<LQIO::Spex::ObservationInfo,LQIO::Spex::ObservationInfo> _spex_observation;
 	    /*- SPEX */
 
-	    static int __indent;
-
 	private:
 	    static const std::set<const XML_Char *,attribute_table_t> model_table;
 	    static const std::set<const XML_Char *,attribute_table_t> parameter_table;
@@ -416,8 +373,6 @@ namespace LQIO {
 	    static const std::set<const XML_Char *,attribute_table_t> activity_table;
 	    static const std::set<const XML_Char *,attribute_table_t> call_table;
 	    static const std::set<const XML_Char *,attribute_table_t> histogram_table;
-
-	    static const std::map<const XML_Char,const std::string> escape_table;
 
 	    static const std::map<const XML_Char *,const ActivityList::ActivityList::Type,attribute_table_t> precedence_table;
 	    static const std::map<const ActivityList::Type,const XML_Char *> precedence_type_table;
@@ -436,14 +391,14 @@ namespace LQIO {
 	    static const XML_Char *Xactivity_graph;
 	    static const XML_Char *Xasynch_call;
 	    static const XML_Char *Xbegin;
-	    static const XML_Char *Xbound_to_entry;
 	    static const XML_Char *Xbottleneck_strength;
+	    static const XML_Char *Xbound_to_entry;
 	    static const XML_Char *Xcall_order;
 	    static const XML_Char *Xcalls_mean;
 	    static const XML_Char *Xcap;
+	    static const XML_Char *Xcomment;
 	    static const XML_Char *Xconf_95;
 	    static const XML_Char *Xconf_99;
-	    static const XML_Char *Xcomment;
 	    static const XML_Char *Xconv_val;
 	    static const XML_Char *Xconv_val_result;
 	    static const XML_Char *Xcore;
@@ -505,6 +460,8 @@ namespace LQIO {
 	    static const XML_Char *Xqueue_length;
 	    static const XML_Char *Xqueue_length_distribution;
 	    static const XML_Char *Xquorum;
+	    static const XML_Char *Xr_lock;
+	    static const XML_Char *Xr_unlock;
 	    static const XML_Char *Xreplication;
 	    static const XML_Char *Xreply_activity;
 	    static const XML_Char *Xreply_entry;
@@ -519,19 +476,17 @@ namespace LQIO {
 	    static const XML_Char *Xresult_observation;
 	    static const XML_Char *Xresult_processor;
 	    static const XML_Char *Xresult_task;
-	    static const XML_Char *Xr_lock;
-	    static const XML_Char *Xr_unlock;
 	    static const XML_Char *Xrwlock;
-	    static const XML_Char *Xrwlock_reader_waiting;
-	    static const XML_Char *Xrwlock_reader_waiting_variance;
 	    static const XML_Char *Xrwlock_reader_holding;
 	    static const XML_Char *Xrwlock_reader_holding_variance;
 	    static const XML_Char *Xrwlock_reader_utilization;
-	    static const XML_Char *Xrwlock_writer_waiting;
-	    static const XML_Char *Xrwlock_writer_waiting_variance;
+	    static const XML_Char *Xrwlock_reader_waiting;
+	    static const XML_Char *Xrwlock_reader_waiting_variance;
 	    static const XML_Char *Xrwlock_writer_holding;
 	    static const XML_Char *Xrwlock_writer_holding_variance;
 	    static const XML_Char *Xrwlock_writer_utilization;
+	    static const XML_Char *Xrwlock_writer_waiting;
+	    static const XML_Char *Xrwlock_writer_waiting_variance;
 	    static const XML_Char *Xscheduling;
 	    static const XML_Char *Xsemaphore;
 	    static const XML_Char *Xsemaphore_utilization;
@@ -566,12 +521,12 @@ namespace LQIO {
 	    static const XML_Char *Xutilization;
 	    static const XML_Char *Xvalid;
 	    static const XML_Char *Xvalue;
+	    static const XML_Char *Xw_lock;
+	    static const XML_Char *Xw_unlock;
 	    static const XML_Char *Xwait;
 	    static const XML_Char *Xwait_squared;
 	    static const XML_Char *Xwaiting;
 	    static const XML_Char *Xwaiting_variance;
-	    static const XML_Char *Xw_lock;
-	    static const XML_Char *Xw_unlock;
 	    static const XML_Char *Xxml_debug;
             static const XML_Char *Xhistogram_bin;
             static const XML_Char *Xoverflow_bin;

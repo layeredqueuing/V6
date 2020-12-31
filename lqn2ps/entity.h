@@ -1,16 +1,17 @@
 /* -*- c++ -*-
  * entity.h	-- Greg Franks
  *
- * $Id: entity.h 14135 2020-11-25 18:22:02Z greg $
+ * $Id: entity.h 14235 2020-12-17 13:56:55Z greg $
  */
 
 #ifndef _ENTITY_H
 #define _ENTITY_H
 #include "lqn2ps.h"
-#include <iostream>
 #include <vector>
-#include "element.h"
+#include <map>
 #include <lqio/input.h>
+#include "element.h"
+#include "demand.h"
 #if defined(PMIF_OUTPUT)
 #include <lqio/pmif_document.h>
 #endif
@@ -19,20 +20,19 @@ class Processor;
 class Task;
 class Arc;
 class EntityCall;
+class Entity;
 
 /* ----------------------- Abstract Superclass ------------------------ */
 
 class Entity : public Element
 {
 public:
-    struct CountCallers {
-	CountCallers( const callPredicate predicate ) : _predicate(predicate), _count(0) {}
-	void operator()( const Entity * entity );
-	unsigned int count() const { return _count; }
+    struct count_callers {
+	count_callers( const callPredicate predicate ) : _predicate(predicate) {}
+	unsigned int operator()( unsigned int, const Entity * entity ) const;
 	
     private:
 	const callPredicate _predicate;
-	unsigned int _count;
     };
 
 #if defined(PMIF_OUTPUT)
@@ -59,6 +59,24 @@ public:
     };
 #endif
     
+    struct accumulate_demand {
+	accumulate_demand( Demand::map_t& demand ) : _demand(demand) {}
+	void operator()( const Entity * entity ) const { entity->accumulateDemand( _demand[entity] ); }
+    private:
+	Demand::map_t& _demand;
+    };
+
+
+    struct pad_demand {
+	pad_demand( const std::vector<Entity *>& clients, Demand::map_t& demand ) : _clients(clients), _demand(demand) {}
+	void operator()( const Entity * entity ) const;
+
+    private:
+	const std::vector<Entity *>& _clients;	
+	Demand::map_t& _demand;
+    };
+    
+    
 public:
     Entity( const LQIO::DOM::Entity*, const size_t id );
     virtual ~Entity();
@@ -70,8 +88,6 @@ public:
 
     /* Instance Variable Access */
 	   
-    virtual const Processor * processor() const = 0;
-    virtual Entity& processor( const Processor * aProcessor ) = 0;
     const LQIO::DOM::ExternalVariable& copies() const;
     unsigned int copiesValue() const;
     const LQIO::DOM::ExternalVariable& replicas() const;
@@ -150,10 +166,15 @@ public:
 
     virtual std::ostream& printName( std::ostream& output, const int = 0 ) const;
 
+#if defined(BUG_270)
+    const Entity& printJMVAStation( std::ostream&, const Demand::map_t& ) const;
+    virtual void accumulateDemand( std::map<const Task *,Demand>& ) const = 0;
+#endif
+    
 protected:
     double radius() const;
     unsigned countCallers() const;
-
+    
 private:
     Graphic::colour_type chainColour( unsigned int ) const;
     std::ostream& drawServerToClient( std::ostream&, const double, const double, const Entity *, std::vector<bool> &, const unsigned ) const;

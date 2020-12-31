@@ -12,7 +12,7 @@
  * July 2007.
  *
  * ------------------------------------------------------------------------
- * $Id: entry.cc 14172 2020-12-06 14:23:14Z greg $
+ * $Id: entry.cc 14310 2020-12-31 17:16:57Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -25,6 +25,9 @@
 #include <iostream>
 #include <iomanip>
 #include <lqio/error.h>
+#include <mva/fpgoop.h>
+#include <mva/prob.h>
+#include <mva/server.h>
 #include "actlist.h"
 #include "call.h"
 #include "entry.h"
@@ -33,10 +36,8 @@
 #include "lqns.h"
 #include "model.h"
 #include "pragma.h"
-#include "prob.h"
 #include "processor.h"
 #include "randomvar.h"
-#include "server.h"
 #include "submodel.h"
 #include "task.h"
 #include "variance.h"

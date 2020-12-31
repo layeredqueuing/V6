@@ -11,7 +11,7 @@
  *
  * January 2005.
  *
- * $Id: randomvar.cc 14176 2020-12-07 17:26:28Z greg $
+ * $Id: randomvar.cc 14310 2020-12-31 17:16:57Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -19,6 +19,7 @@
 #include "dim.h"
 #include <cmath>
 #include <cstdlib>
+#include <mva/fpgoop.h>
 #include "randomvar.h"
 #if !defined(TESTDIST)
 #include "lqns.h"
@@ -1644,7 +1645,3 @@ DiscreteCDFs::~DiscreteCDFs()
     myCDFsCltn.clear();
 }
 
-/****************************************************************/
-
-#include "vector.cc"
-template class Vector<DiscretePoints *>;

@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: entity.cc 14175 2020-12-07 17:04:30Z greg $
+ * $Id: entity.cc 14310 2020-12-31 17:16:57Z greg $
  *
  * Everything you wanted to know about a task or processor, but were
  * afraid to ask.
@@ -23,22 +23,25 @@
 #include <lqio/error.h>
 #include <lqio/labels.h>
 #include <lqio/dom_extvar.h>
+#include <mva/fpgoop.h>
+#include <mva/open.h>
+#include <mva/mva.h>
+#include <mva/ph2serv.h>
+#include <mva/server.h>
+#include <mva/vector.h>
 #include "call.h"
 #include "entity.h"
 #include "entry.h"
 #include "errmsg.h"
-#include "fpgoop.h"
 #include "lqns.h"
-#include "mva.h"
-#include "open.h"
-#include "overtake.h"
-#include "ph2serv.h"
 #include "pragma.h"
-#include "server.h"
 #include "submodel.h"
 #include "task.h"
+#include "task.h"
 #include "variance.h"
-#include "vector.h"
+
+
+#define DEFERRED_UTULIZATION	false
 
 /* ---------------------- Overloaded Operators ------------------------ */
 

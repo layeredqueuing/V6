@@ -9,7 +9,7 @@
  * November, 1994
  *
  * ------------------------------------------------------------------------
- * $Id: processor.h 14000 2020-10-25 12:50:53Z greg $
+ * $Id: processor.h 14235 2020-12-17 13:56:55Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -44,8 +44,6 @@ public:
     int nTasks() const { return _tasks.size(); }
     const std::set<Share *,LT<Share> >& shares() const { return _shares; }
     int nShares() const { return _shares.size(); }
-    virtual Entity& processor( const Processor * aProcessor );
-    virtual const Processor * processor() const;
     bool hasRate() const;
     LQIO::DOM::ExternalVariable& rate() const;
     bool hasQuantum() const;
@@ -95,6 +93,11 @@ public:
     /* Printing */
 
     virtual const Processor& draw( std::ostream& output ) const;
+
+protected:
+#if defined(BUG_270)
+    virtual void accumulateDemand( std::map<const Task *,Demand>& ) const;
+#endif
 
 public:
     static std::ostream& printHeader( std::ostream& );

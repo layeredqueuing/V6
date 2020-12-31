@@ -1,15 +1,15 @@
 /*  -*- c++ -*-
  * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/overtake.h $ -- Greg Franks
  *
- * $Id: overtake.h 14141 2020-11-25 20:57:44Z greg $
+ * $Id: overtake.h 14310 2020-12-31 17:16:57Z greg $
  */
 
 #ifndef _OVERTAKE_H
 #define _OVERTAKE_H
 
 #include "dim.h"
-#include "vector.h"
-#include "prob.h"
+#include <mva/vector.h>
+#include <mva/prob.h>
 #include "slice.h"
 
 class Entry;

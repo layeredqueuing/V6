@@ -1,6 +1,6 @@
 /* srvn2eepic.c	-- Greg Franks Sun Jan 26 2003
  *
- * $Id: main.cc 14171 2020-12-05 14:37:37Z greg $
+ * $Id: main.cc 14235 2020-12-17 13:56:55Z greg $
  */
 
 #include "lqn2ps.h"
@@ -13,6 +13,7 @@
 #include <libgen.h>
 #include <lqio/dom_object.h>
 #include <lqio/json_document.h>
+#include <lqio/dom_pragma.h>
 #include "layer.h"
 #include "model.h"
 #include "errmsg.h"
@@ -24,7 +25,9 @@ std::string command_line;
 bool Flags::annotate_input		= false;
 bool Flags::async_topological_sort      = true;
 bool Flags::clear_label_background 	= false;
-bool Flags::convert_to_reference_task	= true; 
+bool Flags::convert_to_reference_task	= true;
+bool Flags::debug			= false;
+bool Flags::dump_graphviz		= false;
 bool Flags::exhaustive_toplogical_sort	= false;
 bool Flags::flatten_submodel		= false;
 bool Flags::have_results		= false;
@@ -36,12 +39,11 @@ bool Flags::print_comment		= false;
 bool Flags::print_forwarding_by_depth	= false;
 bool Flags::print_layer_number  	= false;
 bool Flags::print_submodels     	= false;
+bool Flags::prune			= false;
 bool Flags::rename_model		= false;
 bool Flags::squish_names		= false;
 bool Flags::surrogates			= false;
 bool Flags::use_colour			= true;
-bool Flags::dump_graphviz		= false;
-bool Flags::debug			= false;
 
 
 double Flags::act_x_spacing		= 6.0;
@@ -56,7 +58,7 @@ std::regex * Flags::client_tasks	= nullptr;
 sort_type Flags::sort	 		= FORWARD_SORT;
 
 justification_type Flags::node_justification = DEFAULT_JUSTIFY;
-justification_type Flags::label_justification = CENTER_JUSTIFY; 
+justification_type Flags::label_justification = CENTER_JUSTIFY;
 justification_type Flags::activity_justification = DEFAULT_JUSTIFY;
 graphical_output_style_type Flags::graphical_output_style = TIMEBENCH_STYLE;
 
@@ -64,7 +66,7 @@ double Flags::icon_slope	        = 1.0/10.0;
 unsigned int maxStrLen 		= 16;
 const unsigned int maxDblLen	= 12;		/* Field width in srvnoutput. */
 
-const char * Options::activity [] = 
+const char * Options::activity [] =
 {
     "none",
     "sequences",
@@ -75,7 +77,7 @@ const char * Options::activity [] =
     0
 };
 
-const char * Options::colouring[] = 
+const char * Options::colouring[] =
 {
     "off",
     "results",
@@ -87,7 +89,7 @@ const char * Options::colouring[] =
     0
 };
 
-const char * Options::integer [] = 
+const char * Options::integer [] =
 {
     "int",
     0
@@ -97,7 +99,7 @@ const char * Options::integer [] =
  * Input output format options
  */
 
-const char * Options::io[] = 
+const char * Options::io[] =
 {
     "eepic",
 #if defined(EMF_OUTPUT)
@@ -107,7 +109,10 @@ const char * Options::io[] =
 #if HAVE_GD_H && HAVE_LIBGD && HAVE_GDIMAGEGIFPTR
     "gif",
 #endif
-#if HAVE_GD_H && HAVE_LIBGD && HAVE_LIBJPEG 
+#if defined(JMVA_OUTPUT)
+    "jmva",
+#endif
+#if HAVE_GD_H && HAVE_LIBGD && HAVE_LIBJPEG
     "jpeg",
 #endif
     "json",
@@ -144,7 +149,7 @@ const char * Options::io[] =
     0
 };
 
-const char * Options::justification [] = 
+const char * Options::justification[] =
 {
     "nodes",
     "labels",
@@ -165,44 +170,45 @@ const char * Options::key[] =
     0
 };
 
-const char * Options::layering[] = 
+const char * Options::layering[] =
 {
-    "batch",                            /* LAYERING_BATCH           */
+    LQIO::DOM::Pragma::_batched_,       /* LAYERING_BATCH           */
     "group",                            /* LAYERING_GROUP           */
-    "hwsw",                             /* LAYERING_HWSW            */
-    "srvn",                             /* LAYERING_SPAN            */
+    LQIO::DOM::Pragma::_hwsw_,          /* LAYERING_HWSW            */
+    LQIO::DOM::Pragma::_mol_,           /* LAYERING_MOL             */
     "processor",                        /* LAYERING_PROCESSOR       */
     "processor-task",                   /* LAYERING_PROCESSOR_TASK  */
-    "task-processor",                   /* LAYERING_TASK_PROCESSOR  */
     "share",                            /* LAYERING_SHARE           */
-    "squashed",                         /* LAYERING_SQUASHED        */
-    "method-of-layers",                 /* LAYERING_MOL             */
-    0                                   /* */
-};                                         
+    LQIO::DOM::Pragma::_squashed_,      /* LAYERING_SQUASHED        */
+    LQIO::DOM::Pragma::_srvn_,          /* LAYERING_SRVN            */
+    "task-processor",                   /* LAYERING_TASK_PROCESSOR  */
+    nullptr                             /* */
+};
 
 
-const char * Options::pragma[] = {
-    "annotate",				/* PRAGMA_ANNOTATE,                     */
-    "arrow-scaling",			/* PRAGMA_ARROW_SCALING,		*/
-    "clear-label-background", 		/* PRAGMA_CLEAR_LABEL_BACKGROUND,	*/
-    "exhaustive-topological-sort",	/* PRAGMA_EXHAUSTIVE_TOPOLOGICAL_SORT,	*/
-    "flatten",				/* PRAGMA_FLATTEN_SUBMODEL,		*/
-    "forwarding",			/* PRAGMA_FORWARDING_DEPTH,		*/
-    "group",				/* PRAGMA_GROUP,			*/
-    "layer-number",			/* PRAGMA_LAYER_NUMBER,			*/
-    "no-alignment-box",			/* PRAGMA_NO_ALIGNMENT_BOX,		*/
-    "no-async",				/* PRAGMA_NO_ASYNC_TOPOLOGICAL_SORT	*/
-    "no-cv-sqr",			/* PRAGMA_NO_CV_SQR,			*/
-    "no-phase-type",			/* PRAGMA_NO_PHASE_TYPE,		*/
-    "no-reference-task-conversion",	/* PRAGMA_NO_REF_TASK_CONVERSION,	*/
-    "quorum-reply",			/* PRAGMA_QUORUM_REPLY,			*/
-    "rename",				/* PRAGMA_RENAME			*/
-    "sort",				/* PRAGMA_SORT,				*/
-    "squish",				/* PRAGMA_SQUISH_ENTRY_NAMES,		*/
-    "submodels",			/* PRAGMA_SUBMODEL_CONTENTS,		*/
-    "tasks-only",			/* PRAGMA_TASKS_ONLY			*/
-    "no-header",			/* PRAGMA_SPEX_HEADER			*/
-    0					
+const char * Options::special[] = {
+    "annotate",				/* SPECIAL_ANNOTATE,                    */
+    "arrow-scaling",			/* SPECIAL_ARROW_SCALING,		*/
+    "clear-label-background", 		/* SPECIAL_CLEAR_LABEL_BACKGROUND,	*/
+    "exhaustive-topological-sort",	/* SPECIAL_EXHAUSTIVE_TOPOLOGICAL_SORT,	*/
+    "flatten",				/* SPECIAL_FLATTEN_SUBMODEL,		*/
+    "forwarding",			/* SPECIAL_FORWARDING_DEPTH,		*/
+    "group",				/* SPECIAL_GROUP,			*/
+    "layer-number",			/* SPECIAL_LAYER_NUMBER,		*/
+    "no-alignment-box",			/* SPECIAL_NO_ALIGNMENT_BOX,		*/
+    "no-async",				/* SPECIAL_NO_ASYNC_TOPOLOGICAL_SORT	*/
+    "no-cv-sqr",			/* SPECIAL_NO_CV_SQR,			*/
+    "no-phase-type",			/* SPECIAL_NO_PHASE_TYPE,		*/
+    "no-reference-task-conversion",	/* SPECIAL_NO_REF_TASK_CONVERSION,	*/
+    "prune",				/* SPECIAL_PRUNE			*/
+    "quorum-reply",			/* SPECIAL_QUORUM_REPLY,		*/
+    "rename",				/* SPECIAL_RENAME			*/
+    "sort",				/* SPECIAL_SORT,			*/
+    "squish",				/* SPECIAL_SQUISH_ENTRY_NAMES,		*/
+    "submodels",			/* SPECIAL_SUBMODEL_CONTENTS,		*/
+    "tasks-only",			/* SPECIAL_TASKS_ONLY			*/
+    "no-header",			/* SPECIAL_SPEX_HEADER			*/
+    0
 };
 
 const char * Options::processor[] = {
@@ -218,7 +224,7 @@ const char * Options::real [] = {
     0
 };
 
-const char * Options::replication [] = 
+const char * Options::replication [] =
 {
     "none",
     "remove",
@@ -281,7 +287,7 @@ main(int argc, char *argv[])
 	exit( 1 );
     found1: ;
     }
-    
+
     return lqn2ps( argc, argv );
 }
 
@@ -306,9 +312,20 @@ class_error::message( const std::string& method, const char * file, const unsign
     ss << method << ": " << file << " " << line << ": " << error;
     return ss.str();
 }
+
+
+size_t
+Options::find_if( const char** values, const std::string& s )
+{
+    size_t i = 0;
+    for ( ; values[i] != nullptr; ++i ) {
+	if ( s == values[i] ) return i;
+    }
+    return i;
+}
 
 bool
-process_pragma( const char * p )
+process_special( const char * p, LQIO::DOM::Pragma& pragmas )
 {
     if ( !p ) return false;
 
@@ -330,41 +347,49 @@ process_pragma( const char * p )
 	    }
 	}
 	while ( isspace( *p ) ) ++p;
-	rc = rc && pragma( param, value );
+	rc = rc && special( param, value, pragmas );
     } while ( *p++ == ',' );
     return rc;
 }
 
 
 bool
-pragma( const std::string& parameter, const std::string& value )
+special( const std::string& parameter, const std::string& value, LQIO::DOM::Pragma& pragmas )
 {
-    for ( unsigned int i = 0; Options::pragma[i] != 0; ++i ) {
-	if ( parameter.compare( Options::pragma[i] ) != 0 ) continue;
+    try {
+	char * endptr = nullptr;
 
-	switch ( i ) {
-	case PRAGMA_ANNOTATE:                   Flags::annotate_input 			= get_bool( value, true ); break;
-	case PRAGMA_CLEAR_LABEL_BACKGROUND:     Flags::clear_label_background 		= get_bool( value, true ); break;
-	case PRAGMA_EXHAUSTIVE_TOPOLOGICAL_SORT:Flags::exhaustive_toplogical_sort 	= get_bool( value, true ); break;
-	case PRAGMA_FLATTEN_SUBMODEL:		Flags::flatten_submodel			= get_bool( value, true ); break;
-	case PRAGMA_FORWARDING_DEPTH:           Flags::print_forwarding_by_depth 	= get_bool( value, true ); break;
-	case PRAGMA_LAYER_NUMBER:               Flags::print_layer_number 		= get_bool( value, true ); break;
-	case PRAGMA_NO_ALIGNMENT_BOX:		Flags::print_alignment_box		= get_bool( value, false ); break;
-	case PRAGMA_NO_ASYNC_TOPOLOGICAL_SORT:  Flags::async_topological_sort		= get_bool( value, false ); break;
-	case PRAGMA_NO_CV_SQR:			Flags::output_coefficient_of_variation  = get_bool( value, false ); break;
-	case PRAGMA_NO_PHASE_TYPE:		Flags::output_phase_type                = get_bool( value, false ); break;
-	case PRAGMA_NO_REF_TASK_CONVERSION:	Flags::convert_to_reference_task	= get_bool( value, false ); break;
-	case PRAGMA_RENAME:			Flags::rename_model	 		= get_bool( value, true ); break;
-	case PRAGMA_SQUISH_ENTRY_NAMES:         Flags::squish_names	 		= get_bool( value, true ); break;
-	case PRAGMA_SUBMODEL_CONTENTS:          Flags::print_submodels 			= get_bool( value, true ); break;
-	case PRAGMA_SPEX_HEADER:		LQIO::Spex::__no_header			= get_bool( value, true ); break;
+	switch ( Options::find_if( Options::special, parameter ) ) {
+	case SPECIAL_ANNOTATE:			  Flags::annotate_input			= get_bool( value, true ); break;
+	case SPECIAL_CLEAR_LABEL_BACKGROUND:	  Flags::clear_label_background		= get_bool( value, true ); break;
+	case SPECIAL_EXHAUSTIVE_TOPOLOGICAL_SORT: Flags::exhaustive_toplogical_sort	= get_bool( value, true ); break;
+	case SPECIAL_FLATTEN_SUBMODEL:		  Flags::flatten_submodel		= get_bool( value, true ); break;
+	case SPECIAL_FORWARDING_DEPTH:		  Flags::print_forwarding_by_depth	= get_bool( value, true ); break;
+	case SPECIAL_LAYER_NUMBER:		  Flags::print_layer_number		= get_bool( value, true ); break;
+	case SPECIAL_NO_ALIGNMENT_BOX:		  Flags::print_alignment_box		= get_bool( value, false ); break;
+	case SPECIAL_NO_ASYNC_TOPOLOGICAL_SORT:	  Flags::async_topological_sort		= get_bool( value, false ); break;
+	case SPECIAL_NO_CV_SQR:			  Flags::output_coefficient_of_variation= get_bool( value, false ); break;
+	case SPECIAL_NO_PHASE_TYPE:		  Flags::output_phase_type		= get_bool( value, false ); break;
+	case SPECIAL_NO_REF_TASK_CONVERSION:	  Flags::convert_to_reference_task	= get_bool( value, false ); break;
+	case SPECIAL_RENAME:			  Flags::rename_model			= get_bool( value, true ); break;
+	case SPECIAL_SQUISH_ENTRY_NAMES:	  Flags::squish_names			= get_bool( value, true ); break;
+	case SPECIAL_SUBMODEL_CONTENTS:		  Flags::print_submodels		= get_bool( value, true ); break;
 	    
-	case PRAGMA_QUORUM_REPLY:
+	case SPECIAL_PRUNE:
+	    pragmas.insert(LQIO::DOM::Pragma::_prune_, get_bool( value, true ) ? "true" : "false" );
+	    break;
+
+	case SPECIAL_QUORUM_REPLY:
 	    LQIO::io_vars.error_messages[LQIO::ERR_REPLY_NOT_GENERATED].severity = LQIO::WARNING_ONLY;
 	    break;
 
-	case PRAGMA_TASKS_ONLY:
-	    Flags::print[AGGREGATION].value.i = AGGREGATE_ENTRIES; 
+	case SPECIAL_SORT:
+	    Flags::sort = static_cast<sort_type>(Options::find_if( Options::sort, value ));
+	    if ( Flags::sort == INVALID_SORT ) throw std::domain_error( value );
+	    break;
+
+	case SPECIAL_TASKS_ONLY:
+	    Flags::print[AGGREGATION].value.i = AGGREGATE_ENTRIES;
 	    if ( Flags::icon_height == DEFAULT_ICON_HEIGHT ) {
 		if ( processor_output() || share_output() ) {
 		    Flags::print[Y_SPACING].value.f = 45;
@@ -372,54 +397,42 @@ pragma( const std::string& parameter, const std::string& value )
 		    Flags::print[Y_SPACING].value.f = 27;
 		}
 		Flags::icon_height = 18;
-		Flags::entry_height = Flags::icon_height * 0.6; 
+		Flags::entry_height = Flags::icon_height * 0.6;
 	    }
 	    break;
 
-	case PRAGMA_SORT:
-	    Flags::sort = INVALID_SORT;
-	    if ( value.size() ) {
-		for ( int i = 0; i < INVALID_SORT; ++i ) {
-		    if ( value.compare( Options::sort[i] ) == 0 ) {
-			Flags::sort = static_cast<sort_type>(i);
-		    }
-		} 
-	    }
-	    if ( Flags::sort == INVALID_SORT ) {
-		std::cerr << LQIO::io_vars.lq_toolname << ": Invalid argument to 'sort=' :" << value << std::endl; 
-		return false;
-	    }
+	case SPECIAL_ARROW_SCALING:
+	    Flags::arrow_scaling = strtod( value.c_str(), &endptr );
+	    if ( Flags::arrow_scaling <= 0 || *endptr != '\0' ) throw std::domain_error( value );
 	    break;
 
-	case PRAGMA_ARROW_SCALING:
-	    Flags::arrow_scaling = strtod( value.c_str(), 0 );
-	    break;
-
-#if HAVE_REGEX_T
-	case PRAGMA_GROUP:
+	case SPECIAL_GROUP:
 	    Model::add_group( value.c_str() );
 	    break;
-#endif
 
 	default:
-	    std::cerr << LQIO::io_vars.lq_toolname << ": Unknown pragma: \"" << parameter;
+	    std::cerr << LQIO::io_vars.lq_toolname << ": Unknown argument: \"" << parameter;
 	    if ( value.size() ) {
-		std::cerr << "\"=\"" << value;
+		std::cerr << "=" << value;
 	    }
 	    std::cerr << "\"" << std::endl;
 	    return false;
 	}
     }
+    catch ( const std::domain_error& e ) {
+	std::cerr << LQIO::io_vars.lq_toolname << ": Invalid value: \"" << parameter << "=" << value << "\"" << std::endl;
+	return false;
+    }
+
     return true;
 }
-
 
 
 /* static */ bool
 get_bool( const std::string& arg, const bool default_value )
 {
     if ( arg.size() == 0 ) return default_value;
-    return strcasecmp( arg.c_str(), "true" ) == 0 || strcasecmp( arg.c_str(), "yes" ) == 0 || strcasecmp( arg.c_str(), "t" ) == 0;
+    return LQIO::DOM::Pragma::isTrue( arg );
 }
 
 /*
@@ -441,7 +454,7 @@ graphical_output()
 	&& Flags::print[OUTPUT_FORMAT].value.i != FORMAT_QNAP
 #endif
  	&& Flags::print[OUTPUT_FORMAT].value.i != FORMAT_RTF
-	&& Flags::print[OUTPUT_FORMAT].value.i != FORMAT_SRVN 
+	&& Flags::print[OUTPUT_FORMAT].value.i != FORMAT_SRVN
 #if defined(TXT_OUTPUT)
 	&& Flags::print[OUTPUT_FORMAT].value.i != FORMAT_TXT
 #endif
@@ -457,8 +470,8 @@ graphical_output()
 bool
 output_output()
 {
-    return Flags::print[OUTPUT_FORMAT].value.i == FORMAT_OUTPUT 
-	|| Flags::print[OUTPUT_FORMAT].value.i == FORMAT_PARSEABLE 
+    return Flags::print[OUTPUT_FORMAT].value.i == FORMAT_OUTPUT
+	|| Flags::print[OUTPUT_FORMAT].value.i == FORMAT_PARSEABLE
 	|| Flags::print[OUTPUT_FORMAT].value.i == FORMAT_RTF;
 }
 
@@ -470,7 +483,7 @@ output_output()
 bool
 input_output()
 {
-    return Flags::print[OUTPUT_FORMAT].value.i == FORMAT_SRVN 
+    return Flags::print[OUTPUT_FORMAT].value.i == FORMAT_SRVN
 	|| Flags::print[OUTPUT_FORMAT].value.i == FORMAT_JSON
 	|| Flags::print[OUTPUT_FORMAT].value.i == FORMAT_LQX
 	|| Flags::print[OUTPUT_FORMAT].value.i == FORMAT_XML
@@ -486,10 +499,7 @@ bool
 partial_output()
 {
     return submodel_output() || queueing_output()
-#if HAVE_REGEX_T
-	|| Flags::print[INCLUDE_ONLY].value.r != 0
-#endif
-      ;
+	|| Flags::print[INCLUDE_ONLY].value.r != nullptr;
 }
 
 bool
@@ -508,7 +518,7 @@ queueing_output()
 
 
 bool
-share_output() 
+share_output()
 {
     return Flags::print[LAYERING].value.i == LAYERING_SHARE;
 }
@@ -543,40 +553,26 @@ update_variance( LQIO::DOM::DocumentObject * dst, set_function set, const LQIO::
 static int current_indent = 1;
 
 int
-set_indent( const unsigned int anInt ) 
+set_indent( const int anInt )
 {
-    unsigned int old_indent = current_indent;   
+    const int old_indent = current_indent;
     current_indent = anInt;
     return old_indent;
 }
 
-static std::ostream&
-value_str_str( std::ostream& output, const char * aStr )
-{
-    output << '"' << aStr << '"';
-    return output;
-}
-
-static std::ostream&
-value_int_str( std::ostream& output, const int anInt )
-{
-    output << '"' << anInt << '"';
-    return output;
-}
-
-static std::ostream&
-pluralize( std::ostream& output, const std::string& aStr, const unsigned int i ) 
+std::ostream&
+pluralize( std::ostream& output, const std::string& aStr, const unsigned int i )
 {
     output << aStr;
     if ( i != 1 ) output << "s";
     return output;
 }
 
-static std::ostream&
+std::ostream&
 indent_str( std::ostream& output, const int anInt )
 {
     if ( anInt < 0 ) {
-	if ( static_cast<int>(current_indent) + anInt < 0 ) {
+	if ( current_indent + anInt < 0 ) {
 	    current_indent = 0;
 	} else {
 	    current_indent += anInt;
@@ -591,28 +587,14 @@ indent_str( std::ostream& output, const int anInt )
     return output;
 }
 
-static std::ostream&
+std::ostream&
 temp_indent_str( std::ostream& output, const int anInt )
 {
     output << std::setw( (current_indent + anInt) * 3 ) << " ";
     return output;
 }
 
-static std::ostream&
-value_bool_str( std::ostream& output, const bool aBool )
-{
-    output << '"' << (aBool ? "yes" : "no") << '"';
-    return output;
-}
-
-static std::ostream&
-value_double_str( std::ostream& output, const double aDouble )
-{
-    output << '"' << aDouble << '"';
-    return output;
-}
-
-static std::ostream&
+std::ostream&
 opt_pct_str( std::ostream& output, const double aDouble )
 {
     output << aDouble;
@@ -623,57 +605,67 @@ opt_pct_str( std::ostream& output, const double aDouble )
 }
 
 
-
 static std::ostream&
-conf_level_str( std::ostream& output, const int fill, const int level ) 
-{	
+conf_level_str( std::ostream& output, const int fill, const int level )
+{
     std::ios_base::fmtflags flags = output.setf( std::ios::right, std::ios::adjustfield );
     output << std::setw( fill-4 ) << "+/- " << std::setw(2) << level << "% ";
     output.flags( flags );
     return output;
 }
 
-StringManip value_str( const char * aStr )
-{
-    return StringManip( &value_str_str, aStr );
-}
+IntegerManip indent( const int i ) { return IntegerManip( &indent_str, i ); }
+IntegerManip temp_indent( const int i ) { return IntegerManip( &temp_indent_str, i ); }
+Integer2Manip conf_level( const int fill, const int level ) { return Integer2Manip( &conf_level_str, fill, level ); }
+StringPlural plural( const std::string& s, const unsigned i ) { return StringPlural( &pluralize, s, i ); }
+DoubleManip opt_pct( const double aDouble ) { return DoubleManip( &opt_pct_str, aDouble ); }
+
+namespace XML {
+    std::ostream& printStartElement( std::ostream& output, const std::string& element, bool complex_element )
+    {
+	output << indent( complex_element ? 1 : 0  ) << "<" << element;
+	return output;
+    }
 
-StringPlural plural( const std::string& s, const unsigned i )
-{
-    return StringPlural( &pluralize, s, i );
-}
+    std::ostream& printEndElement( std::ostream& output, const std::string& element, bool complex_element )
+    {
+	if ( complex_element ) {
+	    output << indent( -1 ) << "</" << element << ">";
+	} else {
+	    output << "/>";
+	}
+	return output;
+    }
 
-IntegerManip value_int( const int anInt )
-{
-    return IntegerManip( &value_int_str, anInt );
-}
+    std::ostream& printInlineElement( std::ostream& output, const std::string& e, const std::string& a, const std::string& v, double d )
+    {
+	output << indent( 0 ) << "<" << e << attribute( a, v )  << ">" << d << "</" << e << ">";
+	return output;
+    }
+    
+    static std::ostream& printAttribute( std::ostream& output, const std::string& a, const std::string& v )
+    {
+	output << " " << a << "=\"" << v << "\"";
+	return output;
+    }
+    
+    static std::ostream& printAttribute( std::ostream& output, const std::string&  a, double v )
+    {
+	output << " " << a << "=\"" << v << "\"";
+	return output;
+    }
+    
+    static std::ostream& printAttribute( std::ostream& output, const std::string&  a, unsigned int v )
+    {
+	output << " " << a << "=\"" << v << "\"";
+	return output;
+    }
 
-IntegerManip indent( const int anInt )
-{
-    return IntegerManip( &indent_str, anInt );
-}
-
-IntegerManip temp_indent( const int anInt )
-{
-    return IntegerManip( &temp_indent_str, anInt );
-}
-
-BooleanManip value_bool( const bool aBool )
-{
-    return BooleanManip( &value_bool_str, aBool );
-}
-
-DoubleManip value_double( const double aDouble )
-{
-    return DoubleManip( &value_double_str, aDouble );
-}
-
-Integer2Manip conf_level( const int fill, const int level )
-{
-    return Integer2Manip( &conf_level_str, fill, level );
-}
-
-DoubleManip opt_pct( const double aDouble )
-{
-    return DoubleManip( &opt_pct_str, aDouble );
+    BooleanManip start_element( const std::string& e, bool b ) { return BooleanManip( &printStartElement, e, b ); }
+    BooleanManip end_element( const std::string& e, bool b ) { return BooleanManip( &printEndElement, e, b ); }
+    BooleanManip simple_element( const std::string& e ) { return BooleanManip( &printStartElement, e, false ); }
+    InlineElementManip inline_element( const std::string& e, const std::string& a, const std::string& v, double d ) { return InlineElementManip( &printInlineElement, e, a, v, d ); }
+    StringManip attribute( const std::string& a, const std::string& v ) { return StringManip( &printAttribute, a, v ); }
+    DoubleManip attribute( const std::string&a, double v ) { return DoubleManip( &printAttribute, a, v ); }
+    UnsignedManip attribute( const std::string&a, unsigned v ) { return UnsignedManip( &printAttribute, a, v ); }
 }

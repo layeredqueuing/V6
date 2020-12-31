@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: gamma.cc 14000 2020-10-25 12:50:53Z greg $
+ * $Id: gamma.cc 14310 2020-12-31 17:16:57Z greg $
  *
  * Gamma distribution.
  *
@@ -15,7 +15,7 @@
 #include <cmath>
 #include <cassert>
 #include "gamma.h"
-#include "fpgoop.h"
+#include <mva/fpgoop.h>
 
 Gamma_Distribution::Gamma_Distribution( double shape, double scale )
     : _shape(shape), _scale(scale)

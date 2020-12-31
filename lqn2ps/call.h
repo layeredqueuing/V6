@@ -10,7 +10,7 @@
  * May 2010
  *
  * ------------------------------------------------------------------------
- * $Id: call.h 14179 2020-12-07 22:02:52Z greg $
+ * $Id: call.h 14235 2020-12-17 13:56:55Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -21,6 +21,7 @@
 #include <vector>
 #include <deque>
 #include "arc.h"
+#include <lqio/dom_call.h>
 #include <lqio/dom_extvar.h>
 
 class Entity;
@@ -37,7 +38,7 @@ class CallStack;
 /*
  * Overloaded operators.
  */
-
+
 class GenericCall
 {
 public:
@@ -49,9 +50,16 @@ public:
 	const callPredicate _p;
     };
 
+private:
+    GenericCall& operator=( const GenericCall& src );
+
+protected:
+    GenericCall( const GenericCall& src );
+    
 public:
     GenericCall();
     virtual ~GenericCall();
+    virtual GenericCall * clone() const = 0;
 
     virtual const LQIO::DOM::Call * getDOM( const unsigned p ) const { return nullptr; }
 
@@ -66,6 +74,7 @@ public:
     virtual unsigned fanIn() const = 0;
     virtual unsigned fanOut() const = 0;
 
+    virtual LQIO::DOM::Call::Type callType() const { return LQIO::DOM::Call::Type::NULL_CALL; }
     virtual bool hasRendezvous() const { return false; }
     virtual bool hasSendNoReply() const { return false; }
     virtual bool hasForwarding() const { return false; }
@@ -92,10 +101,10 @@ public:
     virtual GenericCall& setChain( const unsigned ) = 0;
 
     virtual Graphic::colour_type colour() const = 0;
-    GenericCall& linestyle( Graphic::linestyle_type aLinestyle ) { myArc->linestyle( aLinestyle ); return *this; }
+    GenericCall& linestyle( Graphic::linestyle_type aLinestyle ) { _arc->linestyle( aLinestyle ); return *this; }
     
-    unsigned int nPoints() const { return myArc->nPoints(); }
-    Point& pointAt( const unsigned i ) const { return myArc->pointAt(i); }
+    unsigned int nPoints() const { return _arc->nPoints(); }
+    Point& pointAt( const unsigned i ) const { return _arc->pointAt(i); }
 
     virtual GenericCall& moveDst( const Point& aPoint );
     virtual GenericCall& moveSrc( const Point& aPoint );
@@ -116,16 +125,21 @@ public:
     static bool compareSrc( const GenericCall *, const GenericCall * );
 
 protected:
-    Label * myLabel;
-    Arc * myArc;
+    virtual void dump() const = 0;
+
+protected:
+    Label * _label;
+    Arc * _arc;
 };
 
 inline std::ostream& operator<<( std::ostream& output, const GenericCall& self ) { self.draw( output ); return output; }
-
+
 /* ------------------- Arcs between entries are... -------------------- */
 
 class Call : public GenericCall
 {
+    friend class Entry;
+    
 public:
     class cycle_error : public std::runtime_error
     {
@@ -137,10 +151,6 @@ public:
 	const size_t _depth;
     };
 
-private:
-    static bool hasVariance;
-
-public:
     struct PredicateAndEntry
     {
 	PredicateAndEntry( const Entry * e, const callPredicate p ) : _e(e), _p(p) {};
@@ -159,9 +169,12 @@ public:
 	const callPredicate _p;
     };
 
+
 private:
-    Call( const Call& aCall );
     Call& operator=( const Call& );
+
+protected:
+    Call( const Call& aCall );
 
 protected:
     typedef SRVNCallManip (* print_func_ptr)( const Call& );
@@ -170,6 +183,7 @@ public:
     Call();
     Call( const Entry * toEntry, const unsigned );
     virtual ~Call();
+    
     static void reset();
     virtual bool check() const = 0;
     bool checkReplication() const;
@@ -181,16 +195,15 @@ public:
     
     /* Instance Variable access */
 
-
     virtual const LQIO::DOM::Call * getDOM( const unsigned p ) const;
-    const LQIO::DOM::Call * getDOMFwd() const;
-    Call& rendezvous( const unsigned p, const LQIO::DOM::Call * value );
-    Call& rendezvous( const unsigned p, const double value );
+    const LQIO::DOM::Call * getFwdDOM() const { return _forwarding; }
     virtual double sumOfRendezvous() const;
+    Call& rendezvous( const unsigned p, const double value );
+    Call& rendezvous( const unsigned p, const LQIO::DOM::Call * value );
     const LQIO::DOM::ExternalVariable & rendezvous( const unsigned p = 1 ) const;
     virtual double sumOfSendNoReply() const;
-    Call& sendNoReply( const unsigned p, const LQIO::DOM::Call * value );
     Call& sendNoReply( const unsigned p, const double value );
+    Call& sendNoReply( const unsigned p, const LQIO::DOM::Call * value );
     const LQIO::DOM::ExternalVariable & sendNoReply( const unsigned p = 1 ) const;
     Call& forward( const LQIO::DOM::Call * value );
     virtual const LQIO::DOM::ExternalVariable & forward() const;
@@ -199,6 +212,7 @@ public:
     virtual unsigned fanIn() const;
     virtual unsigned fanOut() const;
 
+    bool equalType( const Call& ) const;
     bool hasWaiting() const;
     Call& waiting( const unsigned p, const double value );
     double waiting( const unsigned p ) const;
@@ -217,14 +231,16 @@ public:
     const std::string & dstName() const;
     virtual double dstIndex() const;
     virtual unsigned dstLevel() const;
+    size_t numberOfPhases() const { return _calls.size(); }
+    virtual LQIO::DOM::Call::Type callType() const { return _callType; }
 
     bool hasRendezvousForPhase( const unsigned ) const;
     bool hasSendNoReplyForPhase( const unsigned ) const;
-    virtual bool hasRendezvous() const;
-    virtual bool hasSendNoReply() const;
-    virtual bool hasForwarding() const;
-    virtual bool hasRendezvousVariance() const { return hasRendezvous() && hasVariance; }
-    virtual bool hasSendNoReplyVariance() const { return hasSendNoReply() && hasVariance; }
+    virtual bool hasRendezvous() const { return _callType == LQIO::DOM::Call::Type::RENDEZVOUS; }
+    virtual bool hasSendNoReply() const { return _callType == LQIO::DOM::Call::Type::SEND_NO_REPLY; }
+    virtual bool hasForwarding() const { return _forwarding != nullptr; }
+    virtual bool hasRendezvousVariance() const { return hasRendezvous() && __hasVariance; }
+    virtual bool hasSendNoReplyVariance() const { return hasSendNoReply() && __hasVariance; }
     virtual bool hasDropProbability() const;
     virtual bool hasInfiniteWait() const;
     virtual bool isSelected() const;
@@ -239,7 +255,10 @@ public:
 
     double srcVisits( const unsigned, const unsigned, const unsigned = 0 ) const;
     Call& aggregatePhases( LQIO::DOM::Phase& );
-
+#if defined(BUG_270)
+    Call& updateRateFrom( const Call& client, const Call& server );
+#endif
+    
     virtual Graphic::colour_type colour() const;
 
     virtual Call& moveDst( const Point& aPoint );
@@ -253,27 +272,36 @@ public:
 protected:
     Call& setArcType();
     virtual std::ostream& printSRVNLine( std::ostream& output, char code, print_func_ptr func ) const;
+    virtual void dump() const;
 
 private:
-    size_t numberOfPhases() const { return _rendezvous.size(); }
+    static double sum_of_calls( double augend, const LQIO::DOM::Call * call );
     
 private:
     /* Input */
 	
-    const Entry* _destination;		/* to whom I am referring to	*/	
-    std::vector<const LQIO::DOM::Call *> _rendezvous;
-    std::vector<const LQIO::DOM::Call *> _sendNoReply;	/* send no reply.	*/
-    const LQIO::DOM::Call * _forwarding;	/* Forwarding probability.	*/
+    const Entry* _destination;			/* to whom I am referring to	*/	
+    LQIO::DOM::Call::Type _callType;
+    std::vector<const LQIO::DOM::Call *> _calls;/* RNV, SNR, FWD (by phase)	*/
+    const LQIO::DOM::Call * _forwarding;
+    static bool __hasVariance;
 };
-
+
 class EntryCall : public Call 
 {
+private:
+    EntryCall( const EntryCall& );
+    
 public:
     EntryCall( const Entry * fromEntry, const Entry * toEntry );
     virtual ~EntryCall();
+
+    virtual EntryCall * clone() const { return new EntryCall( *this ); }
+
     virtual bool check() const;
 
-    const Entry * srcEntry() const { return source; }
+    EntryCall& setSrcEntry( const Entry * entry ) { _source = entry; return *this; }
+    const Entry * srcEntry() const { return _source; }
     virtual const std::string & srcName() const;
     virtual const Task * srcTask() const;
     virtual double srcIndex() const;
@@ -287,10 +315,9 @@ public:
     virtual Graphic::colour_type colour() const;
 
 private:
-    const Entry* source;		/* Calling entry.		*/
+    const Entry* _source;		/* Calling entry.		*/
 };
-
-
+
 class ProxyEntryCall : public EntryCall 
 {
 public:
@@ -304,7 +331,7 @@ public:
 private:
     Call * myProxy;			/* if _forwarding > 0		*/
 };
-
+
 class PseudoEntryCall : public EntryCall 
 {
 public:
@@ -316,12 +343,17 @@ public:
 
 class ActivityCall : public Call 
 {
+private:
+    ActivityCall( const ActivityCall& );
+
 public:
     ActivityCall( const Activity * fromActivity, const Entry * toEntry );
     virtual ~ActivityCall();
+    virtual ActivityCall * clone() const { return new ActivityCall(*this); }
+
     virtual bool check() const;
 
-    const Activity * srcActivity() const { return source; }
+    const Activity * srcActivity() const { return _source; }
     virtual const std::string & srcName() const;
     virtual const Task * srcTask() const;
     virtual double srcIndex() const;
@@ -338,9 +370,9 @@ protected:
     virtual std::ostream& printSRVNLine( std::ostream& output, char code, print_func_ptr func ) const;
 
 private:
-    const Activity* source;		/* Calling entry.		*/
+    const Activity* _source;		/* Calling entry.		*/
 };
-
+
 class ProxyActivityCall : public ActivityCall 
 {
 public:
@@ -354,7 +386,7 @@ public:
 private:
     Call * myProxy;			/* if _forwarding > 0		*/
 };
-
+
 class Reply : public ActivityCall
 {
 public:
@@ -364,14 +396,18 @@ public:
     virtual Graphic::colour_type colour() const;
     virtual bool isSelected() const { return true; }
 };
-
+
 /* ----------------- Calls to processors from tasks. ------------------ */
 
 class EntityCall : public GenericCall {
+private:
+    EntityCall( const EntityCall& );
+    
 public:
     EntityCall( const Task * fromTask, const Entity * toEntity ) : GenericCall(), _srcTask(fromTask), _dstEntity(toEntity) {}
 
     virtual const std::string & srcName() const;
+    EntityCall& setSrcTask( const Task * task ) { _srcTask = task; return *this; }
     virtual const Task * srcTask() const { return _srcTask; }
 
     EntityCall& setDstEntity( const Entity * entity ) { _dstEntity = entity; return *this; }
@@ -380,19 +416,25 @@ public:
     virtual unsigned dstLevel() const;
     virtual double dstIndex() const;
 
+#if defined(BUG_270)
+    virtual EntityCall& updateRateFrom( const Call& );
+#endif
 protected:
     const Task * _srcTask;
     const Entity * _dstEntity;
 };
-
-
+
 /* ----------------- Calls to processors from tasks. ------------------ */
 
 class TaskCall : public EntityCall 
 {
+private:
+    TaskCall( const TaskCall& );
+    
 public:
     TaskCall( const Task * fromTask, const Task * toTask );
     virtual ~TaskCall();
+    virtual TaskCall * clone() const { return new TaskCall( *this ); }
 
     int operator==( const TaskCall& item ) const;
     int operator!=( const TaskCall& item ) const { return !(*this == item); }
@@ -403,7 +445,7 @@ public:
     virtual const LQIO::DOM::ExternalVariable& sendNoReply() const { return _sendNoReply; }
     TaskCall& sendNoReply( const LQIO::DOM::ConstantExternalVariable& );
     virtual double sumOfSendNoReply() const;
-    virtual const LQIO::DOM::ExternalVariable & forward() const { return _forwarding; }
+    virtual const LQIO::DOM::ExternalVariable& forward() const { return _forwarding; }
     TaskCall& taskForward( const LQIO::DOM::ConstantExternalVariable& );
     virtual unsigned fanIn() const;
     virtual unsigned fanOut() const;
@@ -424,13 +466,15 @@ public:
     virtual TaskCall& label();
     virtual std::ostream& print( std::ostream& output ) const { return output; }
 
+protected:
+    virtual void dump() const;
+
 private:
     LQIO::DOM::ConstantExternalVariable _rendezvous;
     LQIO::DOM::ConstantExternalVariable _sendNoReply;
     LQIO::DOM::ConstantExternalVariable _forwarding;
 };
-
-
+
 class ProxyTaskCall : public TaskCall 
 {
 public:
@@ -439,7 +483,7 @@ public:
     virtual bool isPseudoCall() const { return true; }
     ProxyTaskCall& rendezvous( const unsigned int p, double value );
 };
-
+
 class PseudoTaskCall : public TaskCall 
 {
 public:
@@ -448,24 +492,37 @@ public:
     virtual bool isPseudoCall() const { return true; }
     bool hasRendezvous() const { return true; }
 };
-
+
 /* ----------------- Calls to processors from tasks. ------------------ */
 
 class ProcessorCall : public EntityCall {
+private:
+    ProcessorCall( const ProcessorCall& );
+    
 public:
     ProcessorCall( const Task * fromTask, const Processor * toProcessor );
     virtual ~ProcessorCall();
+    virtual ProcessorCall * clone() const {  return new ProcessorCall( *this ); }
 
     int operator==( const ProcessorCall& item ) const;
     int operator!=( const ProcessorCall& item ) const { return !(*this == item); }
 
-    virtual const LQIO::DOM::ExternalVariable & rendezvous() const;
-    virtual double sumOfRendezvous() const { return 0.0; }
-    virtual double sumOfSendNoReply() const { return 0.0; }
-    virtual const LQIO::DOM::ExternalVariable & sendNoReply() const;
-    virtual const LQIO::DOM::ExternalVariable & forward() const;
+    virtual bool hasRendezvous() const { return _callType == LQIO::DOM::Call::Type::RENDEZVOUS; }
+    virtual bool hasSendNoReply() const { return _callType == LQIO::DOM::Call::Type::SEND_NO_REPLY; }
+    virtual LQIO::DOM::Call::Type callType() const { return _callType; }
+
+    virtual const LQIO::DOM::ExternalVariable& rendezvous( const unsigned p = 1 ) const;
+    virtual double sumOfRendezvous() const;
+    virtual const LQIO::DOM::ExternalVariable& sendNoReply( const unsigned p = 1 ) const;
+    virtual double sumOfSendNoReply() const;
+    virtual const LQIO::DOM::ExternalVariable& forward() const;
     virtual unsigned fanIn() const;
     virtual unsigned fanOut() const;
+    double visits() const;
+    double demand() const;
+#if defined(BUG_270)
+    virtual ProcessorCall& updateRateFrom( const Call& );
+#endif
 
     virtual bool isSelected() const;
     virtual bool isProcessorCall() const { return true; }
@@ -479,9 +536,20 @@ public:
     virtual ProcessorCall& moveDst( const Point& aPoint );
     virtual ProcessorCall& label();
     virtual std::ostream& print( std::ostream& output ) const { return output; }
+
+private:
+    void moveLabel();
+    static double sum_of_extvar( double, const LQIO::DOM::ConstantExternalVariable& );
+
+protected:
+    virtual void dump() const;
+
+private:
+    LQIO::DOM::Call::Call::Type _callType;		/* Union discriminator		*/
+    LQIO::DOM::ConstantExternalVariable _visits;
+    LQIO::DOM::ConstantExternalVariable _serviceTime;	/* No phases on processor	*/
 };
-
-
+
 class PseudoProcessorCall : public ProcessorCall 
 {
 public:
@@ -490,13 +558,18 @@ public:
     virtual bool isPseudoCall() const { return true; }
     virtual bool hasRendezvous() const { return true; }
 };
-
+
 /* ----------- Calls to tasks from Open Arrival Sources . ------------- */
 
 class OpenArrival : public GenericCall {
+private:
+    OpenArrival( const OpenArrival& );
+    
 public:
     OpenArrival( const OpenArrivalSource *, const Entry * );
     virtual ~OpenArrival();
+
+    OpenArrival * clone() const { return new OpenArrival( *this ); }
 
     int operator==( const OpenArrival& item ) const;
     int operator!=( const OpenArrival& item ) const { return !(*this == item); }
@@ -528,12 +601,14 @@ public:
     virtual OpenArrival& label();
     virtual std::ostream& print( std::ostream& output ) const { return output; }
 
+protected:
+    virtual void dump() const;
+
 private:
-    const OpenArrivalSource * source;
+    const OpenArrivalSource * _source;
     const Entry * _destination;
 };
-
-
+
 /* -------------- Special class to handle call stacks. ---------------- */
 
 class CallStack : public std::deque<const Call *>
@@ -586,4 +661,3 @@ SRVNCallManip print_sendnoreply( const Call& aCall );
 SRVNCallManip print_forwarding( const Call& aCall );
 LabelCallManip print_wait( const Call& aCall );
 #endif
-

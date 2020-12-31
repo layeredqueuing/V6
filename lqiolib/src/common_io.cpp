@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: common_io.cpp 14133 2020-11-25 13:51:31Z greg $
+ * $Id: common_io.cpp 14302 2020-12-31 13:11:17Z greg $
  *
  * Read in XML input files.
  *
@@ -71,18 +71,6 @@ namespace LQIO {
 	      _conf_99( ConfidenceIntervals( LQIO::ConfidenceIntervals::CONF_99 ) )
 	{
 	}
-
-	/* static */ void
-	Common_IO::invalid_argument( const std::string& attr, const std::string& arg )
-	{
-	    std::string err = "\"";
-	    err += attr;
-	    err += "\"=\"";
-	    err += arg;
-	    err += "\"";
-	    throw std::invalid_argument( err.c_str() );
-	}
-
 
 	double
 	Common_IO::invert( const double arg ) const

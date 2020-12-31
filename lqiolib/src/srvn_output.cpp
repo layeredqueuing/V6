@@ -1,5 +1,5 @@
 /*
- *  $Id: srvn_output.cpp 14133 2020-11-25 13:51:31Z greg $
+ *  $Id: srvn_output.cpp 14302 2020-12-31 13:11:17Z greg $
  *
  * Copyright the Real-Time and Distributed Systems Group,
  * Department of Systems and Computer Engineering,
@@ -1027,15 +1027,16 @@ namespace LQIO {
         const unsigned int n_proc = count_if( _entities.begin(), _entities.end(), is_processor );
         output << std::endl << "P " << n_proc << std::endl;
         if ( _annotate ) {
-            output << "# SYNTAX: p ProcessorName SchedDiscipline [multiplicity]" << std::endl
+            output << "# SYNTAX: p ProcessorName SchedDiscipline [flags]" << std::endl
                    << "#   ProcessorName is any string, globally unique among processors." << std::endl
                    << "#   SchedDiscipline = f {fifo}" << std::endl
                    << "#                   | r {random}" << std::endl
                    << "#                   | p {premptive}" << std::endl
                    << "#                   | h {hol (or non-pre-emptive priority)}" << std::endl
-                   << "#                   | s quantum {processor-sharing (or round-robin)} " << std::endl
-                   << "#   multiplicity = m value {multiprocessor}" << std::endl
-                   << "#                | i {infinite or delay server}" << std::endl;
+                   << "#                   | s <real> {processor-sharing (or round-robin) with quantum} " << std::endl
+                   << "#   flags = m <int> {multiprocessor}" << std::endl
+                   << "#         | i {infinite or delay server}" << std::endl
+		   << "#         | R <real> {rate multiplier}" << std::endl;
         }
         std::for_each( _entities.begin(), _entities.end(), ProcessorInput( output, &ProcessorInput::print ) );
         output << -1 << std::endl;
@@ -1054,12 +1055,14 @@ namespace LQIO {
         const unsigned int n_task = count_if( _entities.begin(), _entities.end(), is_task );
         output << std::endl << "T " << n_task << std::endl;
         if ( _annotate ) {
-            output << "# SYNTAX: t TaskName TaskType EntryList -1 ProcessorName [priority] [multiplicity]" << std::endl
+            output << "# SYNTAX: t TaskName TaskType EntryList -1 ProcessorName [flags]" << std::endl
                    << "#   TaskName is any string, globally unique among tasks." << std::endl
                    << "#   TaskType = r {reference or user task}" << std::endl
                    << "#            | n {other} " << std::endl
-                   << "#   multiplicity = m value {multithreaded}" << std::endl
-                   << "#                | i {infinite}" << std::endl;
+                   << "#   flags = m <int> {multithreaded}" << std::endl
+                   << "#         | i {infinite or delay server}" << std::endl
+		   << "#         | z <real> {think time}" << std::endl
+		   << "#         | <int> {task priority}" << std::endl;
         }
         std::for_each( _entities.begin(), _entities.end(), TaskInput( output, &TaskInput::print ) );
         output << -1 << std::endl;
@@ -1314,8 +1317,8 @@ namespace LQIO {
         _output << newline
                 << "Convergence test value: " << document.getResultConvergenceValue() << newline
                 << "Number of iterations:   " << document.getResultIterations() << newline;
-        if ( document.getExtraComment().length() > 0 ) {
-            _output << "Other:                  " << document.getExtraComment() << newline;
+        if ( document.getDocumentComment().length() > 0 ) {
+            _output << "Other:                  " << document.getDocumentComment() << newline;
         }
         _output << newline;
 
@@ -1648,6 +1651,7 @@ namespace LQIO {
 	}
 	catch ( const std::domain_error& e ) {
 	    solution_error( LQIO::ERR_INVALID_PARAMETER, "replicas", "processor", processor.getName().c_str(), e.what() );
+	    throw_bad_parameter();
 	}
         return output;
     }
@@ -1656,7 +1660,7 @@ namespace LQIO {
     SRVN::ProcessorInput::printRate( std::ostream& output, const DOM::Processor& processor )
     {
 	try {
-	    output << Input::is_double_and_gt( " R ", dynamic_cast<const DOM::Processor&>(processor).getRate(), 1.0 );
+	    output << Input::is_double_and_gt( " R ", dynamic_cast<const DOM::Processor&>(processor).getRate(), 0.0 );
 	}
 	catch ( const std::domain_error& e ) {
 	    solution_error( LQIO::ERR_INVALID_PARAMETER, "rate", "processor", processor.getName().c_str(), e.what() );

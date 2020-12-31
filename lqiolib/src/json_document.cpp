@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: json_document.cpp 14133 2020-11-25 13:51:31Z greg $
+ * $Id: json_document.cpp 14302 2020-12-31 13:11:17Z greg $
  *
  * Read in JSON input files.
  *
@@ -52,7 +52,6 @@
 #include "error.h"
 #include "glblerr.h"
 #include "filename.h"
-
 #include "dom_object.h"
 #include "dom_extvar.h"
 #include "dom_entry.h"
@@ -62,6 +61,7 @@
 #include "dom_actlist.h"
 #include "dom_histogram.h"
 #include "srvn_spex.h"
+#include "xml_input.h"
 
 extern "C" {
 #include "srvn_gram.h"
@@ -302,12 +302,12 @@ namespace LQIO {
 			program += i->get<std::string>();
 			program += "\n";
 		    } else {
-			Common_IO::invalid_argument( Xparameters, i->to_str() );
+			XML::invalid_argument( Xparameters, i->to_str() );
 		    }
 		}
 		LQIO_parse_string( SPEX_PARAMETER, program.c_str() );
 	    } else {
-		invalid_argument( Xparameters, value.to_str() );
+		XML::invalid_argument( Xparameters, value.to_str() );
 	    }
 	}
 
@@ -323,7 +323,7 @@ namespace LQIO {
 		const picojson::value::object& obj = value.get<picojson::object>();
 		std::for_each( obj.begin(), obj.end(), AddPragma( _document ) );
 	    } else {
-		invalid_argument( Xpragma, value.to_str() );
+		XML::invalid_argument( Xpragma, value.to_str() );
 	    }
 	}
 
@@ -331,7 +331,7 @@ namespace LQIO {
 	Json_Document::handleGeneral( DocumentObject *, const picojson::value& value )
 	{
 	    if ( !value.is<picojson::object>() ) {
-		invalid_argument( Xgeneral, value.to_str() );
+		XML::invalid_argument( Xgeneral, value.to_str() );
 	    }
 	    const picojson::value::object& obj = value.get<picojson::object>();
 	    for (picojson::value::object::const_iterator i = obj.begin(); i != obj.end(); ++i) {
@@ -353,7 +353,7 @@ namespace LQIO {
 	Json_Document::handleGeneralObservation( DocumentObject *, const picojson::value& value )
 	{
 	    if ( !value.is<picojson::object>() ) {
-		invalid_argument( Xgeneral, value.to_str() );
+		XML::invalid_argument( Xgeneral, value.to_str() );
 	    }
 	    const picojson::value::object& obj = value.get<picojson::object>();
 	    for (picojson::value::object::const_iterator i = obj.begin(); i != obj.end(); ++i) {
@@ -426,7 +426,7 @@ namespace LQIO {
 		    LQIO::solution_error( LQIO::ERR_UNEXPECTED_ATTRIBUTE, Xprocessor, arg.what() );
 		}
 	    } else {
-		invalid_argument( Xprocessor, value.to_str() );
+		XML::invalid_argument( Xprocessor, value.to_str() );
 	    }
 	}
 
@@ -481,7 +481,7 @@ namespace LQIO {
 		    LQIO::solution_error( LQIO::ERR_UNEXPECTED_ATTRIBUTE, Xgroup, arg.what() );
 		}
 	    } else {
-		invalid_argument( Xgroup, value.to_str() );
+		XML::invalid_argument( Xgroup, value.to_str() );
 	    }
 	}
 
@@ -563,7 +563,7 @@ namespace LQIO {
 		    LQIO::solution_error( LQIO::ERR_UNEXPECTED_ATTRIBUTE, Xtask, arg.what() );
 		}
 	    } else {
-		invalid_argument( Xtask, value.to_str() );
+		XML::invalid_argument( Xtask, value.to_str() );
 	    }
 	}
 
@@ -587,13 +587,13 @@ namespace LQIO {
 		    if ( task ) {
 			(task->*fan_in_out)( i->first, get_external_variable( i->second ) );
 		    } else {
-			invalid_argument( Xfanin, value.to_str() );
+			XML::invalid_argument( Xfanin, value.to_str() );
 		    }
 		} else if ( obj.size() > 1 ) {
 		    LQIO::solution_error( LQIO::ERR_UNEXPECTED_ATTRIBUTE, Xprecedence, (++i)->first.c_str() );
 		}
 	    } else {
-		invalid_argument( Xentry, value.to_str() );
+		XML::invalid_argument( Xentry, value.to_str() );
 	    }
 	}
 
@@ -635,7 +635,7 @@ namespace LQIO {
 				entry->setStartActivity( activity );
 				_document.db_check_set_entry(entry, entry->getName(), Entry::Type::ACTIVITY);
 			    } else {
-				invalid_argument( Xstart_activity, i->second.to_str() );
+				XML::invalid_argument( Xstart_activity, i->second.to_str() );
 			    }
 			} else {
 			    _document.db_check_set_entry(entry, entry->getName(), Entry::Type::STANDARD);
@@ -689,7 +689,7 @@ namespace LQIO {
 		    LQIO::solution_error( LQIO::ERR_UNEXPECTED_ATTRIBUTE, Xentry, arg.what() );
 		}
 	    } else {
-		invalid_argument( Xentry, value.to_str() );
+		XML::invalid_argument( Xentry, value.to_str() );
 	    }
 	}
 
@@ -746,7 +746,7 @@ namespace LQIO {
 		    LQIO::solution_error( LQIO::ERR_UNEXPECTED_ATTRIBUTE, Xphase, arg.what() );
 		}
 	    } else {
-		invalid_argument( Xphase, value.to_str() );
+		XML::invalid_argument( Xphase, value.to_str() );
 	    }
 	}
 
@@ -790,7 +790,7 @@ namespace LQIO {
 		    LQIO::solution_error( LQIO::ERR_UNEXPECTED_ATTRIBUTE, Xactivity, arg.what() );
 		}
 	    } else {
-		invalid_argument( Xactivity, value.to_str() );
+		XML::invalid_argument( Xactivity, value.to_str() );
 	    }
 	}
 
@@ -846,7 +846,7 @@ namespace LQIO {
 		    LQIO::solution_error( LQIO::ERR_UNEXPECTED_ATTRIBUTE, Xactivity, arg.what() );
 		}
 	    } else {
-		invalid_argument( Xactivity, value.to_str() );
+		XML::invalid_argument( Xactivity, value.to_str() );
 	    }
 	}
 
@@ -902,7 +902,7 @@ namespace LQIO {
 			} else if ( i->second.is<double>() || i->second.is<std::string>() || i->second.is<picojson::object>() ) {
 			    deferred[j->first] = i->second;
 			} else {
-			    invalid_argument( attr, i->second.to_str() );
+			    XML::invalid_argument( attr, i->second.to_str() );
 			}
 		    }
 		}
@@ -941,7 +941,7 @@ namespace LQIO {
 		    post_list->setPrevious( pre_list );
 		}
 	    } else {
-		invalid_argument( Xprecedence, value.to_str() );
+		XML::invalid_argument( Xprecedence, value.to_str() );
 	    }
 	}
 
@@ -1010,7 +1010,7 @@ namespace LQIO {
 		    LQIO::solution_error( LQIO::ERR_UNEXPECTED_ATTRIBUTE, call_type_table.at(call_type).c_str(), arg.what() );
 		}
 	    } else {
-		invalid_argument( call_type_table.at(call_type).c_str(), value.to_str() );
+		XML::invalid_argument( call_type_table.at(call_type).c_str(), value.to_str() );
 	    }
 	}
 
@@ -1034,7 +1034,7 @@ namespace LQIO {
 		    activity->getReplyList().push_back(entry);
 		}
 	    } else {
-		invalid_argument( Xreply_to, value.to_str() );
+		XML::invalid_argument( Xreply_to, value.to_str() );
 	    }
 	}
 
@@ -1053,12 +1053,12 @@ namespace LQIO {
 			program += i->get<std::string>();
 			program += "\n";
 		    } else {
-			invalid_argument( Xresults, i->to_str() );
+			XML::invalid_argument( Xresults, i->to_str() );
 		    }
 		}
 		LQIO_parse_string( SPEX_RESULT, program.c_str() );
 	    } else {
-		invalid_argument( Xresults, value.to_str() );
+		XML::invalid_argument( Xresults, value.to_str() );
 	    }
 	}
 
@@ -1076,12 +1076,12 @@ namespace LQIO {
 			program += i->get<std::string>();
 			program += "\n";
 		    } else {
-			invalid_argument( Xconvergence, i->to_str() );
+			XML::invalid_argument( Xconvergence, i->to_str() );
 		    }
 		}
 		LQIO_parse_string( SPEX_CONVERGENCE, program.c_str() );
 	    } else {
-		invalid_argument( Xconvergence, value.to_str() );
+		XML::invalid_argument( Xconvergence, value.to_str() );
 	    }
 	}
 
@@ -1095,7 +1095,7 @@ namespace LQIO {
 	    if ( !_loadResults ) return;
 
 	    if ( !value.is<picojson::object>() ) {
-		invalid_argument( Xresults, value.to_str() );	/* throws... */
+		XML::invalid_argument( Xresults, value.to_str() );	/* throws... */
 	    }
 	    const picojson::value::object& obj = value.get<picojson::object>();
 	    for (picojson::value::object::const_iterator i = obj.begin(); i != obj.end(); ++i) {
@@ -1118,7 +1118,7 @@ namespace LQIO {
 	Json_Document::handleMvaInfo( Document * document, const picojson::value& value )
 	{
 	    if ( !value.is<picojson::object>() ) {
-		invalid_argument( Xresults, value.to_str() );	/* throws... */
+		XML::invalid_argument( Xresults, value.to_str() );	/* throws... */
 	    }
 	    const picojson::value::object& obj = value.get<picojson::object>();
 
@@ -1139,7 +1139,7 @@ namespace LQIO {
 	Json_Document::handleObservation( DocumentObject * parent, const picojson::value& value )
 	{
 	    if ( !value.is<picojson::object>() ) {
-		invalid_argument( Xresults, value.to_str() );	/* throws... */
+		XML::invalid_argument( Xresults, value.to_str() );	/* throws... */
 	    }
 	    const picojson::value::object& obj = value.get<picojson::object>();
 
@@ -1173,7 +1173,7 @@ namespace LQIO {
 	    if ( !_loadResults ) return;
 
 	    if ( !value.is<picojson::object>() ) {
-		invalid_argument( Xresults, value.to_str() );	/* throws... */
+		XML::invalid_argument( Xresults, value.to_str() );	/* throws... */
 	    }
 	    const picojson::value::object& obj = value.get<picojson::object>();
 	    for (picojson::value::object::const_iterator i = obj.begin(); i != obj.end(); ++i) {
@@ -1210,7 +1210,7 @@ namespace LQIO {
 		    if ( x->is<picojson::object>() ) {
 			handleHistogram( entry->getPhase( p ), *x );
 		    } else {
-			invalid_argument( Xhistogram, value.to_str() );
+			XML::invalid_argument( Xhistogram, value.to_str() );
 		    }
 		    if ( Document::__debugJSON ) Import::endAttribute( std::cerr, *x );
 		}
@@ -1241,7 +1241,7 @@ namespace LQIO {
 				    if ( Document::__debugJSON ) Import::endAttribute( std::cerr, *x );
 				}
 			    } else if ( j->second.getType() != dom_type::DOM_NULL ) {
-				invalid_argument( Xhistogram, value.to_str() );
+				XML::invalid_argument( Xhistogram, value.to_str() );
 			    }
 			    if ( Document::__debugJSON ) Import::endAttribute( std::cerr, attr, i->second );
 			}
@@ -1261,7 +1261,7 @@ namespace LQIO {
 		Histogram * hist = new Histogram( &_document, Histogram::Type::CONTINUOUS, 0, value.get<double>(), value.get<double>() );
 		parent->setHistogram( hist );
 	    } else {
-		invalid_argument( Xhistogram, value.to_str() );
+		XML::invalid_argument( Xhistogram, value.to_str() );
 	    }
 	}
 
@@ -1282,13 +1282,13 @@ namespace LQIO {
 		    } else if ( attr == Xconf_95 && k->second.is<double>() ) {
 			variance = invert( k->second.get<double>() );
 		    } else if ( attr != Xend || !k->second.is<double>() ) {
-			invalid_argument( attr, k->second.to_str() );
+			XML::invalid_argument( attr, k->second.to_str() );
 		    }
 		    if ( Document::__debugJSON ) Import::endAttribute( std::cerr, attr, k->second );
 		}
 		histogram->setBinMeanVariance( index, mean, variance );
 	    } else {
-		invalid_argument( Xhistogram_bin, value.to_str() );
+		XML::invalid_argument( Xhistogram_bin, value.to_str() );
 	    }
 	}
 
@@ -1305,7 +1305,7 @@ namespace LQIO {
 		    if ( x->is<picojson::object>() ) {
 			handleMaxServiceTime( entry->getPhase( p ), *x );
 		    } else {
-			invalid_argument( Xmax_service_time, value.to_str() );
+			XML::invalid_argument( Xmax_service_time, value.to_str() );
 		    }
 		    if ( Document::__debugJSON ) Import::endAttribute( std::cerr, *x );
 		}
@@ -1338,7 +1338,7 @@ namespace LQIO {
 				    if ( Document::__debugJSON ) Import::endAttribute( std::cerr, *x );
 				}
 			    } else if ( j->second.getType() != dom_type::DOM_NULL ) {
-				invalid_argument( Xmax_service_time, value.to_str() );
+				XML::invalid_argument( Xmax_service_time, value.to_str() );
 			    }
 			    if ( Document::__debugJSON ) Import::endAttribute( std::cerr, attr, i->second );
 #endif
@@ -1423,7 +1423,7 @@ namespace LQIO {
 		    return static_cast<long>(value);
 		}
 	    }
-	    invalid_argument( name, attr->second.to_str().c_str() );		// throws.
+	    XML::invalid_argument( name, attr->second.to_str().c_str() );		// throws.
 	    return 0;
 	}
 
@@ -1443,7 +1443,7 @@ namespace LQIO {
 		    return value;
 		}
 	    }
-	    invalid_argument( name, attr->second.to_str().c_str() );		// throws.
+	    XML::invalid_argument( name, attr->second.to_str().c_str() );		// throws.
 	    return 0.;
 	}
 
@@ -1466,7 +1466,7 @@ namespace LQIO {
 		const std::string attribute = attr->second.to_str();
 		std::map<const char *, const scheduling_type>::const_iterator i = scheduling_table.find( attribute.c_str() );
 		if ( i == scheduling_table.end() ) {
-		    invalid_argument( Xscheduling, attribute );	/* throws */
+		    XML::invalid_argument( Xscheduling, attribute );	/* throws */
 		} else {
 		    return i->second;
 		}
@@ -1616,7 +1616,7 @@ namespace LQIO {
 		if ( value.is<picojson::object>() || value.is<picojson::array>() || value.is<std::string>() ) {
 		    (document.*getFptr().o)( 0, value );
 		} else {
-		    invalid_argument( attribute, value.to_str() );
+		    XML::invalid_argument( attribute, value.to_str() );
 		}
 		break;
 
@@ -1624,7 +1624,7 @@ namespace LQIO {
 		break;
 
 	    default:
-		invalid_argument( attribute, value.to_str() );
+		XML::invalid_argument( attribute, value.to_str() );
 		break;
 	    }
 
@@ -1653,7 +1653,7 @@ namespace LQIO {
 		} else if ( value.is<double>() ) {
 		    (document.*getFptr().de)( new ConstantExternalVariable( value.get<double>() ) );
 		} else {
-		    invalid_argument( attribute, value.to_str() );
+		    XML::invalid_argument( attribute, value.to_str() );
 		}
 		break;
 
@@ -1661,7 +1661,7 @@ namespace LQIO {
 		if ( value.is<double>() ) {
 		    (document.*getFptr().du)( static_cast<unsigned int>(value.get<double>()) );
 		} else {
-		    invalid_argument( attribute, value.to_str() );
+		    XML::invalid_argument( attribute, value.to_str() );
 		}
 		break;
 
@@ -1669,7 +1669,7 @@ namespace LQIO {
 		if ( value.is<std::string>() ) {
 		    (document.*getFptr().ds)( value.get<std::string>() );
 		} else {
-		    invalid_argument( attribute, value.to_str() );
+		    XML::invalid_argument( attribute, value.to_str() );
 		}
 		break;
 
@@ -1677,7 +1677,7 @@ namespace LQIO {
 		if ( value.is<picojson::object>() || value.is<picojson::array>() ) {
 		    (input.*getFptr().o)( nullptr, value );
 		} else {
-		    invalid_argument( attribute, value.to_str() );
+		    XML::invalid_argument( attribute, value.to_str() );
 		}
 		break;
 
@@ -1707,7 +1707,7 @@ namespace LQIO {
 		if ( value.is<double>() ) {
 		    (processor.*getFptr().et_u)( static_cast<unsigned int>(value.get<double>()) );
 		} else {
-		    invalid_argument( attribute, value.to_str() );
+		    XML::invalid_argument( attribute, value.to_str() );
 		}
 		break;
 
@@ -1715,7 +1715,7 @@ namespace LQIO {
 		if ( value.is<double>() ) {
 		    (processor.*getFptr().et_d)( value.get<double>() );
 		} else {
-		    invalid_argument( attribute, value.to_str() );
+		    XML::invalid_argument( attribute, value.to_str() );
 		}
 		break;
 
@@ -1723,7 +1723,7 @@ namespace LQIO {
 		if ( value.is<picojson::object>() || value.is<picojson::array>() ) {
 		    (input.*getFptr().o)( &processor, value );
 		} else {
-		    invalid_argument( attribute, value.to_str() );
+		    XML::invalid_argument( attribute, value.to_str() );
 		}
 		break;
 
@@ -1731,7 +1731,7 @@ namespace LQIO {
 		if ( value.is<std::string>() ) {
 		    (processor.*getFptr().os)( value.get<std::string>() );
 		} else {
-		    invalid_argument( attribute, value.to_str() );
+		    XML::invalid_argument( attribute, value.to_str() );
 		}
 
 	    case dom_type::DOM_NULL:
@@ -1767,7 +1767,7 @@ namespace LQIO {
 		} else if ( value.is<std::string>() && ::strcasecmp( value.get<std::string>().c_str(), "false" ) == 0 ) {
 		    (group.*getFptr().gr_b)( false );
 		} else {
-		    invalid_argument( attribute, value.to_str() );
+		    XML::invalid_argument( attribute, value.to_str() );
 		}
 		break;
 
@@ -1775,7 +1775,7 @@ namespace LQIO {
 		if ( value.is<picojson::object>() || value.is<picojson::array>() ) {
 		    (input.*getFptr().o)( &group, value );
 		} else {
-		    invalid_argument( attribute, value.to_str() );
+		    XML::invalid_argument( attribute, value.to_str() );
 		}
 		break;
 
@@ -1783,7 +1783,7 @@ namespace LQIO {
 		if ( value.is<std::string>() ) {
 		    (group.*getFptr().os)( value.get<std::string>() );
 		} else {
-		    invalid_argument( attribute, value.to_str() );
+		    XML::invalid_argument( attribute, value.to_str() );
 		}
 
 	    case dom_type::DOM_PROCESSOR:
@@ -1795,7 +1795,7 @@ namespace LQIO {
 			LQIO::input_error2( LQIO::ERR_NOT_DEFINED, value.get<std::string>().c_str() );
 		    }
 		} else {
-		    invalid_argument( attribute, value.to_str() );
+		    XML::invalid_argument( attribute, value.to_str() );
 		}
 
 	    case dom_type::DOM_NULL:
@@ -1826,7 +1826,7 @@ namespace LQIO {
 		if ( value.is<double>() ) {
 		    (task.*getFptr().ta_u)( static_cast<unsigned int>(value.get<double>()) );
 		} else {
-		    invalid_argument( attribute, value.to_str() );
+		    XML::invalid_argument( attribute, value.to_str() );
 		}
 		break;
 
@@ -1838,7 +1838,7 @@ namespace LQIO {
 			(input.*getFptr().o)( &task, value );
 		    }
 		} else {
-		    invalid_argument( attribute, value.to_str() );
+		    XML::invalid_argument( attribute, value.to_str() );
 		}
 		break;
 
@@ -1846,7 +1846,7 @@ namespace LQIO {
 		if ( value.is<std::string>() ) {
 		    (task.*getFptr().os)( value.get<std::string>() );
 		} else {
-		    invalid_argument( attribute, value.to_str() );
+		    XML::invalid_argument( attribute, value.to_str() );
 		}
 
 	    case dom_type::DOM_GROUP:
@@ -1859,7 +1859,7 @@ namespace LQIO {
 			LQIO::input_error2( LQIO::ERR_NOT_DEFINED, value.get<std::string>().c_str() );
 		    }
 		} else {
-		    invalid_argument( attribute, value.to_str() );
+		    XML::invalid_argument( attribute, value.to_str() );
 		}
 		break;
 
@@ -1873,7 +1873,7 @@ namespace LQIO {
 			LQIO::input_error2( LQIO::ERR_NOT_DEFINED, value.get<std::string>().c_str() );
 		    }
 		} else {
-		    invalid_argument( attribute, value.to_str() );
+		    XML::invalid_argument( attribute, value.to_str() );
 		}
 		break;
 
@@ -1915,7 +1915,7 @@ namespace LQIO {
 			(entry.*getFptr().en_a)( activity );
 		    }
 		} else {
-		    invalid_argument( attribute, value.to_str() );
+		    XML::invalid_argument( attribute, value.to_str() );
 		}
 
 	    case dom_type::DOM_EXTVAR:
@@ -1929,7 +1929,7 @@ namespace LQIO {
 		if ( value.is<std::string>() ) {
 		    (entry.*getFptr().os)( value.get<std::string>() );
 		} else {
-		    invalid_argument( attribute, value.to_str() );
+		    XML::invalid_argument( attribute, value.to_str() );
 		}
 
 	    case dom_type::JSON_OBJECT:
@@ -1981,7 +1981,7 @@ namespace LQIO {
 		if ( value.is<bool>() ) {
 		    (phase.*getFptr().ph_t)( value.get<bool>() ? Phase::Type::DETERMINISTIC : Phase::Type::STOCHASTIC );
 		} else {
-		    invalid_argument( attribute, value.to_str() );
+		    XML::invalid_argument( attribute, value.to_str() );
 		}
 		break;
 
@@ -2008,7 +2008,7 @@ namespace LQIO {
 		if ( value.is<bool>() ) {
 		    (phase.*getFptr().ph_t)( value.get<bool>() ? Phase::Type::DETERMINISTIC : Phase::Type::STOCHASTIC );
 		} else {
-		    invalid_argument( attribute, value.to_str() );
+		    XML::invalid_argument( attribute, value.to_str() );
 		}
 		break;
 
@@ -2020,7 +2020,7 @@ namespace LQIO {
 		if ( value.is<std::string>() ) {
 		    (phase.*getFptr().os)( value.get<std::string>() );
 		} else {
-		    invalid_argument( attribute, value.to_str() );
+		    XML::invalid_argument( attribute, value.to_str() );
 		}
 
 	    case dom_type::DOM_NULL:
@@ -2122,7 +2122,7 @@ namespace LQIO {
 		if ( value.is<bool>() ) {
 		    (activity.*getFptr().ph_t)( value.get<bool>() ? Phase::Type::DETERMINISTIC : Phase::Type::STOCHASTIC );
 		} else {
-		    invalid_argument( attribute, value.to_str() );
+		    XML::invalid_argument( attribute, value.to_str() );
 		}
 		break;
 
@@ -2134,7 +2134,7 @@ namespace LQIO {
 		if ( value.is<std::string>() ) {
 		    (activity.*getFptr().os)( value.get<std::string>() );
 		} else {
-		    invalid_argument( attribute, value.to_str() );
+		    XML::invalid_argument( attribute, value.to_str() );
 		}
 
 	    case dom_type::DOM_NULL:
@@ -2187,7 +2187,7 @@ namespace LQIO {
 		    LQIO::solution_error( LQIO::ERR_UNEXPECTED_ATTRIBUTE, Xprecedence, (++i)->first.c_str() );
 		}
 	    } else {
-		invalid_argument( attribute, value.to_str() );			// throws
+		XML::invalid_argument( attribute, value.to_str() );			// throws
 	    }
 
 	    if ( activity ) {
@@ -2310,7 +2310,7 @@ namespace LQIO {
 		if ( value.is<bool>() ) {
 		    (document.*getFptr().db)( value.get<bool>() );
 		} else {
-		    invalid_argument( attribute, value.to_str() );
+		    XML::invalid_argument( attribute, value.to_str() );
 		}
 		break;
 
@@ -2318,7 +2318,7 @@ namespace LQIO {
 		if ( value.is<std::string>() && ::sscanf( value.get<std::string>().c_str(), "%ld:%ld:%lf", &hrs, &mins, &secs ) == 3 ) {
 		    (document.*getFptr().dd)( hrs * 3600 + mins * 60 + secs );
 		} else {
-		    invalid_argument( attribute, value.to_str() );
+		    XML::invalid_argument( attribute, value.to_str() );
 		}
 		break;
 
@@ -2326,7 +2326,7 @@ namespace LQIO {
 		if ( value.is<double>() ) {
 		    (document.*getFptr().dd)( value.get<double>() );
 		} else {
-		    invalid_argument( attribute, value.to_str() );
+		    XML::invalid_argument( attribute, value.to_str() );
 		}
 		break;
 
@@ -2334,7 +2334,7 @@ namespace LQIO {
 		if ( value.is<double>() ) {
 		    (document.*getFptr().du)( static_cast<unsigned int>(value.get<double>()) );
 		} else {
-		    invalid_argument( attribute, value.to_str() );
+		    XML::invalid_argument( attribute, value.to_str() );
 		}
 		break;
 
@@ -2342,7 +2342,7 @@ namespace LQIO {
 		if ( value.is<std::string>() ) {
 		    (document.*getFptr().ds)( value.get<std::string>() );
 		} else {
-		    invalid_argument( attribute, value.to_str() );
+		    XML::invalid_argument( attribute, value.to_str() );
 		}
 		break;
 
@@ -2350,7 +2350,7 @@ namespace LQIO {
 		if ( value.is<picojson::object>() ) {
 		    (input.*getFptr().doc)( &document, value );
 		} else {
-		    invalid_argument( attribute, value.to_str() );
+		    XML::invalid_argument( attribute, value.to_str() );
 		}
 		break;
 
@@ -2358,7 +2358,7 @@ namespace LQIO {
 		break;
 
 	    default:
-		invalid_argument( attribute, value.to_str() );
+		XML::invalid_argument( attribute, value.to_str() );
 		break;
 	    }
 	    if ( Document::__debugJSON ) std::cerr << end_attribute( attribute, value );
@@ -2383,7 +2383,7 @@ namespace LQIO {
 			(dom_obj.*getF2ptr())( p, input.get_double_attribute( Xmean, obj ) );				/* Mean */
 			(dom_obj.*getG2ptr())( p, input.invert( input.get_double_attribute( Xconf_95, obj ) ) );	/* Variance */
 		    } else {
-			invalid_argument( attribute, value.to_str() );
+			XML::invalid_argument( attribute, value.to_str() );
 		    }
 		    if ( Document::__debugJSON ) Import::endAttribute( std::cerr, *x );
 		}
@@ -2403,7 +2403,7 @@ namespace LQIO {
 		    }
 		}
 	    } else {
-		invalid_argument( attribute, value.to_str() );
+		XML::invalid_argument( attribute, value.to_str() );
 	    }
 	    if ( Document::__debugJSON ) std::cerr << end_attribute( attribute, value );
 	}
@@ -2424,7 +2424,7 @@ namespace LQIO {
 		break;
 
 	    default:
-		invalid_argument( attribute, value.to_str() );
+		XML::invalid_argument( attribute, value.to_str() );
 		break;
 	    }
 

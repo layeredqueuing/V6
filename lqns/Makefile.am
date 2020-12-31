@@ -1,32 +1,33 @@
 # 
-# $Id: Makefile.am 14109 2020-11-19 17:32:58Z greg $
+# $Id: Makefile.am 14310 2020-12-31 17:16:57Z greg $
 #
 #----------------------------------------------------------------------
 
 ACLOCAL_AMFLAGS=-I ../config
-SUBDIRS		= unit-test regression 
-AM_CPPFLAGS	= -I.. -I../lqiolib/src/headers -I../lqx/libsrc/headers/
+SUBDIRS		= regression 
+AM_CPPFLAGS	= -I.. -I../lqiolib/src/headers -I../lqx/libsrc/headers -I../libmva/src/headers
 bin_PROGRAMS 	= lqns qnsolver
-lqns_SOURCES	= activity.cc actlist.cc call.cc dim.cc entity.cc entry.cc \
-		  entrythread.cc errmsg.cc fpgoop.cc gamma.cc generate.cc group.cc help.cc interlock.cc \
-		  model.cc multserv.cc mva.cc open.cc option.cc overtake.cc ph2serv.cc \
-		  phase.cc pop.cc pragma.cc prob.cc processor.cc randomvar.cc report.cc runlqx.cc \
-		  server.cc slice.cc lqns.cc submodel.cc  \
-		  synmodel.cc task.cc variance.cc 
-qnsolver_SOURCES= qnsolver.cc \
-		  dim.cc fpgoop.cc multserv.cc mva.cc ph2serv.cc open.cc pop.cc prob.cc server.cc 
+lqns_SOURCES	= activity.cc actlist.cc call.cc entity.cc entry.cc \
+		  entrythread.cc errmsg.cc gamma.cc generate.cc group.cc help.cc interlock.cc \
+		  model.cc option.cc overtake.cc  \
+		  phase.cc pragma.cc processor.cc randomvar.cc report.cc runlqx.cc \
+		  slice.cc lqns.cc submodel.cc  \
+		  synmodel.cc task.cc variance.cc
+qnsolver_SOURCES= bcmpsolve.cc qnsolver.cc
+
 noinst_HEADERS	= activity.h actlist.h call.h dim.h entity.h entry.h entrythread.h \
-		  errmsg.h fpgoop.h gamma.h generate.h group.h help.h interlock.h model.h \
-		  multserv.h mva.h open.h option.h overtake.h ph2serv.h phase.h pop.h pragma.h \
-		  prob.h processor.h randomvar.h report.h server.h slice.h lqns.h runlqx.h \
-		  submodel.h  synmodel.h task.h variance.h vector.h
+		  errmsg.h gamma.h generate.h group.h help.h interlock.h model.h \
+		  option.h overtake.h phase.h pragma.h \
+		  processor.h randomvar.h report.h slice.h lqns.h runlqx.h \
+		  submodel.h  synmodel.h task.h variance.h \
+		  bcmpsolve.h
 
 EXTRA_DIST	= lqns.1 
 
 lqns_CXXFLAGS   = -std=c++11 -Wall -Wno-parentheses -Wno-unknown-pragmas -Wno-overloaded-virtual
-lqns_LDADD	= -L../lqx/libsrc/.libs -llqx -L../lqiolib/src/.libs -llqio 
+lqns_LDADD	= -L../lqx/libsrc/.libs -llqx -L../lqiolib/src/.libs -llqio -L../libmva/src/.libs -lmva
 qnsolver_CXXFLAGS = -Wall -Wno-parentheses -Wno-unknown-pragmas -Wno-overloaded-virtual
-qnsolver_LDADD	= -L../lqx/libsrc/.libs -llqx -L../lqiolib/src/.libs -llqio 
+qnsolver_LDADD	= -llqx -L../lqiolib/src/.libs -llqio -L../libmva/src/.libs -lmva
 lqns_LDFLAGS	= @STATIC@
 man1_MANS	= lqns.1
 

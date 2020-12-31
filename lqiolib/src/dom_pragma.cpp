@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_pragma.cpp 14215 2020-12-14 19:09:04Z greg $
+ *  $Id: dom_pragma.cpp 14302 2020-12-31 13:11:17Z greg $
  *
  *  Created by Martin Mroz on 16/04/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -135,17 +135,17 @@ namespace LQIO {
 	
 	bool Pragma::isTrue(const std::string& value)
 	{
-	    static std::map<std::string,bool> __true_false_arg;
-	    if ( __true_false_arg.empty() ) {
-		__true_false_arg[LQIO::DOM::Pragma::_true_]  = true;
-		__true_false_arg[LQIO::DOM::Pragma::_yes_]   = true;
-		__true_false_arg[LQIO::DOM::Pragma::_false_] = false;
-		__true_false_arg[LQIO::DOM::Pragma::_no_]    = false;
-		__true_false_arg["t"] = true;
-		__true_false_arg["y"] = true;
-		__true_false_arg["f"] = false;
-		__true_false_arg["n"] = false;
-	    }
+	    static const std::map<std::string,bool> __true_false_arg = {
+		{LQIO::DOM::Pragma::_true_,  true},
+		{LQIO::DOM::Pragma::_yes_,   true},
+		{LQIO::DOM::Pragma::_false_, false},
+		{LQIO::DOM::Pragma::_no_,    false},
+		{"t", true},
+		{"y", true},
+		{"f", false},
+		{"n", false},
+		{"",  true},		/* No argument */
+	    };
 	    const std::map<std::string,bool>::const_iterator x = __true_false_arg.find( value );
 	    if ( x == __true_false_arg.end() ) throw std::domain_error( value.c_str() );
 	    return x->second;
@@ -160,6 +160,7 @@ namespace LQIO {
 	const char * Pragma::_all_ =				"all";
 	const char * Pragma::_batched_ =			"batched";
 	const char * Pragma::_batched_back_ =			"batched-back";
+	const char * Pragma::_bcmp_ =				"bcmp";			// BUG 270
 	const char * Pragma::_block_period_ =			"block-period";
 	const char * Pragma::_bruell_ =				"bruell";
 	const char * Pragma::_conway_ =				"conway";
@@ -171,6 +172,7 @@ namespace LQIO {
 	const char * Pragma::_deterministic_ = 			"deterministic";	// Quorum
 	const char * Pragma::_exact_ =				"exact";
 	const char * Pragma::_exponential_ =			"exponential";
+	const char * Pragma::_extended_ =			"extended";		// BUG 270
 	const char * Pragma::_false_ =				"false";
 	const char * Pragma::_fast_ =				"fast";
 	const char * Pragma::_force_multiserver_ =		"force-multiserver";
@@ -186,6 +188,7 @@ namespace LQIO {
 	const char * Pragma::_keep_all_ = 			"keep-all";		// Quorum
 	const char * Pragma::_layering_ = 			"layering";
 	const char * Pragma::_linearizer_ =			"linearizer";
+	const char * Pragma::_lqn_ =				"lqn";			// BUG 270
 	const char * Pragma::_mak_ =				"mak";
 	const char * Pragma::_markov_ =				"markov";
 	const char * Pragma::_max_blocks_ =			"max-blocks";
@@ -242,6 +245,7 @@ namespace LQIO {
 
 	/* Args */
 	
+	const std::set<std::string> Pragma::__bcmp_args = { Pragma::_lqn_, Pragma::_extended_, Pragma::_true_, Pragma::_yes_, Pragma::_false_, Pragma::_no_, "t", "y", "f", "n", "" };
 	const std::set<std::string> Pragma::__force_multiserver_args = { _none_, _processors_, _tasks_, _all_ };
 	const std::set<std::string> Pragma::__layering_args = { _batched_, _batched_back_, _mol_, _mol_back_, _squashed_, _srvn_, _hwsw_ };
 	const std::set<std::string> Pragma::__multiserver_args = { _bruell_, _conway_, _default_, _reiser_, _reiser_ps_, _rolia_, _rolia_ps_, _schmidt_, _suri_ };
@@ -254,7 +258,7 @@ namespace LQIO {
 	const std::set<std::string> Pragma::__scheduling_model_args = { _default_, _default_natural_, _custom_, _custom_natural_ };
 	const std::set<std::string> Pragma::__task_args = { _default_, scheduling_label[SCHEDULE_DELAY].XML, scheduling_label[SCHEDULE_FIFO].XML, scheduling_label[SCHEDULE_HOL].XML, scheduling_label[SCHEDULE_RAND].XML };
 	const std::set<std::string> Pragma::__threads_args = { _hyper_, _mak_, _none_, _exponential_ };
-	const std::set<std::string> Pragma::__true_false_arg = { "true", "false", _yes_, _no_ };
+	const std::set<std::string> Pragma::__true_false_arg = { "true", "false", _yes_, _no_, "t", "y", "f", "n", "" };
 	const std::set<std::string> Pragma::__variance_args = { _default_, _none_, _stochastic_, _mol_, _no_entry_, _init_only_ };
 	const std::set<std::string> Pragma::__warning_args = { _all_, _warning_, _advisory_, _run_time_ };
 

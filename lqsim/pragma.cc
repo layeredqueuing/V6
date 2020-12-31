@@ -1,7 +1,7 @@
 /* pragma.cc	-- Greg Franks Tue Sep  1 2009
  *
  * ------------------------------------------------------------------------
- * $Id: pragma.cc 14179 2020-12-07 22:02:52Z greg $
+ * $Id: pragma.cc 14235 2020-12-17 13:56:55Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -136,7 +136,7 @@ bool Pragma::set_initial_loops( const std::string& value )
 {
     char * endptr = nullptr;
     _initial_loops = std::strtol( value.c_str(), &endptr, 10 );
-    if ( _initial_loops < 0 ) {
+    if ( static_cast<long>(_initial_loops) < 0 ) {
 	LQIO::solution_error( LQIO::WRN_PRAGMA_ARGUMENT_INVALID, LQIO::DOM::Pragma::_initial_loops_, value.c_str() );
 	return false;
     }	
@@ -158,7 +158,7 @@ bool Pragma::set_max_blocks( const std::string& value )
 {
     char * endptr = nullptr;
     _max_blocks = std::strtol( value.c_str(), &endptr, 10 );
-    if ( _max_blocks < 0 ) {
+    if ( static_cast<long>(_max_blocks) < 0 ) {
 	LQIO::solution_error( LQIO::WRN_PRAGMA_ARGUMENT_INVALID, LQIO::DOM::Pragma::_max_blocks_, value.c_str() );
 	return false;
     }	
@@ -238,11 +238,11 @@ Pragma::usage( std::ostream& output )
 	if ( i->first == LQIO::DOM::Pragma::_nice_ ) {
 	    output << " = <int>" << std::endl;
 	} else {
-	    const std::set<const std::string>* args = LQIO::DOM::Pragma::getValues( i->first );
+	    const std::set<std::string>* args = LQIO::DOM::Pragma::getValues( i->first );
 	    if ( args && args->size() > 1 ) {
 		output << " = {";
 
-		for ( std::set<const std::string>::const_iterator q = args->begin(); q != args->end(); ++q ) {
+		for ( std::set<std::string>::const_iterator q = args->begin(); q != args->end(); ++q ) {
 		    if ( q != args->begin() ) output << ",";
 		    output << *q;
 		}

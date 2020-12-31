@@ -1,6 +1,8 @@
-# $Id: Makefile.am 13831 2020-09-18 12:51:41Z greg $
+# $Id: Makefile.am 14302 2020-12-31 13:11:17Z greg $
 # ------------------------------------------------------------------------
-noinst_HEADERS = commandline.h \
+noinst_HEADERS = bcmp_document.h \
+	bcmp_to_lqn.h \
+	commandline.h \
 	common_io.h \
 	confidence_intervals.h \
 	dom_activity.h \
@@ -25,10 +27,12 @@ noinst_HEADERS = commandline.h \
 	getsbopt.h \
 	glblerr.h \
 	input.h \
+	jmva_document.h \
 	json_document.h \
 	labels.h \
 	picojson.h \
 	pmif_document.h \
+	qnap2_document.h \
 	rapidxml.h \
 	rapidxml_print.h \
 	srvn_input.h \
@@ -36,3 +40,6 @@ noinst_HEADERS = commandline.h \
 	srvn_results.h \
 	srvn_spex.h \
 	submodel_info.h
+	submodel_info.h \
+	xml_input.h
+	xml_output.h

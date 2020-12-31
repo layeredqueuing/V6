@@ -11,7 +11,7 @@
  * July 2007
  *
  * ------------------------------------------------------------------------
- * $Id: activity.h 14176 2020-12-07 17:26:28Z greg $
+ * $Id: activity.h 14310 2020-12-31 17:16:57Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -327,7 +327,7 @@ public:
     virtual bool isPseudo() const { return true; }	/* Allow Phase::initProcessor to create proc entry. */
 };
 
-class activity_cycle : public path_error 
+class activity_cycle : public std::runtime_error
 {
 public:
     activity_cycle( const Activity *, const std::deque<const Activity *>& );

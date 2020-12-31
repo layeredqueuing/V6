@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: processor.cc 14176 2020-12-07 17:26:28Z greg $
+ * $Id: processor.cc 14235 2020-12-17 13:56:55Z greg $
  *
  * Everything you wanted to know about a task, but were afraid to ask.
  *
@@ -107,30 +107,6 @@ Processor::clone( const std::string& new_name ) const
 }
 
 /* ------------------------ Instance Methods -------------------------- */
-
-/*
- * Return the processor for this processor???
- */
-
-const Processor *
-Processor::processor() const
-{
-    throw should_not_implement( "Processor::processor()", __FILE__, __LINE__ );
-    return nullptr;
-}
-
-
-
-/*
- * Set the processor for this processor???
- */
-
-Entity&
-Processor::processor( const Processor * ) 
-{
-    throw should_not_implement( "Processor::processor(Processor *)", __FILE__, __LINE__ );
-    return *this;
-}
 
 bool
 Processor::hasRate() const
@@ -534,7 +510,6 @@ Processor::replicateProcessor( LQIO::DOM::DocumentObject ** root )
 /*                                  Output                                  */
 /* ------------------------------------------------------------------------ */
 
-
 const Processor&
 Processor::draw( std::ostream& output ) const
 {
@@ -561,6 +536,34 @@ Processor::draw( std::ostream& output ) const
     output << *myLabel;
     return *this;
 }
+
+
+#if defined(BUG_270)
+/* 
+ * Find the total demand by each class (client tasks in submodel), 
+ * then change back to visits/service time when needed 
+ */
+
+void
+Processor::accumulateDemand( std::map<const Task *,Demand>& demand ) const
+{
+    for ( std::vector<GenericCall *>::const_iterator call = callers().begin(); call != callers().end(); ++call ) {
+	const ProcessorCall * src = dynamic_cast<const ProcessorCall *>(*call);
+	if ( !src ) continue;
+	
+        const std::pair<std::map<const Task *,Demand>::iterator,bool> result = demand.insert( std::pair<const Task *,Demand>( src->srcTask(), Demand() ) );
+	std::map<const Task *,Demand>::iterator item = result.first;
+	
+	if ( src->callType() == LQIO::DOM::Call::Type::NULL_CALL ) {
+	    /* If it is generic processor call then accumulate by entry */
+	    item->second.accumulate( Task::accumulate_demand( Demand(), src->srcTask() ) );
+	} else {
+	    item->second.accumulate( src->visits(), src->demand() );
+	}
+    }
+}
+#endif
+
 
 /*----------------------------------------------------------------------*/
 /*		 	   Called from yyparse.  			*/

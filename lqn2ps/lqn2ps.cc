@@ -1,6 +1,15 @@
-/* srvn2eepic.c	-- Greg Franks Sun Jan 26 2003
+/*  -*- c++ -*-
+ * $Id: lqn2ps.cc 14241 2020-12-22 21:19:14Z greg $
  *
- * $Id: lqn2ps.cc 14217 2020-12-14 20:21:16Z greg $
+ * Command line processing.
+ *
+ * Copyright the Real-Time and Distributed Systems Group,
+ * Department of Systems and Computer Engineering,
+ * Carleton University, Ottawa, Ontario, Canada. K1S 5B6
+ *
+ * December 15, 2020
+ *
+ * ------------------------------------------------------------------------
  */
 
 #include "lqn2ps.h"
@@ -84,7 +93,7 @@ option_type Flags::print[] = {
     { "warnings",              'W', 0,                     0,                      {INIT_FALSE},        false, "Suppress warnings." },
     { "x-spacing",             'X', "spacing[,width]",     Options::real,          {0},                 false, "X spacing [and task width] (points)." },
     { "y-spacing",             'Y', "spacing[,height]",    Options::real,          {0},                 false, "Y spacing [and task height] (points)." },
-    { "special",               'Z', "special[=arg]",       Options::pragma,        {0},                 false, "Special option." },
+    { "special",               'Z', "special[=arg]",       Options::special,       {0},                 false, "Special option." },
     { "open-wait",             'a', 0,                     0,                      {INIT_TRUE},         true,  "Print queue length results for open arrivals." },
     { "throughput-bounds",     'b', 0,                     0,                      {INIT_FALSE},        true,  "Print task throughput bounds." },
     { "confidence-intervals",  'c', 0,                     0,                      {INIT_FALSE},        true,  "Print confidence intervals." },
@@ -125,7 +134,7 @@ option_type Flags::print[] = {
     { "hwsw-layering",     512+'h', 0,                     0,                      {0},                 false, "Use HW/SW layering instead of batched layering." },
     { "srvn-layering",     512+'w', 0,                     0,                      {0},                 false, "Use SRVN layering instead of batched layering." }, 
     { "method-of-layers",  512+'m', 0,                     0,                      {0},                 false, "Use the Method Of Layers instead of batched layering." },
-    /* Pragma shortcuts */
+    /* Special shortcuts */
     { "flatten",	   512+'f', 0,			   0,			   {0},			false, "Flatten submodel/queueing output by placing clients in one layer." },
     { "no-sort",           512+'s', 0,                     0,                      {0},                 false, "Do not sort objects for output." },
     { "number-layers",     512+'n', 0,                     0,                      {0},                 false, "Print layer numbers." },
@@ -151,18 +160,22 @@ option_type Flags::print[] = {
     { "debug-xml",         512+'X', 0,                     0,                      {0},                 false, "Output debugging information while parsing XML input." },
     { "debug-formatting",  512+'F', 0,                     0,                      {0},                 false, "Output debugging information while formatting." },
     { "dump-graphviz",	   512+'G', 0,			   0, 			   {0},			false, "Output LQX parse tree in graphviz format." },
-    { "generate-manual",   512+'M', 0,                     0,                      {0},                 false, "Generate manual suitable for input to man(1)." },
-    { 0,                         0, 0,                     0,                      {0},                 false, 0 }
+    { "generate-manual",   512+'M', 0,                     0,                      {0},                 false, "Generate manual suitable for input to man(1)." }
 };
+
+const unsigned int Flags::size = sizeof( Flags::print ) / sizeof( Flags::print[0] );
+
+
 #if HAVE_GETOPT_H
 static void makeopts( std::string& opts, std::vector<struct option>& );
 #else
 static void makeopts( std::string& opts );
 #endif
 
-
 static char copyrightDate[20];
 static void process( const std::string& inputFileName,  const std::string& output_file_name, int model_no );
+
+static LQIO::DOM::Pragma pragmas;
 
 /*----------------------------------------------------------------------*/
 /*			      Main line					*/
@@ -178,7 +191,7 @@ lqn2ps( int argc, char *argv[] )
     int arg;
     std::string output_file_name = "";
 
-    sscanf( "$Date: 2020-12-14 15:21:16 -0500 (Mon, 14 Dec 2020) $", "%*s %s %*s", copyrightDate );
+    sscanf( "$Date: 2020-12-22 16:19:14 -0500 (Tue, 22 Dec 2020) $", "%*s %s %*s", copyrightDate );
 
     static std::string opts = "";
 #if HAVE_GETOPT_H
@@ -221,6 +234,8 @@ lqn2ps( int argc, char *argv[] )
 	if ( optarg ) {
 	    command_line += optarg;
 	}
+
+	pragmas.insert( getenv( "LQNS_PRAGMAS" ) );
 
 	switch( c ) {
 	case 'A':
@@ -442,41 +457,38 @@ lqn2ps( int argc, char *argv[] )
 	    options = optarg;
 	    while ( *options ) {
 		arg = getsubopt( &options, const_cast<char * const *>(Options::layering), &value );
+		Flags::print[LAYERING].value.i = arg;
 
 		switch ( arg ) {
 		case LAYERING_HWSW:
-		case LAYERING_SRVN:
-		case LAYERING_SQUASHED:
-		case LAYERING_PROCESSOR_TASK:
 		case LAYERING_MOL:
-		case LAYERING_TASK_PROCESSOR:
+		case LAYERING_SQUASHED:
+		case LAYERING_SRVN:
+		    pragmas.insert(LQIO::DOM::Pragma::_layering_,Options::layering[arg]);
 		    Flags::print[PROCESSORS].value.i = PROCESSOR_ALL;
-		    Flags::print[LAYERING].value.i = arg;
-		    break;
-
-		case LAYERING_PROCESSOR:
-		    Flags::print[PROCESSORS].value.i = PROCESSOR_NONE;
-		    Flags::print[LAYERING].value.i = LAYERING_PROCESSOR;
-		    break;
-
-		case LAYERING_SHARE:
-		    Flags::print[PROCESSORS].value.i = PROCESSOR_NONE;
-		    Flags::print[LAYERING].value.i = LAYERING_SHARE;
 		    break;
 
 		case LAYERING_BATCH:
-		    Flags::print[LAYERING].value.i = arg;
+		    pragmas.insert(LQIO::DOM::Pragma::_layering_,Options::layering[arg]);
 		    break;
 
-#if HAVE_REGEX_T
+		    /* Non-pragma layering */
+		case LAYERING_PROCESSOR_TASK:
+		case LAYERING_TASK_PROCESSOR:
+		    Flags::print[PROCESSORS].value.i = PROCESSOR_ALL;
+		    break;
+
+		case LAYERING_PROCESSOR:
+		case LAYERING_SHARE:
+		    Flags::print[PROCESSORS].value.i = PROCESSOR_NONE;
+		    break;
+
 		case LAYERING_GROUP:
 		    if ( value ) {
 			Model::add_group( value );
 		    }
-		    Flags::print[LAYERING].value.i = LAYERING_GROUP;
 		    Flags::print[PROCESSORS].value.i = PROCESSOR_ALL;
 		    break;
-#endif
 
 		default:
 		    invalid_option( c, optarg );
@@ -611,7 +623,7 @@ lqn2ps( int argc, char *argv[] )
 	    break;
 
 	case 512+'t':
-	    pragma( "tasks-only", "" );
+	    special( "tasks-only", "true", pragmas );
 	    break;
 
 	case 'V':
@@ -673,7 +685,7 @@ lqn2ps( int argc, char *argv[] )
 	    break;
 
 	case 'Z':	/* Always set... :-) */
-	    if ( !process_pragma( optarg ) ) {
+	    if ( !process_special( optarg, pragmas ) ) {
 		exit( 1 );
 	    }
 	    break;
@@ -730,14 +742,14 @@ lqn2ps( int argc, char *argv[] )
     /* Check for sensible combinations of options. */
 
     if ( Flags::annotate_input && !input_output() ) {
-	std::cerr << LQIO::io_vars.lq_toolname << ": -Z " << Options::pragma[PRAGMA_ANNOTATE] 
+	std::cerr << LQIO::io_vars.lq_toolname << ": -Z " << Options::special[SPECIAL_ANNOTATE] 
 	     << " and " << Options::io[Flags::print[OUTPUT_FORMAT].value.i]
 	     << " output are mutually exclusive." << std::endl;
 	Flags::annotate_input = false;
     }
 
     if ( Flags::print[AGGREGATION].value.i == AGGREGATE_ENTRIES && !(graphical_output() || queueing_output()) ) {
-	std::cerr << LQIO::io_vars.lq_toolname << ": -Z" << Options::pragma[PRAGMA_TASKS_ONLY] 
+	std::cerr << LQIO::io_vars.lq_toolname << ": -Z" << Options::special[SPECIAL_TASKS_ONLY] 
 	     << " and " <<  Options::io[Flags::print[OUTPUT_FORMAT].value.i] 
 	     << " output are mutually exclusive." << std::endl;
 	exit( 1 );
@@ -798,19 +810,28 @@ lqn2ps( int argc, char *argv[] )
 #endif
     }
 
+#if defined(BUG_270)
+    if ( Flags::print[OUTPUT_FORMAT].value.i == FORMAT_JMVA && !queueing_output() ) {
+	std::cerr << LQIO::io_vars.lq_toolname << ": -O" << Options::io[FORMAT_JMVA]
+	     << " must be used with -Q<submodel>." << std::endl;
+	exit( 1 );
+    }
+#endif
 
     if ( Flags::print[OUTPUT_FORMAT].value.i == FORMAT_SRVN && !partial_output() ) {
 	Flags::print[RESULTS].value.b = false;	/* Ignore results */
     }
 
     if ( Flags::flatten_submodel && !(submodel_output() || queueing_output()) ) {
-	std::cerr << LQIO::io_vars.lq_toolname << ": -Z" << Options::pragma[PRAGMA_FLATTEN_SUBMODEL]
+	std::cerr << LQIO::io_vars.lq_toolname << ": -Z" << Options::special[SPECIAL_FLATTEN_SUBMODEL]
 	     << " can only be used with either -Q<n> -S<n>." << std::endl;
+	exit( 1 );
     }
 
     if ( submodel_output() && Flags::print[LAYERING].value.i == LAYERING_SQUASHED ) {
 	std::cerr << LQIO::io_vars.lq_toolname << ": -L" << Options::layering[LAYERING_SQUASHED]
 	     << " can only be used with full models." << std::endl;
+	exit( 1 );
     }
 
     if ( Flags::print[PROCESSORS].value.i == PROCESSOR_NONE 
@@ -885,9 +906,14 @@ lqn2ps( int argc, char *argv[] )
 	delete Flags::print[INCLUDE_ONLY].value.r;
     }
     if ( Flags::client_tasks ) {
-	delete Flags::client_tasks );
+	delete Flags::client_tasks;
     }
 
+#if HAVE_GETOPT_H
+    for ( std::vector<struct option>::iterator opt = longopts.begin(); opt != longopts.end(); ++opt ) {
+	if ( opt->name != nullptr ) free( const_cast<char *>(opt->name) );
+    }
+#endif
     return 0;
 }
 
@@ -951,7 +977,13 @@ process( const std::string& input_file_name, const std::string& output_file_name
 
     /* Now fold, mutiliate and spindle */
 
-    Model::prepare( document );			/* This creates the various objects 	*/
+    document->mergePragmas( pragmas.getList() );       	/* Save pragmas -- prepare will process */
+    Model::prepare( document );				/* This creates the various objects 	*/
+#if BUG_270
+    if ( Flags::prune ) {
+	Model::prune();
+    }
+#endif
     const unsigned n_layers = Model::topologicalSort();
 
     Model * aModel;
@@ -1049,6 +1081,9 @@ process( const std::string& input_file_name, const std::string& output_file_name
 	    std::cerr << LQIO::io_vars.lq_toolname << ": " << error.what() << std::endl;
 	}
 #endif
+	catch ( const std::domain_error& error ) {
+	    std::cerr << LQIO::io_vars.lq_toolname << ": " << error.what() << std::endl;
+	}
 	catch ( const std::runtime_error &error ) {
 	    std::cerr << LQIO::io_vars.lq_toolname << ": " << error.what() << std::endl;
 	}
@@ -1068,11 +1103,10 @@ makeopts( std::string& opts, std::vector<struct option>& longopts )
     opt.val  = 0;
     opt.name = 0;
     opt.has_arg = 0;
-    const unsigned int count = sizeof( Flags::print ) / sizeof( Flags::print[0] );
-    longopts.resize( count * 2, opt );
-    for ( unsigned int i = 0; i < count; ++i, ++k ) {
+    longopts.resize( Flags::size * 2, opt );
+    for ( unsigned int i = 0; i < Flags::size; ++i, ++k ) {
 	longopts[k].has_arg = (Flags::print[i].arg != 0 ? required_argument : no_argument);
-	longopts[k].name    = Flags::print[i].name;
+	longopts[k].name    = strdup(Flags::print[i].name);
 	longopts[k].val     = Flags::print[i].c;
 	if ( (Flags::print[i].c & 0xff00) == 0 && islower( Flags::print[i].c ) && Flags::print[i].arg == 0 ) {
 	    /* These are the +/- options */
@@ -1142,6 +1176,11 @@ setOutputFormat( const int i )
     case FORMAT_NULL:
 	break;
 
+#if defined(JMVA_OUTPUT)
+    case FORMAT_JMVA:
+	break;
+#endif
+	
 #if defined(X11_OUTPUT)
     case FORMAT_X11:
 	break;

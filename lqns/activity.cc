@@ -11,7 +11,7 @@
  * July 2007
  *
  * ------------------------------------------------------------------------
- * $Id: activity.cc 14176 2020-12-07 17:26:28Z greg $
+ * $Id: activity.cc 14310 2020-12-31 17:16:57Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -1037,9 +1037,8 @@ Activity::act_loop_list ( ActivityList * activity_list, LQIO::DOM::ActivityList 
 /* ------------------------ Exception Handling ------------------------ */
 
 activity_cycle::activity_cycle( const Activity * activity, const std::deque<const Activity *>& activityStack )
-    : path_error( activityStack.size() )
+    : runtime_error( std::accumulate( activityStack.rbegin(), activityStack.rend(), activity->name(), fold ).c_str() )
 {
-    _msg = std::accumulate( activityStack.rbegin(), activityStack.rend(), activity->name(), fold );
 }
 
 /************************************************************************/

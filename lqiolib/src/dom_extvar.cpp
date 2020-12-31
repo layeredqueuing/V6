@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_extvar.cpp 14132 2020-11-25 13:11:04Z greg $
+ *  $Id: dom_extvar.cpp 14235 2020-12-17 13:56:55Z greg $
  *
  *  Created by Martin Mroz on 02/03/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -107,6 +107,16 @@ namespace LQIO {
 	    } else if ( src._variableType == VAR_STRING ) {
 		_value.s = strdup( src._value.s );
 	    }
+	    return *this;
+	}
+
+	ConstantExternalVariable& ConstantExternalVariable::operator=( double value )
+	{
+	    if ( _variableType == VAR_STRING ) {
+		free ( const_cast<char *>(_value.s) );
+	    }
+	    _variableType = VAR_DOUBLE;
+	    _value.d = value;
 	    return *this;
 	}
 

@@ -1,6 +1,6 @@
 /* group.cc	-- Greg Franks Thu Mar 24 2005
  *
- * $Id: group.cc 14171 2020-12-05 14:37:37Z greg $
+ * $Id: group.cc 14235 2020-12-17 13:56:55Z greg $
  */
 
 #include "group.h"
@@ -98,7 +98,7 @@ Group::populate()
 	}
 
 	for ( std::set<Task *>::const_iterator task = Task::__tasks.begin(); task != Task::__tasks.end(); ++task ) {
-	    if ( (*task)->processor() == (*processor) && (*task)->isSelectedIndirectly() ) {
+	    if ( (*task)->hasProcessor(*processor) && (*task)->isSelectedIndirectly() ) {
 		_layers.at((*task)->level()).append((*task));
 		if ( !submodel_output() || !(*task)->isSelected() ) {
 		    isUsed( true );

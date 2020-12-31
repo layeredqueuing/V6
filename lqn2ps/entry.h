@@ -9,7 +9,7 @@
  * January 2003
  *
  * ------------------------------------------------------------------------
- * $Id: entry.h 14135 2020-11-25 18:22:02Z greg $
+ * $Id: entry.h 14241 2020-12-22 21:19:14Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -20,10 +20,12 @@
 #include <cstring>
 #include <vector>
 #include <set>
+#include <numeric>
+#include <lqio/dom_entry.h>
+#include "demand.h"
 #include "element.h"
 #include "phase.h"
 #include "call.h"
-#include <lqio/dom_entry.h>
 
 class Arc;
 class Activity;
@@ -44,6 +46,16 @@ class Entry : public Element {
     friend class Task;
     friend std::ostream& histogram_of_str( std::ostream& output, const Entry& anEntry );
     typedef SRVNEntryManip (* print_func_ptr)( const Entry& );
+
+public:
+    struct count_callers {
+	count_callers( const callPredicate predicate ) : _predicate(predicate) {}
+	unsigned int operator()( unsigned int, const Entry * entry ) const;
+	
+    private:
+	const callPredicate _predicate;
+    };
+    static std::set<const Task *> collect_callers( const std::set<const Task *>&, const Entry * );
 	
 public:
     static Entry * create(LQIO::DOM::Entry* domEntry );
@@ -51,6 +63,7 @@ public:
     static unsigned totalOpenArrivals;
     static unsigned max_phases;		/* maximum phase encounterd.	*/
     static const char * phaseTypeFlagStr [];
+    static unsigned int max_phase( unsigned int a, const std::pair<unsigned,Phase>& p ) { return std::max( a, p.first ); }
 
 private:
     Entry& operator=( const Entry& );
@@ -166,11 +179,13 @@ public:
     Entry& setPhaseDOM( unsigned phase, const LQIO::DOM::Phase* phaseInfo );
     const LQIO::DOM::Phase * getPhaseDOM( unsigned phase ) const;
 
+    void addSrcCall( Call * aCall ) { _calls.push_back(aCall); }
+    void removeSrcCall( Call * aCall );
     void addDstCall( GenericCall * aCall ) { _callers.push_back( aCall ); }
     void removeDstCall( GenericCall * aCall );
     const std::vector<GenericCall *>& callers() const { return _callers; }
     const std::vector<Call *>& calls() const { return _calls; }
-    void addActivityReplyArc( Reply * aReply ) { myActivityCallers.push_back(aReply); }
+    void addActivityReplyArc( Reply * aReply ) { _activityCallers.push_back(aReply); }
     void deleteActivityReplyArc( Reply * aReply );
 
     bool isActivityEntry() const;
@@ -186,15 +201,16 @@ public:
     bool entryTypeOk( const LQIO::DOM::Entry::Type );
     bool entrySemaphoreTypeOk( const LQIO::DOM::Entry::Semaphore );
     bool entryRWLockTypeOk( const LQIO::DOM::Entry::RWLock );
-    unsigned maxPhase() const { return _maxPhase; }
+    unsigned maxPhase() const { return std::accumulate( _phases.begin(), _phases.end(), 1, &max_phase ); }
 
-    unsigned countArcs( const callPredicate = 0 ) const;
-    unsigned countCallers( const callPredicate = 0 ) const;
+    unsigned countArcs( const callPredicate = nullptr ) const;
+    unsigned countCallers( const callPredicate = nullptr ) const;
 
     double serviceTimeForSRVNInput() const;
     double serviceTimeForSRVNInput( const unsigned p ) const;
     Entry& aggregateService( const Activity * anActivity, const unsigned p, const double rate );
     Entry& aggregatePhases();
+    static Demand accumulate_demand( const Demand&, const Entry * );
 
     static Entry * find( const std::string& );
     static bool compare( const Entry *, const Entry * );
@@ -216,6 +232,10 @@ public:
 
     virtual Entry& rename();
 
+#if defined(BUG_270)
+    Entry& linkToClients( const std::vector<EntityCall *>& );
+    Entry& unlinkFromServers();
+#endif
 #if defined(REP2FLAT)
     static Entry * find_replica( const std::string&, const unsigned );
 
@@ -236,9 +256,12 @@ private:
     ProxyEntryCall * findOrAddFwdCall( const Entry * anEntry );
     Call * findOrAddPseudoCall( const Entry * anEntry );		// For -Lclient
 
-    void addSrcCall( Call * aCall ) { _calls.push_back(aCall); }
     Entry& moveSrc();
     Entry& moveDst();
+
+#if defined(BUG_270)
+    static void remove_from_dst( Call * call );
+#endif
 
     std::ostream& printSRVNLine( std::ostream& output, char code, print_func_ptr func ) const;
 
@@ -253,13 +276,12 @@ protected:
 
 private:
     const Task * _owner;
-    mutable unsigned int _maxPhase;		/* Largest phase index.		*/
     requesting_type _isCalled;			/* true if entry referenced.	*/
     std::vector<Call *> _calls;			/* Who I call.			*/
     std::vector<GenericCall *> _callers;	/* Who calls me.		*/
     Activity * _startActivity;			/* If I have activities.	*/
-    Arc *myActivityCall;			/* Arc to who I call		*/
-    std::vector<Reply *> myActivityCallers;	/* Arcs from who reply to me.	*/
+    Arc *_activityCall;				/* Arc to who I call		*/
+    std::vector<Reply *> _activityCallers;	/* Arcs from who reply to me.	*/
 };
 
 /*

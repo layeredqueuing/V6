@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_extvar.h 13831 2020-09-18 12:51:41Z greg $
+ *  $Id: dom_extvar.h 14235 2020-12-17 13:56:55Z greg $
  *
  *  Created by Martin Mroz on 02/03/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -67,9 +67,10 @@ namespace LQIO {
 	class ConstantExternalVariable : public ExternalVariable {
 	public:
 	    /* Initializing the constant external variable */
-	    ConstantExternalVariable(double constant);
+	    ConstantExternalVariable(double constant=0);
 	    ConstantExternalVariable(const char * constant);
 	    ConstantExternalVariable& operator=( const ConstantExternalVariable& );
+	    ConstantExternalVariable& operator=( double );
 	    ConstantExternalVariable( const ExternalVariable& );
 	    virtual ConstantExternalVariable * clone() const;
 	    virtual ~ConstantExternalVariable();

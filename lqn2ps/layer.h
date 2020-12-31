@@ -1,7 +1,7 @@
 /* -*- c++ -*-
  * layer.h	-- Greg Franks
  *
- * $Id: layer.h 14135 2020-11-25 18:22:02Z greg $
+ * $Id: layer.h 14235 2020-12-17 13:56:55Z greg $
  */
 
 #ifndef _LQN2PS_LAYER_H
@@ -45,7 +45,7 @@ private:
 	double _y;
 	double _h;
     };
-    
+
     /*
      * Create chain for queueing model.
      */
@@ -128,6 +128,10 @@ public:
     std::ostream& printSubmodelSummary( std::ostream& ) const;
     std::ostream& printSubmodel( std::ostream& ) const;
     std::ostream& drawQueueingNetwork( std::ostream& ) const;
+#if defined(JMVA_OUTPUT)
+    std::ostream& printJMVAQueueingNetwork( std::ostream& ) const;
+    std::ostream& printJMVAReferenceStation( std::ostream& output, const Demand::map_t& ) const;
+#endif
 
 private:
     Processor * findOrAddSurrogateProcessor( LQIO::DOM::Document * document, Processor *& processor, Task * task, const size_t level ) const;

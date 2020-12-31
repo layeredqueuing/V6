@@ -1,22 +1,23 @@
 /* -*- c++ -*-
  * lqn2ps.h	-- Greg Franks
  *
- * $Id: lqn2ps.h 14171 2020-12-05 14:37:37Z greg $
+ * $Id: lqn2ps.h 14235 2020-12-17 13:56:55Z greg $
  *
  */
 
 #ifndef _LQN2PS_H
 #define _LQN2PS_H
 
-#define EMF_OUTPUT
-#define SVG_OUTPUT
-#define SXD_OUTPUT
-#define TXT_OUTPUT
+#define EMF_OUTPUT	1
+#define JMVA_OUTPUT	1
+#define SVG_OUTPUT	1
+#define SXD_OUTPUT	1
+#define TXT_OUTPUT	1
 #define QNAP_OUTPUT
 #define PMIF_OUTPUT
 /* #define X11_OUTPUT */
-#define	TASK_ACTIVITIES		/* Graph type */
-#define REP2FLAT		/* Allow expansion */
+#define REP2FLAT	1	/* Allow expansion */
+#define BUG_270		1	/* Prune Null servers */
 
 #if defined(HAVE_CONFIG_H)
 #include <config.h>
@@ -43,21 +44,24 @@
 
 namespace LQIO {
     namespace DOM {
-	class Document;
-	class ActivityList;
 	class Activity;
-	class Phase;
-	class Entity;
-	class Processor;
-	class Group;
-	class Task;    
-	class Entry;
+	class ActivityList;
 	class Call;
+	class Document;
 	class DocumentObject;
+	class Entity;
+	class Entry;
+	class Group;
+	class Phase;
+	class Pragma;
+	class Processor;
+	class Task;    
     };
 };
 
 extern std::string command_line;
+bool process_special( const char * p, LQIO::DOM::Pragma& );
+bool special( const std::string& parameter, const std::string& value, LQIO::DOM::Pragma& );
 
 const unsigned int MAX_PHASES	    = 3;	/* Number of Phases.		*/
 
@@ -106,6 +110,9 @@ typedef enum {
 #if HAVE_GD_H && HAVE_LIBGD && HAVE_GDIMAGEGIFPTR
     FORMAT_GIF,
 #endif
+#if defined(JMVA_OUTPUT)
+    FORMAT_JMVA,
+#endif
 #if HAVE_GD_H && HAVE_LIBGD && HAVE_LIBJPEG 
     FORMAT_JPEG,
 #endif
@@ -147,13 +154,13 @@ typedef enum {
     LAYERING_BATCH,
     LAYERING_GROUP,
     LAYERING_HWSW,
-    LAYERING_SRVN,
+    LAYERING_MOL,
     LAYERING_PROCESSOR,
     LAYERING_PROCESSOR_TASK,
-    LAYERING_TASK_PROCESSOR,
     LAYERING_SHARE,
     LAYERING_SQUASHED,
-    LAYERING_MOL
+    LAYERING_SRVN,
+    LAYERING_TASK_PROCESSOR
 } layering_format;
 
 typedef enum {
@@ -199,27 +206,28 @@ typedef enum {
 } sort_type;
 
 typedef enum {
-    PRAGMA_ANNOTATE,
-    PRAGMA_ARROW_SCALING,
-    PRAGMA_CLEAR_LABEL_BACKGROUND,
-    PRAGMA_EXHAUSTIVE_TOPOLOGICAL_SORT,
-    PRAGMA_FLATTEN_SUBMODEL,
-    PRAGMA_FORWARDING_DEPTH,
-    PRAGMA_GROUP,
-    PRAGMA_LAYER_NUMBER,
-    PRAGMA_NO_ALIGNMENT_BOX,
-    PRAGMA_NO_ASYNC_TOPOLOGICAL_SORT,
-    PRAGMA_NO_CV_SQR,
-    PRAGMA_NO_PHASE_TYPE,
-    PRAGMA_NO_REF_TASK_CONVERSION,
-    PRAGMA_QUORUM_REPLY,
-    PRAGMA_RENAME,
-    PRAGMA_SORT,
-    PRAGMA_SQUISH_ENTRY_NAMES,
-    PRAGMA_SUBMODEL_CONTENTS,
-    PRAGMA_TASKS_ONLY,	
-    PRAGMA_SPEX_HEADER
-} pragma_type;
+    SPECIAL_ANNOTATE,
+    SPECIAL_ARROW_SCALING,
+    SPECIAL_CLEAR_LABEL_BACKGROUND,
+    SPECIAL_EXHAUSTIVE_TOPOLOGICAL_SORT,
+    SPECIAL_FLATTEN_SUBMODEL,
+    SPECIAL_FORWARDING_DEPTH,
+    SPECIAL_GROUP,
+    SPECIAL_LAYER_NUMBER,
+    SPECIAL_NO_ALIGNMENT_BOX,
+    SPECIAL_NO_ASYNC_TOPOLOGICAL_SORT,
+    SPECIAL_NO_CV_SQR,
+    SPECIAL_NO_PHASE_TYPE,
+    SPECIAL_NO_REF_TASK_CONVERSION,
+    SPECIAL_PRUNE,
+    SPECIAL_QUORUM_REPLY,
+    SPECIAL_RENAME,
+    SPECIAL_SORT,
+    SPECIAL_SQUISH_ENTRY_NAMES,
+    SPECIAL_SUBMODEL_CONTENTS,
+    SPECIAL_TASKS_ONLY,	
+    SPECIAL_SPEX_HEADER
+} special_type;
 
 typedef enum {
     COLOUR_OFF,
@@ -280,7 +288,7 @@ typedef enum
     WARNINGS             ,
     X_SPACING            ,
     Y_SPACING            ,
-    PRAGMA               ,
+    SPECIAL               ,
     OPEN_WAIT            ,
     THROUGHPUT_BOUNDS    ,
     CONFIDENCE_INTERVALS ,
@@ -319,7 +327,9 @@ struct Flags
     static bool async_topological_sort;
     static bool clear_label_background;
     static bool convert_to_reference_task; 
+    static bool debug;
     static bool debug_submodels;
+    static bool dump_graphviz;
     static bool exhaustive_toplogical_sort;
     static bool flatten_submodel;
     static bool have_results;
@@ -332,12 +342,11 @@ struct Flags
     static bool print_layer_number;
     static bool print_submodel_number;
     static bool print_submodels;
+    static bool prune;			// BUG 270.
     static bool rename_model;
     static bool squish_names;
     static bool surrogates;
     static bool use_colour;
-    static bool dump_graphviz;
-    static bool debug;
     static double act_x_spacing;
     static double arrow_scaling;
     static double entry_height;
@@ -353,10 +362,17 @@ struct Flags
     static std::regex * client_tasks;
     static sort_type sort;
     static unsigned long span;
+    static const unsigned int size;
 };
 
-struct Options
+class Options
 {
+private:
+    Options();
+    Options( const Options& );
+    Options& operator=( const Options& );
+
+public:
     static const char * io[];
     static const char * layering[];
     static const char * colouring[];
@@ -369,7 +385,9 @@ struct Options
     static const char * replication[];
     static const char * string[];
     static const char * sort[];
-    static const char * pragma[];
+    static const char * special[];
+
+    static size_t find_if( const char**, const std::string& );
 };
 
 /* ------------------------------------------------------------------------ */
@@ -545,6 +563,77 @@ private:
 	{ return m.f(os,m.myVar); }
 };
 
+
+namespace XML {
+    class BooleanManip {
+    public:
+	BooleanManip( std::ostream& (*f)(std::ostream&, const std::string&, const bool ), const std::string& a, const bool b ) : _f(f), _a(a), _b(b) {}
+    private:
+	std::ostream& (*_f)( std::ostream&, const std::string&, const bool );
+	const std::string& _a;
+	const bool _b;
+
+	friend std::ostream& operator<<(std::ostream & os, const BooleanManip& m ) { return m._f(os,m._a,m._b); }
+    };
+
+    class StringManip {
+    public:
+	StringManip( std::ostream& (*f)(std::ostream&, const std::string&, const std::string& ), const std::string& a, const std::string& v=0 ) : _f(f), _a(a), _v(v) {}
+    private:
+	std::ostream& (*_f)( std::ostream&, const std::string&, const std::string& );
+	const std::string& _a;
+	const std::string& _v;
+
+	friend std::ostream& operator<<(std::ostream & os, const StringManip& m ) { return m._f(os,m._a,m._v); }
+    };
+
+    class UnsignedManip {
+    public:
+	UnsignedManip( std::ostream& (*f)(std::ostream&, const std::string&, const unsigned int ), const std::string& a, const unsigned int u ) : _f(f), _a(a), _u(u) {}
+    private:
+	std::ostream& (*_f)( std::ostream&, const std::string&, const unsigned int );
+	const std::string& _a;
+	const unsigned int _u;
+
+	friend std::ostream& operator<<(std::ostream & os, const UnsignedManip& m ) { return m._f(os,m._a,m._u); }
+    };
+
+    class DoubleManip {
+    public:
+	DoubleManip( std::ostream& (*f)(std::ostream&, const std::string&, const double ), const std::string& a, const double v ) : _f(f), _a(a), _v(v) {}
+    private:
+	std::ostream& (*_f)( std::ostream&, const std::string&, const double );
+	const std::string& _a;
+	const double _v;
+
+	friend std::ostream& operator<<(std::ostream & os, const DoubleManip& m ) { return m._f(os,m._a,m._v); }
+    };
+
+    class InlineElementManip {
+    public:
+	InlineElementManip( std::ostream& (*f)(std::ostream&, const std::string&, const std::string&, const std::string&, double ), const std::string& e, const std::string& a, const std::string& v, double d )
+	    : _f(f), _e(e), _a(a), _v(v), _d(d) {}
+    private:
+	std::ostream& (*_f)( std::ostream&, const std::string&, const std::string&, const std::string&, double );
+	const std::string& _e;
+	const std::string& _a;
+	const std::string& _v;
+	const double _d;
+
+	friend std::ostream& operator<<(std::ostream & os, const InlineElementManip& m ) 
+	    { return m._f(os,m._e,m._a,m._v,m._d); }
+    };
+
+    BooleanManip start_element( const std::string& e, bool b=true );
+    BooleanManip end_element( const std::string& e, bool b=true );
+    BooleanManip simple_element( const std::string& e );
+    InlineElementManip inline_element( const std::string& e, const std::string& a, const std::string& v, double d );
+    StringManip attribute( const std::string& a, const std::string& v );
+    DoubleManip attribute( const std::string&a, double v );
+    UnsignedManip attribute( const std::string&a, unsigned int v );
+}
+
+
 /*
  * Return square.  C++ doesn't even have an exponentiation operator, let
  * alone a smart one.
@@ -576,9 +665,6 @@ typedef LQIO::DOM::DocumentObject& (LQIO::DOM::DocumentObject::*set_function)( c
 int lqn2ps( int argc, char *argv[] );
 void setOutputFormat( const int i );
 
-#if HAVE_REGEX_T
-void regexp_check( const int, regex_t * r );
-#endif
 bool graphical_output();
 bool output_output();
 bool input_output();
@@ -588,16 +674,14 @@ bool queueing_output();			/* true if generating queueing network */
 bool submodel_output();			/* true if generating a submodel */
 bool difference_output();		/* true if print differences */
 bool share_output();			/* true if sorting by processor share */
-int set_indent( const unsigned int anInt );
+int set_indent( int anInt );
 inline double normalized_font_size() { return Flags::print[FONT_SIZE].value.i / Flags::print[MAGNIFICATION].value.f; }
-bool process_pragma( const char * );
-bool pragma( const std::string&, const std::string& );
 
-IntegerManip indent( const int anInt );
-IntegerManip temp_indent( const int anInt );
-Integer2Manip conf_level( const int, const int );
-StringPlural plural( const std::string& s, const unsigned i );
-DoubleManip opt_pct( const double aDouble );
+IntegerManip indent( const int anInt );				/* See main.cc */
+IntegerManip temp_indent( const int anInt );			/* See main.cc */
+Integer2Manip conf_level( const int, const int );		/* See main.cc */
+StringPlural plural( const std::string& s, const unsigned i );	/* See main.cc */
+DoubleManip opt_pct( const double aDouble );			/* See main.cc */
 
 /* ------------------------------------------------------------------------ */
 

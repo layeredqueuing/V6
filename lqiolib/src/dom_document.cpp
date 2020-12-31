@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_document.cpp 14152 2020-11-29 16:38:49Z greg $
+ *  $Id: dom_document.cpp 14302 2020-12-31 13:11:17Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -19,6 +19,7 @@
 #include "glblerr.h"
 #if HAVE_LIBEXPAT
 #include "expat_document.h"
+#include "jmva_document.h"
 #endif
 #include "json_document.h"
 #include "srvn_input.h"
@@ -39,7 +40,6 @@ namespace LQIO {
 	bool Document::__debugJSON = false;
 	std::map<const char *, double> Document::__initialValues;
 	std::string Document::__input_file_name = "";
-	const std::string Document::__comment( "" );
 	const char * Document::XComment = "comment";
 	const char * Document::XConvergence = "conv_val";			/* Matches schema. 	*/
 	const char * Document::XIterationLimit = "it_limit";			/* Matched schema.	*/
@@ -49,9 +49,10 @@ namespace LQIO {
 	const char * Document::XSpexUnderrelaxation = "spex_underrelax_coeff";
     
 	Document::Document( input_format format ) 
-	    : _processors(), _groups(), _tasks(), _entries(), 
+	    : _modelComment(), _documentComment(),
+	      _processors(), _groups(), _tasks(), _entries(), 
 	      _entities(), _variables(), _controlVariables(), _nextEntityId(0), 
-	      _format(format), _comment2(), 
+	      _format(format), 
 	      _lqxProgram(""), _lqxProgramLineNumber(0), _parsedLQXProgram(0), _instantiated(false), _pragmas(),
 	      _maximumPhase(0), _hasResults(false),
 	      _hasRendezvous(cached::NOT_SET), _hasSendNoReply(cached::NOT_SET), _taskHasAndJoin(cached::NOT_SET),		/* Cached valuess */
@@ -138,7 +139,7 @@ namespace LQIO {
 	    if ( iter != _controlVariables.end() && iter->second->wasSet() ) {
 		if ( iter->second->getString( s ) ) return s;
 	    } 
-	    return __comment.c_str();
+	    return _modelComment.c_str();
 	}
 
 	Document& Document::setModelComment( ExternalVariable * comment )
@@ -153,14 +154,14 @@ namespace LQIO {
 	    return *this;
 	}
 
-	const std::string& Document::getExtraComment() const 
+	const std::string& Document::getDocumentComment() const 
 	{
-	    return _comment2;
+	    return _documentComment;
 	}
 
-	Document& Document::setExtraComment( const std::string& value )
+	Document& Document::setDocumentComment( const std::string& value )
 	{	
-	    _comment2 = value;
+	    _documentComment = value;
 	    return *this;
 	}
 
@@ -484,7 +485,7 @@ namespace LQIO {
 	    }
 
 	    ConstantExternalVariable* constant = dynamic_cast<ConstantExternalVariable *>(_controlVariables[XComment]);
-	    const char * s = __comment.c_str();
+	    const char * s = _modelComment.c_str();
 	    if ( constant ) {
 		constant->getString( s );			// get set value.
 	    }
@@ -762,37 +763,53 @@ namespace LQIO {
 	    __input_file_name = input_filename;
             io_vars.reset();                   /* See error.c */
 
-	    errorCode = 0;
-
 	    /* Figure out input file type based on suffix */
 
 	    if ( format == AUTOMATIC_INPUT ) {
 		format = getInputFormatFromFilename( input_filename );
 	    }
 
-	    /* Create a document to store the product */
-	    Document * document = new Document( format );
-	
-	    /* Read in the model, invoke the builder, and see what happened */
-
 	    bool rc = true;
 	    LQIO::Spex::clear();
-	    if ( format == LQN_INPUT ) {
-		rc = SRVN::load( *document, input_filename, errorCode, load_results );
-	    } else if ( format == JSON_INPUT ) {
-		rc = Json_Document::load( *document, input_filename, errorCode, load_results );
-	    } else {
+	    /* Create a document to store the product */
+	
+	    Document * document = new Document( format );
+
+	    /* Read in the model, invoke the builder, and see what happened */
+
+	    switch ( format ) {
+
+	    case AUTOMATIC_INPUT:
+	    case LQN_INPUT:
+		rc = SRVN::load( *document, input_filename, load_results );
+		break;
+
 #if HAVE_LIBEXPAT
-		rc = Expat_Document::load( *document, input_filename, errorCode, load_results );
+	    case XML_INPUT:
+		rc = Expat_Document::load( *document, input_filename, load_results );
+		break;
+		
+	    case JMVA_INPUT:
+		rc = BCMP::JMVA_Document::load( *document, input_filename );
+		break;
 #else
+	    case XML_INPUT:
+	    case JMVA_INPUT:
 		rc = false;
+		break;
 #endif
-	    }
-	    if ( errorCode != 0 ) {
+
+	    case JSON_INPUT:
+		rc = Json_Document::load( *document, input_filename, errorCode, load_results );
+		break;
+
+	    default:
 		rc = false;
-	    } 
+		break;
+	    }
 
 	    /* All went well, so return it */
+
 	    if ( rc ) {
 		return document;
 	    } else {
@@ -805,20 +822,21 @@ namespace LQIO {
 	bool
 	Document::loadResults(const std::string& directory_name, const std::string& file_name, const std::string& suffix, unsigned& errorCode )
 	{
-	    if ( getInputFormat() == LQN_INPUT ) {
-		LQIO::Filename filename( file_name, "p", directory_name, suffix );
-		return LQIO::SRVN::loadResults( filename() );
-	    } else if ( getInputFormat() == XML_INPUT ) {
-		LQIO::Filename filename( file_name, "lqxo", directory_name, suffix );
+	    switch ( getInputFormat() ) {
+	    case LQN_INPUT:
+		return LQIO::SRVN::loadResults( LQIO::Filename( file_name, "p", directory_name, suffix )() );
+
+	    case XML_INPUT:
 #if HAVE_LIBEXPAT
-		return Expat_Document::loadResults( *this, filename(), errorCode );
+		return Expat_Document::loadResults( *this, LQIO::Filename( file_name, "lqxo", directory_name, suffix )() );
 #else
 		return false;
 #endif
-	    } else if ( getInputFormat() == JSON_INPUT ) {
-		LQIO::Filename filename( file_name, "lqxo", directory_name, suffix );
+	    case JSON_INPUT:
+//		return Json_Document::loadResults( LQIO::Filename( file_name, "lqxo", directory_name, suffix )() );
 		return false;
-	    } else {
+		
+	    default:
 		return false;
 	    }
 	}
@@ -836,6 +854,8 @@ namespace LQIO {
 		    return LQN_INPUT;		/* Override */
 		} else if ( suffix == "json" || suffix == "lqnj" || suffix == "jlqn" || suffix == "lqjo" ) {
 		    return JSON_INPUT;
+		} else if ( suffix == "jmva" ) {
+		    return JMVA_INPUT;
 		} else {
 		    return XML_INPUT;
 		}

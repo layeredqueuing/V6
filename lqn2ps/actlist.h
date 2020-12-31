@@ -1,7 +1,7 @@
 /* -*- c++ -*-
  * actlist.h	-- Greg Franks
  *
- * $Id: actlist.h 14164 2020-12-04 17:42:49Z greg $
+ * $Id: actlist.h 14235 2020-12-17 13:56:55Z greg $
  */
 
 #ifndef _ACTLIST_H
@@ -327,7 +327,7 @@ protected:
     virtual const char * typeStr() const { return "+"; }
 
 private:
-    std::map<Activity *,Label *> myLabelList;
+    std::map<Activity *,Label *> _labelList;
 };
 
 /* -------------------------------------------------------------------- */
@@ -461,11 +461,12 @@ protected:
 
 private:
     bool addToEntryList( unsigned i, Entry * anEntry ) const;
+    bool joinType( const Type );
     const AndForkActivityList * forkList() const { return _forkList; }
     bool joinType( const JoinType );
 
 private:
-    Label * myLabel;
+    Label * _label;
     std::string _typeStr;
     mutable JoinType _joinType;		/* Barrier synch point.	*/
     const AndForkActivityList * _forkList;
@@ -524,7 +525,7 @@ protected:
 private:
     std::vector<Activity *> _activityList;
     std::map<Activity *,Arc *> myArcList;
-    std::map<Activity *,Label *> myLabelList;
+    std::map<Activity *,Label *> _labelList;
     Node * myNode;
     ActivityList * prevLink;
 };
