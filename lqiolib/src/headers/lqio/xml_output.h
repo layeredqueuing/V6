@@ -27,6 +27,16 @@ namespace XML {
 	friend std::ostream& operator<<(std::ostream & os, const BooleanManip& m ) { return m._f(os,m._a,m._b); }
     };
 
+    class CharPtrManip {
+    public:
+	CharPtrManip( std::ostream& (*f)(std::ostream&, const std::string&, const char * ), const std::string& a, const char * v ) : _f(f), _a(a), _v(v) {}
+    private:
+	std::ostream& (*_f)( std::ostream&, const std::string&, const char * );
+	const std::string& _a;
+	const char * _v;
+	friend std::ostream& operator<<(std::ostream & os, const CharPtrManip& m ) { return m._f(os,m._a,m._v); }
+    };
+
     class DoubleManip {
     public:
     DoubleManip( std::ostream& (*f)(std::ostream&, const std::string&, const double ), const std::string& a, const double v ) : _f(f), _a(a), _v(v) {}
@@ -48,19 +58,6 @@ namespace XML {
 	friend std::ostream& operator<<(std::ostream & os, const ExternalVariableManip& m ) { return m._f(os,m._a,m._v); }
     };
 
-    class InlineElementManip {
-    public:
-    InlineElementManip( std::ostream& (*f)(std::ostream&, const std::string&, const std::string&, const std::string&, double ), const std::string& e, const std::string& a, const std::string& v, double d )
-	: _f(f), _e(e), _a(a), _v(v), _d(d) {}
-    private:
-	std::ostream& (*_f)( std::ostream&, const std::string&, const std::string&, const std::string&, double );
-	const std::string& _e;
-	const std::string& _a;
-	const std::string& _v;
-	const double _d;
-	friend std::ostream& operator<<(std::ostream & os, const InlineElementManip& m ) { return m._f(os,m._e,m._a,m._v,m._d); }
-    };
-
     class IntegerManip {
     public:
     IntegerManip( std::ostream& (*f)(std::ostream&, const int ), const int i ) : _f(f), _i(i) {}
@@ -72,12 +69,25 @@ namespace XML {
 
     class StringManip {
     public:
-    StringManip( std::ostream& (*f)(std::ostream&, const std::string&, const std::string& ), const std::string& a, const std::string& v=0 ) : _f(f), _a(a), _v(v) {}
+    StringManip( std::ostream& (*f)(std::ostream&, const std::string&, const std::string& ), const std::string& a, const std::string& v ) : _f(f), _a(a), _v(v) {}
     private:
 	std::ostream& (*_f)( std::ostream&, const std::string&, const std::string& );
 	const std::string& _a;
 	const std::string& _v;
 	friend std::ostream& operator<<(std::ostream & os, const StringManip& m ) { return m._f(os,m._a,m._v); }
+    };
+
+    class String2Manip {
+    public:
+	String2Manip( std::ostream& (*f)(std::ostream&, const std::string&, const std::string&, const std::string&, const std::string& ), const std::string& e, const std::string& a, const std::string& v, const std::string& t )
+	: _f(f), _e(e), _a(a), _v(v), _t(t) {}
+    private:
+	std::ostream& (*_f)( std::ostream&, const std::string&, const std::string&, const std::string&, const std::string& );
+	const std::string& _e;
+	const std::string& _a;
+	const std::string& _v;
+	const std::string& _t;
+	friend std::ostream& operator<<(std::ostream & os, const String2Manip& m ) { return m._f(os,m._e,m._a,m._v,m._t); }
     };
 
     class UnsignedManip {
@@ -99,8 +109,9 @@ namespace XML {
     BooleanManip start_element( const std::string& e, bool b=true );
     BooleanManip end_element( const std::string& e, bool b=true );
     BooleanManip simple_element( const std::string& e );
-    InlineElementManip inline_element( const std::string& e, const std::string& a, const std::string& v, double d );
+    String2Manip inline_element( const std::string& e, const std::string& a, const std::string& v, const std::string& );
     StringManip attribute( const std::string& a, const std::string& v );
+    CharPtrManip attribute( const std::string& a, const char * v );
     DoubleManip attribute( const std::string& a, double v );
     UnsignedManip attribute( const std::string& a, unsigned int v );
     BooleanManip  attribute( const std::string& a, bool v );

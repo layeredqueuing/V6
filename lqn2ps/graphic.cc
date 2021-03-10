@@ -1,6 +1,6 @@
 /* graphic.cc	-- Greg Franks Wed Feb 12 2003
  *
- * $Id: graphic.cc 14235 2020-12-17 13:56:55Z greg $
+ * $Id: graphic.cc 14498 2021-02-27 23:08:51Z greg $
  */
 
 #include <cassert>

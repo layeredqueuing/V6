@@ -2,9 +2,10 @@
 # Copyright (C) 2005 Greg Franks <rgfranks@alumni.uwaterloo.ca>
 #
 # ------------------------------------------------------------------------
-# $Id: Makefile.am 13318 2018-06-13 16:37:21Z greg $
+# $Id: Makefile.am 14499 2021-02-27 23:24:12Z greg $
 # ------------------------------------------------------------------------
 
+if HAVE_LATEX
 SUBDIRS = model bookstore replication srvn-schema timing-diagrams xml-schema 
 DST = 	userman
 INFILE = infile
@@ -69,4 +70,7 @@ distclean-local:
 	rm -f $(OBJS) $(DST).bbl 
 
 gurjari-install: $(DST).pdf $(INFILE).pdf
-
+else
+all:
+	echo LaTeX is required to make the user manual.
+endif

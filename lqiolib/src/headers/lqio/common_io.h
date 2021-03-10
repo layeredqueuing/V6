@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- *  $Id: common_io.h 14302 2020-12-31 13:11:17Z greg $
+ *  $Id: common_io.h 14519 2021-03-06 01:11:56Z greg $
  *
  *  Greg Franks
  */
@@ -193,7 +193,11 @@ namespace LQIO {
 	private:
 	    std::ostream& print( std::ostream& ) const;
 	};
+
     }
+
+    std::string ltrim(const std::string& s);
+    std::string rtrim(const std::string& s);
 }
 
 #endif

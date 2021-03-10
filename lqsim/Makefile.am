@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.am 14106 2020-11-18 14:33:50Z greg $
+# $Id: Makefile.am 14498 2021-02-27 23:08:51Z greg $
 #
 #----------------------------------------------------------------------
 ACLOCAL_AMFLAGS=-I ../config
@@ -20,7 +20,9 @@ man1_MANS	= lqsim.1
 
 install-exec-hook:
 
+if HAVE_PS2PDF
 install-data-hook: lqsim.pdf
+endif
 
 clean-local:
 
@@ -30,8 +32,10 @@ distclean-local:
 lqsim.ps: $(man1_MANS)
 	tbl < $(man1_MANS)  | groff -man > lqsim.ps
 
+if HAVE_PS2PDF
 lqsim.pdf: lqsim.ps
 	ps2pdf lqsim.ps
+endif
 
 lqsim.txt: $(man1_MANS)
 	tbl < $(man1_MANS)  | nroff -man | col -b > lqsim.txt

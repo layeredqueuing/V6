@@ -1,7 +1,7 @@
 /* -*- C++ -*-
  * help.h	-- Greg Franks
  *
- * $Id: help.h 14176 2020-12-07 17:26:28Z greg $
+ * $Id: help.h 14498 2021-02-27 23:08:51Z greg $
  */
 
 #ifndef _HELP_H
@@ -135,7 +135,6 @@ private:
     std::ostream& flagBound( std::ostream& output, bool verbose ) const;
     std::ostream& flagDebug( std::ostream& output, bool verbose ) const;
     std::ostream& flagError( std::ostream& output, bool verbose ) const;
-    std::ostream& flagGnuplot( std::ostream& output, bool verbose ) const;
     std::ostream& flagFast( std::ostream& output, bool verbose ) const;
     std::ostream& flagInputFormat( std::ostream& output, bool verbose ) const;
     std::ostream& flagNoExecute( std::ostream& output, bool verbose ) const;

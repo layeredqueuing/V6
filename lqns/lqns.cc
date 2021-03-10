@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: lqns.cc 14310 2020-12-31 17:16:57Z greg $
+ * $Id: lqns.cc 14534 2021-03-09 23:58:14Z greg $
  *
  * Command line processing.
  *
@@ -65,7 +65,6 @@ const struct option longopts[] =
     { "debug",                required_argument, 0, 'd' },
     { "error",                required_argument, 0, 'e' },
     { LQIO::DOM::Pragma::_fast_, no_argument,    0, 'f' },
-    { "gnuplot",	      optional_argument, 0, 'G' },
     { "help",                 optional_argument, 0, 'H' },
     { "huge",		      no_argument,	 0, 'h' },
     { "iteration-limit",      required_argument, 0, 'i' },
@@ -119,7 +118,6 @@ const char * opthelp[]  = {
     /* debug"           */      "Enable debug code.  See -Hd.",
     /* error"           */      "Set floating point exception mode.",
     /* fast             */      "Solve using one-step-linearizer, batch layering and Conway multiserver.",
-    /* gnuplot		*/	"Output code for gnuplot(1).  ARG is a list of SPEX result variables. (SPEX only).",
     /* help"            */      "Show this help.  The optional argument shows help for -d, -t, -z, and -P respectively.",
     /* huge		*/	"Solve using one-step-schweitzer, no interlocking, and Rolia multiserver.",
     /* iteration-limit" */      "Set the iteration limit to ARG.",
@@ -183,7 +181,7 @@ int main (int argc, char *argv[])
 #if HAVE_GETOPT_LONG
     LQIO::CommandLine command_line( longopts );
 #else
-    LQIO::CommandLine command_line();
+    LQIO::CommandLine command_line( );
 #endif
 
     unsigned global_error_flag = 0;     /* Error detected anywhere??    */
@@ -282,10 +280,6 @@ int main (int argc, char *argv[])
             pragmas.insert(LQIO::DOM::Pragma::_multiserver_,LQIO::DOM::Pragma::_rolia_);
 	    break;
 	    
-	case 'G':
-	    LQIO::Spex::setGnuplotVars( optarg );
-	    break;
-	    
         case 'H':
             usage( optarg );
             exit(0);
@@ -295,6 +289,8 @@ int main (int argc, char *argv[])
             break;
 
         case 512+'h':
+	    /* Set immediately, as it can't be changed once the SPEX program is loaded */
+	    LQIO::Spex::__no_header = true;
 	    pragmas.insert(LQIO::DOM::Pragma::_spex_header_,"false");
             break;
 
@@ -554,7 +550,7 @@ process ( const std::string& inputFileName, const std::string& outputFileName )
 
     /* We can simply run if there's no control program */
     LQX::Program * program = document->getLQXProgram();
-    FILE * output = 0;
+    FILE * output = nullptr;
     try {
 	if ( !program ) {
 
@@ -641,9 +637,6 @@ process ( const std::string& inputFileName, const std::string& outputFileName )
     }
     catch ( const std::runtime_error& e ) {
 	rc = INVALID_INPUT;
-    }
-    catch ( const exception_handled& e ) {
-	rc = INVALID_OUTPUT;
     }
 
     /* Clean things up */

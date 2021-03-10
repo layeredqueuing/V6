@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: entity.cc 14235 2020-12-17 13:56:55Z greg $
+ * $Id: entity.cc 14498 2021-02-27 23:08:51Z greg $
  *
  * Everything you wanted to know about a task or processor, but were
  * afraid to ask.
@@ -22,10 +22,13 @@
 #if HAVE_IEEEFP_H
 #include <ieeefp.h>
 #endif
+#include <lqx/SyntaxTree.h>
 #include <lqio/error.h>
 #include <lqio/dom_entity.h>
 #include <lqio/dom_task.h>
 #include <lqio/srvn_output.h>
+#include <lqio/srvn_spex.h>
+#include <lqio/../../srvn_gram.h>
 #include "model.h"
 #include "entity.h"
 #include "entry.h"
@@ -495,8 +498,9 @@ Entity::drawServer( std::ostream& output ) const
 
     /* Draw the label */
 
-    myLabel->moveTo( bottomCenter() );
-    myLabel->justification( LEFT_JUSTIFY ).moveBy( radius() * 2, radius() * 2 * myNode->direction() );
+    myLabel->moveTo( bottomCenter() )
+	.justification( LEFT_JUSTIFY )
+	.moveBy( radius() * 1.5, radius() * 3.0 * myNode->direction() );
     output << *myLabel;
 
     return output;
@@ -710,95 +714,168 @@ Entity::offsetOf( const std::set<unsigned>& chains, unsigned k )
     }
     return i;
 }
-
-#if defined(PMIF_OUTPUT)
-/* ------------------------------------------------------------------------ */
-/*                        Queueing Network creation                         */
-/* ------------------------------------------------------------------------ */
+
+
+void
+Entity::label_BCMP_server::operator()( Entity * entity ) const
+{
+    const BCMP::Model::Station& station = const_cast<BCMP::Model&>(_model).stationAt( entity->name() );
+    entity->labelBCMPModel( station.classes() );
+}
+
+
+void
+Entity::label_BCMP_client::operator()( Entity * entity ) const
+{
+    const BCMP::Model::Station& station = const_cast<BCMP::Model&>(_model).stationAt( ReferenceTask::__BCMP_station_name );
+    entity->labelBCMPModel( station.classes(), entity->name() );
+}
+
+
+void
+Entity::create_chain::operator()( const Entity * entity ) const
+{
+    const Task * task = dynamic_cast<const Task *>(entity);
+    if ( entity->isInClosedModel(_servers) ) {
+	/* Think time for a task is the class think time. */
+	const LQIO::DOM::ExternalVariable * copies = entity->isMultiServer() ? &entity->copies() : &Element::ONE;
+	const LQIO::DOM::ExternalVariable * think_time = task->hasThinkTime() ? &dynamic_cast<const ReferenceTask *>(task)->thinkTime() : &Element::ZERO;
+	_model.insertClosedChain( entity->name(), copies, think_time );
+    }
+    if ( entity->isInOpenModel(_servers) ) {
+	_model.insertOpenChain( entity->name(), &Element::ZERO );
+    }
+}
+
+
+void
+Entity::create_station::operator()( const Entity * entity ) const
+{
+    BCMP::Model::Station::Type type;
+    if ( _type == BCMP::Model::Station::Type::CUSTOMER ) type = _type;
+    else if ( entity->isInfinite() ) type = BCMP::Model::Station::Type::DELAY;
+    else if ( entity->isMultiServer() ) type = BCMP::Model::Station::Type::MULTISERVER;
+    else type = BCMP::Model::Station::Type::LOAD_INDEPENDENT;
+    _model.insertStation( entity->name(), type, entity->scheduling(), dynamic_cast<const LQIO::DOM::Entity *>(entity->getDOM())->getCopies() );
+}
+
 
 /*
- * Used to add demand to this server from the 
+ * Create a terminal station.  Insert total visits into clients and
+ * set service time for class if the processor has been removed.
+ * Include task think time.
  */
 
 void
-Entity::addDemand( const EntityCall * dst, const GenericCall * src )
+Entity::create_customers::operator()( const Entity * client )
 {
-    const Task * client = dynamic_cast<const Task *>(dst->srcTask());
-    Chain& chain = _chains[client];
-    double service_time = 0.0;
-    if ( dynamic_cast<const Call *>(src) ) {
-	const Entry * dstEntry = dynamic_cast<const Call *>(src)->dstEntry();
-	service_time = dstEntry->executionTime();
+    const Task * task = dynamic_cast<const Task *>(client);
+
+    /* If processor is missing, use service time here.  "class" may have to generalize to entry */
+    /* Put think time in class, and service time into demand */
+    if ( task->hasThinkTime() ) {
+//	    time = to_double(dynamic_cast<const ReferenceTask *>(task)->thinkTime());
+    }
+    const LQIO::DOM::ExternalVariable * service_time = nullptr;
+    if ( task->processor() == nullptr ) {
+	// for all entries s += prVisit(e) * e->serviceTime ??
+	service_time = task->entries().at(0)->serviceTime();
     } else {
-	// Need the service time for the entry
+	service_time = &Element::ZERO;
     }
-    chain.addDemand( src->sumOfRendezvous(), service_time );
+    BCMP::Model::Station::Class demand( &Element::ONE, service_time );	/* One visit */
+
+    const std::string name = task->name();
+    _terminals.insertClass( name, demand );
+
+    /* Find all observations for this chain - it will become a result_var for the termianls station */
+
+    const LQIO::Spex::obs_var_tab_t& observations = LQIO::Spex::observations();
+    for ( LQIO::Spex::obs_var_tab_t::const_iterator obs = observations.begin(); obs != observations.end(); ++obs ) {
+	if ( obs->first != task->getDOM() ) continue;
+	switch ( obs->second.getKey() ) {
+	case KEY_THROUGHPUT:	_terminals.classAt(name).insertResultVariable( BCMP::Model::Result::Type::THROUGHPUT, obs->second.getVariableName() ); break;
+	case KEY_UTILIZATION:	_terminals.classAt(name).insertResultVariable( BCMP::Model::Result::Type::UTILIZATION, obs->second.getVariableName() ); break;
+	}
+    }
 }
 
 
+
+/* +BUG_270 */
 /*
- * Called from layer::aggregate to store demand from a client to a server
+ * Add two external variables.  Otherwise propogate a copy of one or
+ * the other.  If either the augend or the addend is a
+ * SymbolExternalVariable, then I will have to create an expression to
+ * add the two.
  */
 
-void
-Entity::Chain::addDemand( double visits, double service )
+/* static */ LQX::SyntaxTreeNode *
+Entity::getVariableExpression( const LQIO::DOM::ExternalVariable * variable )
 {
-    _visits += visits;
-    _demand += visits * service;
-}
-
-
-/* 
- * Set the demand at the station for the queueing model.
- */
-
-void
-Entity::Chain::SetServerDemand::operator()( const std::pair<const Task *,Chain>& i )
-{
-    const Task * client = i.first;
-    const Entity::Chain& chain = i.second;
-    _station.addDemand( client->name(), chain.getVisits(), chain.getService() );
-}
-#endif
-
-    
-#if defined(BUG_270)
-const Entity&
-Entity::printJMVAStation( std::ostream& output, const Demand::map_t& demands ) const
-{
-    std::string element;
-    if ( isInfinite() ) element = "delaystation";
-    else element = "listation";
-
-    output << XML::start_element( element );
-    output << XML::attribute( "name", name() );
-    if ( isMultiServer() ) output << XML::attribute( "servers", copiesValue() );
-    output << ">" << std::endl;
-    output << XML::start_element( "servicetimes" ) << ">" << std::endl;
-    for ( Demand::item_t::const_iterator demand = demands.at(this).begin(); demand != demands.at(this).end(); ++demand ) {
-	output << XML::inline_element( "servicetime", "customerClass", demand->first->name(), demand->second.service() ) << std::endl;
+    double value;
+    LQX::SyntaxTreeNode * expression;
+    if ( variable->wasSet() && variable->getValue( value ) ) {
+	expression = new LQX::ConstantValueExpression( to_double(*variable) );
+    } else {
+	expression = new LQX::VariableExpression( variable->getName(), true );
     }
-    output << XML::end_element( "servicetimes" ) << std::endl;
-    output << XML::start_element( "visits" ) << ">" << std::endl;
-    for ( Demand::item_t::const_iterator demand = demands.at(this).begin(); demand != demands.at(this).end(); ++demand ) {
-	output << XML::inline_element( "visit", "customerClass", demand->first->name(), demand->second.visits() ) << std::endl;
-    }
-    output << XML::end_element( "visits" ) << std::endl;
-    output << XML::end_element( element ) << std::endl;
-    return *this;
+    return expression;
 }
-#endif
 
-/*
- * JMVA insists that service time/visits exist for --all-- classes for --all--stations
- * so pad the demand_map to make it so.
- */
-
-void
-Entity::pad_demand::operator()( const Entity * entity ) const
+const LQIO::DOM::ExternalVariable *
+Entity::addExternalVariables( const LQIO::DOM::ExternalVariable * augend, const LQIO::DOM::ExternalVariable * addend )
 {
-    Demand::item_t& demand = _demand.at(entity);
-    for ( std::vector<Entity *>::const_iterator client = _clients.begin(); client != _clients.end(); ++client ) {
-	demand.insert( std::pair<const Task *,Demand>(dynamic_cast<Task *>(*client), Demand()) );	// Insert will fail it key exists
+    if ( LQIO::DOM::ExternalVariable::isDefault( augend ) ) {
+	return addend;
+    } else if ( LQIO::DOM::ExternalVariable::isDefault( addend ) ) {
+	return augend;
+    } else if ( dynamic_cast<const LQIO::DOM::ConstantExternalVariable *>(augend) && dynamic_cast<const LQIO::DOM::ConstantExternalVariable *>(addend) ) {
+	return new LQIO::DOM::ConstantExternalVariable( to_double(*augend) + to_double(*addend) );
+    } else {
+	/* More complicated... */
+	LQX::SyntaxTreeNode * arg1 = getVariableExpression( augend );
+	LQX::SyntaxTreeNode * arg2 = getVariableExpression( addend );
+	LQIO::DOM::ExternalVariable * sum = static_cast<LQIO::DOM::ExternalVariable *>(spex_inline_expression( spex_add( arg1, arg2 ) ));
+	std::cout << "Entity::addExternalVariables(" << *augend << "," << *addend << ") --> " << *(sum) << std::endl;
+	return sum;
+    }
+}
+
+const LQIO::DOM::ExternalVariable *
+Entity::multiplyExternalVariables( const LQIO::DOM::ExternalVariable * multiplicand, const LQIO::DOM::ExternalVariable * multiplier )
+{
+    if ( LQIO::DOM::ExternalVariable::isDefault( multiplicand, 1. ) ) {
+	return multiplier;
+    } else if ( LQIO::DOM::ExternalVariable::isDefault( multiplier, 1. ) ) {
+	return multiplicand;
+    } else if ( dynamic_cast<const LQIO::DOM::ConstantExternalVariable *>(multiplicand) && dynamic_cast<const LQIO::DOM::ConstantExternalVariable *>(multiplier) ) {
+	return new LQIO::DOM::ConstantExternalVariable( to_double(*multiplicand) + to_double(*multiplier) );
+    } else {
+	/* More complicated... */
+	LQX::SyntaxTreeNode * arg1 = getVariableExpression( multiplicand );
+	LQX::SyntaxTreeNode * arg2 = getVariableExpression( multiplier );
+	LQIO::DOM::ExternalVariable * product = static_cast<LQIO::DOM::ExternalVariable *>(spex_inline_expression( spex_multiply( arg1, arg2 ) ));
+	std::cout << "Entity::addExternalVariables(" << *multiplicand << "," << *multiplier << ") --> " << *(product) << std::endl;
+	return product;
+    }
+}
+
+const LQIO::DOM::ExternalVariable *
+Entity::divideExternalVariables( const LQIO::DOM::ExternalVariable * dividend, const LQIO::DOM::ExternalVariable * divisor )
+{
+    if ( LQIO::DOM::ExternalVariable::isDefault( dividend, 0. ) ) {		/* zero / ? -> zero */
+	return dividend;
+    } else if ( LQIO::DOM::ExternalVariable::isDefault( divisor, 1. ) ) {	/* division by one */
+	return dividend;
+    } else if ( dynamic_cast<const LQIO::DOM::ConstantExternalVariable *>(dividend) && dynamic_cast<const LQIO::DOM::ConstantExternalVariable *>(divisor) ) {
+	return new LQIO::DOM::ConstantExternalVariable( to_double(*dividend) / to_double(*divisor) );
+    } else {
+	/* More complicated... */
+	LQX::SyntaxTreeNode * arg1 = getVariableExpression( dividend );
+	LQX::SyntaxTreeNode * arg2 = getVariableExpression( divisor );
+	LQIO::DOM::ExternalVariable * quotient = static_cast<LQIO::DOM::ExternalVariable *>(spex_inline_expression( spex_divide( arg1, arg2 ) ));
+	std::cout << "Entity::addExternalVariables(" << *dividend << "," << *divisor << ") --> " << *(quotient) << std::endl;
+	return quotient;
     }
 }

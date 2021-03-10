@@ -4,7 +4,7 @@
  * this is all the stuff printed after the ':'.  For xml output, this
  * is all of the precendence stuff.
  * 
- * $Id: actlist.cc 14235 2020-12-17 13:56:55Z greg $
+ * $Id: actlist.cc 14498 2021-02-27 23:08:51Z greg $
  */
 
 
@@ -778,7 +778,7 @@ OrForkActivityList::~OrForkActivityList()
 }
 
 
-LQIO::DOM::ExternalVariable& 
+const LQIO::DOM::ExternalVariable& 
 OrForkActivityList::prBranch( const Activity * anActivity ) const
 {
     return *getDOM()->getParameter(dynamic_cast<const LQIO::DOM::Activity *>(anActivity->getDOM()));
@@ -1301,9 +1301,7 @@ AndJoinActivityList::AndJoinActivityList( const Task * owner, const LQIO::DOM::A
     }
     const LQIO::DOM::AndJoinActivityList * dom = dynamic_cast<const LQIO::DOM::AndJoinActivityList *>(dom_activitylist);
     if ( dom && dom->hasQuorumCount() ) {
-	char buf[10];
-	sprintf( buf, "%d", dom->getQuorumCountValue() );
-	_typeStr = buf;
+        _typeStr = std::to_string( dom->getQuorumCountValue() );
     } else {
 	_typeStr = "&";		/* Can be changed if quorum is set. */
     }
@@ -1374,9 +1372,7 @@ AndJoinActivityList::quorumCount(int quorumCount)
     const LQIO::DOM::AndJoinActivityList * dom = dynamic_cast<const LQIO::DOM::AndJoinActivityList * >(getDOM());
     const_cast<LQIO::DOM::AndJoinActivityList *>(dom)->setQuorumCountValue( quorumCount ); 
     if ( quorumCount > 0 && graphical_output() ) {
-	char buf[10];
-	sprintf( buf, "%d", quorumCount );
-	_typeStr = buf;
+	_typeStr = std::to_string( quorumCount );
     } else {
 	_typeStr = "&";
     }
@@ -1663,7 +1659,7 @@ RepeatActivityList::add( Activity * anActivity )
     return *this;
 }
 
-LQIO::DOM::ExternalVariable *
+const LQIO::DOM::ExternalVariable *
 RepeatActivityList::rateBranch( const Activity * anActivity ) const
 {
     return getDOM()->getParameter(dynamic_cast<const LQIO::DOM::Activity *>(anActivity->getDOM()));

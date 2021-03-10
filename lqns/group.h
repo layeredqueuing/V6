@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $HeadURL: svn://localhost/lqn/trunk/lqns/group.h $
+ * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/group.h $
  *
  * Groups.
  *
@@ -9,7 +9,7 @@
  *
  * November, 2008
  *
- * $Id: group.h 14172 2020-12-06 14:23:14Z greg $
+ * $Id: group.h 14334 2021-01-05 03:03:03Z greg $
  *
  * ------------------------------------------------------------------------
  */

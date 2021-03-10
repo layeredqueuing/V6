@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: phase.cc 14235 2020-12-17 13:56:55Z greg $
+ * $Id: phase.cc 14498 2021-02-27 23:08:51Z greg $
  *
  * Everything you wanted to know about a phase, but were afraid to ask.
  *
@@ -18,18 +18,18 @@
 #include <lqio/error.h>
 #include <lqio/dom_phase.h>
 #include <lqio/dom_extvar.h>
+#include "activity.h"
+#include "call.h"
+#include "entity.h"
+#include "entry.h"
+#include "errmsg.h"
 #include "model.h"
 #include "phase.h"
-#include "activity.h"
-#include "entry.h"
-#include "entity.h"
-#include "task.h"
-#include "call.h"
 #include "processor.h"
-#include "errmsg.h"
+#include "task.h"
 
 Phase::Phase()
-    : _documentObject(0),
+    : _dom(nullptr),
       _entry(0), 
       _phase(0)
 {
@@ -45,7 +45,7 @@ Phase::~Phase()
 
 Phase::Phase( const Phase& src )
     : _histogram( src._histogram ),
-      _documentObject( src._documentObject ),
+      _dom( src._dom ),
       _entry( src._entry ),
       _phase( src._phase )
 {
@@ -60,8 +60,7 @@ Phase::operator=( const Phase& src )
 {
     if ( *this == src ) return *this;
 
-    _documentObject = src._documentObject;
-    _entry = src._entry;
+    _dom = src._dom;
     _phase = src._phase;
     _histogram = src._histogram;
     return *this;
@@ -132,10 +131,7 @@ Phase::thinkTime() const
 bool
 Phase::hasCV_sqr() const 
 {
-    if ( getDOM() == NULL ) return false;
-    const LQIO::DOM::ExternalVariable * var = getDOM()->getCoeffOfVariationSquared();
-    double value = 1.0;
-    return var != NULL && ( !var->wasSet() || !var->getValue( value ) || value != 1.0 );
+    return !LQIO::DOM::ExternalVariable::isDefault( getDOM()->getCoeffOfVariationSquared(), 1.0 );
 }
 
 
@@ -199,15 +195,33 @@ Phase::utilization() const
 
 
 
+/* +BUG_270 */
+
+/* static */
+const LQIO::DOM::ExternalVariable *
+Phase::accumulate_service( const LQIO::DOM::ExternalVariable * augend, const std::pair<unsigned int, Phase>& phase )
+{
+    return Entity::addExternalVariables( augend, phase.second.getDOM()->getServiceTime() ); 
+}
+/* -BUG_270 */
+
+
 /*
  * I only visit the processor once for all intents and purposes.
  */
 
-/* static */ Demand
-Phase::accumulate_demand( const Demand& augend, const std::pair<unsigned,Phase>& p )
+/* static */ BCMP::Model::Station::Class
+Phase::accumulate_demand( const BCMP::Model::Station::Class& augend, const std::pair<unsigned,Phase>& p )
 {
-    return augend + Demand( to_double(p.second.serviceTime()), 1 );
+    return augend + BCMP::Model::Station::Class( &Element::ONE, &p.second.serviceTime() );
 }
+
+/* static */ double
+Phase::accumulate_execution( double augend, const std::pair<unsigned int, Phase>& addend )
+{
+    return augend + addend.second.executionTime();
+}
+
 
 /* --- */
 

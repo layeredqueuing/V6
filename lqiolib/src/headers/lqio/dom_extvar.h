@@ -1,5 +1,5 @@
-/*
- *  $Id: dom_extvar.h 14235 2020-12-17 13:56:55Z greg $
+/* -*- c++ -*-
+ *  $Id: dom_extvar.h 14498 2021-02-27 23:08:51Z greg $
  *
  *  Created by Martin Mroz on 02/03/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -32,12 +32,10 @@ namespace LQIO {
       
 	    /* Designated Initializers for Variables */
 	    ExternalVariable();
+	    ExternalVariable( const ExternalVariable& );
 	    ExternalVariable& operator=( const ExternalVariable& );
 	    virtual ExternalVariable * clone() const = 0;
 	    virtual ~ExternalVariable();
-
-	protected:
-	    ExternalVariable( const ExternalVariable& );
 
 	public:
 	    virtual Type getType() const { return VAR_UNASSIGNED; }
@@ -50,8 +48,9 @@ namespace LQIO {
 	    virtual const std::string& getName() const = 0;
 	    virtual bool wasSet() const = 0;
 
-	    static bool isPresent( const ExternalVariable *, double lower_limit );	/* Variable is present (may not be instantiated) */
-
+	    static bool isPresent( const ExternalVariable *, double lower_limit=0. );	/* Variable is present (may not be instantiated) */
+	    static bool isDefault( const ExternalVariable *, double default_value=0. );	/* Variable is present (may not be instantiated) */
+	    
 	protected:
 	    virtual std::ostream& print( std::ostream& ) const = 0;
 	    virtual std::ostream& printVariableName( std::ostream& ) const = 0;
@@ -138,17 +137,13 @@ namespace LQIO {
 	    virtual std::ostream& printVariableName( std::ostream& ) const;
 
 	    /* This one's a bit more complicated */
-#if	__GNUC__ == 4 && __GNUC_MINOR__ == 0
-	public:
-#else
 	private:
-#endif
-
 	    LQX::SymbolAutoRef _externalSymbol;
 	    std::string _name;
 	};
     
 	double to_double( const LQIO::DOM::ExternalVariable& );
+	double to_unsigned( const LQIO::DOM::ExternalVariable& );
 	const char * to_string( const LQIO::DOM::ExternalVariable& );
     }
 }

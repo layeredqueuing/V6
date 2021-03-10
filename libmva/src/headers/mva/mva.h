@@ -9,7 +9,7 @@
  * November, 1994
  * August, 2005
  *
- * $Id: mva.h 14310 2020-12-31 17:16:57Z greg $
+ * $Id: mva.h 14496 2021-02-27 02:36:12Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -23,6 +23,7 @@
 #include "vector.h"
 #include "server.h"
 #include "prob.h"
+#include "fpgoop.h"
 
 class MVA;
 class FullPopulationMap;
@@ -64,12 +65,13 @@ protected:
 
 
 public:
-    MVA( Vector<Server *>&, const Population &, const VectorMath<double>&,
-	 const Vector<unsigned>&, const VectorMath<double>* );
+    MVA();
+    MVA( Vector<Server *>&, const Population &, const VectorMath<double>&, const Vector<unsigned>&, const VectorMath<double>* );
     virtual ~MVA();
 
     virtual void reset();
-    virtual void solve() = 0;
+    virtual bool solve() = 0;
+    virtual const char * getTypeName() const = 0;
 
     unsigned nChains() const { return K; }
     virtual double filter() const = 0;
@@ -150,21 +152,16 @@ protected:
     unsigned offset_e_j_mc( const Population& N, const unsigned j, const unsigned mc) const { return getMap().offset_e_j_mc( N, j,mc ); }
     void clearCount() { waitCount = 0; stepCount = 0; faultCount = 0; }
 
+public:
+    double throughput( const unsigned m, const unsigned k, const Population& N ) const;
     double utilization( const unsigned m, const unsigned k, const Population& N ) const;
     double utilization( const unsigned m, const Population& N ) const;
-private:
-#if defined(TESTMVA)
-    double throughput( const unsigned m, const unsigned k ) const;
-#endif
-    double tau( const Server&, const unsigned j, const unsigned k, const Population& ) const;
+    double queueLength( const unsigned m, const Population& N ) const;
+    double queueLength( const unsigned m, const unsigned k, const Population& N ) const;
 
 protected:
-    double tau_overlap( const Server&, const unsigned j, const unsigned k, const Population& N ) const;
-
     void step( const Population& );
     void step( const Population&, const unsigned );
-    double queueLength( const unsigned, const Population& N ) const;
-    double queueLength( const unsigned m, const unsigned k, const Population& N ) const;
     virtual void marginalProbabilities( const unsigned m, const Population& N ) = 0;
     virtual void marginalProbabilities2( const unsigned m, const Population& N ) = 0;
     void setNonILRate( ) const;
@@ -180,12 +177,16 @@ protected:
 #endif
     std::ostream& printVectorP( std::ostream& output, const unsigned m, const Population& N ) const;
 
+    double tau_overlap( const Server&, const unsigned j, const unsigned k, const Population& N ) const;
 private:
+    double tau( const Server&, const unsigned j, const unsigned k, const Population& ) const;
+
     std::ostream& printZ( std::ostream& ) const;
     std::ostream& printX( std::ostream& ) const;
     std::ostream& printPri( std::ostream& output ) const;
 
-    void initialize();
+protected:
+    virtual void initialize();
 
 public:
     static int __bounds_limit;		/* Enable bounds limiting.	*/
@@ -238,7 +239,8 @@ public:
     ExactMVA( Vector<Server *>&, const Population&, const VectorMath<double>&,
 	      const Vector<unsigned>&, const VectorMath<double>* of = 0 );
 
-    void solve();
+    virtual bool solve();
+    virtual const char * getTypeName() const { return __typeName; }
     virtual Probability priorityInflation( const Server& station, const Population &N, const unsigned k ) const;
     virtual double filter() const { return 1.0; }
     virtual bool isExactMVA() const {return true;}
@@ -251,6 +253,7 @@ protected:
 
 private:
     FullPopulationMap map;
+    static const char * const __typeName;
 };
 
 /* -------------------------------------------------------------------- */
@@ -266,7 +269,7 @@ public:
 
 protected:
     virtual void reset();
-    void initialize();
+    virtual void initialize();
 
     void core( const Population &, const unsigned );
 
@@ -297,7 +300,8 @@ public:
 		const Vector<unsigned>&, const VectorMath<double>* of = 0 );
     virtual ~Schweitzer();
 
-    virtual void solve();
+    virtual bool solve();
+    virtual const char * getTypeName() const { return __typeName; }
 
 protected:
     virtual const PopulationMap& getMap() const { return map; }
@@ -306,6 +310,7 @@ protected:
 
 protected:
     SinglePopulationMap map;
+    static const char * const __typeName;
 };
 
 /* -------------------------------------------------------------------- */
@@ -314,7 +319,10 @@ class OneStepMVA: public Schweitzer {
 public:
     OneStepMVA( Vector<Server *>&, const Population&, const VectorMath<double>&,
 		const Vector<unsigned>&, const VectorMath<double>* of = 0 );
-    virtual void solve();
+    virtual bool solve();
+    virtual const char * getTypeName() const { return __typeName; }
+private:
+    static const char * const __typeName;
 };
 
 /* -------------------------------------------------------------------- */
@@ -326,7 +334,8 @@ public:
     virtual ~Linearizer();
 
     virtual void reset();
-    virtual void solve();
+    virtual bool solve();
+    virtual const char * getTypeName() const { return __typeName; }
 
 protected:
     virtual const PopulationMap& getMap() const { return map; }
@@ -338,7 +347,7 @@ protected:
 
     virtual void estimate_P( const Population & N );
 
-    void initialize();
+    virtual void initialize();
     void save_L();
     void restore_L();
 
@@ -349,6 +358,8 @@ protected:
     double ****D;			/* Delta Fraction of jobs.	*/
     unsigned c;				/* Customer from class c removed*/
     PartialPopulationMap map;
+private:
+    static const char * const __typeName;
 };
 
 /* -------------------------------------------------------------------- */
@@ -357,7 +368,10 @@ class OneStepLinearizer: public Linearizer {
 public:
     OneStepLinearizer( Vector<Server *>&, const Population&, const VectorMath<double>&,
 		       const Vector<unsigned>&, const VectorMath<double>* of = 0 );
-    virtual void solve();
+    virtual bool solve();
+    virtual const char * getTypeName() const { return __typeName; }
+private:
+    static const char * const __typeName;
 };
 
 /* -------------------------------------------------------------------- */
@@ -367,6 +381,8 @@ public:
     Linearizer2( Vector<Server *>&, const Population&,
 		 const VectorMath<double>&, const Vector<unsigned>&, const VectorMath<double>* of = 0 );
     virtual ~Linearizer2();
+    virtual const char * getTypeName() const { return __typeName; }
+
     virtual double sumOf_L_m( const Server& station, const Population &N, const unsigned j ) const;
     virtual double sumOf_SL_m( const Server& station, const Population &N, const unsigned j) const;
     virtual double sumOf_SQL_m( const Server& station, const Population &N, const unsigned j) const{ return sumOf_SL_m( station, N, j ); }
@@ -377,18 +393,6 @@ protected:
 private:
     std::vector<double *> Lm;		/* Queue length sum (Fast lin.)	*/
     double ***D_k;			/* Sum over k.			*/
-};
-
-/* -------------------------------------------------------------------- */
-
-class Linearizer3: public Linearizer {
-public:
-    Linearizer3( Vector<Server *>&, const Population&,
-		 const VectorMath<double>&, const Vector<unsigned>&, const VectorMath<double>* of = 0 );
-    virtual ~Linearizer3();
-    virtual void solve();
-
-protected:
-    virtual void update_Delta( const Population & );
+    static const char * const __typeName;
 };
 #endif

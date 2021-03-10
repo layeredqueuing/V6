@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- *  $Id: expat_document.h 14302 2020-12-31 13:11:17Z greg $
+ *  $Id: expat_document.h 14498 2021-02-27 23:08:51Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  */
@@ -313,6 +313,7 @@ namespace LQIO {
 	    Histogram * findOrAddHistogram( DocumentObject * object, unsigned int phase, Histogram::Type type, unsigned int n_bins, double min, double max );
 
 	    bool checkAttributes( const XML_Char * element, const XML_Char ** attributes, const std::set<const XML_Char *,Expat_Document::attribute_table_t>& table ) const;
+
 	    LQIO::DOM::ExternalVariable * getOptionalAttribute( const XML_Char ** attributes, const XML_Char * argument ) const;
 	    LQIO::DOM::ExternalVariable * getVariableAttribute( const XML_Char ** attributes, const XML_Char * argument, const XML_Char * default_value=nullptr ) const;
 	    static const scheduling_type getSchedulingAttribute( const XML_Char ** attributes, const scheduling_type );
@@ -372,10 +373,7 @@ namespace LQIO {
 	    static const std::set<const XML_Char *,attribute_table_t> entry_table;
 	    static const std::set<const XML_Char *,attribute_table_t> activity_table;
 	    static const std::set<const XML_Char *,attribute_table_t> call_table;
-	    static const std::set<const XML_Char *,attribute_table_t> histogram_table;
-
-	    static const std::map<const XML_Char *,const ActivityList::ActivityList::Type,attribute_table_t> precedence_table;
-	    static const std::map<const ActivityList::Type,const XML_Char *> precedence_type_table;
+	    static const std::set<const XML_Char *,Expat_Document::attribute_table_t> histogram_table;
 	    static const std::map<const XML_Char *,const result_table_t,result_table_t>  result_table;
 	    static const std::map<const XML_Char *,const observation_table_t,observation_table_t>  observation_table;	/* SPEX */
 	    static const std::map<const int,const char *> __key_lqx_function_map;			/* Maps srvn_gram.h KEY_XXX to SPEX attribute name */

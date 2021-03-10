@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: dim.cc 14310 2020-12-31 17:16:57Z greg $
+ * $Id: dim.cc 14334 2021-01-05 03:03:03Z greg $
  *
  * Copyright the Real-Time and Distributed Systems Group,
  * Department of Systems and Computer Engineering,

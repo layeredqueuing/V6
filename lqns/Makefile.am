@@ -1,48 +1,48 @@
 # 
-# $Id: Makefile.am 14310 2020-12-31 17:16:57Z greg $
+# $Id: Makefile.am 14498 2021-02-27 23:08:51Z greg $
 #
 #----------------------------------------------------------------------
 
 ACLOCAL_AMFLAGS=-I ../config
 SUBDIRS		= regression 
 AM_CPPFLAGS	= -I.. -I../lqiolib/src/headers -I../lqx/libsrc/headers -I../libmva/src/headers
-bin_PROGRAMS 	= lqns qnsolver
+bin_PROGRAMS 	= lqns
 lqns_SOURCES	= activity.cc actlist.cc call.cc entity.cc entry.cc \
 		  entrythread.cc errmsg.cc gamma.cc generate.cc group.cc help.cc interlock.cc \
 		  model.cc option.cc overtake.cc  \
 		  phase.cc pragma.cc processor.cc randomvar.cc report.cc runlqx.cc \
 		  slice.cc lqns.cc submodel.cc  \
 		  synmodel.cc task.cc variance.cc
-qnsolver_SOURCES= bcmpsolve.cc qnsolver.cc
 
 noinst_HEADERS	= activity.h actlist.h call.h dim.h entity.h entry.h entrythread.h \
 		  errmsg.h gamma.h generate.h group.h help.h interlock.h model.h \
 		  option.h overtake.h phase.h pragma.h \
 		  processor.h randomvar.h report.h slice.h lqns.h runlqx.h \
-		  submodel.h  synmodel.h task.h variance.h \
-		  bcmpsolve.h
+		  submodel.h  synmodel.h task.h variance.h 
 
 EXTRA_DIST	= lqns.1 
 
 lqns_CXXFLAGS   = -std=c++11 -Wall -Wno-parentheses -Wno-unknown-pragmas -Wno-overloaded-virtual
-lqns_LDADD	= -L../lqx/libsrc/.libs -llqx -L../lqiolib/src/.libs -llqio -L../libmva/src/.libs -lmva
-qnsolver_CXXFLAGS = -Wall -Wno-parentheses -Wno-unknown-pragmas -Wno-overloaded-virtual
-qnsolver_LDADD	= -llqx -L../lqiolib/src/.libs -llqio -L../libmva/src/.libs -lmva
+lqns_LDADD	= -L../lqx/libsrc/.libs -llqx -L../lqiolib/src/.libs -llqio  -L../libmva/src/.libs -lmva
 lqns_LDFLAGS	= @STATIC@
 man1_MANS	= lqns.1
 
 clean-local:
 
+if HAVE_PS2PDF
 install-data-local:	lqns.pdf
+endif
 
 distclean-local:
 		rm -f config.cache
 
 lqns.ps:	$(man1_MANS)
-		tbl < $(man1_MANS)  | groff -man > lqns.ps
+		groff -t -man  $(man1_MANS) > lqns.ps
 
+if HAVE_PS2PDF
 lqns.pdf:	lqns.ps
 		ps2pdf lqns.ps
+endif
 
 lqns.txt:	$(man1_MANS)
 		tbl < $(man1_MANS)  | nroff -man | col -b > lqns.txt

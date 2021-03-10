@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 # $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqn2ps/configure.ac $
 # ------------------------------------------------------------------------
-# $Id: configure.ac 14235 2020-12-17 13:56:55Z greg $
+# $Id: configure.ac 14498 2021-02-27 23:08:51Z greg $
 # ------------------------------------------------------------------------
 AC_PREREQ(2.57)
 AC_INIT(lqn2ps, 6.1, greg@sce.carleton.ca)
@@ -36,6 +36,10 @@ fi
 #
 AC_PROG_INSTALL
 AC_PROG_LN_S
+if test -z "$XPS2PDF"; then
+  AC_MSG_NOTICE([Ps2pdf not found - Unable to create PDF version of the user manual])
+fi
+AM_CONDITIONAL([HAVE_PS2PDF], test -n "$XPS2PDF")
 
 # ----------------------------------------------------------------------
 # Checks for libraries.

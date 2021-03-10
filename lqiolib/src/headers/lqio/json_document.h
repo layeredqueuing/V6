@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- *  $Id: json_document.h 14110 2020-11-20 15:37:56Z greg $
+ *  $Id: json_document.h 14498 2021-02-27 23:08:51Z greg $
  *
  *  Created by Greg Franks.
  */
@@ -36,7 +36,7 @@ namespace LQIO {
 	    class ImportResult;
 
 	    enum class dom_type { DOM_NULL, BOOLEAN, CLOCK, DOUBLE, DOM_EXTVAR, LONG, UNSIGNED, STRING, DOM_ACTIVITY, DOM_GROUP, DOM_PROCESSOR, JSON_OBJECT };
-	    typedef void (DOM::Task::*fan_in_out_fptr)( const std::string&, ExternalVariable* );
+	    typedef void (DOM::Task::*fan_in_out_fptr)( const std::string&, const ExternalVariable* );
 
 	private:
 	    friend class LQIO::DOM::Document;
@@ -121,23 +121,23 @@ namespace LQIO {
 	public:
 	    typedef Document& (Document::*doc_bool_fptr)( bool );
 	    typedef Document& (Document::*doc_double_fptr)( double );
-	    typedef Document& (Document::*doc_extvar_fptr)( ExternalVariable * );
+	    typedef Document& (Document::*doc_extvar_fptr)( const ExternalVariable * );
 	    typedef Document& (Document::*doc_long_fptr)( long );
 	    typedef Document& (Document::*doc_string_fptr)( const std::string& );
 	    typedef Document& (Document::*doc_unsigned_fptr)( unsigned );
-	    typedef void (Call::*call_extvar_fptr)( ExternalVariable * );
+	    typedef void (Call::*call_extvar_fptr)( const ExternalVariable * );
 	    typedef void (DocumentObject::*obj_string_fptr)( const std::string& );
 	    typedef void (Entity::*entity_double_fptr)( double );
 	    typedef void (Entity::*entity_unsigned_fptr)( unsigned );
 	    typedef void (Entry::*entry_activity_fptr)( Activity * );
-	    typedef void (Entry::*entry_extvar_fptr)( ExternalVariable * );
+	    typedef void (Entry::*entry_extvar_fptr)( const ExternalVariable * );
 	    typedef void (Group::*group_bool_fptr)( bool );
-	    typedef void (Group::*group_extvar_fptr)( ExternalVariable * );
+	    typedef void (Group::*group_extvar_fptr)( const ExternalVariable * );
 	    typedef void (Group::*group_proc_fptr)( Processor * );
-	    typedef void (Phase::*phase_extvar_fptr)( ExternalVariable * );
+	    typedef void (Phase::*phase_extvar_fptr)( const ExternalVariable * );
 	    typedef void (Phase::*phase_type_fptr)( Phase::Type );
-	    typedef void (Processor::*proc_extvar_fptr)( ExternalVariable * );
-	    typedef void (Task::*task_extvar_fptr)( ExternalVariable * );
+	    typedef void (Processor::*proc_extvar_fptr)( const ExternalVariable * );
+	    typedef void (Task::*task_extvar_fptr)( const ExternalVariable * );
 	    typedef void (Task::*task_unsigned_fptr)( unsigned );
 	    typedef void (Task::*task_group_fptr)( Group * );
 	    typedef void (Task::*task_proc_fptr)( Processor * );
@@ -897,14 +897,14 @@ namespace LQIO {
 
 
 	    class ExportFanInOut : public Export {
-		typedef void (ExportFanInOut::*void_fptr)( const std::pair<const std::string, ExternalVariable *>& ) const;
+		typedef void (ExportFanInOut::*void_fptr)( const std::pair<const std::string, const ExternalVariable *>& ) const;
 
 	    public:
 		ExportFanInOut( std::ostream& output, const LQIO::ConfidenceIntervals& conf_95 ) : Export( output, conf_95 ) {}
-		void operator()( const std::pair<const std::string, ExternalVariable *>& fan_in_out ) const { print( fan_in_out ); }
+		void operator()( const std::pair<const std::string, const ExternalVariable *>& fan_in_out ) const { print( fan_in_out ); }
 
 	    private:
-		void print( const std::pair<const std::string, ExternalVariable *>& ) const;
+		void print( const std::pair<const std::string, const ExternalVariable *>& ) const;
 	    };
 
 	    class ExportInputVariables : public Export {

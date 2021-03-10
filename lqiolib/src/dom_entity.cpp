@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_entity.cpp 14215 2020-12-14 19:09:04Z greg $
+ *  $Id: dom_entity.cpp 14498 2021-02-27 23:08:51Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -15,8 +15,8 @@ namespace LQIO {
     namespace DOM {
     
 	Entity::Entity(const Document * document, const std::string& name, 
-		       const scheduling_type schedulingType, ExternalVariable* copies,
-		       ExternalVariable* replicas) :
+		       const scheduling_type schedulingType, const ExternalVariable* copies,
+		       const ExternalVariable* replicas) :
 	    DocumentObject(document, name),
 	    _entityId(const_cast<Document *>(document)->getNextEntityId()), 
 	    _entitySchedulingType(schedulingType),
@@ -35,9 +35,6 @@ namespace LQIO {
 
 	Entity::~Entity()
 	{
-	    /* Delete variables */
-	    if ( _copies != nullptr ) delete _copies;
-	    if ( _replicas != nullptr ) delete _replicas;
 	}
     
 	const unsigned int Entity::getId() const
@@ -86,11 +83,11 @@ namespace LQIO {
 	    if ( _copies == nullptr ) {
 		_copies = new ConstantExternalVariable(value);
 	    } else {
-		_copies->set(value);
+		const_cast<ExternalVariable *>(_copies)->set(value);
 	    }
 	}
     
-	void Entity::setCopies( ExternalVariable* var )
+	void Entity::setCopies( const ExternalVariable* var )
 	{
 	    /* Set the number of copies.  Allow infinity (so don't use checkIntegerVariable) */
 	    double value = 1.;
@@ -123,11 +120,11 @@ namespace LQIO {
 	    if ( _replicas == nullptr ) {
 		_replicas = new ConstantExternalVariable(value);
 	    } else {
-		_replicas->set(value);
+		const_cast<ExternalVariable *>(_replicas)->set(value);
 	    }
 	}
     
-	void Entity::setReplicas(ExternalVariable * newReplicas)
+	void Entity::setReplicas(const ExternalVariable * newReplicas)
 	{
 	    /* Set the replica count */
 	    _replicas = newReplicas;

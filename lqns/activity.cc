@@ -11,7 +11,7 @@
  * July 2007
  *
  * ------------------------------------------------------------------------
- * $Id: activity.cc 14310 2020-12-31 17:16:57Z greg $
+ * $Id: activity.cc 14498 2021-02-27 23:08:51Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -1206,7 +1206,7 @@ Activity::add_activity_lists()
 			
 	    /* Add the activity to the appropriate list based on what kind of list we have */
 	    switch ( forkList->getListType() ) {
-	    case LQIO::DOM::ActivityList::Type::FORK:	
+	    case LQIO::DOM::ActivityList::Type::FORK:
 		localActivityList = nextActivity->act_fork_item( forkList );
 		break;
 	    case LQIO::DOM::ActivityList::Type::AND_FORK:

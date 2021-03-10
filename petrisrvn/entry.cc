@@ -142,7 +142,7 @@ double Entry::zz(const Entry* entry) const
 }
 
 bool
-Entry::test_and_set( LQIO::DOM::Entry::Entry::Type type )
+Entry::test_and_set( LQIO::DOM::Entry::Type type )
 {
     const bool rc = get_dom()->entryTypeOk( type );
     if ( !rc ) {
@@ -257,7 +257,7 @@ Entry::check (void)
     }
 
     if ( !has_service_time ) {
-	if ( task()->type() == REF_TASK && !has_deterministic_phases ) {
+	if ( task()->type() == Task::Type::REF_TASK && !has_deterministic_phases ) {
 	    LQIO::solution_error( ERR_BOGUS_REFERENCE_TASK, name(), task()->name() );
 	} else {
 	    solution_error( LQIO::WRN_NO_SERVICE_TIME, name() );
@@ -266,7 +266,7 @@ Entry::check (void)
 
     const_cast<Task *>(task())->set_n_phases( n_phases() );
 
-    if ( semaphore_type() != LQIO::DOM::Entry::Semaphore::NONE && task()->type() != SEMAPHORE ) {
+    if ( semaphore_type() != LQIO::DOM::Entry::Semaphore::NONE && task()->type() != Task::Type::SEMAPHORE ) {
 	solution_error( LQIO::ERR_NOT_SEMAPHORE_TASK, task()->name(),
 			(semaphore_type() == LQIO::DOM::Entry::Semaphore::SIGNAL ? "signal" : "wait"),
 			name() );
@@ -332,7 +332,7 @@ Entry::transmorgrify( double base_x_pos, double base_y_pos, unsigned ix_e, struc
 	    }
 	    /*+ BUG_164 */
 	    if ( d_place ) {
-		if ( task()->type() == SEMAPHORE && semaphore_type() == LQIO::DOM::Entry::Semaphore::WAIT ) {
+		if ( task()->type() == Task::Type::SEMAPHORE && semaphore_type() == LQIO::DOM::Entry::Semaphore::WAIT ) {
 		    create_arc( layer_mask, TO_PLACE, phase[n_phases()].doneX[m], task()->LX[m] );
 		} else {
 		    create_arc( layer_mask, TO_PLACE, phase[n_phases()].doneX[m], d_place );

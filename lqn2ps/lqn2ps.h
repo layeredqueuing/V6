@@ -1,7 +1,7 @@
 /* -*- c++ -*-
  * lqn2ps.h	-- Greg Franks
  *
- * $Id: lqn2ps.h 14235 2020-12-17 13:56:55Z greg $
+ * $Id: lqn2ps.h 14519 2021-03-06 01:11:56Z greg $
  *
  */
 
@@ -10,6 +10,7 @@
 
 #define EMF_OUTPUT	1
 #define JMVA_OUTPUT	1
+#define QNAP2_OUTPUT	1
 #define SVG_OUTPUT	1
 #define SXD_OUTPUT	1
 #define TXT_OUTPUT	1
@@ -27,7 +28,6 @@
 #include <iomanip>
 #include <string>
 #include <stdexcept>
-#include <deque>
 #include <regex>
 #include <lqio/input.h>
 #include <lqio/dom_extvar.h>
@@ -110,7 +110,7 @@ typedef enum {
 #if HAVE_GD_H && HAVE_LIBGD && HAVE_GDIMAGEGIFPTR
     FORMAT_GIF,
 #endif
-#if defined(JMVA_OUTPUT)
+#if JMVA_OUTPUT
     FORMAT_JMVA,
 #endif
 #if HAVE_GD_H && HAVE_LIBGD && HAVE_LIBJPEG 
@@ -120,6 +120,9 @@ typedef enum {
     FORMAT_LQX,
     FORMAT_NULL,
     FORMAT_OUTPUT,
+#if QNAP2_OUTPUT
+    FORMAT_QNAP2,
+#endif
     FORMAT_PARSEABLE,
 #if defined(PMIF_OUTPUT)
     FORMAT_PMIF,
@@ -208,6 +211,7 @@ typedef enum {
 typedef enum {
     SPECIAL_ANNOTATE,
     SPECIAL_ARROW_SCALING,
+    SPECIAL_BCMP,
     SPECIAL_CLEAR_LABEL_BACKGROUND,
     SPECIAL_EXHAUSTIVE_TOPOLOGICAL_SORT,
     SPECIAL_FLATTEN_SUBMODEL,
@@ -220,13 +224,15 @@ typedef enum {
     SPECIAL_NO_PHASE_TYPE,
     SPECIAL_NO_REF_TASK_CONVERSION,
     SPECIAL_PRUNE,
+    SPECIAL_PROCESSOR_SCHEDULING,
     SPECIAL_QUORUM_REPLY,
     SPECIAL_RENAME,
     SPECIAL_SORT,
     SPECIAL_SQUISH_ENTRY_NAMES,
+    SPECIAL_SPEX_HEADER,
     SPECIAL_SUBMODEL_CONTENTS,
     SPECIAL_TASKS_ONLY,	
-    SPECIAL_SPEX_HEADER
+    SPECIAL_TASK_SCHEDULING
 } special_type;
 
 typedef enum {
@@ -267,9 +273,8 @@ typedef enum
     AGGREGATION          ,
     BORDER               ,
     COLOUR               ,
-    JLQNDEF		 ,
+    DIFFMODE		 ,
     FONT_SIZE            ,
-    GNUPLOT		 ,
     INPUT_FILE_FORMAT	 , 
     HELP                 ,
     JUSTIFICATION        ,
@@ -317,6 +322,7 @@ typedef enum
     PRINT_AGGREGATE	 ,
     RUN_LQX		 ,
     RELOAD_LQX		 ,
+    OUTPUT_LQX		 ,
     INCLUDE_ONLY         ,
     N_FLAG_VALUES               /* MUST be last! */
 } flag_values;
@@ -325,6 +331,7 @@ struct Flags
 {
     static bool annotate_input;
     static bool async_topological_sort;
+    static bool bcmp_model;
     static bool clear_label_background;
     static bool convert_to_reference_task; 
     static bool debug;
@@ -564,76 +571,6 @@ private:
 };
 
 
-namespace XML {
-    class BooleanManip {
-    public:
-	BooleanManip( std::ostream& (*f)(std::ostream&, const std::string&, const bool ), const std::string& a, const bool b ) : _f(f), _a(a), _b(b) {}
-    private:
-	std::ostream& (*_f)( std::ostream&, const std::string&, const bool );
-	const std::string& _a;
-	const bool _b;
-
-	friend std::ostream& operator<<(std::ostream & os, const BooleanManip& m ) { return m._f(os,m._a,m._b); }
-    };
-
-    class StringManip {
-    public:
-	StringManip( std::ostream& (*f)(std::ostream&, const std::string&, const std::string& ), const std::string& a, const std::string& v=0 ) : _f(f), _a(a), _v(v) {}
-    private:
-	std::ostream& (*_f)( std::ostream&, const std::string&, const std::string& );
-	const std::string& _a;
-	const std::string& _v;
-
-	friend std::ostream& operator<<(std::ostream & os, const StringManip& m ) { return m._f(os,m._a,m._v); }
-    };
-
-    class UnsignedManip {
-    public:
-	UnsignedManip( std::ostream& (*f)(std::ostream&, const std::string&, const unsigned int ), const std::string& a, const unsigned int u ) : _f(f), _a(a), _u(u) {}
-    private:
-	std::ostream& (*_f)( std::ostream&, const std::string&, const unsigned int );
-	const std::string& _a;
-	const unsigned int _u;
-
-	friend std::ostream& operator<<(std::ostream & os, const UnsignedManip& m ) { return m._f(os,m._a,m._u); }
-    };
-
-    class DoubleManip {
-    public:
-	DoubleManip( std::ostream& (*f)(std::ostream&, const std::string&, const double ), const std::string& a, const double v ) : _f(f), _a(a), _v(v) {}
-    private:
-	std::ostream& (*_f)( std::ostream&, const std::string&, const double );
-	const std::string& _a;
-	const double _v;
-
-	friend std::ostream& operator<<(std::ostream & os, const DoubleManip& m ) { return m._f(os,m._a,m._v); }
-    };
-
-    class InlineElementManip {
-    public:
-	InlineElementManip( std::ostream& (*f)(std::ostream&, const std::string&, const std::string&, const std::string&, double ), const std::string& e, const std::string& a, const std::string& v, double d )
-	    : _f(f), _e(e), _a(a), _v(v), _d(d) {}
-    private:
-	std::ostream& (*_f)( std::ostream&, const std::string&, const std::string&, const std::string&, double );
-	const std::string& _e;
-	const std::string& _a;
-	const std::string& _v;
-	const double _d;
-
-	friend std::ostream& operator<<(std::ostream & os, const InlineElementManip& m ) 
-	    { return m._f(os,m._e,m._a,m._v,m._d); }
-    };
-
-    BooleanManip start_element( const std::string& e, bool b=true );
-    BooleanManip end_element( const std::string& e, bool b=true );
-    BooleanManip simple_element( const std::string& e );
-    InlineElementManip inline_element( const std::string& e, const std::string& a, const std::string& v, double d );
-    StringManip attribute( const std::string& a, const std::string& v );
-    DoubleManip attribute( const std::string&a, double v );
-    UnsignedManip attribute( const std::string&a, unsigned int v );
-}
-
-
 /*
  * Return square.  C++ doesn't even have an exponentiation operator, let
  * alone a smart one.
@@ -851,6 +788,29 @@ private:
     unsigned int _count;
 };
 
+template <class Type> struct Select
+{
+    typedef bool (Type::*predicate)() const;
+    Select<Type>( const predicate p ) : _p(p) {};
+    std::vector<Type*> operator()( const std::vector<Type*>& in, const Type* object ) const { if ( (object->*_p)() ) { std::vector<Type*> out(in); out.push_back(object);  return out; } else { return in;} }
+    std::vector<Type*> operator()( const std::vector<Type*>& in, const Type& object ) const { if ( (object.*_p)()  ) { std::vector<Type*> out(in); out.push_back(&object); return out; } else { return in;} }
+private:
+    const predicate _p;
+};
+
+
+template <class Type1, class Type2> struct Collect
+{
+    typedef const Type1& (Type2::*function)() const;
+    Collect<Type1,Type2>( const function f ) : _f(f) {};
+    std::vector<Type1> operator()( const std::vector<Type1>& in, const Type2* object ) const { std::vector<Type1> out(in); out.push_back((object->*_f)()); return out; }
+    std::vector<Type1> operator()( const std::vector<Type1>& in, const Type2& object ) const { std::vector<Type1> out(in); out.push_back((object.*_f)());  return out; }
+private:
+    const function _f;
+};
+
+inline std::string fold( const std::string& s1, const std::string& s2 ) { return s1 + "," + s2; }
+
 template <class Type1, class Type2> struct Sum
 {
     typedef Type2 (Type1::*funcPtr)() const;
@@ -903,7 +863,6 @@ template <class Type> struct EQStr
 private:
     const std::string & _s;
 };
-
 
 template <class Type> struct LT
 {

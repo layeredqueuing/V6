@@ -2,12 +2,13 @@
  *
  * $URL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/runlqx.cc $
  * ------------------------------------------------------------------------
- * $Id: runlqx.cc 14310 2020-12-31 17:16:57Z greg $
+ * $Id: runlqx.cc 14534 2021-03-09 23:58:14Z greg $
  * ------------------------------------------------------------------------
  */
 
 #include <iomanip>
 #include <sstream>
+#include <numeric>
 #include <lqio/dom_document.h>
 #include <lqx/Program.h>
 #include <lqx/MethodTable.h>
@@ -65,11 +66,8 @@ namespace SolverInterface
 	try {
 	    const std::vector<std::string>& undefined = _document->getUndefinedExternalVariables();
 	    if ( undefined.size() > 0) {
-		std::string msg = "The following external variables were not assigned at time of solve: ";
-		for ( std::vector<std::string>::const_iterator var = undefined.begin(); var != undefined.end(); ++var ) {
-		    if ( var != undefined.begin() ) msg += ", ";
-		    msg += *var;
-		}
+		const std::string msg = "The following external variables were not assigned at time of solve: " 
+		    + std::accumulate( std::next(undefined.begin()), undefined.end(), undefined.front(), &fold );
 		throw std::runtime_error( msg );
 	    } 
 			
@@ -82,6 +80,9 @@ namespace SolverInterface
 		throw std::runtime_error( "Unable to initialize model." );
 	    }
 
+	    std::stringstream ss;
+	    _document->printExternalVariables( ss );
+	    _document->setExtraComment( ss.str() );
 	    _document->setResultInvocationNumber( invocationCount );
 	    ok = (_aModel->*_solve)();
 	}
@@ -102,5 +103,6 @@ namespace SolverInterface
 	}
 	return LQX::Symbol::encodeBoolean(ok);
     }
-		
+
+    std::string SolverInterface::Solve::fold( const std::string& s1, const std::string& s2 ) { return s1 + "," + s2; }
 }

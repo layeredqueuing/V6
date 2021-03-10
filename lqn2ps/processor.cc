@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: processor.cc 14235 2020-12-17 13:56:55Z greg $
+ * $Id: processor.cc 14498 2021-02-27 23:08:51Z greg $
  *
  * Everything you wanted to know about a task, but were afraid to ask.
  *
@@ -22,20 +22,25 @@
 #if HAVE_FLOAT_H
 #include <float.h>
 #endif
+#include <lqio/dom_document.h>
+#include <lqio/dom_processor.h>
+#include <lqio/error.h>
 #include <lqio/input.h>
 #include <lqio/labels.h>
-#include <lqio/error.h>
-#include <lqio/dom_processor.h>
-#include <lqio/dom_document.h>
-#include "errmsg.h"
-#include "processor.h"
-#include "entry.h"
-#include "task.h"
+#include <lqio/../../srvn_gram.h>
+#include <lqio/srvn_spex.h>
 #include "call.h"
+#include "entry.h"
+#include "errmsg.h"
 #include "label.h"
 #include "model.h"
+#include "pragma.h"
+#include "processor.h"
+#include "task.h"
 
 std::set<Processor *,LT<Processor> > Processor::__processors;
+std::map<std::string,unsigned> Processor::__key_table;		/* For squishName 	*/
+std::map<std::string,std::string> Processor::__symbol_table;	/* For rename		*/
 
 /* -------------------------------------------------------------------- */
 /* Funky Formatting functions for inline with <<.			*/
@@ -59,14 +64,18 @@ static inline SRVNProcessorManip proc_scheduling_of( const Processor & aProcesso
 
 /* ------------------------ Constructors etc. ------------------------- */
 
-Processor::Processor( const LQIO::DOM::Processor* aDomObject ) 
-    : Entity( aDomObject, __processors.size()+1 ),
+Processor::Processor( const LQIO::DOM::Processor* dom ) 
+    : Entity( dom, __processors.size()+1 ),
       _tasks(),
       _shares(),
       _groupIsSelected(false)
 { 
     if ( Flags::print[PROCESSORS].value.i == PROCESSOR_NONE ) {
 	isSelected(false);
+    }
+    if ( !isMultiServer() && scheduling() != SCHEDULE_DELAY && !Pragma::defaultProcessorScheduling() ) {
+	/* Change scheduling type for uni-processors (usually from FCFS to PS) */
+	const_cast<LQIO::DOM::Processor *>(dom)->setSchedulingType(Pragma::processorScheduling());
     }
 
     const double r = Flags::graphical_output_style == TIMEBENCH_STYLE ? Flags::icon_height : Flags::entry_height;
@@ -116,7 +125,7 @@ Processor::hasRate() const
     return !rate->wasSet() || !rate->getValue(v) || v != 1.0;
 }
 
-LQIO::DOM::ExternalVariable& 
+const LQIO::DOM::ExternalVariable& 
 Processor::rate() const
 {
     return *dynamic_cast<const LQIO::DOM::Processor *>(getDOM())->getRate();
@@ -130,7 +139,7 @@ Processor::hasQuantum() const
     return quantum && (!quantum->wasSet() || !quantum->getValue(v) || v != 1.0);
 }
 
-LQIO::DOM::ExternalVariable& 
+const LQIO::DOM::ExternalVariable& 
 Processor::quantum() const
 {
     return *dynamic_cast<const LQIO::DOM::Processor *>(getDOM())->getQuantum();
@@ -384,21 +393,16 @@ Processor::colour() const
 Processor&
 Processor::label()
 {
+    *myLabel << name();
     if ( Flags::print[INPUT_PARAMETERS].value.b && queueing_output() ) {
 	for ( std::set<Task *>::const_iterator nextTask = tasks().begin(); nextTask != tasks().end(); ++nextTask ) {
 	    const Task * aTask = *nextTask;
 	    for ( std::vector<Entry *>::const_iterator entry = aTask->entries().begin(); entry != aTask->entries().end(); ++entry ) {
-		*myLabel << (*entry)->name() << " (" << print_number_slices( *(*entry) ) << ")";
 		myLabel->newLine();
-	    }
-	    myLabel->newLine();
-	    Entity::label();
-	    for ( std::vector<Entry *>::const_iterator entry = aTask->entries().begin(); entry != aTask->entries().end(); ++entry ) {
-		myLabel->newLine() << (*entry)->name() << " [" << print_slice_time( *(*entry) ) << "]";
+		*myLabel << (*entry)->name() << " [" << print_service_time( *(*entry) ) << "]";
 	    }
 	}
     } else {
-	*myLabel << name();
 	if ( scheduling() != SCHEDULE_FIFO && !isInfinite() ) {
 	    *myLabel << "*";
 	}
@@ -430,6 +434,29 @@ Processor::label()
 	if ( hasBogusUtilization() && Flags::print[COLOUR].value.i != COLOUR_OFF ) {
 	    myLabel->colour(Graphic::RED);
 	}
+    }
+    return *this;
+}
+
+
+
+/*
+ * demand is map<class,<visits,service>> for this station.  Processors
+ * are always servers, so label for all classes.
+ */
+
+Processor&
+Processor::labelBCMPModel( const BCMP::Model::Station::Class::map_t& demands, const std::string& )
+{
+    *myLabel << name();
+    if ( isMultiServer() ) {
+	*myLabel << "{" << copies() << "}";
+    } else if ( isInfinite() ) {
+	*myLabel << "{" << _infty() << "}";
+    }
+    for ( BCMP::Model::Station::Class::map_t::const_iterator demand = demands.begin(); demand != demands.end(); ++demand ) {
+	myLabel->newLine();
+	*myLabel << demand->first << "(" << *demand->second.visits() << "," << *demand->second.service_time() << ")";
     }
     return *this;
 }
@@ -538,32 +565,56 @@ Processor::draw( std::ostream& output ) const
 }
 
 
-#if defined(BUG_270)
 /* 
- * Find the total demand by each class (client tasks in submodel), 
- * then change back to visits/service time when needed 
+ * Find the total demand by each class (client tasks in submodel),
+ * then change back to visits/service time when needed.  Demands are
+ * stored in entries of tasks.
  */
 
 void
-Processor::accumulateDemand( std::map<const Task *,Demand>& demand ) const
+Processor::accumulateDemand( BCMP::Model::Station& station ) const
 {
+    typedef std::pair<const std::string,BCMP::Model::Station::Class> demand_item;
+    typedef std::map<const std::string,BCMP::Model::Station::Class> demand_map;
+    
+    demand_map& classes = const_cast<demand_map&>(station.classes());
+    
     for ( std::vector<GenericCall *>::const_iterator call = callers().begin(); call != callers().end(); ++call ) {
 	const ProcessorCall * src = dynamic_cast<const ProcessorCall *>(*call);
 	if ( !src ) continue;
-	
-        const std::pair<std::map<const Task *,Demand>::iterator,bool> result = demand.insert( std::pair<const Task *,Demand>( src->srcTask(), Demand() ) );
-	std::map<const Task *,Demand>::iterator item = result.first;
+
+        const std::pair<demand_map::iterator,bool> result = classes.insert( demand_item( src->srcTask()->name(), BCMP::Model::Station::Class() ) );	/* null entry */
+	demand_map::iterator item = result.first;
 	
 	if ( src->callType() == LQIO::DOM::Call::Type::NULL_CALL ) {
 	    /* If it is generic processor call then accumulate by entry */
-	    item->second.accumulate( Task::accumulate_demand( Demand(), src->srcTask() ) );
+	    item->second.accumulate( Task::accumulate_demand( BCMP::Model::Station::Class(), src->srcTask() ) );
 	} else {
-	    item->second.accumulate( src->visits(), src->demand() );
+	    /* Otherwise, we've been cloned, so get the values */
+	    item->second.accumulate( BCMP::Model::Station::Class(src->visits(), src->srcEntry()->serviceTime()) );
+	}
+    }
+
+    /* Search for SPEX observations. */
+    const LQIO::Spex::obs_var_tab_t& observations = LQIO::Spex::observations();
+    for ( LQIO::Spex::obs_var_tab_t::const_iterator obs = observations.begin(); obs != observations.end(); ++obs ) {
+	if ( obs->first == getDOM() ) {
+	    switch ( obs->second.getKey() ) {
+	    case KEY_THROUGHPUT:  station.insertResultVariable( BCMP::Model::Result::Type::THROUGHPUT, obs->second.getVariableName() ); break;
+	    case KEY_UTILIZATION: station.insertResultVariable( BCMP::Model::Result::Type::UTILIZATION, obs->second.getVariableName() ); break;
+	    }
+	} else {
+	    for ( demand_map::iterator k = classes.begin(); k != classes.end(); ++k ) {
+		LQIO::DOM::Task * task = getDOM()->getDocument()->getTaskByName( k->first );
+		if ( obs->first == task ) {
+		    switch ( obs->second.getKey() ) {
+		    case KEY_PROCESSOR_UTILIZATION: k->second.insertResultVariable( BCMP::Model::Result::Type::UTILIZATION, obs->second.getVariableName() ); break;
+		    }
+		}
+	    }
 	}
     }
 }
-#endif
-
 
 /*----------------------------------------------------------------------*/
 /*		 	   Called from yyparse.  			*/

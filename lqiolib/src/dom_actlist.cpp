@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_actlist.cpp 14147 2020-11-26 21:59:05Z greg $
+ *  $Id: dom_actlist.cpp 14498 2021-02-27 23:08:51Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -30,9 +30,6 @@ namespace LQIO {
 
 	ActivityList::~ActivityList()
 	{
-	    for( std::map<const Activity*,ExternalVariable *>::const_iterator arg = _arguments.begin(); arg != _arguments.end(); ++arg ) {
-		delete arg->second;
-	    }
 	}
 
 	bool ActivityList::isJoinList() const
@@ -66,7 +63,7 @@ namespace LQIO {
 	    return _type;
 	}
 
-	ActivityList& ActivityList::add(const Activity* activity, ExternalVariable * arg )
+	ActivityList& ActivityList::add(const Activity* activity, const ExternalVariable * arg )
 	{
 	    _list.push_back(activity);
 	    _arguments[activity] = arg;
@@ -79,16 +76,16 @@ namespace LQIO {
 	    _arguments[activity] = new ConstantExternalVariable( arg );
 	}
 
-	ExternalVariable * ActivityList::getParameter(const Activity* activity) const
+	const ExternalVariable * ActivityList::getParameter(const Activity* activity) const
 	{
-	    std::map<const Activity*,ExternalVariable *>::const_iterator item = _arguments.find(activity);
+	    std::map<const Activity*,const ExternalVariable *>::const_iterator item = _arguments.find(activity);
 	    if ( item == _arguments.end() ) throw std::domain_error( activity->getName().c_str() );
 	    return item->second;
 	}
 
 	double ActivityList::getParameterValue(const Activity* activity) const
 	{
-	    std::map<const Activity*,ExternalVariable *>::const_iterator item = _arguments.find(activity);
+	    std::map<const Activity*,const ExternalVariable *>::const_iterator item = _arguments.find(activity);
 	    double value;
 	    if ( item == _arguments.end() || item->second->getValue( value ) != true ) {
 		throw std::domain_error( activity->getName().c_str() );
@@ -127,8 +124,8 @@ namespace LQIO {
 	/* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */
 
 
-	AndJoinActivityList::AndJoinActivityList(const Document * document, const Task * task, ExternalVariable * quorum ) 
-	    : ActivityList(document,task,Type::AND_JOIN), _quorum(quorum), _histogram(0),
+	AndJoinActivityList::AndJoinActivityList(const Document * document, const Task * task, const ExternalVariable * quorum ) 
+	    : ActivityList(document,task,Type::AND_JOIN), _quorum(quorum), _histogram(nullptr),
 	      _resultJoinDelay(0.0),
 	      _resultJoinDelayVariance(0.0),
 	      _hasResultVarianceJoinDelay(false),
@@ -140,7 +137,7 @@ namespace LQIO {
 	AndJoinActivityList::AndJoinActivityList( const AndJoinActivityList& src ) 
 	    : ActivityList(src.getDocument(),src.getTask(),src.getListType()), 
 	      _quorum(src.getQuorumCount()), 
-	      _histogram(0),
+	      _histogram(nullptr),
 	      _resultJoinDelay(0.0),
 	      _resultJoinDelayVariance(0.0),
 	      _hasResultVarianceJoinDelay(false),
@@ -151,8 +148,6 @@ namespace LQIO {
 	
 	AndJoinActivityList::~AndJoinActivityList()
 	{
-	    if ( _histogram != nullptr ) delete _histogram;
-	    if ( _quorum != nullptr ) delete _quorum;
 	}
 
 	AndJoinActivityList& AndJoinActivityList::setQuorumCountValue(const unsigned value)
@@ -161,7 +156,7 @@ namespace LQIO {
 	    if (_quorum == nullptr) {
 		_quorum = new ConstantExternalVariable(value);
 	    } else {
-		_quorum->set(value);
+		const_cast<ExternalVariable *>(_quorum)->set(value);
 	    }
 	    return *this;
 	}
@@ -171,13 +166,13 @@ namespace LQIO {
 	    return getIntegerValue( getQuorumCount(), 0 );
 	}
 
-	AndJoinActivityList& AndJoinActivityList::setQuorumCount(ExternalVariable * quorum)
+	AndJoinActivityList& AndJoinActivityList::setQuorumCount(const ExternalVariable * quorum)
 	{
 	    _quorum = checkIntegerVariable( quorum, 0 );
 	    return *this;
 	}
 
-	ExternalVariable * AndJoinActivityList::getQuorumCount() const
+	const ExternalVariable * AndJoinActivityList::getQuorumCount() const
 	{
 	    return _quorum;
 	}

@@ -10,7 +10,7 @@
  * April 2010.
  *
  * ------------------------------------------------------------------------
- * $Id: task.h 14241 2020-12-22 21:19:14Z greg $
+ * $Id: task.h 14498 2021-02-27 23:08:51Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -18,22 +18,29 @@
 #define TASK_H
 
 #include "lqn2ps.h"
+#include <string>
+#include <map>
 #include <vector>
-#include <cstring>
 #if defined(PMIF_OUTPUT)
 #include <lqio/pmif_document.h>
 #endif
 #include "entity.h"
 #include "actlayer.h"
 
-class Task;
-class Processor;
-class Share;
+class ActivityList;
 class Call;
-class TaskCall;
 class EntityCall;
 class OpenArrival;
-class ActivityList;
+class Processor;
+class Share;
+class Task;
+class TaskCall;
+
+#if defined(BUG_270)
+typedef std::multimap<const Entity *,EntityCall *>::const_iterator merge_iter;
+typedef std::pair<const Entity *,EntityCall *> merge_pair;
+#endif
+
 
 /* ----------------------- Abstract Superclass ------------------------ */
 
@@ -150,9 +157,11 @@ public:
     virtual bool isInClosedModel( const std::vector<Entity *>& servers  ) const;
 
 #if defined(BUG_270)
-    virtual void accumulateDemand( std::map<const Task *,Demand>& ) const;
+    static const LQIO::DOM::ExternalVariable * sum_rendezvous( const LQIO::DOM::ExternalVariable *, const merge_pair& );
+    static const LQIO::DOM::ExternalVariable * sum_demand( const LQIO::DOM::ExternalVariable *, const merge_pair& );
 #endif
-    static Demand accumulate_demand( const Demand&, const Task * );
+    virtual void accumulateDemand( BCMP::Model::Station& ) const;
+    static BCMP::Model::Station::Class accumulate_demand( const BCMP::Model::Station::Class&, const Task * );
     /* Activities */
     
     unsigned generate();
@@ -172,17 +181,18 @@ public:
 
     virtual Graphic::colour_type colour() const;
 
-    virtual Entity& label();
+    virtual Task& label();
+    virtual Task& labelBCMPModel( const BCMP::Model::Station::Class::map_t&, const std::string& class_name="" );
+
     virtual Task& rename();
-    virtual Task& squishName();
+    virtual Task& squish( std::map<std::string,unsigned>&, std::map<std::string,std::string>& );
     Task& aggregate();
 
 #if defined(BUG_270)
     bool canPrune() const;
-    Task& linkToClients();
-    Task& unlinkFromServers();
+    virtual Task& relink();
     Task& unlinkFromProcessor();
-
+    Task& mergeCalls();
 #endif
 #if defined(REP2FLAT)
     virtual Task& removeReplication();
@@ -218,7 +228,7 @@ private:
     Task& moveSrcBy( const double dx, const double dy );
 
     void renameFanInOut( const std::string&, const std::string& );
-    void renameFanInOut( std::map<const std::string,LQIO::DOM::ExternalVariable *>&, const std::string&, const std::string& );
+    void renameFanInOut( std::map<const std::string,const LQIO::DOM::ExternalVariable *>&, const std::string&, const std::string& );
     
 #if defined(REP2FLAT)
     Task& expandActivities( const Task& src, int replica );
@@ -231,6 +241,8 @@ public:
 #endif
 
     static std::set<Task *,LT<Task> > __tasks;	/* All tasks in model		*/
+    static std::map<std::string,unsigned> __key_table;		/* For squish	*/
+    static std::map<std::string,std::string> __symbol_table;	/* For squish	*/
 
 protected:
     std::vector<Entry *> _entries;		/* Entries for this entity.	*/
@@ -248,6 +260,8 @@ private:
     std::vector<EntityCall *> _calls;		/* Arc calling processor	*/
     std::vector<ActivityLayer> _layers;	
     double _entryWidthInPts;
+    std::map<std::string,unsigned> _key_table;		/* For squishName 	*/
+    std::map<std::string,std::string> _symbol_table;	/* For rename		*/
 
     static const double JLQNDEF_TASK_BOX_SCALING;
 };
@@ -266,7 +280,7 @@ public:
     virtual bool isReferenceTask() const { return true; }
     virtual bool isPureServer() const { return false; }
     virtual bool hasThinkTime() const;
-    LQIO::DOM::ExternalVariable& thinkTime() const;
+    const LQIO::DOM::ExternalVariable& thinkTime() const;
 
     virtual bool canConvertToOpenArrivals() const { return false; }
 
@@ -274,6 +288,15 @@ public:
 
     virtual Graphic::colour_type colour() const;
     virtual size_t findChildren( CallStack&, const unsigned );
+
+#if defined(BUG_270)
+    bool canPrune() const;
+    virtual Task& relink();
+#endif
+    virtual void accumulateDemand( BCMP::Model::Station& ) const;
+
+public:
+    static const std::string __BCMP_station_name;
 };
 
 

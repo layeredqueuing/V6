@@ -1,0 +1,10 @@
+# $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/dist/win-nt/Makefile.am $
+# $Id: Makefile.am 14499 2021-02-27 23:24:12Z greg $
+# Used for make dist.
+# ------------------------------------------------------------------------
+
+FILES = lqn-solvers-no-doc.nsi lqn-solvers.nsi readme.txt
+
+EXTRA_DIST = 	$(FILES)
+
+install-data-local:	$(FILES)

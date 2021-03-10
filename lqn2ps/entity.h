@@ -1,7 +1,7 @@
 /* -*- c++ -*-
  * entity.h	-- Greg Franks
  *
- * $Id: entity.h 14235 2020-12-17 13:56:55Z greg $
+ * $Id: entity.h 14498 2021-02-27 23:08:51Z greg $
  */
 
 #ifndef _ENTITY_H
@@ -10,8 +10,8 @@
 #include <vector>
 #include <map>
 #include <lqio/input.h>
+#include <lqio/bcmp_document.h>
 #include "element.h"
-#include "demand.h"
 #if defined(PMIF_OUTPUT)
 #include <lqio/pmif_document.h>
 #endif
@@ -21,6 +21,10 @@ class Task;
 class Arc;
 class EntityCall;
 class Entity;
+
+namespace LQX {
+    class SyntaxTreeNode;
+}
 
 /* ----------------------- Abstract Superclass ------------------------ */
 
@@ -60,23 +64,58 @@ public:
 #endif
     
     struct accumulate_demand {
-	accumulate_demand( Demand::map_t& demand ) : _demand(demand) {}
-	void operator()( const Entity * entity ) const { entity->accumulateDemand( _demand[entity] ); }
+	accumulate_demand( BCMP::Model& model ) : _model(model) {}
+	void operator()( const Entity * entity ) const { entity->accumulateDemand( _model.stationAt(entity->name() ) ); }
     private:
-	Demand::map_t& _demand;
+	BCMP::Model& _model;
     };
 
-
-    struct pad_demand {
-	pad_demand( const std::vector<Entity *>& clients, Demand::map_t& demand ) : _clients(clients), _demand(demand) {}
+    struct create_station {
+	create_station( BCMP::Model& model, BCMP::Model::Station::Type type = BCMP::Model::Station::Type::NOT_DEFINED ) : _model(model), _type(type) {}
 	void operator()( const Entity * entity ) const;
-
     private:
-	const std::vector<Entity *>& _clients;	
-	Demand::map_t& _demand;
+	BCMP::Model& _model;
+	const BCMP::Model::Station::Type _type;
     };
+
+    struct create_chain {
+	create_chain( BCMP::Model& model, const std::vector<Entity *>& servers ) : _model(model), _servers(servers) {}
+	void operator()( const Entity * entity ) const;
+    private:
+	BCMP::Model& _model;
+	const std::vector<Entity *>& _servers;
+    };
+
+    struct create_customers {
+	create_customers( BCMP::Model::Station& terminals ) : _terminals(terminals) {}
+	void operator()( const Entity * entity );
+    private:
+	BCMP::Model::Station& _terminals;
+    };
+
+    struct label_BCMP_server {
+	label_BCMP_server( const BCMP::Model& model ) : _model(model) {}
+	void operator()( Entity * entity ) const;
+	
+    private:
+	const BCMP::Model& _model;
+    };
+
     
-    
+    struct label_BCMP_client {
+	label_BCMP_client( const BCMP::Model& model ) : _model(model) {}
+	void operator()( Entity * entity ) const;
+	
+    private:
+	const BCMP::Model& _model;
+    };
+
+public:    
+    static LQX::SyntaxTreeNode * getVariableExpression( const LQIO::DOM::ExternalVariable * variable );
+    static const LQIO::DOM::ExternalVariable * addExternalVariables( const LQIO::DOM::ExternalVariable *, const LQIO::DOM::ExternalVariable * );
+    static const LQIO::DOM::ExternalVariable * multiplyExternalVariables( const LQIO::DOM::ExternalVariable *, const LQIO::DOM::ExternalVariable * );
+    static const LQIO::DOM::ExternalVariable * divideExternalVariables( const LQIO::DOM::ExternalVariable *, const LQIO::DOM::ExternalVariable * );
+
 public:
     Entity( const LQIO::DOM::Entity*, const size_t id );
     virtual ~Entity();
@@ -141,7 +180,7 @@ public:
     virtual unsigned setChain( unsigned k, callPredicate aFunc ) const { return k; }
 
     virtual bool isInOpenModel( const std::vector<Entity *>& servers ) const { return false; }
-    virtual bool isInClosedModel( const std::vector<Entity *>& servers  ) const { return false; }
+    virtual bool isInClosedModel( const std::vector<Entity *>& servers ) const { return false; }
 
 #if defined(PMIF_OUTPUT)
     void addDemand( const EntityCall *, const GenericCall * );
@@ -157,6 +196,9 @@ public:
     virtual Graphic::colour_type colour() const;
 
     virtual Entity& label();
+    virtual Entity& labelBCMPModel( const BCMP::Model::Station::Class::map_t&, const std::string& class_name="" ) = 0;
+
+    virtual void accumulateDemand( BCMP::Model::Station& ) const = 0;
 
     std::ostream& print( std::ostream& output ) const;
 
@@ -165,12 +207,7 @@ public:
     virtual std::ostream& drawServer( std::ostream& ) const;
 
     virtual std::ostream& printName( std::ostream& output, const int = 0 ) const;
-
-#if defined(BUG_270)
-    const Entity& printJMVAStation( std::ostream&, const Demand::map_t& ) const;
-    virtual void accumulateDemand( std::map<const Task *,Demand>& ) const = 0;
-#endif
-    
+   
 protected:
     double radius() const;
     unsigned countCallers() const;

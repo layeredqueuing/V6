@@ -1,6 +1,6 @@
 /* model.cc	-- Greg Franks Mon Feb  3 2003
  *
- * $Id: model.cc 14241 2020-12-22 21:19:14Z greg $
+ * $Id: model.cc 14519 2021-03-06 01:11:56Z greg $
  *
  * Load, slice, and dice the lqn model.
  */
@@ -208,6 +208,13 @@ Model::~Model()
     }
     Group::__groups.clear();
 
+    Processor::__key_table.clear();
+    Processor::__symbol_table.clear();
+    Task::__key_table.clear();
+    Task::__symbol_table.clear();
+    Entry::__key_table.clear();
+    Entry::__symbol_table.clear();
+
     _layers.clear();
     if ( _key ) {
 	delete _key;
@@ -216,7 +223,12 @@ Model::~Model()
 	delete _label;
     }
 
-    __model = 0;
+    /* Reset Flags */
+
+    Flags::print[LAYERING].value.i = LAYERING_BATCH;
+    LQIO::io_vars.severity_level = LQIO::NO_ERROR;
+    Flags::bcmp_model = false;
+    __model = nullptr;
 }
 
 /*
@@ -346,9 +358,6 @@ Model::prepare( const LQIO::DOM::Document * document )
 
     /* We use this to add all calls */
     std::vector<LQIO::DOM::Entry*> allEntries;
-
-    /* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- [Step 0: Add Pragmas] */
-    Pragma::set( document->getPragmaList() );
 
     /* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- [Step 1: Add Processors] */
 
@@ -529,7 +538,7 @@ Model::process()
     if ( Flags::rename_model ) {
 	rename();
     } else if ( Flags::squish_names ) {
-	squishNames();
+	squish();
     }
 
     Processor * surrogate_processor = 0;
@@ -563,6 +572,10 @@ Model::process()
     if ( !totalize() ) {
 	LQIO::solution_error( ERR_NO_OBJECTS );
 	return false;
+    }
+
+    if ( Flags::bcmp_model ) {
+	_layers.at(std::min(static_cast<unsigned>(1),layer)).createBCMPModel();
     }
 
     if ( graphical_output() ) {
@@ -690,7 +703,7 @@ Model::store()
 		directory_name = filename();
 		int rc = access( directory_name.c_str(), R_OK|W_OK|X_OK );
 		if ( rc < 0 ) {
-#if defined(WINNT)
+#if defined(__WINNT__)
 		    rc = mkdir( directory_name.c_str() );
 #else
 		    rc = mkdir( directory_name.c_str(), S_IRUSR|S_IWUSR|S_IXUSR|S_IRGRP|S_IWGRP|S_IXGRP|S_IWOTH|S_IROTH|S_IXOTH );
@@ -841,7 +854,7 @@ Model::getExtension()
 	extension = "gif";
 	break;
 #endif
-#if defined(JMVA_OUTPUT)
+#if JMVA_OUTPUT
     case FORMAT_JMVA:
 	extension = "jmva";
 	break;
@@ -862,6 +875,11 @@ Model::getExtension()
     case FORMAT_OUTPUT:
 	extension = "out";
 	break;
+#if QNAP2_OUTPUT
+    case FORMAT_QNAP2:
+	extension = "qnap2";
+	break;
+#endif
     case FORMAT_PARSEABLE:
 	extension = "p";
 	break;
@@ -879,11 +897,12 @@ Model::getExtension()
     case FORMAT_SRVN:
 	extension = "lqn";
 	{
+	    /* Non standard files names are retained (in theory) */
 	    std::size_t i = _inputFileName.find_last_of( '.' );
 	    if ( i != std::string::npos ) {
 		std::string ext = _inputFileName.substr( i+1 );
 		std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-		if ( ext != "lqnx" && ext != "xlqn" && ext != "xml" && ext != "json" && ext != "lqxo" && ext != "lqjo" ) {
+		if ( ext != "lqnx" && ext != "xlqn" && ext != "xml" && ext != "json" && ext != "lqxo" && ext != "lqjo"  && ext != "jmva" ) {
 		    extension = ext;
 		}
 	    }
@@ -929,25 +948,16 @@ Model::getExtension()
 /*
  * Transform the model by removing infinite servers.  Multiple entries
  * are allowed, but multiple phases are not.
+ * Step one - map calls to clients.  We may get multiple calls to a given entity 
+ * Step two - merge the calls. 
  */
 
 /* static */ bool
 Model::prune()
 {
     try {
-	for ( std::set<Task *>::const_iterator task = Task::__tasks.begin(); task != Task::__tasks.end(); ++task ) {
-	    if ( (*task)->isReferenceTask() ) {
-		const Processor * processor = (*task)->processor();
-		if ( !processor->isInteresting() ) {
-		    (*task)->unlinkFromProcessor();
-		    __zombies.push_back( const_cast<Processor *>(processor) );
-		}
-	    } else if ( (*task)->canPrune() ) {
-		(*task)->linkToClients();
-		(*task)->unlinkFromServers();
-		__zombies.push_back( *task );
-	    }
-	}
+	std::for_each ( Task::__tasks.begin(), Task::__tasks.end(), Exec<Task>( &Task::relink ) );
+	std::for_each( Task::__tasks.begin(), Task::__tasks.end(), Exec<Task>( &Task::mergeCalls ) );
     }
     catch ( const std::domain_error& e ) {
 	LQIO::solution_error( ERR_UNASSIGNED_VARIABLES );
@@ -1109,11 +1119,11 @@ Model::rename()
  */
 
 Model&
-Model::squishNames()
+Model::squish()
 {
-    for_each( Processor::__processors.begin(), Processor::__processors.end(), ::Exec<Element>( &Element::squishName ) );
-    for_each( Task::__tasks.begin(), Task::__tasks.end(), ::Exec<Element>( &Element::squishName ) );
-    for_each( Entry::__entries.begin(), Entry::__entries.end(), ::Exec<Element>( &Element::squishName ) );
+    for_each( Processor::__processors.begin(), Processor::__processors.end(), ::Exec2<Element,std::map<std::string,unsigned>&,std::map<std::string,std::string>&>( &Element::squish, Processor::__key_table, Processor::__symbol_table ) );
+    for_each( Task::__tasks.begin(), Task::__tasks.end(), ::Exec2<Element,std::map<std::string,unsigned>&,std::map<std::string,std::string>&>( &Element::squish, Task::__key_table, Task::__symbol_table ) );
+    for_each( Entry::__entries.begin(), Entry::__entries.end(), ::Exec2<Element,std::map<std::string,unsigned>&,std::map<std::string,std::string>&>( &Element::squish, Entry::__key_table, Entry::__symbol_table ) );
     return *this;
 }
 
@@ -1476,8 +1486,8 @@ std::ostream&
 Model::print( std::ostream& output ) const
 {
     if ( Flags::print_comment && Flags::print[OUTPUT_FORMAT].value.i != FORMAT_TXT) {
-	const char * comment = getDOM()->getModelCommentString();
-	if ( comment && comment[0] != '\0' ) {
+	const std::string comment( getDOM()->getModelCommentString() );
+	if ( !comment.empty() ) {
 	    std::cout << _inputFileName << ": " << comment << std::endl;
 	}
     }
@@ -1505,9 +1515,9 @@ Model::print( std::ostream& output ) const
 	printGD( output, &GD::outputJPG );
 	break;
 #endif
-#if defined(JMVA_OUTPUT)
+#if JMVA_OUTPUT
     case FORMAT_JMVA:
-	printJMVA( output );
+	printBCMP( output );
 	break;
 #endif
     case FORMAT_JSON:
@@ -1529,17 +1539,12 @@ Model::print( std::ostream& output ) const
     case FORMAT_PARSEABLE:
 	printParseable( output );
 	break;
-#if defined(PMIF_OUTPUT)
-    case FORMAT_PMIF:
-	printPMIF( output );
-	break;
-#endif
     case FORMAT_POSTSCRIPT:
 	printPostScript( output );
 	break;
-#if defined(QNAP_OUTPUT)
-    case FORMAT_QNAP:
-	printQNAP( output );
+#if QNAP2_OUTPUT
+    case FORMAT_QNAP2:
+	printBCMP( output );
 	break;
 #endif
     case FORMAT_RTF:
@@ -1883,6 +1888,22 @@ Model::Remap::operator()( const Entity * entity )
 }
 
 
+#if QNAP2_OUTPUT || JMVA_OUTPUT
+/*
+ * It has to be a submodel...
+ */
+
+std::ostream&
+Model::printBCMP( std::ostream& output ) const
+{
+    if ( queueing_output() ) {
+	_layers.at(Flags::print[QUEUEING_MODEL].value.i).printBCMPQueueingNetwork( output );
+    }
+    return output;
+}
+#endif
+
+
 /*
  * Output an input file.
  */
@@ -1894,22 +1915,6 @@ Model::printInput( std::ostream& output ) const
     srvn.print( output );
     return output;
 }
-
-
-#if defined(JMVA_OUTPUT)
-/*
- * It has to be a submodel...
- */
-
-std::ostream&
-Model::printJMVA( std::ostream& output ) const
-{
-    if ( queueing_output() ) {
-	_layers.at(Flags::print[QUEUEING_MODEL].value.i).printJMVAQueueingNetwork( output );
-    }
-    return output;
-}
-#endif
 
 
 
@@ -1996,31 +2001,9 @@ Model::printXML( std::ostream& output ) const
     return output;
 }
 
-#if defined(QNAP_OUTPUT)
-std::ostream&
-Model::printQNAP( std::ostream& output ) const
-{
-    LQIO::PMIF_Document document( _inputFileName );
-    // Need to generate the queeing model in layer.cc
-    const int submodel = Flags::print[QUEUEING_MODEL].value.i;
-    _layers.at(submodel).getQueueingNetwork( document );
-    return output;
-}
-#endif
 
-#if defined(PMIF_OUTPUT)
-std::ostream&
-Model::printPMIF( std::ostream& output ) const
-{
-    LQIO::PMIF_Document document( _inputFileName );
-    document.initialize();			/* Construct basic elements */
-    // Need to generate the queueing model in layer.cc
-    const int submodel = Flags::print[QUEUEING_MODEL].value.i;
-    _layers.at(submodel).getQueueingNetwork( document );
 
-    return document.print( output );
-}
-#endif
+
 
 /*
  * Print out one layer at at time.  Used by most graphical output routines.
@@ -2118,7 +2101,7 @@ Model::printPostScriptPrologue( std::ostream& output, const std::string& title,
 /* Open Office output...
  * The output is somewhat more complicated because we have to write out a pile of crap.
  */
-#if defined(WINNT)
+#if defined(__WINNT__)
 #define MKDIR(a1,a2) mkdir( a1 )
 #else
 #define MKDIR(a1,a2) mkdir( a1, a2 )
@@ -2180,7 +2163,7 @@ Model::printSXD( const std::string& dst_name, const std::string& dir_name, const
 	(this->*aFunc)( output );
 	output.close();
 
-#if !defined(WINNT)
+#if !defined(__WINNT__)
 	std::ostringstream command;
 	command << "cd " << dir_name << "; zip -r ../" << dst_name << " " << file_name;
 	int rc = system( command.str().c_str() );
@@ -2890,5 +2873,3 @@ Squashed_Model::Justify::operator()( Group * group )
 {
     group->format().label().resizeBox().positionLabel();
 }
-
-

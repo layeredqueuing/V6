@@ -9,7 +9,7 @@
  * January 2003
  *
  * ------------------------------------------------------------------------
- * $Id: entry.h 14241 2020-12-22 21:19:14Z greg $
+ * $Id: entry.h 14498 2021-02-27 23:08:51Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -17,15 +17,14 @@
 #define ENTRY_H
 
 #include "lqn2ps.h"
-#include <cstring>
 #include <vector>
 #include <set>
 #include <numeric>
 #include <lqio/dom_entry.h>
-#include "demand.h"
+#include <lqio/bcmp_document.h>
+#include "call.h"
 #include "element.h"
 #include "phase.h"
-#include "call.h"
 
 class Arc;
 class Activity;
@@ -110,7 +109,7 @@ public:
 
     bool hasServiceTime( const unsigned int p ) const;
     const LQIO::DOM::ExternalVariable& serviceTime( const unsigned p ) const;
-    double serviceTime() const;
+    const LQIO::DOM::ExternalVariable * serviceTime() const;		/* sums up over all phases */
 
     bool hasThinkTime( const unsigned int p ) const;
     const LQIO::DOM::ExternalVariable& thinkTime( const unsigned p ) const;
@@ -210,7 +209,7 @@ public:
     double serviceTimeForSRVNInput( const unsigned p ) const;
     Entry& aggregateService( const Activity * anActivity, const unsigned p, const double rate );
     Entry& aggregatePhases();
-    static Demand accumulate_demand( const Demand&, const Entry * );
+    static BCMP::Model::Station::Class accumulate_demand( const BCMP::Model::Station::Class&, const Entry * );
 
     static Entry * find( const std::string& );
     static bool compare( const Entry *, const Entry * );
@@ -267,6 +266,8 @@ private:
 
 public:
     static std::set<Entry *,LT<Entry> > __entries;
+    static std::map<std::string,unsigned> __key_table;		/* For squish	*/
+    static std::map<std::string,std::string> __symbol_table;	/* For squish	*/
 
     bool drawLeft;
     bool drawRight;

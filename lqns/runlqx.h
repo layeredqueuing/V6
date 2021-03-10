@@ -1,8 +1,8 @@
 /* runlqx.h	-- Greg Franks
  *
- * $URL$
+ * $URL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/runlqx.h $
  * ------------------------------------------------------------------------
- * $Id: runlqx.h 14000 2020-10-25 12:50:53Z greg $
+ * $Id: runlqx.h 14498 2021-02-27 23:08:51Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -35,6 +35,9 @@ namespace SolverInterface {
 	static bool solveCallViaLQX;
 	static bool implicitSolve;
 	static std::string customSuffix;
+
+    private:
+	static std::string fold( const std::string& s1, const std::string& s2 );
 	
     private:
 	Model * _aModel;

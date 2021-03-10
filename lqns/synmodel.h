@@ -1,7 +1,7 @@
 /* -*- C++ -*-
  * synmodel.h	-- Greg Franks
  *
- * $Id: synmodel.h 14141 2020-11-25 20:57:44Z greg $
+ * $Id: synmodel.h 14334 2021-01-05 03:03:03Z greg $
  */
 
 #ifndef _SYNMODEL_H

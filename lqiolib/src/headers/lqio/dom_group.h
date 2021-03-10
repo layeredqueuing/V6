@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_group.h 13831 2020-09-18 12:51:41Z greg $
+ *  $Id: dom_group.h 14498 2021-02-27 23:08:51Z greg $
  *
  *  Created by Martin Mroz on 1/07/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -24,7 +24,7 @@ namespace LQIO {
 	public:
       
 	    /* Designated initializers for the Group type */
-	    Group(const Document * document, const char * name, Processor* proc=0, ExternalVariable * share=0, bool cap=false );
+	    Group(const Document * document, const char * name, Processor* proc=nullptr, const ExternalVariable * share=nullptr, bool cap=false );
 	    Group( const Group & );
 	    virtual ~Group();
       
@@ -34,8 +34,8 @@ namespace LQIO {
 	    const Processor* getProcessor() const;
 	    void setProcessor(Processor* processor);
 	    double getGroupShareValue() const;
-	    ExternalVariable * getGroupShare() const;
-	    void setGroupShare(ExternalVariable * groupShare);
+	    const ExternalVariable * getGroupShare() const;
+	    void setGroupShare(const ExternalVariable * groupShare);
 	    void setGroupShareValue( double value );
 	    const bool getCap() const;
 	    void setCap(const bool cap);
@@ -57,7 +57,7 @@ namespace LQIO {
 	    /* Instance Variables */
 
 	    Processor* _processor;
-	    ExternalVariable * _groupShare;
+	    const ExternalVariable * _groupShare;
 	    bool _cap;
 
 	    std::set<Task*> _taskList;

@@ -1,6 +1,7 @@
-# $Id: Makefile.am 14302 2020-12-31 13:11:17Z greg $
+# $Id: Makefile.am 14498 2021-02-27 23:08:51Z greg $
 # ------------------------------------------------------------------------
-noinst_HEADERS = bcmp_document.h \
+noinst_HEADERS = bcmp_bindings.h \
+	bcmp_document.h \
 	bcmp_to_lqn.h \
 	commandline.h \
 	common_io.h \
@@ -41,5 +42,5 @@ noinst_HEADERS = bcmp_document.h \
 	srvn_spex.h \
 	submodel_info.h
 	submodel_info.h \
-	xml_input.h
+	xml_input.h \
 	xml_output.h

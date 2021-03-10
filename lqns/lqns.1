@@ -1,6 +1,6 @@
 .\" t -*- nroff -*-
-.TH lqns 1 "22 November 2013" "6.0"
-.\" $Id: lqns.1 14000 2020-10-25 12:50:53Z greg $
+.TH lqns 1 "17 February 2021" "5.19"
+.\" $Id: lqns.1 14498 2021-02-27 23:08:51Z greg $
 .\"
 .\" --------------------------------
 .SH "NAME"
@@ -185,6 +185,9 @@ Print throughput's values.
 \fBvariance\fR
 Print out the variances calculated after each submodel is solved.
 .TP
+\fBvirtual-entry\fR
+Print waiting time for each rendezvous in the model after it has been computed; include virtual entries.
+.TP
 \fBwait\fR
 Print waiting time for each rendezvous in the model after it has been computed.
 .RE
@@ -365,8 +368,14 @@ graph.  Cycles may indicate the presence of deadlocks.
 \fBallow\fP
 Allow cycles in the call graph.  The interlock adjustment is disabled.
 .TP
-\fBdisallow\fP
-Disallow cycles in the call graph.
+.TP
+\fBprocessors\fP
+Always use a multiserver solution for non-delay processors even if the number of servers is one (1).
+The Rolia mutliserver approximationis known to fail for this case.
+.TP
+\fBtasks\fP
+Always use a multiserver solution for non-delay server tasks even if the number of servers is one (1).
+The Rolia mutliserver approximationis known to fail for this case.
 .LP
 The default is disallow.
 .RE

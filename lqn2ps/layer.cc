@@ -1,6 +1,6 @@
 /* layer.cc	-- Greg Franks Tue Jan 28 2003
  *
- * $Id: layer.cc 14241 2020-12-22 21:19:14Z greg $
+ * $Id: layer.cc 14498 2021-02-27 23:08:51Z greg $
  *
  * A layer consists of a set of tasks with the same nesting depth from
  * reference tasks.  Reference tasks are in layer 1, the immediate
@@ -21,18 +21,18 @@
 #include <lqio/error.h>
 #include <lqio/srvn_output.h>
 #include <lqio/dom_document.h>
-#if defined(PMIF_OUTPUT)
-#include <lqio/pmif_document.h>
-#endif
-#include "layer.h"
-#include "entity.h"
-#include "task.h"
-#include "processor.h"
-#include "entry.h"
+#include <lqio/jmva_document.h>
+#include <lqio/qnap2_document.h>
 #include "activity.h"
 #include "arc.h"
+#include "entity.h"
+#include "entry.h"
+#include "errmsg.h"
 #include "label.h"
+#include "layer.h"
 #include "open.h"
+#include "processor.h"
+#include "task.h"
 
 /*----------------------------------------------------------------------*/
 /*                         Helper Functions                             */
@@ -49,7 +49,7 @@ private:
     void reset( LQIO::DOM::Phase * phase ) const
 	{
 	    std::vector<LQIO::DOM::Call*>& dom_calls = const_cast<std::vector<LQIO::DOM::Call*>& >(phase->getCalls());
-	    dom_calls.clear();		// Should likely delete... 
+	    dom_calls.clear();		// Should likely delete...
 
 	    if ( _hasResults ) {
 		const double mean = phase->getResultServiceTime();
@@ -65,27 +65,26 @@ private:
 
     bool _hasResults;
 };
-    
 
-Layer::Layer()  
-    : _entities(), _origin(0,0), _extent(0,0), _number(0), _label(0), _clients(), _chains(0)
+Layer::Layer()
+    : _entities(), _origin(0,0), _extent(0,0), _number(0), _label(nullptr), _clients(), _chains(0), _bcmp_model()
 {
     _label = Label::newLabel();
 }
 
-Layer::Layer( const Layer& src )  
-    : _entities(src._entities), _origin(src._origin), _extent(src._extent), _number(src._number), _label(0), _clients(), _chains()
+Layer::Layer( const Layer& src )
+    : _entities(src._entities), _origin(src._origin), _extent(src._extent), _number(src._number), _label(nullptr), _clients(), _chains(), _bcmp_model()
 {
     _label = Label::newLabel();
 }
 
-Layer::~Layer()  
+Layer::~Layer()
 {
     delete _label;
 }
 
 Layer&
-Layer::operator=( const Layer& src ) 
+Layer::operator=( const Layer& src )
 {
     _entities = src._entities;
     _origin = src._origin;
@@ -96,7 +95,7 @@ Layer::operator=( const Layer& src )
     return *this;
 }
 
-double 
+double
 Layer::labelWidth() const
 {
     return _label->width();
@@ -123,11 +122,11 @@ Layer::erase( std::vector<Entity *>::iterator pos )
     return *this;
 }
 
-Layer& 
-Layer::number( const unsigned n ) 
-{ 
-    _number = n; 
-    return *this; 
+Layer&
+Layer::number( const unsigned n )
+{
+    _number = n;
+    return *this;
 }
 
 
@@ -161,7 +160,7 @@ Layer::count( const callPredicate aFunc ) const
  */
 
 Layer&
-Layer::prune() 
+Layer::prune()
 {
     for ( std::vector<Entity *>::iterator entity = _entities.begin(); entity != _entities.end(); ++entity ) {
 	Task * aTask = dynamic_cast<ReferenceTask *>((*entity));
@@ -173,10 +172,10 @@ Layer::prune()
 
 	} else if ( aProc ) {
 
-	    /* 
+	    /*
 	     * If a processor is not refereneced, or if the task was
 	     * removed because it's a reference task that makes no
-	     * calls, then delete the processor. 
+	     * calls, then delete the processor.
 	     */
 
 	    if ( aProc->nTasks() == 0 ) {
@@ -195,7 +194,7 @@ Layer::prune()
 
 
 Layer&
-Layer::sort( compare_func_ptr compare ) 
+Layer::sort( compare_func_ptr compare )
 {
     std::sort( _entities.begin(), _entities.end(), compare );
     return *this;
@@ -236,7 +235,7 @@ Layer::moveBy( const double dx, const double dy )
 
 
 
-/* 
+/*
  * Move the label to...
  */
 
@@ -293,7 +292,7 @@ Layer::fill( const double maxWidthPts )
 
     _origin.x( fill );
 
-    double x = fill; 
+    double x = fill;
     for ( std::vector<Entity *>::const_iterator entity = entities().begin(); entity != entities().end(); ++entity ) {
 	const double y = (*entity)->bottom();
 	(*entity)->moveTo( x, y );
@@ -330,7 +329,7 @@ Layer::justify( const double maxWidthPts, const justification_type justification
 	moveBy( 0.0, 0.0 );		/* Force recomputation of slopes */
 	break;
     default:
-	abort();	
+	abort();
     }
     return *this;
 }
@@ -359,7 +358,7 @@ Layer&
 Layer::alignEntities()
 {
     std::sort( _entities.begin(), _entities.end(), &Entity::compareCoord );
-    
+
     if ( Flags::debug ) std::cerr << "Layer::alignEntities layer " << number() << std::endl;
     /* Move objects right starting from the right side */
     for ( unsigned int i = size(); i > 0; ) {
@@ -398,8 +397,8 @@ Layer::shift( unsigned i, double amount )
 	_extent.x( _entities.back()->right() - _entities.front()->left() );
 	if ( i + 1 < size() && _entities[i]->forwardsTo( dynamic_cast<Task *>(_entities[i+1]) ) ) {
 	    shift( i+1, amount );
-	} 
-    } else if ( amount > 0.0 ) { 
+	}
+    } else if ( amount > 0.0 ) {
 	/* move right if I can */
 	if ( Flags::debug ) std::cerr << "Layer::shift layer " << number() << " shift " << _entities.at(i)->name() << " right from ("
 				      << _entities.at(i)->left() << "," << _entities.at(i)->bottom() << ")";
@@ -421,19 +420,24 @@ Layer::shift( unsigned i, double amount )
 
 
 /*
- * Label all objects in this layer.
+ * Label all objects in this layer.  If it's a BCMP model, then only
+ * one layer needs to (and can) be labelled.
  */
 
 Layer&
 Layer::label()
 {
-    for_each( entities().begin(), entities().end(), ::Exec<Element>( &Element::label ) );
+    if ( !Flags::bcmp_model ) {
+	std::for_each( entities().begin(), entities().end(), ::Exec<Element>( &Element::label ) );
+    } else if ( !_bcmp_model.empty() ) {
+	std::for_each( clients().begin(), clients().end(), Entity::label_BCMP_client( _bcmp_model ) );
+	std::for_each( entities().begin(), entities().end(), Entity::label_BCMP_server( _bcmp_model ) );
+    }
     if ( Flags::print_layer_number ) {
 	*_label << "Layer " << number();
     }
     return *this;
 }
-
 
 
 void Layer::Position::operator()( Entity * entity )
@@ -482,7 +486,7 @@ Layer::deselectSubmodel()
 Layer&
 Layer::generateSubmodel()
 {
-    if ( _clients.size() > 0 ) return *this;
+    if ( clients().size() > 0 ) return *this;
 
     _chains = 0;
 
@@ -496,7 +500,7 @@ Layer::generateSubmodel()
 
     /* Set the chains in the model */
 
-    for ( std::vector<Entity *>::iterator client = _clients.begin(); client != _clients.end(); ++client ) {
+    for ( std::vector<Entity *>::const_iterator client = clients().begin(); client != clients().end(); ++client ) {
 	if ( (*client)->isInClosedModel( entities() ) ) {
 	    _chains += 1;
 	    _chains = const_cast<Entity *>(*client)->setChain( _chains, &GenericCall::hasRendezvous );
@@ -553,9 +557,6 @@ Layer::aggregate()
 		} else {
 		    task_call->rendezvous( LQIO::DOM::ConstantExternalVariable( 1.0 ) );	/* Set value to force type. */
 		}
-#if defined(PMIF_OUTPUT)
-		server->addDemand( task_call, call );				/* add visits and service time to call */
-#endif
 	    }
 	}
     }
@@ -600,7 +601,7 @@ Layer::transmorgrify( LQIO::DOM::Document * document, Processor *& surrogate_pro
 
     /* ---------- Clients ---------- */
 
-    for ( std::vector<Entity *>::iterator client = _clients.begin(); client != _clients.end(); ++client ) {
+    for ( std::vector<Entity *>::const_iterator client = clients().begin(); client != clients().end(); ++client ) {
 	Task * aTask = dynamic_cast<Task *>(*client);
 	if ( !aTask ) continue;
 
@@ -673,7 +674,7 @@ Layer::findOrAddSurrogateProcessor( LQIO::DOM::Document * document, Processor *&
 	LQIO::DOM::Task * dom_task = const_cast<LQIO::DOM::Task *>(dynamic_cast<const LQIO::DOM::Task *>(task->getDOM()));
 	std::set<LQIO::DOM::Task*>& old_list = const_cast<std::set<LQIO::DOM::Task*>&>(dom_task->getProcessor()->getTaskList());
 	std::set<LQIO::DOM::Task*>::iterator pos = find( old_list.begin(), old_list.end(), dom_task );
-	old_list.erase( pos );		// Remove task from original processor 
+	old_list.erase( pos );		// Remove task from original processor
 	dom_processor->addTask( dom_task );
 	dom_task->setProcessor( dom_processor );
 	old_processor->removeTask( task );
@@ -705,7 +706,7 @@ Layer::findOrAddSurrogateTask( LQIO::DOM::Document* document, Processor*& proces
     if ( !task ) {
 	findOrAddSurrogateProcessor( document, processor, 0, level+1 );
 	LQIO::DOM::Processor * dom_processor = const_cast<LQIO::DOM::Processor *>(dynamic_cast<const LQIO::DOM::Processor *>(processor->getDOM()));
-	dom_task = new LQIO::DOM::Task( document, "Surrogate", SCHEDULE_DELAY, dom_entries, dom_processor, 
+	dom_task = new LQIO::DOM::Task( document, "Surrogate", SCHEDULE_DELAY, dom_entries, dom_processor,
 					0, 0, NULL, NULL, NULL );
 	document->addTaskEntity( dom_task );
 	dom_processor->addTask( dom_task );
@@ -752,6 +753,44 @@ Layer::findOrAddSurrogateEntry( LQIO::DOM::Document* document, Task* task, Entry
     return entry;
 }
 /*- BUG_626 */
+
+/*
+ * Translate a "pruned" lqn model into a BCMP model.
+ */
+
+bool
+Layer::createBCMPModel()
+{
+    std::vector<const Entity *> tasks = std::accumulate( entities().begin(), entities().end(), std::vector<const Entity *>(), Select<const Entity>( &Entity::isTask ) );
+    if ( !tasks.empty() ) {
+	std::vector<std::string> names = std::accumulate( tasks.begin(), tasks.end(), std::vector<std::string>(), Collect<std::string,const Entity>( &Entity::name ) );
+	LQIO::solution_error( ERR_BCMP_CONVERSION_FAILURE, std::accumulate( std::next(names.begin()), names.end(), names.front(), &fold ).c_str() );
+	return false;
+    }
+
+    /* 
+     * Create all of the chains for the model.
+     */
+
+    std::for_each( clients().begin(),  clients().end(),  Entity::create_chain( _bcmp_model, entities() ) );
+
+    /*
+     * Create all of the stations except for the terminals (which are
+     * the clients in the lqn schema.
+     */
+
+    std::for_each( entities().begin(), entities().end(), Entity::create_station( _bcmp_model ) );
+    std::for_each( entities().begin(), entities().end(), Entity::accumulate_demand( _bcmp_model ) );
+
+    /*
+     * Populate the customers.  This will create a terminals station.
+     */
+    
+    BCMP::Model::Station terminals(BCMP::Model::Station::Type::CUSTOMER);
+    std::for_each( clients().begin(),  clients().end(),  Entity::create_customers( terminals ) );
+    _bcmp_model.insertStation( ReferenceTask::__BCMP_station_name, terminals );	// QNAP2 limit is 8.
+    return true;
+}
 
 /*
  * Print a layer.
@@ -780,7 +819,7 @@ Layer::print( std::ostream& output ) const
 std::ostream&
 Layer::printSubmodel( std::ostream& output ) const
 {
-    const size_t n_clients = _clients.size();
+    const size_t n_clients = clients().size();
     output << "---------- Submodel: " << number() << " ----------" << std::endl;
 
     if ( n_clients > 0 ) {
@@ -803,7 +842,7 @@ Layer::printSubmodel( std::ostream& output ) const
 std::ostream&
 Layer::printSubmodelSummary( std::ostream& output ) const
 {
-    unsigned int n_clients  = _clients.size();
+    unsigned int n_clients  = clients().size();
     unsigned int n_servers  = entities().size();
     unsigned int n_multi    = count_if( entities().begin(), entities().end(), Predicate<Entity>( &Entity::isMultiServer ) );
     unsigned int n_infinite = count_if( entities().begin(), entities().end(), Predicate<Entity>( &Entity::isInfinite ) );
@@ -859,7 +898,7 @@ std::ostream&
 Layer::drawQueueingNetwork( std::ostream& output ) const
 {
     double max_x = x() + width();
-    for ( std::vector<Entity *>::const_iterator client = _clients.begin(); client != _clients.end(); ++client ) {
+    for ( std::vector<Entity *>::const_iterator client = clients().begin(); client != clients().end(); ++client ) {
 	bool is_in_open_model = false;
 	bool is_in_closed_model = false;
 	if ( (*client)->isInClosedModel( entities() ) ) {
@@ -898,150 +937,22 @@ Layer::drawQueueingNetwork( std::ostream& output ) const
  * Extract...
  */
 
-const Layer& 
-Layer::getQueueingNetwork( LQIO::PMIF_Document& document ) const
+#if JMVA_OUTPUT || QNAP2_OUTPUT
+std::ostream& Layer::printBCMPQueueingNetwork( std::ostream& output ) const
 {
-    for_each( _clients.begin(), _clients.end(), Layer::Create_Chain( document, entities() ) );
-    for_each( entities().begin(), entities().end(), Layer::Create_Station( document, _clients ) );
-    return *this;
-}
+    /* Create them model type then print. */
 
-
-void Layer::Create_Chain::operator()( const Entity * client ) 
-{
-    if ( !client->isInClosedModel( _entities ) ) return;
-#if defined(PMIF_OUTPUT)
-    const ReferenceTask * ref_task = dynamic_cast<const ReferenceTask *>(client);
-    _document.addClosedChain( client->name(),
-			     client->copiesValue(),	/* Derefence external variable */
-			     (ref_task && ref_task->hasThinkTime()) ? to_double( ref_task->thinkTime() ) : 0. );
-    LQIO::PMIF_Document::Station& station = _document.addStation( client->name(), client->scheduling(), client->copiesValue() );
-    dynamic_cast<const Task *>(client)->setClientDemand( station, _entities );
+    switch ( Flags::print[OUTPUT_FORMAT].value.i ) {
+#if JMVA_OUTPUT
+    case FORMAT_JMVA:	output << BCMP::JMVA_Document("",_bcmp_model);	break;
 #endif
-}
-
-
-
-void Layer::Create_Station::operator()( const Entity * server ) 
-{
-    if ( !server->isSelected() ) return;
-#if defined(PMIF_OUTPUT)
-    LQIO::PMIF_Document::Station& station = _document.addStation( server->name(), server->scheduling(), server->copiesValue() );
-    const std::map<const Task *,Entity::Chain>& chains = server->getChains();
-    for_each( chains.begin(), chains.end(), Entity::Chain::SetServerDemand( station ) );
+#if QNAP2_OUTPUT
+    case FORMAT_QNAP2:	output << BCMP::QNAP2_Document("",_bcmp_model);	break;
 #endif
-}
-
-#if defined(JMVA_OUTPUT)
-std::ostream& Layer::printJMVAQueueingNetwork( std::ostream& output ) const
-{
-    Demand::map_t demand;
-    for_each ( entities().begin(), entities().end(), Entity::accumulate_demand( demand ) );
-    for_each ( entities().begin(), entities().end(), Entity::pad_demand( _clients, demand ) );
-    
-    set_indent(0);
-    output << "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>" << std::endl;
-    output << XML::start_element( "model" )
-	   << XML::attribute( "xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance" )
-	   << XML::attribute( "xsi:noNamespaceSchemaLocation", "JMTmodel.xsd" )
-	   << ">" << std::endl;
-	      
-    output << XML::start_element( "parameters" )
-	   << ">" << std::endl;
-
-    /* Clients */
-
-    output << XML::start_element( "classes" )
-	   << XML::attribute( "number", static_cast<unsigned>(_clients.size()) )
-	   << ">" << std::endl;
-    for ( std::vector<Entity *>::const_iterator client = _clients.begin(); client != _clients.end(); ++client ) {
-	if ( (*client)->isInClosedModel( entities() ) ) {
-	    output << XML::simple_element( "closedclass" )
-		   << XML::attribute( "name", (*client)->name() )
-		   << XML::attribute( "population", (*client)->copiesValue() )
-		   << "/>" << std::endl;
-	}
-	if ( (*client)->isInOpenModel( entities() ) ) {
-	}
-    }
-    output << XML::end_element( "classes" ) << std::endl;
-
-    /* Servers */
-
-    output << XML::start_element( "stations" )
-	   << XML::attribute( "number", static_cast<unsigned int>(std::count_if( entities().begin(), entities().end(), Predicate<Entity>( &Entity::isSelected )) + 1 ) )
-	   << ">" << std::endl;
-    printJMVAReferenceStation( output, demand );
-    std::for_each( entities().begin(), entities().end(), ConstExec2<Entity,std::ostream&,const Demand::map_t&>( &Entity::printJMVAStation, output, demand ) );
-    output << XML::end_element( "stations" ) << std::endl;
-
-    /* Reference */
-
-    output << XML::start_element( "ReferenceStation" )
-	   << XML::attribute( "number", static_cast<unsigned>(std::count_if( _clients.begin(), _clients.end(), Predicate1<Entity,const std::vector<Entity *>&>( &Entity::isInClosedModel,entities()) ) ) )
-	   << ">" << std::endl;
-    for ( std::vector<Entity *>::const_iterator client = _clients.begin(); client != _clients.end(); ++client ) {
-	if ( (*client)->isInClosedModel( entities() ) ) {
-	    output << XML::simple_element( "Class" )
-		   << XML::attribute( "name", (*client)->name() )
-		   << XML::attribute( "refStation", "Reference" )
-		   << "/>" << std::endl;
-	}
-	if ( (*client)->isInOpenModel( entities() ) ) {
-	}
-    }
-    output << XML::end_element( "ReferenceStation" ) << std::endl;
-    output << XML::end_element( "parameters" ) << std::endl;
-
-    output << XML::start_element( "algParams" ) << ">" << std::endl
-	   << XML::simple_element( "algType" ) << XML::attribute( "maxSamples", "10000" ) << XML::attribute( "name", "MVA" ) << XML::attribute( "tolerance", "1.0E-7" ) << "/>" << std::endl
-	   << XML::simple_element( "compareAlgs" ) << XML::attribute( "value", "false" ) << "/>" << std::endl
-	   << XML::end_element( "algParams" ) << std::endl;
-
-
-    output << XML::end_element( "model" ) << std::endl;
-
-    return output;
-}
-
-
-
-std::ostream&
-Layer::printJMVAReferenceStation( std::ostream& output, const Demand::map_t& demands ) const
-{
-    output << XML::start_element( "delaystation" )
-	   << XML::attribute( "name", "Reference" )
-	   << ">" << std::endl;
-
-    /* Get total demand over all classes */
-
-    Demand::item_t total;
-    for ( std::vector<Entity *>::const_iterator client = _clients.begin(); client != _clients.end(); ++client ) {
-	const Task * task = dynamic_cast<const Task *>(*client);
-	total[task] = std::accumulate( demands.begin(), demands.end(), Demand(), Demand::select( task ) );
+    default:
+	break;
     }
 
-    /* No service times for the reference station (unless there is think time for the class) */
-    
-    output << XML::start_element( "servicetimes" ) << ">" << std::endl;
-    for ( Demand::item_t::const_iterator demand = total.begin(); demand != total.end(); ++demand ) {
-	const Task * task = demand->first;
-	double service = 0.;
-	if ( task->processor() == nullptr ) {
-	    /* processor is missing, so use service time here.  "class" may have to generalize to entry */
-	    service = task->entries().at(0)->serviceTime() / demand->second.visits();
-	}
-	output << XML::inline_element( "servicetime", "customerClass", task->name(), service ) << std::endl;
-    }
-    output << XML::end_element( "servicetimes" ) << std::endl;
-    
-    /* But there are visits. */
-    output << XML::start_element( "visits" ) << ">" << std::endl;
-    for ( Demand::item_t::const_iterator demand = total.begin(); demand != total.end(); ++demand ) {
-	output << XML::inline_element( "visit", "customerClass", demand->first->name(), demand->second.visits() ) << std::endl;
-    }
-    output << XML::end_element( "visits" ) << std::endl;
-    output << XML::end_element( "delaystation" ) << std::endl;
     return output;
 }
 #endif

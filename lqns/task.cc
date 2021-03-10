@@ -10,7 +10,7 @@
  * November, 1994
  *
  * ------------------------------------------------------------------------
- * $Id: task.cc 14310 2020-12-31 17:16:57Z greg $
+ * $Id: task.cc 14498 2021-02-27 23:08:51Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -196,6 +196,11 @@ Task::configure( const unsigned nSubmodels )
     if ( nEntries() == 0 ) {
 	LQIO::solution_error( LQIO::ERR_NO_ENTRIES_DEFINED_FOR_TASK, name().c_str() );
 	return *this;
+    }
+
+    if ( copies() == 1 && scheduling() != SCHEDULE_DELAY && !Pragma::defaultTaskScheduling() ) {
+	/* Change scheduling type for fixed rate servers (usually from FCFS to DELAY) */
+	getDOM()->setSchedulingType(Pragma::taskScheduling());
     }
 
     _clientChains.resize( nSubmodels );		/* Prepare chain vectors	*/

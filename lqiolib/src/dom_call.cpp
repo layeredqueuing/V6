@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_call.cpp 14218 2020-12-14 20:23:47Z greg $
+ *  $Id: dom_call.cpp 14498 2021-02-27 23:08:51Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -15,10 +15,10 @@ namespace LQIO {
     
 	const char * Call::__typeName = "call";
 
-	Call::Call(const Document * document, const Call::Type type, Phase* source, Entry* destination, ExternalVariable* callMean ) :
+	Call::Call(const Document * document, const Type type, Phase* source, Entry* destination, const ExternalVariable* callMean ) :
 	    DocumentObject(document,""),
 	    _callType(type), _sourceObject(source), _destinationEntry(destination), 
-	    _callMean(callMean), _histogram(0),
+	    _callMean(callMean), _histogram(nullptr),
 	    _hasResultVarianceWaitingTime(false), _hasResultDropProbability(false),
 	    _resultWaitingTime(0.0), _resultWaitingTimeVariance(0.0),
 	    _resultVarianceWaitingTime(0.0), _resultVarianceWaitingTimeVariance(0.0),
@@ -27,10 +27,10 @@ namespace LQIO {
 	}
         
 	/* Special case for forwarding */
-	Call::Call(const Document * document, Entry* source, Entry* destination, ExternalVariable* callMean ) :
+	Call::Call(const Document * document, Entry* source, Entry* destination, const ExternalVariable* callMean ) :
 	    DocumentObject(document,""),
 	    _callType(Call::Type::FORWARD), _sourceObject(source), _destinationEntry(destination), 
-	    _callMean(callMean), _histogram(0),
+	    _callMean(callMean), _histogram(nullptr),
 	    _hasResultVarianceWaitingTime(false),
 	    _resultWaitingTime(0.0), _resultWaitingTimeVariance(0.0),
 	    _resultVarianceWaitingTime(0.0), _resultVarianceWaitingTimeVariance(0.0),
@@ -52,9 +52,6 @@ namespace LQIO {
 
 	Call::~Call()
 	{
-	    /* Delete the variables */
-	    if ( _callMean != nullptr ) delete _callMean;
-	    if ( _histogram != nullptr ) delete _histogram;
 	}
     
 	Call * Call::clone() const
@@ -102,7 +99,7 @@ namespace LQIO {
 	    return _callMean;
 	}
     
-	void Call::setCallMean(ExternalVariable* callMean)
+	void Call::setCallMean(const ExternalVariable* callMean)
 	{
 	    if ( _callMean != nullptr ) delete _callMean;
 	    _callMean = checkDoubleVariable( callMean, 0.0 );
@@ -118,13 +115,13 @@ namespace LQIO {
 	    if ( _callMean == nullptr ) {
 		_callMean = new ConstantExternalVariable( value );
 	    } else {
-		_callMean->set(value);
+		const_cast<ExternalVariable *>(_callMean)->set(value);
 	    }
 	}
     
 	bool Call::hasHistogram() const
 	{
-	    return _histogram != 0 && _histogram->getBins() > 0; 
+	    return _histogram != nullptr && _histogram->getBins() > 0; 
 	}
     
 	void Call::setHistogram(Histogram* histogram)

@@ -2,7 +2,7 @@
  * Model file generator.
  * This is actually part of lqn2ps, but if lqn2ps is invoked as lqngen, then this magically runs.
  *
- * $Id: lqngen.cc 14169 2020-12-04 22:13:08Z greg $
+ * $Id: lqngen.cc 14534 2021-03-09 23:58:14Z greg $
  */
 
 #include "lqngen.h"
@@ -55,7 +55,7 @@ option_type options[] =
     { 'M', 	 "models",	   	    required_argument,	 	LQNGEN_ONLY,  	"Create ARG different models." },
     { 'N', 	 "experiments",     	    required_argument,	 	BOTH, 		"Create ARG experiments." },
     { 'S', 	 "sensitivity",		    required_argument,	    	LQN2LQX_ONLY,   "Create a factorial experiment with services times of increased/decreased by multiplying by ARG ." },
-    { 'O', 	 "format",          	    required_argument,          BOTH, 		"Set output format to ARG (lqn,xml,json)." },
+    { 'O', 	 "format",          	    required_argument,          BOTH, 		"Set output format to ARG (lqn,lqx,xml,json)." },
     { 'H', 	 "help",            	    no_argument,                BOTH, 		"help!" },
     { 'V',	 "version",		    no_argument,		BOTH,		"Print out the version number." },
     { 'c', 	 "customers",	   	    optional_argument,	 	BOTH,	  	"Set the average number of customers per client to ARG." },
@@ -505,7 +505,7 @@ main( int argc, char *argv[] )
 		
 	    case 'O': {
 		char * old_optarg = optarg;
-		static const char * const strings[] = { "lqn", "xml", "json", 0 };
+		static const char * const strings[] = { "lqn", "lqx", "xml", "json", 0 };
 		int arg = getsubopt( &optarg, const_cast<char * const *>(strings), &endptr );
 		switch ( arg ) {
 		case 0:
@@ -513,8 +513,13 @@ main( int argc, char *argv[] )
 		    break;
 		case 1:
 		    Flags::output_format = LQIO::DOM::Document::XML_INPUT;
+		    Flags::spex_output = true;
+		    Flags::lqx_output  = true;
 		    break;
 		case 2:
+		    Flags::output_format = LQIO::DOM::Document::XML_INPUT;
+		    break;
+		case 3:
 		    Flags::output_format = LQIO::DOM::Document::JSON_INPUT;
 		    break;
 		default:
@@ -986,7 +991,7 @@ multi( const std::string& dir )
 	    std::cerr << LQIO::io_vars.lq_toolname << ": " << strerror( errno ) << std::endl;
 	    exit ( 1 );
 	} else if ( mkdir( dir.c_str()
-#if !defined(WINNT) && !defined(MSDOS)
+#if !defined(__WINNT__) && !defined(MSDOS)
 			   ,S_IRWXU|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH
 #endif
 			) < 0 ) {

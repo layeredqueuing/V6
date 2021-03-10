@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_phase.cpp 14215 2020-12-14 19:09:04Z greg $
+ *  $Id: dom_phase.cpp 14498 2021-02-27 23:08:51Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -20,7 +20,7 @@ namespace LQIO {
 	const char * Phase::__typeName = "phase";
 
 	/* Dummy Phase */
-	Phase::Phase()
+	Phase::Phase() 
 	    : DocumentObject(), _serviceTime(nullptr),
 	      _phaseTypeFlag(Type::STOCHASTIC), _entry(nullptr),
 	      _thinkTime(nullptr), _coeffOfVariationSq(nullptr), _histogram(nullptr),
@@ -33,7 +33,7 @@ namespace LQIO {
 	}
 
 	/* Normal constructor */
-	Phase::Phase(const Document * document,Entry* parentEntry)
+	Phase::Phase(const Document * document,Entry* parentEntry) 
 	    : DocumentObject(document,""), _calls(), _serviceTime(nullptr),
 	      _phaseTypeFlag(Type::STOCHASTIC), _entry(parentEntry),
 	      _thinkTime(nullptr), _coeffOfVariationSq(nullptr), _histogram(nullptr),
@@ -48,10 +48,11 @@ namespace LQIO {
 	Phase::Phase( const LQIO::DOM::Phase& src )
 	    : DocumentObject(src.getDocument(),src.getName()),
 	      _calls(),		/* WARNING! Not copied */
-	      _serviceTime(src._serviceTime->clone()),
+	      _serviceTime(src._serviceTime),
 	      _phaseTypeFlag(src.getPhaseTypeFlag()), _entry(const_cast<LQIO::DOM::Entry*>(src.getSourceEntry())),
-	      _thinkTime(src._thinkTime->clone()),
-	      _coeffOfVariationSq(src._coeffOfVariationSq->clone()), _histogram(NULL),
+	      _thinkTime(src._thinkTime),
+	      _coeffOfVariationSq(src._coeffOfVariationSq->clone()),
+	      _histogram(nullptr),	/* not copied */
 	      _resultServiceTime(0.0), _resultServiceTimeVariance(0.0),
 	      _resultVarianceServiceTime(0.0), _resultVarianceServiceTimeVariance(0.0),
 	      _resultUtilization(0.0), _resultUtilizationVariance(0.0),
@@ -66,9 +67,6 @@ namespace LQIO {
 	    for ( std::vector<Call*>::iterator call = _calls.begin(); call != _calls.end(); ++call) {
 		delete *call;
 	    }
-	    if ( _serviceTime != nullptr ) delete _serviceTime;
-	    if ( _thinkTime != nullptr ) delete _thinkTime;
-	    if ( _coeffOfVariationSq != nullptr ) delete _coeffOfVariationSq;
 	    if ( _histogram != nullptr ) delete _histogram;
 	}
 
@@ -90,13 +88,9 @@ namespace LQIO {
 	    return _serviceTime;
 	}
 
-	void Phase::setServiceTime(ExternalVariable* serviceTime)
+	void Phase::setServiceTime(const ExternalVariable* serviceTime)
 	{
 	    /* Stores the given ServiceTime of the Phase */
-	    if (_serviceTime != nullptr) {
-//        printf("WARNING: Overwriting existing ExternalVariable in Phase.\n");
-	    }
-
 	    _serviceTime = checkDoubleVariable( serviceTime, 0.0 );
 	}
 
@@ -106,7 +100,7 @@ namespace LQIO {
 	    if (_serviceTime == nullptr) {
 		_serviceTime = new ConstantExternalVariable(value);
 	    } else {
-		_serviceTime->set(value);
+		const_cast<ExternalVariable *>(_serviceTime)->set(value);	// Should just overwrite.
 	    }
 	}
 
@@ -150,7 +144,7 @@ namespace LQIO {
 	    return _thinkTime;
 	}
 
-	void Phase::setThinkTime(ExternalVariable* thinkTime)
+	void Phase::setThinkTime(const ExternalVariable* thinkTime)
 	{
 	    /* Store the new think time */
 	    _thinkTime = checkDoubleVariable( thinkTime, 0.0 );
@@ -161,7 +155,7 @@ namespace LQIO {
 	    if ( _thinkTime == nullptr ) {
 		_thinkTime = new ConstantExternalVariable(value);
 	    } else {
-		_thinkTime->set(value);
+		const_cast<ExternalVariable *>(_thinkTime)->set(value);
 	    }
 	}
 
@@ -170,7 +164,7 @@ namespace LQIO {
 	    return ExternalVariable::isPresent( getThinkTime(), 0.0 );
 	}
 
-	void Phase::setMaxServiceTime(ExternalVariable* time)
+	void Phase::setMaxServiceTime(const ExternalVariable* time)
 	{
 	    /* Weird one as can't be changed dynamically */
 	    double value = 0.0;
@@ -216,12 +210,8 @@ namespace LQIO {
 	    return _coeffOfVariationSq;
 	}
 
-	void Phase::setCoeffOfVariationSquared(ExternalVariable* cvsq)
+	void Phase::setCoeffOfVariationSquared(const ExternalVariable* cvsq)
 	{
-	    if (_coeffOfVariationSq != nullptr) {
-//        printf("WARNING: Overwriting existing ExternalVariable in Phase.\n");
-	    }
-
 	    /* Store the new coefficient of variation */
 	    _coeffOfVariationSq = cvsq;
 	}
@@ -232,7 +222,7 @@ namespace LQIO {
 	    if (_coeffOfVariationSq == nullptr) {
 		_coeffOfVariationSq = new ConstantExternalVariable(value);
 	    } else {
-		_coeffOfVariationSq->set(value);
+		const_cast<ExternalVariable *>(_coeffOfVariationSq)->set(value);
 	    }
 	}
 

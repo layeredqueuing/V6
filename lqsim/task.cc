@@ -10,7 +10,7 @@
 /*
  * Input output processing.
  *
- * $Id: task.cc 14153 2020-11-30 18:03:53Z greg $
+ * $Id: task.cc 14498 2021-02-27 23:08:51Z greg $
  */
 
 #include <iostream>
@@ -921,7 +921,8 @@ Semaphore_Task::create_instance()
 {
     if ( n_entries() != N_SEMAPHORE_ENTRIES ) {
 	LQIO::solution_error( LQIO::ERR_ENTRY_COUNT_FOR_TASK, name(), n_entries(), N_SEMAPHORE_ENTRIES );
-    } else if ( _entry[0]->is_signal() ) {
+    }
+    if ( _entry[0]->is_signal() ) {
 	if ( !_entry[1]->test_and_set_semaphore( LQIO::DOM::Entry::Semaphore::WAIT ) ) {
 	    LQIO::solution_error( LQIO::ERR_MIXED_SEMAPHORE_ENTRY_TYPES, name() );
 	}

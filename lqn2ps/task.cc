@@ -10,44 +10,49 @@
  * January 2001
  *
  * ------------------------------------------------------------------------
- * $Id: task.cc 14241 2020-12-22 21:19:14Z greg $
+ * $Id: task.cc 14498 2021-02-27 23:08:51Z greg $
  * ------------------------------------------------------------------------
  */
 
 #include "lqn2ps.h"
-#include <string>
-#include <cstdlib>
-#include <cassert>
-#include <cstring>
 #include <algorithm>
+#include <cassert>
 #include <cmath>
+#include <cstdlib>
+#include <string>
+#include <vector>
 #if HAVE_FLOAT_H
 #include <float.h>
 #endif
 #include <limits.h>
+#include <lqio/dom_activity.h>
+#include <lqio/dom_actlist.h>
+#include <lqio/dom_document.h>
+#include <lqio/dom_entry.h>
+#include <lqio/dom_extvar.h>
+#include <lqio/dom_group.h>
+#include <lqio/dom_processor.h>
+#include <lqio/dom_task.h>
 #include <lqio/error.h>
 #include <lqio/input.h>
 #include <lqio/labels.h>
-#include <lqio/dom_task.h>
-#include <lqio/dom_entry.h>
-#include <lqio/dom_activity.h>
-#include <lqio/dom_actlist.h>
-#include <lqio/dom_processor.h>
-#include <lqio/dom_group.h>
-#include <lqio/dom_document.h>
 #include <lqio/srvn_output.h>
-#include "errmsg.h"
-#include "task.h"
-#include "entry.h"
 #include "activity.h"
 #include "actlist.h"
-#include "share.h"
-#include "processor.h"
 #include "call.h"
+#include "entry.h"
+#include "errmsg.h"
 #include "label.h"
 #include "model.h"
+#include "pragma.h"
+#include "processor.h"
+#include "share.h"
+#include "task.h"
 
 std::set<Task *,LT<Task> > Task::__tasks;
+std::map<std::string,unsigned> Task::__key_table;		/* For squishName 	*/
+std::map<std::string,std::string> Task::__symbol_table;		/* For rename		*/
+const std::string ReferenceTask::__BCMP_station_name("terminal");	/* No more than 8 characters -- qnap2 limit. */
 
 bool Task::thinkTimePresent             = false;
 bool Task::holdingTimePresent           = false;
@@ -86,7 +91,9 @@ Task::Task( const LQIO::DOM::Task* dom, const Processor * aProc, const Share * a
       _processors(),
       _share(aShare),
       _maxPhase(0),
-      _entryWidthInPts(0)
+      _entryWidthInPts(0),
+      _key_table(),			/* Squish name - activities 	*/
+      _symbol_table()			/* Squish name - activities 	*/
 {
     for_each( _entries.begin(), _entries.end(), Exec1<Entry,const Task *>( &Entry::owner, this ) );
 
@@ -219,11 +226,11 @@ Task::rename()
 
 
 Task&
-Task::squishName()
+Task::squish( std::map<std::string,unsigned>& key_table, std::map<std::string,std::string>& symbol_table )
 {
     const std::string old_name = name();
-    Element::squishName();
-    for_each( activities().begin(), activities().end(), Exec<Element>( &Element::squishName ) );
+    Element::squish( key_table, symbol_table );
+    for_each( activities().begin(), activities().end(), Exec2<Element,std::map<std::string,unsigned>&,std::map<std::string,std::string>&>( &Element::squish, _key_table, _symbol_table ) );
 
     renameFanInOut( old_name, name() );
     return *this;
@@ -241,20 +248,20 @@ Task::renameFanInOut( const std::string& old_name, const std::string& new_name )
     const std::map<std::string,LQIO::DOM::Task*>& tasks = document->getTasks();	// Get all tasks for remap
     for ( std::map<std::string,LQIO::DOM::Task*>::const_iterator t = tasks.begin(); t != tasks.end(); ++t ) {
 	const LQIO::DOM::Task * task = t->second;
-	renameFanInOut( const_cast<std::map<const std::string,LQIO::DOM::ExternalVariable *>&>(task->getFanIns()), old_name, new_name );
-	renameFanInOut( const_cast<std::map<const std::string,LQIO::DOM::ExternalVariable *>&>(task->getFanOuts()), old_name, new_name );
+	renameFanInOut( const_cast<std::map<const std::string,const LQIO::DOM::ExternalVariable *>&>(task->getFanIns()), old_name, new_name );
+	renameFanInOut( const_cast<std::map<const std::string,const LQIO::DOM::ExternalVariable *>&>(task->getFanOuts()), old_name, new_name );
     }
 }
 
 
 void
-Task::renameFanInOut( std::map<const std::string,LQIO::DOM::ExternalVariable *>& fan_ins_or_outs, const std::string& old_name, const std::string& new_name )
+Task::renameFanInOut( std::map<const std::string,const LQIO::DOM::ExternalVariable *>& fan_ins_or_outs, const std::string& old_name, const std::string& new_name )
 {
-    std::map<const std::string,LQIO::DOM::ExternalVariable *>::iterator index = fan_ins_or_outs.find( old_name );
+    std::map<const std::string,const LQIO::DOM::ExternalVariable *>::iterator index = fan_ins_or_outs.find( old_name );
     if ( index != fan_ins_or_outs.end() ) {
-	LQIO::DOM::ExternalVariable * value = index->second;
+	const LQIO::DOM::ExternalVariable * value = index->second;
 	fan_ins_or_outs.erase( index );						// Remove old item.
-	fan_ins_or_outs.insert( std::pair<const std::string,LQIO::DOM::ExternalVariable *>(new_name, value) );
+	fan_ins_or_outs.insert( std::pair<const std::string,const LQIO::DOM::ExternalVariable *>(new_name, value) );
     }
 }
 
@@ -1161,6 +1168,20 @@ Task::repliesTo( Entry * anEntry ) const
 }
 
 
+bool
+Task::canConvertToReferenceTask() const
+{
+    return Flags::convert_to_reference_task
+      && (submodel_output() || Flags::print[INCLUDE_ONLY].value.r )
+      && !isSelected()
+      && !hasOpenArrivals()
+      && !isInfinite()
+      && nEntries() == 1
+      && !_processors.empty();
+}
+
+
+
 #if defined(BUG_270)
 bool
 Task::canPrune() const
@@ -1171,26 +1192,47 @@ Task::canPrune() const
     /* 
      * The harder path.  I want to make sure that I can't queue below
      * me.  Find all callers to my servers... if it's just me, then we
-     * are good to go.
+     * are good to go.  Note that both the task and it's processor can
+     * be multiservers, but the both must have equivalent copies.
+     * Processor::nClients() returns the sum of the copies of all the
+     * tasks that call it.
      */
 
-    if ( copiesValue() != 1 || processor()->nClients() != 1 ) return false;
+    if ( processor()->nClients() != processor()->copiesValue() ) return false;
 
-    std::set<const Task *> callers = std::accumulate( entries().begin(), entries().end(), std::set<const Task *>(), &Entry::collect_callers );
-    return callers.size() == 1;
-}
+    /* 
+     * This part is trickier, and I may just punt.  Locate everyone
+     * who I call, and if they can only be called by me, then we are
+     * golden.  I should have aggregated the entries to the task at
+     * this point.  canPrune could be recursive?
+     */
 
-
-
-void
-Task::accumulateDemand( std::map<const Task *,Demand>& ) const
-{
+    assert( Flags::print[AGGREGATION].value.i = AGGREGATE_ENTRIES );
+//    std::set<const Task *> callers = std::accumulate( entries().begin(), entries().end(), std::set<const Task *>(), &Entry::collect_callers );
+    return calls().size() == 1;
 }
 #endif
 
 
-/* static */ Demand
-Task::accumulate_demand( const Demand& augend, const Task * task )
+
+/*
+ * This has to be done by class.
+ */
+
+void
+Task::accumulateDemand( BCMP::Model::Station& station ) const
+{
+    typedef std::pair<const std::string,BCMP::Model::Station::Class> demand_item;
+    typedef std::map<const std::string,BCMP::Model::Station::Class> demand_map;
+
+    demand_map& demands = station.classes();
+    const std::pair<demand_map::iterator,bool> result = demands.insert( demand_item( name(), BCMP::Model::Station::Class() ) );	/* null entry */
+    result.first->second.accumulate( Task::accumulate_demand( BCMP::Model::Station::Class(), this ) );
+}
+
+
+/* static */ BCMP::Model::Station::Class
+Task::accumulate_demand( const BCMP::Model::Station::Class& augend, const Task * task )
 {
     return std::accumulate( task->entries().begin(), task->entries().end(), augend, &Entry::accumulate_demand ); 
 }
@@ -1698,7 +1740,7 @@ Graphic::colour_type Task::colour() const
  * Label the node.
  */
 
-Entity&
+Task&
 Task::label()
 {
     if ( queueing_output() ) {
@@ -1776,6 +1818,29 @@ Task::label()
 
 
 /*
+ * Clients in the LQN model represent a class, but clients in the BCMP model are represented by 
+ * a single multi-class station (termainals). 
+ */
+
+Task&
+Task::labelBCMPModel( const BCMP::Model::Station::Class::map_t& demand, const std::string& class_name )
+{
+    *myLabel << name();
+    myLabel->newLine();
+    if ( isMultiServer() ) {		/* copies() will be NULL if not */
+	*myLabel << "[" << copies() << "]";
+    } else {
+	*myLabel << "[1]";
+    }
+    const BCMP::Model::Station::Class& reference = demand.at(class_name);
+    myLabel->newLine();
+    *myLabel << "(" << *reference.visits() << "," << *reference.service_time() << ")";
+    return *this;
+}
+
+
+
+/*
  * Stick labels in for queueing network.
  */
 
@@ -1836,21 +1901,20 @@ Task::translateY( const double dy )
     for_each( calls().begin(), calls().end(), Exec1<GenericCall,double>( &GenericCall::translateY, dy ) );
     return *this;
 }
+
+/* -------------------------------------------------------------------- */
+/* Converion to BCMP model.						*/
+/* -------------------------------------------------------------------- */
 
 #if defined(BUG_270)
 Task&
-Task::linkToClients()
+Task::relink()
 {
+    if ( !canPrune() ) return *this;
     for_each( entries().begin(), entries().end(), Exec1<Entry,const std::vector<EntityCall *>&>( &Entry::linkToClients, calls() ) );
-    return *this;
-}
-
-
-Task&
-Task::unlinkFromServers()
-{
     for_each( entries().begin(), entries().end(), Exec<Entry>( &Entry::unlinkFromServers ) );
     unlinkFromProcessor();
+    Model::__zombies.push_back( this );
     return *this;
 }
 
@@ -1868,10 +1932,94 @@ Task::unlinkFromProcessor()
 	}
     }
     _processors.erase(processor);
+    Model::__zombies.push_back( processor );
     return *this;
 }
-#endif
 
+
+/*
+ * Find all calls from this task going to a common server, then merge
+ */
+
+Task&
+Task::mergeCalls()
+{
+#if BUG_270	
+    std::cout << "Task::mergeCalls() for " << name() << std::endl;
+#endif
+    /* At this point, they are all processor calls */
+    std::multimap<const Entity *,EntityCall *> merge;
+    for ( std::vector<EntityCall *>::const_iterator call = _calls.begin(); call != _calls.end(); ++call ) {
+	merge.insert( std::pair<const Entity *,EntityCall *>( (*call)->dstEntity(), *call ) );
+    }
+
+    std::vector<EntityCall *> new_calls;
+    merge_iter upper;
+    for ( merge_iter lower = merge.begin(); lower != merge.end(); lower = upper ) {
+	const Entity * server = lower->first;
+	upper = merge.upper_bound( server ); 
+	const LQIO::DOM::ExternalVariable * visits       = std::accumulate( lower, upper, static_cast<const LQIO::DOM::ExternalVariable *>(nullptr), &Task::sum_rendezvous );
+	/* Accumlating visits appears to be correct, but service time is NOT... I need demand, then normalize to visits */
+	const LQIO::DOM::ExternalVariable * demand 	 = std::accumulate( lower, upper, static_cast<const LQIO::DOM::ExternalVariable *>(nullptr), &Task::sum_demand );
+	const LQIO::DOM::ExternalVariable * service_time = Entity::divideExternalVariables( demand, visits );
+#if BUG_270	
+	size_t count = merge.count( server );
+	std::cout << "  To " << server->name() << ", count=" << count
+		  << ", visits=";
+	if ( visits != nullptr ) {
+	    std::cout << *visits;
+	}
+	std::cout << ", service time=";
+	if ( service_time != nullptr ) {
+	    std::cout << *service_time << std::endl;
+	} else {
+	    std::cout << "0.000" << std::endl;		// I need to get rid of this.
+	}
+#endif
+	if ( visits == 0 ) continue;
+	/* create a new call with the number of vists and the service time / number of visits */
+	if ( server->isProcessor() ) {
+	    ProcessorCall * call;
+	    call = new ProcessorCall( this, dynamic_cast<const Processor *>(server) );
+	    call->rendezvous( visits );
+//	    call->setServiceTime( Enttiy::divideExternalVariables( service_time, visits ) );
+	    call->setServiceTime( service_time );
+	    new_calls.push_back( call );
+	} else {
+	    abort();
+	}
+    }
+
+#if 0
+    _calls = new_calls;    /* copy over the new call list */
+#endif
+    return *this;
+}
+
+
+const LQIO::DOM::ExternalVariable *
+Task::sum_rendezvous( const LQIO::DOM::ExternalVariable * augend, const merge_pair& addend ) 
+{
+    return Entity::addExternalVariables( augend, addend.second->sumOfRendezvous() );
+}
+
+
+/* +BUG_270 */
+const LQIO::DOM::ExternalVariable *
+Task::sum_demand( const LQIO::DOM::ExternalVariable * augend, const merge_pair& addend )
+{
+    const ProcessorCall * call = dynamic_cast<const ProcessorCall *>(addend.second);
+    if ( call == nullptr || call->srcEntry() == nullptr ) return augend;
+    // !!! Fix this!!
+    const LQIO::DOM::ExternalVariable * demand = Entity::multiplyExternalVariables( call->sumOfRendezvous(), call->srcEntry()->serviceTime() );
+    return Entity::addExternalVariables( augend, demand );
+}
+/* -BUG_270 */
+#endif
+
+/* -------------------------------------------------------------------- */
+/* Replication								*/
+/* -------------------------------------------------------------------- */
 
 #if defined(REP2FLAT)
 Task&
@@ -1880,11 +2028,11 @@ Task::removeReplication()
     Entity::removeReplication();
 
     LQIO::DOM::Task * dom = const_cast<LQIO::DOM::Task *>(dynamic_cast<const LQIO::DOM::Task *>(getDOM()));
-    for ( std::map<const std::string, LQIO::DOM::ExternalVariable *>::const_iterator fi = dom->getFanIns().begin(); fi != dom->getFanIns().end(); ++fi ) {
-	dom->setFanIn( fi->first, new LQIO::DOM::ConstantExternalVariable( 1 ) );
+    for ( std::map<const std::string, const LQIO::DOM::ExternalVariable *>::const_iterator fi = dom->getFanIns().begin(); fi != dom->getFanIns().end(); ++fi ) {
+	dom->setFanIn( fi->first, &Element::ONE );
     }
-    for ( std::map<const std::string, LQIO::DOM::ExternalVariable *>::const_iterator fo = dom->getFanOuts().begin(); fo != dom->getFanOuts().end(); ++fo ) {
-	dom->setFanOut( fo->first, new LQIO::DOM::ConstantExternalVariable( 1 ) );
+    for ( std::map<const std::string, const LQIO::DOM::ExternalVariable *>::const_iterator fo = dom->getFanOuts().begin(); fo != dom->getFanOuts().end(); ++fo ) {
+	dom->setFanOut( fo->first, &Element::ONE );
     }
 
     return *this;
@@ -2025,7 +2173,7 @@ Task::expandActivities( const Task& src, int replica )
 		/* A little tricky here.  We need to copy over whatever parameter there was. */
 
 		const LQIO::DOM::ActivityList * dstPrecedenceDOM = dstPrecedence->getDOM();
-		LQIO::DOM::ExternalVariable * parameter = dstPrecedenceDOM->getParameter( dynamic_cast<const LQIO::DOM::Activity *>((*activity)->getDOM()) );
+		const LQIO::DOM::ExternalVariable * parameter = dstPrecedenceDOM->getParameter( dynamic_cast<const LQIO::DOM::Activity *>((*activity)->getDOM()) );
 		post_list_dom->add( post_activity_dom, parameter );
 	    }
 
@@ -2267,20 +2415,21 @@ Task::drawClient( std::ostream& output, const bool is_in_open_model, const bool 
     myNode->comment( output, aComment );
     myNode->penColour( colour() == Graphic::GREY_10 ? Graphic::BLACK : colour() ).fillColour( colour() );
 
-    myLabel->moveTo( bottomCenter() ).justification( LEFT_JUSTIFY );
+    myLabel->moveTo( bottomCenter() )
+	.justification( LEFT_JUSTIFY );
     if ( is_in_open_model && is_in_closed_model ) {
 	Point aPoint = bottomCenter();
 	aPoint.moveBy( radius() * -3.0, 0 );
 	myNode->multi_server( output, aPoint, radius() );
-	aPoint = bottomCenter().moveBy( radius() * 1.5, 0 );
+	aPoint = bottomCenter().moveBy( radius() * 1.0, 0.0 );
 	myNode->open_source( output, aPoint, radius() );
-	myLabel->moveBy( radius() * 1, radius() * 3 * myNode->direction() );
+	myLabel->moveBy( radius() * 0.5, radius() * 4.0 * myNode->direction() );
     } else if ( is_in_open_model ) {
 	myNode->open_source( output, bottomCenter(), radius() );
-	myLabel->moveBy( radius() * 1, radius() * myNode->direction() );
+	myLabel->moveBy( radius() * 0.5, radius() * myNode->direction() );
     } else {
 	myNode->multi_server( output, bottomCenter(), radius() );
-	myLabel->moveBy( radius() * 1, radius() * 3 * myNode->direction() );
+	myLabel->moveBy( radius() * 0.5, radius() * 4.0 * myNode->direction() );
     }
     output << *myLabel;
     return output;
@@ -2329,7 +2478,7 @@ ReferenceTask::hasThinkTime() const
     return dynamic_cast<const LQIO::DOM::Task *>(getDOM())->hasThinkTime();
 }
 
-LQIO::DOM::ExternalVariable&
+const LQIO::DOM::ExternalVariable&
 ReferenceTask::thinkTime() const
 {
     return *dynamic_cast<const LQIO::DOM::Task *>(getDOM())->getThinkTime();
@@ -2388,16 +2537,35 @@ ReferenceTask::findChildren( CallStack& callStack, const unsigned directPath )
 }
 
 
-bool
-Task::canConvertToReferenceTask() const
+#if defined(BUG_270)
+Task&
+ReferenceTask::relink()
 {
-    return Flags::convert_to_reference_task
-      && (submodel_output() || Flags::print[INCLUDE_ONLY].value.r )
-      && !isSelected()
-      && !hasOpenArrivals()
-      && !isInfinite()
-      && nEntries() == 1
-      && !_processors.empty();
+    if ( processor()->isInteresting() ) return *this;		/* don't do these! */
+    unlinkFromProcessor();
+    Model::__zombies.push_back( const_cast<Processor *>(processor()) );
+    return *this;
+}
+#endif
+
+
+/*
+ * This has to be done by class.
+ */
+
+void
+ReferenceTask::accumulateDemand( BCMP::Model::Station& station ) const
+{
+    typedef std::pair<const std::string,BCMP::Model::Station::Class> demand_item;
+    typedef std::map<const std::string,BCMP::Model::Station::Class> demand_map;
+    BCMP::Model::Station::Class demand;
+    if ( hasThinkTime() ) {
+	demand.setServiceTime( thinkTime().clone() );
+    }
+
+    demand_map& demands = const_cast<demand_map&>(station.classes());
+    const std::pair<demand_map::iterator,bool> result = demands.insert( demand_item( name(), demand ) );
+    result.first->second.accumulate( Task::accumulate_demand( BCMP::Model::Station::Class(), this ) );
 }
 
 /* --------------------------- Server Tasks --------------------------- */
@@ -2405,6 +2573,10 @@ Task::canConvertToReferenceTask() const
 ServerTask::ServerTask( const LQIO::DOM::Task* dom, const Processor * aProc, const Share * aShare, const std::vector<Entry *>& entries )
     : Task( dom, aProc, aShare, entries )
 {
+    if ( !isMultiServer() && scheduling() != SCHEDULE_DELAY && !Pragma::defaultTaskScheduling() ) {
+	/* Change scheduling type for fixed rate servers (usually from FCFS to DELAY) */
+	const_cast<LQIO::DOM::Task *>(dom)->setSchedulingType(Pragma::taskScheduling());
+    }
 }
 
 

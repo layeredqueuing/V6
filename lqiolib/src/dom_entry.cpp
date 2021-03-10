@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_entry.cpp 14215 2020-12-14 19:09:04Z greg $
+ *  $Id: dom_entry.cpp 14498 2021-02-27 23:08:51Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -48,7 +48,7 @@ namespace LQIO {
 	    : DocumentObject( src ),
 	      _type(src._type), _phases(),
 	      _maxPhase(src._maxPhase), _task(nullptr), _histograms(),
-	      _openArrivalRate(src._openArrivalRate->clone()), _entryPriority(src._entryPriority->clone()),
+	      _openArrivalRate(src._openArrivalRate), _entryPriority(src._entryPriority),
 	      _semaphoreType(src._semaphoreType), _rwlockType(src._rwlockType), _forwarding(src._forwarding),
 	      _startActivity(nullptr),
 	      _resultWaitingTime(0.0), _resultWaitingTimeVariance(0.0),
@@ -77,8 +77,6 @@ namespace LQIO {
 	    for ( std::map<unsigned, Histogram*>::iterator histogram = _histograms.begin(); histogram != _histograms.end(); ++histogram) {
 		delete histogram->second;
 	    }
-	    if ( _openArrivalRate != nullptr ) delete _openArrivalRate;
-	    if ( _entryPriority != nullptr ) delete _entryPriority;
 	}
 
 	Entry& Entry::clearPhaseResults()
@@ -190,7 +188,7 @@ namespace LQIO {
 	    }
 	}
     
-	void Entry::setOpenArrivalRate(ExternalVariable* value)
+	void Entry::setOpenArrivalRate(const ExternalVariable* value)
 	{
 	    /* Store the given open arrival rate */
 	    _openArrivalRate = checkDoubleVariable( value, 0.0 );
@@ -206,7 +204,7 @@ namespace LQIO {
 	    return ExternalVariable::isPresent( getOpenArrivalRate(), 0.0 );
 	}
     
-	void Entry::setEntryPriority(ExternalVariable* value)
+	void Entry::setEntryPriority(const ExternalVariable* value)
 	{
 	    /* Store the entry priority */
 	    _entryPriority = checkIntegerVariable( value, 0 );

@@ -8,7 +8,7 @@
  * January 2003
  *
  * ------------------------------------------------------------------------
- * $Id: entry.cc 14241 2020-12-22 21:19:14Z greg $
+ * $Id: entry.cc 14498 2021-02-27 23:08:51Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -46,6 +46,8 @@
 #include "arc.h"
 
 std::set<Entry *,LT<Entry> > Entry::__entries;
+std::map<std::string,unsigned> Entry::__key_table;		/* For squishName 	*/
+std::map<std::string,std::string> Entry::__symbol_table;	/* For rename		*/
 
 unsigned Entry::max_phases		= 0;
 
@@ -353,7 +355,7 @@ Entry::rendezvous( const Entry * anEntry ) const
 {
     const Call * aCall = findCall( anEntry, &GenericCall::hasRendezvous  );
     if ( aCall ) {
-	return aCall->sumOfRendezvous();
+	return to_double( *aCall->sumOfRendezvous() );
     } else {
 	return 0.0;
     }
@@ -660,10 +662,10 @@ Entry::serviceTime( const unsigned p ) const
     return getPhase(p).serviceTime();
 }
 
-double
+const LQIO::DOM::ExternalVariable *
 Entry::serviceTime() const
 {
-    return for_each( _phases.begin(), _phases.end(), Sum<Phase,LQIO::DOM::ExternalVariable>( &Phase::serviceTime ) ).sum();
+    return std::accumulate( _phases.begin(), _phases.end(), static_cast<const LQIO::DOM::ExternalVariable *>(nullptr), &Phase::accumulate_service );
 }
 
 
@@ -1300,16 +1302,8 @@ Entry::aggregatePhases()
 
     /* Merge up the times. */
     
-    double service_time = 0.;
-    double execution_time = 0.;
-    for ( std::map<unsigned,Phase>::iterator p = _phases.begin(); p != _phases.end(); ++p ) {
-	const LQIO::DOM::Phase * phase = p->second.getDOM();
-	if ( !phase || !phase->hasServiceTime() ) continue;
-	service_time += to_double(*phase->getServiceTime());
-	execution_time += executionTime(p->first);
-    }
-    phase_1->setServiceTimeValue(service_time);
-    phase_1->setResultServiceTime(execution_time);
+    phase_1->setServiceTime(const_cast<LQIO::DOM::ExternalVariable *>(serviceTime()));		/*Sums over all phases */
+    phase_1->setResultServiceTime(std::accumulate( _phases.begin(), _phases.end(), 0., &Phase::accumulate_execution ));
 
     /* Merge all calls to phase 1 */
     
@@ -1317,22 +1311,20 @@ Entry::aggregatePhases()
 
     /* Delete old stuff */
 
-    for ( std::map<unsigned,Phase>::iterator p = _phases.begin(); p != _phases.end(); ) {
-	if ( p != _phases.begin() ) {
-	    Phase& phase = p->second;
-	    if ( phase.getDOM() ) const_cast<LQIO::DOM::Entry *>(entry)->erasePhase(p->first);
-	    _phases.erase(p++);		/* Use post-increment so that iterator is not invalidated */
-	} else {
-	    ++p;
-	}
+    assert( _phases.size() >= 1 );
+    for ( std::map<unsigned,Phase>::iterator p = std::next(_phases.begin()); p != _phases.end(); ++p ) {
+	Phase& phase = p->second;
+	if ( phase.getDOM() ) const_cast<LQIO::DOM::Entry *>(entry)->erasePhase(p->first);
+	phase.setDOM( nullptr );
     }
+    _phases.erase(std::next(_phases.begin()), _phases.end());
 
     return *this;
 }
 
 
-/* static */ Demand
-Entry::accumulate_demand( const Demand& augend, const Entry * entry )
+/* static */ BCMP::Model::Station::Class
+Entry::accumulate_demand( const BCMP::Model::Station::Class& augend, const Entry * entry )
 {
     return std::accumulate( entry->_phases.begin(), entry->_phases.end(), augend, &Phase::accumulate_demand );
 }
@@ -1375,7 +1367,7 @@ Entry::check() const
     
     /* concordance between c, phase_flag */
 
-    if ( startActivity() ) {
+    if ( isActivityEntry() ) {
 
 	std::deque<const Activity *> activityStack;
 	unsigned next_p = 1;
@@ -1391,7 +1383,7 @@ Entry::check() const
 	    max_phases = std::max( maxPhase(), max_phases );		/* Set global value.	*/
 	}
 
-    } else {
+    } else if ( isStandardEntry() ) {
 	bool hasServiceTime = false;
 	for ( std::map<unsigned,Phase>::const_iterator p = _phases.begin(); p != _phases.end(); ++p ) {
 	    const Phase& phase = p->second;
@@ -1411,6 +1403,9 @@ Entry::check() const
 
 	Model::thinkTimePresent     = Model::thinkTimePresent     || hasThinkTime();
 	Model::boundsPresent        = Model::boundsPresent        || throughputBound() > 0.0;
+
+    } else {
+	LQIO::solution_error( LQIO::ERR_ENTRY_NOT_SPECIFIED, name().c_str() );
     }
 
     if ( (isSignalEntry() || isWaitEntry()) && owner()->scheduling() != SCHEDULE_SEMAPHORE ) {
@@ -1991,6 +1986,7 @@ Entry::labelQueueingNetworkWaiting( Label& aLabel )
 Entry&
 Entry::labelQueueingNetworkService( Label& aLabel ) 
 {
+    aLabel.newLine() << name() << "[" << print_service_time(*this) << "]";
     return *this;
 }
 
@@ -2041,7 +2037,7 @@ Entry::linkToClients( const std::vector<EntityCall *>& proc )
     if ( isActivityEntry() ) throw not_implemented( "Entry::linkToClients", __FILE__, __LINE__ );
 
 #if defined(BUG_270)
-    std::cerr << "linkToClients() for " << name() << std::endl;
+    std::cerr << "Entry::linkToClients() for " << name() << std::endl;
 #endif
     for ( std::vector<GenericCall *>::const_iterator x = callers().begin(); x != callers().end(); ++x ) {
 	const EntryCall * client_call = dynamic_cast<const EntryCall *>(*x);
@@ -2052,15 +2048,9 @@ Entry::linkToClients( const std::vector<EntityCall *>& proc )
 	/* What about the rate from the client to the server??? */
 	for ( std::vector<Call *>::const_iterator server_call = calls().begin(); server_call != calls().end(); ++server_call ) {
 	    Call * clone = dynamic_cast<Call *>((*server_call)->clone());
-#if defined(BUG_270)
-	    std::cerr << "  Move " << (*server_call)->srcName() <<  "->" << (*server_call)->dstName();
-#endif
 	    if ( dynamic_cast<EntryCall *>(clone) != nullptr ) {
 		dynamic_cast<EntryCall *>(clone)->setSrcEntry( client_entry );	// Will be a phase/activity
 	    }
-#if defined(BUG_270)
-	    std::cerr << "    to " << clone->srcName() << "->" << clone->dstName();
-#endif
 	    clone->updateRateFrom( *client_call, **server_call );
 
 	    /* Replace the DOM call with a clone and change the rate.   See Call.cc::rendezvous(p). */
@@ -2069,7 +2059,11 @@ Entry::linkToClients( const std::vector<EntityCall *>& proc )
 	    const Entry * entry = (*server_call)->dstEntry();
 	    const_cast<Entry *>(entry)->addDstCall( clone );
 #if defined(BUG_270)
-	    std::cerr << ", rate=" << clone->sumOfRendezvous() << std::endl;
+	    std::cerr << "  Move " << (*server_call)->srcName() <<  "->" << (*server_call)->dstName()
+		      << "    to " << clone->srcName() << "->" << clone->dstName();
+	    if ( clone->sumOfRendezvous() != nullptr ) {
+		std::cerr << ", visits=" << *clone->sumOfRendezvous();
+	    }
 #endif
 	}
 
@@ -2077,27 +2071,30 @@ Entry::linkToClients( const std::vector<EntityCall *>& proc )
 
 	for ( std::vector<EntityCall *>::const_iterator p = proc.begin(); p != proc.end(); ++p ) {
 	    EntityCall * clone = dynamic_cast<EntityCall *>((*p)->clone());
-#if defined(BUG_270)
-	    std::cerr << "  Move " << (*p)->srcName() <<  "->" << (*p)->dstName();
-#endif
 	    if ( dynamic_cast<ProcessorCall *>(clone) ) {
+		dynamic_cast<ProcessorCall *>(clone)->setSrcEntry( this );
 		clone->updateRateFrom( *client_call );
 	    }
 	    
 	    Task * client_task = const_cast<Task *>(client_entry->owner());
 	    clone->setSrcTask( client_task );
-#if defined(BUG_270)
-	    std::cerr << "    to " << clone->srcName() << "->" << clone->dstName();
-#endif
-	    
 	    client_task->addSrcCall( clone );	// copy to parent task.  Duplicates?
 	    const Processor * processor = dynamic_cast<const Processor *>((*p)->dstEntity());
 	    client_task->addProcessor( processor );
 	    const_cast<Processor *>(processor)->addTask( client_task );
 	    const_cast<Processor *>(processor)->addDstCall( clone );
 #if defined(BUG_270)
-	    std::cerr << ", rate=" << clone->sumOfRendezvous() << std::endl;
+	    std::cerr << "  Move " << (*p)->srcName() <<  "->" << (*p)->dstName()
+		      << "    to " << clone->srcName() << "->" << clone->dstName();
+	    if ( clone->sumOfRendezvous() != nullptr ) {
+		std::cerr << ", visits=" << *clone->sumOfRendezvous();
+	    }
 #endif
+	    if ( dynamic_cast<ProcessorCall *>(clone) ) {
+		const Entry * entry = dynamic_cast<ProcessorCall *>(clone)->srcEntry();
+		std::cerr << ", service time=" << *dynamic_cast<ProcessorCall *>(clone)->service_time() << " from " << entry->name();
+	    }
+	    std::cerr << std::endl;
 	}
     }
 

@@ -1,7 +1,7 @@
 /* -*- c++ -*-
  * actlist.h	-- Greg Franks
  *
- * $Id: actlist.h 14235 2020-12-17 13:56:55Z greg $
+ * $Id: actlist.h 14498 2021-02-27 23:08:51Z greg $
  */
 
 #ifndef _ACTLIST_H
@@ -320,7 +320,7 @@ public:
 
     virtual const OrForkActivityList& draw( std::ostream& ) const;
 
-    LQIO::DOM::ExternalVariable& prBranch( const Activity * ) const;
+    const LQIO::DOM::ExternalVariable& prBranch( const Activity * ) const;
     double sum() const;
 
 protected:
@@ -431,7 +431,7 @@ public:
     AndJoinActivityList * clone() const;
 
     ~AndJoinActivityList();
-    ActivityList& resetLevel() { _depth = 0; return *this; }
+    AndJoinActivityList& resetLevel() { _depth = 0; return *this; }
 
     int quorumCount() const;
     AndJoinActivityList& quorumCount( int );
@@ -461,9 +461,8 @@ protected:
 
 private:
     bool addToEntryList( unsigned i, Entry * anEntry ) const;
-    bool joinType( const Type );
-    const AndForkActivityList * forkList() const { return _forkList; }
     bool joinType( const JoinType );
+    const AndForkActivityList * forkList() const { return _forkList; }
 
 private:
     Label * _label;
@@ -520,7 +519,7 @@ protected:
     virtual ActivityList * prev() const { return prevLink; }	/* Link to join list 		*/
     virtual RepeatActivityList& prev( ActivityList * aList) { prevLink = aList; return *this; }
 
-    LQIO::DOM::ExternalVariable* rateBranch( const Activity * ) const;
+    const LQIO::DOM::ExternalVariable* rateBranch( const Activity * ) const;
 
 private:
     std::vector<Activity *> _activityList;

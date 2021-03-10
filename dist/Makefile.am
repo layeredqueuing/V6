@@ -1,5 +1,6 @@
 # -*- Makefile -*-
 # $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/dist/Makefile.am $
-# $Id: Makefile.am 9605 2010-06-17 20:14:34Z greg $
+# $Id: Makefile.am 14499 2021-02-27 23:24:12Z greg $
 # ------------------------------------------------------------------------
-SUBDIRS = examples
+SUBDIRS = examples win-nt
+

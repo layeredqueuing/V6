@@ -1,6 +1,6 @@
 /* help.cc	-- Greg Franks Wed Oct 12 2005
  *
- * $Id: help.cc 14176 2020-12-07 17:26:28Z greg $
+ * $Id: help.cc 14498 2021-02-27 23:08:51Z greg $
  */
 
 #include <config.h>
@@ -207,7 +207,6 @@ Help::initialize()
 
     if ( option_table.size() > 0 ) return;
 
-    option_table['G']     = &Help::flagGnuplot;
     option_table['I'] 	  = &Help::flagInputFormat;
     option_table['P']     = &Help::flagPragmas;
     option_table['V']     = &Help::flagVersion;
@@ -217,6 +216,7 @@ Help::initialize()
     option_table['d']     = &Help::flagDebug;
     option_table['e']     = &Help::flagError;
     option_table['f']	  = &Help::flagFast;
+    option_table['I'] 	  = &Help::flagInputFormat;
     option_table['i']     = &Help::flagIterationLimit;
     option_table['j']	  = &Help::flagJSON;
     option_table['n']     = &Help::flagNoExecute;
@@ -360,10 +360,6 @@ Help::initialize()
 std::ostream&
 Help::print( std::ostream& output ) const
 {
-#if __cplusplus < 201103L
-    Pragma::initialize();
-#endif
-    
     preamble( output );
     output << bold( *this, "Lqns" ) << " reads its input from " << filename( *this, "filename" ) << ", specified at the" << std::endl
 	   << "command line if present, or from the standard input otherwise.  By" << std::endl
@@ -577,14 +573,6 @@ Help::flagFast( std::ostream& output, bool verbose ) const
 	   << " "  << emph( *this, LQIO::DOM::Pragma::_mva_ ) << "=" << emph( *this, LQIO::DOM::Pragma::_one_step_ )
 	   << ", " << emph( *this, LQIO::DOM::Pragma::_layering_ ) << "=" << emph( *this, LQIO::DOM::Pragma::_batched_ )
 	   << ", " << emph( *this, LQIO::DOM::Pragma::_multiserver_ ) << "=" << emph( *this, LQIO::DOM::Pragma::_conway_ ) << std::endl;
-    return output;
-}
-
-std::ostream&
-Help::flagGnuplot( std::ostream& output, bool verbose ) const
-{
-    output << "This option is used to generate gnuplot(1) output.  The optional argument is a list of" << std::endl
-	   << "result variables found in the input file.  This option only works for SPEX input." << std::endl;
     return output;
 }
 
@@ -1915,7 +1903,7 @@ HelpTroff::preamble( std::ostream& output ) const
     output << __comment << " t -*- nroff -*-" << std::endl
 	   << ".TH lqns 1 \"" << date << "\" \"" << VERSION << "\"" << std::endl;
 
-    output << __comment << " $Id: help.cc 14176 2020-12-07 17:26:28Z greg $" << std::endl
+    output << __comment << " $Id: help.cc 14498 2021-02-27 23:08:51Z greg $" << std::endl
 	   << __comment << std::endl
 	   << __comment << " --------------------------------" << std::endl;
 
@@ -2212,7 +2200,7 @@ HelpLaTeX::preamble( std::ostream& output ) const
 	   << __comment << " Created:             " << date << std::endl
 	   << __comment << "" << std::endl
 	   << __comment << " ----------------------------------------------------------------------" << std::endl
-	   << __comment << " $Id: help.cc 14176 2020-12-07 17:26:28Z greg $" << std::endl
+	   << __comment << " $Id: help.cc 14498 2021-02-27 23:08:51Z greg $" << std::endl
 	   << __comment << " ----------------------------------------------------------------------" << std::endl << std::endl;
 
     output << "\\chapter{Invoking the Analytic Solver ``lqns''}" << std::endl

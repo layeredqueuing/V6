@@ -8,7 +8,7 @@
 /************************************************************************/
 
 /*
- * $Id: srvn_spex.h 14110 2020-11-20 15:37:56Z greg $
+ * $Id: srvn_spex.h 14534 2021-03-09 23:58:14Z greg $
  */
 
 #ifndef __LQIO_SRVN_SPEX_H__
@@ -29,6 +29,7 @@ namespace LQX {
 namespace LQIO {
     namespace DOM {
 	class ExternalVariable;
+	class SymbolExternalVariable;
 	class Document;
 	class Processor;
 	class Group;
@@ -37,7 +38,11 @@ namespace LQIO {
 	class DocumentObject;
 	class Json_Document;
 	class Expat_Document;
+	class BCMP_to_LQN;
     }
+}
+namespace BCMP {
+    class JMVA_Document;
 }
 
 extern "C" {
@@ -63,6 +68,7 @@ extern "C" {
     void * spex_inline_expression( void * arg );
     void * spex_processor_observation( const void * obj, const int key, const int, const char * var, const char * var2 );
     void * spex_result_assignment_statement( const char *var, void * arg );
+    void * spex_result_function( const char *, void * arg );
     void * spex_task_observation( const void * obj, const int key, const int phase, const int conf, const char * var, const char * var2  );
 
     void * spex_list( void * list, void * stmt );
@@ -94,12 +100,14 @@ extern "C" {
 typedef std::vector<LQX::SyntaxTreeNode*> expr_list;
 
 namespace LQIO {
-    typedef LQIO::DOM::Document& (LQIO::DOM::Document::*set_extvar_f)( LQIO::DOM::ExternalVariable* );
-    typedef void (*setSpexFunc)( LQIO::DOM::ExternalVariable* );
+    typedef LQIO::DOM::Document& (LQIO::DOM::Document::*set_extvar_f)( const LQIO::DOM::ExternalVariable* );
+    typedef void (*setSpexFunc)( const LQIO::DOM::ExternalVariable* );
 
     class Spex {
+	friend class BCMP::JMVA_Document;
 	friend class DOM::Json_Document;
 	friend class DOM::Expat_Document;
+	friend class DOM::BCMP_to_LQN;
 	friend void ::spex_set_program( void * param_arg, void * result_arg, void * convergence_arg );
 	friend void ::spex_set_parameter_list( void * );
 	friend void ::spex_set_result_list( void * );
@@ -121,7 +129,8 @@ namespace LQIO {
 	friend void * ::spex_processor_observation( const void * obj, const int key, const int, const char * var, const char * var2 );
 	friend void * ::spex_result_assignment_statement( const char * name, void * expr );
 	friend void * ::spex_task_observation( const void * obj, const int key, const int phase, const int conf, const char * var, const char * var2  );
-
+	friend void * ::spex_result_function( const char * s, void * args );
+	
     public:
 	typedef std::pair<std::string,LQX::SyntaxTreeNode *> var_name_and_expr;
 
@@ -167,7 +176,7 @@ namespace LQIO {
 	class ObservationInfo {
 	public:
 	    ObservationInfo() : _key(0), _phase(0), _variable_name(""), _conf_level(0), _conf_variable_name("") {}
-	    ObservationInfo( int key, unsigned int phase, const char * variable_name=NULL, unsigned int conf_level=0, const char * conf_variable_name=NULL );
+	    ObservationInfo( int key, unsigned int phase, const char * variable_name=nullptr, unsigned int conf_level=0, const char * conf_variable_name=nullptr );
 	    ObservationInfo& operator=( const ObservationInfo& );
 	    bool operator()( const DOM::DocumentObject * o1, const DOM::DocumentObject * o2 ) const;
 	    bool operator()( const ObservationInfo&, const ObservationInfo& ) const;
@@ -245,6 +254,9 @@ namespace LQIO {
 	static bool __no_header;	/* Suppresses the header on output.	*/
 
 	Spex();
+
+	bool construct_program( expr_list * main_line, expr_list * result, expr_list * convergence, expr_list * gnuplot=nullptr );
+
 	static void clear();
 
 	/*
@@ -255,15 +267,21 @@ namespace LQIO {
 	static bool is_global_var( const std::string& );
 	static bool has_input_var( const std::string& );
 	static bool has_observation_var( const std::string& );
+	static bool has_array_var( const std::string& );
 	static LQX::SyntaxTreeNode * get_input_var_expr( const std::string& );
-	static const std::vector<ObservationInfo>& get_document_variables() { return  __document_variables; }
-	static const obs_var_tab_t& get_observations() { return __observations; }
-	static const std::map<std::string,LQX::SyntaxTreeNode *>& get_input_variables() { return __input_variables; }
 	static void clear_input_variables() { __input_variables.clear(); }
 	static unsigned int numberOfInputVariables() { return __input_variables.size(); }
 	static unsigned int numberOfResultVariables() { return __result_variables.size(); }
-	static const std::vector<var_name_and_expr>& get_result_variables() { return __result_variables; }
-	static void setGnuplotVars( const std::string& );
+
+	/* Used by srvn_output and qnap_document... */
+	static const std::vector<std::string>& array_variables() { return  __array_variables; }				/* Saves $<array_name> for generating nest for loops */
+	static const std::map<std::string,ComprehensionInfo>& comprehensions() { return __comprehensions; }		/* comprehension name (and values) */
+	static const std::vector<ObservationInfo>& document_variables() { return  __document_variables; }
+	static const std::map<const DOM::ExternalVariable *,const LQX::SyntaxTreeNode *>& inline_expressions() { return __inline_expression; }	/* Maps temp vars to expressions */
+	static const std::map<std::string,LQX::SyntaxTreeNode *>& input_variables() { return __input_variables; }
+	static const obs_var_tab_t& observations() { return __observations; }
+	static const std::vector<var_name_and_expr>& result_variables() { return __result_variables; }
+
 	
 	static std::ostream& printResultVariables( std::ostream& output );
 	static VariableManip print_input_variable( const var_name_and_expr& var ) { return VariableManip( printInputVariable, var ); }
@@ -281,10 +299,7 @@ namespace LQIO {
 	Spex& operator=( const Spex& );
 
 	bool has_vars() const;							/* True if any $var (except control args) set */
-	static bool gnuplot_output() { return __gnuplot_output; }
 	
-	bool construct_program( expr_list * main_line, expr_list * result, expr_list * convergence );
-
 	LQX::SyntaxTreeNode * get_destination( const std::string& name ) const;
 	LQX::SyntaxTreeNode * observation( LQX::MethodInvocationExpression * lqx_obj, const DOM::DocumentObject * document_obj, const ObservationInfo& obs );
 
@@ -295,8 +310,8 @@ namespace LQIO {
 	expr_list * solve_failure( expr_list * result ) const;
 
 	LQX::SyntaxTreeNode * print_header() const;
-	expr_list * print_gnuplot_preamble( expr_list * ) const;
-	expr_list * print_gnuplot_output( expr_list * ) const;
+	LQX::SyntaxTreeNode * print_gnuplot_header() const;
+	expr_list * plot( expr_list * );
 
 	static expr_list * make_list( LQX::SyntaxTreeNode*, ... );
 	static LQX::SyntaxTreeNode * print_node( const std::string& );
@@ -307,6 +322,9 @@ namespace LQIO {
 	static std::ostream& printResultVariable( std::ostream& output, const var_name_and_expr& var );
 
 	static std::vector<var_name_and_expr>::const_iterator find( std::vector<var_name_and_expr>::const_iterator, std::vector<var_name_and_expr>::const_iterator, const std::string& );
+
+    public:
+	static std::map<std::string, LQIO::DOM::SymbolExternalVariable*>* __global_variables;	/* Document global variables. (input) */
 
     private:
 	static std::vector<std::string> __array_variables;			/* Saves $<array_name> for generating nest for loops */
@@ -319,28 +337,24 @@ namespace LQIO {
 
 	/* For SRVN input output */
 
-	static std::map<std::string,LQX::SyntaxTreeNode *> __input_variables;	/* Saves input values per iteration */
 	static obs_var_tab_t __observations;					/* Saves all key-$var for each object */
 	static std::vector<ObservationInfo> __document_variables;		/* Saves all key-$var for the document */
 	static std::map<std::string,std::string> __input_iterator;		/* Saves iterator for x, y = expr statements */
-
-    public:
+	static std::map<std::string,LQX::SyntaxTreeNode *> __input_variables;	/* Saves input values per iteration */
 	static std::map<const DOM::ExternalVariable *,const LQX::SyntaxTreeNode *> __inline_expression;	/* Maps temp vars to expressions */
 
-    private:
 	static const std::map<const std::string,const attribute_table_t> __control_parameters;
 	static const std::map<const int,const std::pair<const std::string,const std::string> > __key_code_map;	/* Maps srvn_gram.h KEY_XXX to name */
 	static const std::map<const int,const std::string> __key_lqx_function_map;	/* Maps srvn_gram.h KEY_XXX to lqx function name */
 
 	static const char * __convergence_limit_str;
 
-	static bool __gnuplot_output;						/* True if doing gnuplot.		*/
-	static std::vector<std::string> __gnuplot_variables;			/* Variable to output for gnuplot	*/
-
 	static void * __parameter_list;						/* JSON */
 	static void * __result_list;						/* JSON */
 	static void * __convergence_list;					/* JSON */
 	static void * __temp_variable;						/* JSON */
+
+	expr_list _gnuplot;							/* Gnuplot program */
     };
 
     inline std::ostream& operator<<( std::ostream& output, const Spex::ComprehensionInfo& self) { return self.print( output ); }

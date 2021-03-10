@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_object.cpp 14133 2020-11-25 13:51:31Z greg $
+ *  $Id: dom_object.cpp 14498 2021-02-27 23:08:51Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -71,7 +71,7 @@ namespace LQIO {
 	    throw should_implement( getTypeName() );
 	}
 
-	ExternalVariable * DocumentObject::checkIntegerVariable( ExternalVariable * var, int floor_value ) const
+	const ExternalVariable * DocumentObject::checkIntegerVariable( const ExternalVariable * var, int floor_value ) const
 	{
 	    /* Check for a valid variable (if set).  Return the var */
 	    double value = floor_value;
@@ -98,7 +98,7 @@ namespace LQIO {
 	    return value;
 	}
 
-	ExternalVariable * DocumentObject::checkDoubleVariable( ExternalVariable * var, double floor_value, double ceiling_value ) const
+	const ExternalVariable * DocumentObject::checkDoubleVariable( const ExternalVariable * var, double floor_value, double ceiling_value ) const
 	{
 	    /* Check for a valid variable (if set).  Return the var */
 	    double value = floor_value;

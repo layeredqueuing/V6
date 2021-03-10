@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: lqn2ps.cc 14241 2020-12-22 21:19:14Z greg $
+ * $Id: lqn2ps.cc 14498 2021-02-27 23:08:51Z greg $
  *
  * Command line processing.
  *
@@ -29,17 +29,18 @@
 #include <lqio/dom_document.h>
 #include <lqio/srvn_results.h>
 #include <lqio/srvn_spex.h>
-#include "runlqx.h"
+#include "activity.h"
+#include "entry.h"
+#include "errmsg.h"
 #include "getopt2.h"
+#include "graphic.h"
+#include "help.h"
 #include "layer.h"
 #include "model.h"
-#include "errmsg.h"
-#include "help.h"
-#include "graphic.h"
-#include "task.h"
-#include "entry.h"
+#include "pragma.h"
 #include "processor.h"
-#include "activity.h"
+#include "runlqx.h"
+#include "task.h"
 
 extern "C" int LQIO_debug;
 extern "C" int resultdebug;
@@ -74,7 +75,6 @@ option_type Flags::print[] = {
     { "colour",                'C', "colour",              Options::colouring,     {COLOUR_RESULTS},    false, "Colour output." },
     { "diff-file",	       'D', "filename",            0,                      {0},			false, "Load parseable results generated using srvndiff --difference from filename." },
     { "font-size",             'F', "font-size",           Options::integer,       {9},                 false, "Set the font size (from 6 to 36 points)." },
-    { "gnuplot",	       'G', "[var[,var]*]",	   Options::string,	   {0},		        false, "Output GNUPLOT for var (SPEX input only)." },
     { "input-format",	       'I', "format",		   Options::io,		   {FORMAT_UNKNOWN},	false, "Input file format." },
     { "help",                  'H', 0,                     0,                      {0},                 false, "Print help." },
     { "justification",         'J', "object=justification",Options::justification, {DEFAULT_JUSTIFY},   false, "Justification." },
@@ -140,6 +140,9 @@ option_type Flags::print[] = {
     { "number-layers",     512+'n', 0,                     0,                      {0},                 false, "Print layer numbers." },
     { "rename",            512+'N', 0,                     0,                      {0},                 false, "Rename all objects." },
     { "tasks-only",        512+'t', 0,                     0,                      {0},                 false, "Print tasks only." },
+#if BUG_270
+    { "no-bcmp",	   512+'B', 0,			   0,			   {0},			false, "Do not perform BCMP model conversion." },
+#endif
     /* Miscellaneous */
     { "no-activities",	   512+'A', 0,			   0,			   {0},			false, "Don't print activities." },
     { "no-colour",	   512+'C', 0,			   0,			   {0},		        false, "Use grey scale when colouring result." },
@@ -191,7 +194,7 @@ lqn2ps( int argc, char *argv[] )
     int arg;
     std::string output_file_name = "";
 
-    sscanf( "$Date: 2020-12-22 16:19:14 -0500 (Tue, 22 Dec 2020) $", "%*s %s %*s", copyrightDate );
+    sscanf( "$Date: 2021-02-27 18:08:51 -0500 (Sat, 27 Feb 2021) $", "%*s %s %*s", copyrightDate );
 
     static std::string opts = "";
 #if HAVE_GETOPT_H
@@ -261,6 +264,10 @@ lqn2ps( int argc, char *argv[] )
 	    } 
 	    break;
 
+	case 512+'B':
+	    pragmas.insert(LQIO::DOM::Pragma::_bcmp_,LQIO::DOM::Pragma::_false_);
+	    break;
+	    
 	case 'C':
 	    options = optarg;
 	    arg = getsubopt( &options, const_cast<char * const *>(Options::colouring), &value );
@@ -321,12 +328,6 @@ lqn2ps( int argc, char *argv[] )
 	    Flags::debug = true;
 	    break;
 		
-	case 'G':
-	    Flags::print[RUN_LQX].value.b 	= true;		    /* Reload lqx */
-	    Flags::print[RELOAD_LQX].value.b	= true;
-	    LQIO::Spex::setGnuplotVars( optarg );
-	    break;
-								      
 	case 512+'G':
 	    Flags::print[RUN_LQX].value.b 	= true;		    /* Run lqx */
 	    Flags::dump_graphviz 		= true;
@@ -342,6 +343,7 @@ lqn2ps( int argc, char *argv[] )
 	    break;
 	    
 	case 512+'H':
+	    /* Set immediately, as it can't be changed once the SPEX program is loaded */
             LQIO::Spex::__no_header = true;
 	    break;
 
@@ -557,7 +559,7 @@ lqn2ps( int argc, char *argv[] )
 
 	case 512+'o':
 	    Flags::print[OUTPUT_FORMAT].value.i = FORMAT_LQX;
-	    setOutputFormat( arg );
+	    setOutputFormat( FORMAT_LQX );
 	    break;
 	    
 	case 'P':
@@ -810,14 +812,6 @@ lqn2ps( int argc, char *argv[] )
 #endif
     }
 
-#if defined(BUG_270)
-    if ( Flags::print[OUTPUT_FORMAT].value.i == FORMAT_JMVA && !queueing_output() ) {
-	std::cerr << LQIO::io_vars.lq_toolname << ": -O" << Options::io[FORMAT_JMVA]
-	     << " must be used with -Q<submodel>." << std::endl;
-	exit( 1 );
-    }
-#endif
-
     if ( Flags::print[OUTPUT_FORMAT].value.i == FORMAT_SRVN && !partial_output() ) {
 	Flags::print[RESULTS].value.b = false;	/* Ignore results */
     }
@@ -838,6 +832,10 @@ lqn2ps( int argc, char *argv[] )
 	 || Flags::print[LAYERING].value.i == LAYERING_PROCESSOR
 	 || Flags::print[LAYERING].value.i == LAYERING_SHARE ) {
 	Flags::print[PROCESSOR_QUEUEING].value.b = false;
+    }
+
+    if ( Flags::bcmp_model ) {
+	Flags::print[AGGREGATION].value.i = AGGREGATE_ENTRIES;
     }
 
     /*
@@ -865,7 +863,7 @@ lqn2ps( int argc, char *argv[] )
 
     /* If stdout is not a terminal For pipelines.	*/
 
-#if !defined(WINNT) && !defined(MSDOS)
+#if !defined(__WINNT__) && !defined(MSDOS)
     if ( output_file_name == "" && LQIO::Filename::isWriteableFile( fileno( stdout ) ) > 0 ) {
 	output_file_name = "-";
     }
@@ -977,10 +975,24 @@ process( const std::string& input_file_name, const std::string& output_file_name
 
     /* Now fold, mutiliate and spindle */
 
+    if ( queueing_output() ) {
+//	pragmas.insert(LQIO::DOM::Pragma::_bcmp_,LQIO::DOM::Pragma::_true_);
+    }
     document->mergePragmas( pragmas.getList() );       	/* Save pragmas -- prepare will process */
+    Pragma::set( document->getPragmaList() );
+    
+#if defined(BUG_270)
+    if ( !queueing_output()
+	 && (   Flags::print[OUTPUT_FORMAT].value.i == FORMAT_JMVA
+	     || Flags::print[OUTPUT_FORMAT].value.i == FORMAT_QNAP2) ) {
+	std::cerr << LQIO::io_vars.lq_toolname << ": -O" << Options::io[FORMAT_JMVA]
+		  << " must be used with -Q<submodel>." << std::endl;
+	exit( 1 );
+    }
+#endif
     Model::prepare( document );				/* This creates the various objects 	*/
 #if BUG_270
-    if ( Flags::prune ) {
+    if ( Flags::prune ) {		/* Never prune if generating LQN	*/
 	Model::prune();
     }
 #endif
@@ -1176,8 +1188,16 @@ setOutputFormat( const int i )
     case FORMAT_NULL:
 	break;
 
-#if defined(JMVA_OUTPUT)
+#if JMVA_OUTPUT
     case FORMAT_JMVA:
+	Flags::bcmp_model = true;				/* No entries. */
+	break;
+#endif
+#if QNAP2_OUTPUT
+    case FORMAT_QNAP2:
+#warning .. need to separate by class and station
+	Flags::squish_names = true;				/* Always */ 
+	Flags::bcmp_model = true;				/* No entries. */
 	break;
 #endif
 	

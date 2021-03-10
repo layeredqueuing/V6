@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- * $Id: expat_document.cpp 14302 2020-12-31 13:11:17Z greg $
+ * $Id: expat_document.cpp 14498 2021-02-27 23:08:51Z greg $
  *
  * Read in XML input files.
  *
@@ -408,6 +408,14 @@ namespace LQIO {
         void
         Expat_Document::startModel( DocumentObject * object, const XML_Char * element, const XML_Char ** attributes )
         {
+	    static const std::set<const XML_Char *,Expat_Document::attribute_table_t> model_table = {
+		"description",
+		"lqncore-schema-version",
+		"lqn-schema-version",
+		Xname,
+		Xxml_debug
+	    };
+
 	    checkAttributes( element, attributes, model_table );
 
             if ( strcasecmp( element, Xlqn_model ) == 0 ) {
@@ -1025,6 +1033,16 @@ namespace LQIO {
         void
         Expat_Document::startPrecedenceType( DocumentObject * task, const XML_Char * element, const XML_Char ** attributes )
         {
+	    static const std::map<const XML_Char *,const ActivityList::ActivityList::Type,Expat_Document::attribute_table_t> precedence_table = {
+		{ Xpre,        ActivityList::Type::JOIN },
+		{ Xpre_or,     ActivityList::Type::OR_JOIN },
+		{ Xpre_and,    ActivityList::Type::AND_JOIN },
+		{ Xpost,       ActivityList::Type::FORK },
+		{ Xpost_or,    ActivityList::Type::OR_FORK },
+		{ Xpost_and,   ActivityList::Type::AND_FORK },
+		{ Xpost_loop,  ActivityList::Type::REPEAT }
+	    };
+
             ActivityList * pre_list = 0;
             ActivityList * post_list = 0;
             std::map<const XML_Char *,const ActivityList::ActivityList::Type>::const_iterator item = precedence_table.find(element);
@@ -1288,6 +1306,14 @@ namespace LQIO {
         DocumentObject *
         Expat_Document::handleModel( DocumentObject * object, const XML_Char ** attributes )
         {
+	    static const std::set<const XML_Char *,Expat_Document::attribute_table_t> parameter_table = {
+		Xcomment,
+		Xconv_val,
+		Xit_limit,
+		Xprint_int,
+		Xunderrelax_coeff
+	    };
+
 	    checkAttributes( Xlqn_model, attributes, parameter_table );
 
             if ( _createObjects ) {
@@ -1314,6 +1340,15 @@ namespace LQIO {
         Processor *
         Expat_Document::handleProcessor( DocumentObject * object, const XML_Char ** attributes )
         {
+	    static const std::set<const XML_Char *,Expat_Document::attribute_table_t> processor_table = {
+		Xname,
+		Xscheduling,
+		Xquantum,
+		Xmultiplicity,
+		Xreplication,
+		Xspeed_factor
+	    };
+
 	    checkAttributes( Xprocessor, attributes, processor_table );
 
             const XML_Char * processor_name = XML::getStringAttribute(attributes,Xname);
@@ -1364,6 +1399,12 @@ namespace LQIO {
         DocumentObject *
         Expat_Document::handleGroup( DocumentObject * processor, const XML_Char ** attributes )
         {
+	    static const std::set<const XML_Char *,Expat_Document::attribute_table_t> group_table = {
+		Xname,
+		Xcap,
+		Xshare
+	    };
+
 	    checkAttributes( Xgroup, attributes, group_table );
 
 	    const XML_Char * group_name = XML::getStringAttribute(attributes,Xname);
@@ -1404,6 +1445,18 @@ namespace LQIO {
         Task *
         Expat_Document::handleTask( DocumentObject * object, const XML_Char ** attributes )
         {
+	    static const std::set<const XML_Char *,Expat_Document::attribute_table_t> task_table = {
+		Xname,
+		Xscheduling,
+		Xinitially,
+		Xqueue_length,
+		Xpriority,
+		Xthink_time,
+		Xmultiplicity,
+		Xreplication,
+		Xactivity_graph                 // ignored.
+	    };
+
 	    checkAttributes( Xtask, attributes, task_table );
             const XML_Char * task_name = XML::getStringAttribute(attributes,Xname);
             Task * task = _document.getTaskByName( task_name );
@@ -1505,6 +1558,18 @@ namespace LQIO {
 	Decision *
 	Expat_Document::handleDecision( DocumentObject * task, const XML_Char ** attributes )
 	{
+	    static const std::set<const XML_Char *,Expat_Document::attribute_table_t> decision_table = {
+		Xname,
+		Xentry_name,
+		Xtype,
+		Xfrom_entry,
+		Xdecision_entry,
+		Xtimeout,
+		Xabort,
+		Xsleep,
+		Xmax_retries
+	    };
+	
 	    checkAttributes( Xdecision, attributes, decision_table );
 
 	    const XML_Char * decision_name = XML::getStringAttribute(attributes,Xname);
@@ -1569,6 +1634,13 @@ namespace LQIO {
 	DecisionPath *
 	Expat_Document::handleDecisionPath( DocumentObject * decision, const XML_Char ** attributes )
 	{
+	    static const std::set<const XML_Char *,Expat_Document::attribute_table_t> decision_path_table = {
+		Xname,
+		Xentry_name,
+		Xtype,
+		Xto_entry
+	    };
+
 	    checkAttributes( Xpath, attributes, decision_path_table );
 
 	    const XML_Char * decision_path_name = XML::getStringAttribute(attributes,Xname);
@@ -1674,6 +1746,15 @@ namespace LQIO {
         Entry *
         Expat_Document::handleEntry( DocumentObject * task, const XML_Char ** attributes )
         {
+	    static const std::set<const XML_Char *,Expat_Document::attribute_table_t> entry_table = {
+		Xname,
+		Xtype,
+		Xpriority,
+		Xopen_arrival_rate,
+		Xsemaphore,
+		Xrwlock
+	    };
+
 	    checkAttributes( Xentry, attributes, entry_table );
             const XML_Char * entry_name = XML::getStringAttribute(attributes,Xname);
 
@@ -1787,6 +1868,17 @@ namespace LQIO {
         void
         Expat_Document::handleActivity( Phase * phase, const XML_Char ** attributes )
         {
+	    static const std::set<const XML_Char *,Expat_Document::attribute_table_t> activity_table = {
+		Xphase,
+		Xname,
+		Xbound_to_entry,
+		Xhost_demand_mean,
+		Xhost_demand_cvsq,
+		Xthink_time,
+		Xcall_order,
+		Xmax_service_time
+	    };
+
 	    checkAttributes( Xactivity, attributes, activity_table );
             if ( _createObjects ) {
 		phase->setServiceTime( getVariableAttribute(attributes,Xhost_demand_mean,"0.0" ) );
@@ -1848,6 +1940,12 @@ namespace LQIO {
           <xsd:attribute name="dest" type="xsd:string" use="required"/>
           <xsd:attribute name="calls-mean" type="SrvnFloat" use="required"/>
         */
+
+	const std::set<const XML_Char *,Expat_Document::attribute_table_t> Expat_Document::call_table = {
+	    Xdest,
+	    Xcalls_mean,
+	    Xprob
+	};
 
         Call *
         Expat_Document::handlePhaseCall( DocumentObject * phase, const XML_Char ** attributes, const Call::Type call_type )
@@ -1983,6 +2081,18 @@ namespace LQIO {
             return call;
         }
 
+
+        const std::set<const XML_Char *,Expat_Document::attribute_table_t> Expat_Document::histogram_table = {
+            Xmin,
+            Xmax,
+            Xnumber_bins,
+            "phase"		// Xphase
+	};
+//          Xbin_size,
+//          Xmean,
+//          Xstd_dev,
+//          Xskew,
+//          Xkurtosis
 
         Histogram *
         Expat_Document::handleHistogram( DocumentObject * object, const XML_Char ** attributes )
@@ -2201,6 +2311,7 @@ namespace LQIO {
 	    for ( ; *attributes; attributes += 2 ) {
 		if ( strcasecmp( *attributes, attribute ) == 0 ) {
 		    s = *(attributes+1);
+		    break;
 		}
 	    }
 	    if ( !s ) {
@@ -2339,7 +2450,7 @@ namespace LQIO {
                     schema_path = (string) psBuffer;
                 }
 
-#elif defined(WINNT)
+#elif defined(__WINNT__)
                 schema_path = "file:///C:/Program Files/LQN Solvers/";
 #else
                 schema_path = "/usr/local/share/lqns/";
@@ -2356,7 +2467,7 @@ namespace LQIO {
 	{
 	    const int precision = output.precision(10);
 	    output << XML::start_element( Xspex_parameters ) << ">" /* <![CDATA[" */ << std::endl;
-	    const std::map<std::string,LQX::SyntaxTreeNode *>& input_variables = Spex::get_input_variables();
+	    const std::map<std::string,LQX::SyntaxTreeNode *>& input_variables = Spex::input_variables();
 	    LQX::SyntaxTreeNode::setVariablePrefix( "$" );
 	    std::for_each( input_variables.begin(), input_variables.end(), Spex::PrintInputVariable( output ) );
 	    output /* << "]]>" << std::endl */ << XML::end_element( Xspex_parameters ) << std::endl;
@@ -2370,7 +2481,7 @@ namespace LQIO {
         void
         Expat_Document::exportGeneral( std::ostream& output ) const
         {
-	    const std::vector<Spex::ObservationInfo> doc_vars = Spex::get_document_variables();
+	    const std::vector<Spex::ObservationInfo> doc_vars = Spex::document_variables();
 	    const bool complex_element = hasResults() || _document.hasPragmas() || doc_vars.size() > 0;
 
             output << XML::start_element( Xsolver_parameters, complex_element )
@@ -2400,7 +2511,7 @@ namespace LQIO {
                     const bool has_mva_info = mva_info.getNumberOfSubmodels() > 0;
                     output << XML::start_element( Xresult_general, has_mva_info )
 			   << XML::attribute( Xsolver_info, _document.getResultSolverInformation() )
-                           << XML::attribute( Xvalid, _document.getResultValid() ? "YES" : "NO" )
+                           << XML::attribute( Xvalid, _document.getResultValid() )
                            << XML::attribute( Xconv_val_result, _document.getResultConvergenceValue() )
                            << XML::attribute( Xiterations, _document.getResultIterations() )
                            << XML::attribute( Xplatform_info, _document.getResultPlatformInformation() )
@@ -2686,7 +2797,7 @@ namespace LQIO {
             }
 
 
-            for ( std::map<const std::string, ExternalVariable *>::const_iterator next_fanin = task.getFanIns().begin(); next_fanin != task.getFanIns().end(); ++next_fanin ) {
+            for ( std::map<const std::string, const ExternalVariable *>::const_iterator next_fanin = task.getFanIns().begin(); next_fanin != task.getFanIns().end(); ++next_fanin ) {
                 const std::string& src = next_fanin->first;
                 const ExternalVariable * value = next_fanin->second;
                 output << XML::simple_element( Xfanin ) << XML::attribute( Xsource, src )
@@ -2694,7 +2805,7 @@ namespace LQIO {
                        << "/>" << std::endl;
             }
 
-            for ( std::map<const std::string, ExternalVariable *>::const_iterator next_fanout = task.getFanOuts().begin(); next_fanout != task.getFanOuts().end(); ++next_fanout ) {
+            for ( std::map<const std::string, const ExternalVariable *>::const_iterator next_fanout = task.getFanOuts().begin(); next_fanout != task.getFanOuts().end(); ++next_fanout ) {
                 const std::string dst = next_fanout->first;
                 const ExternalVariable * value = next_fanout->second;
                 output << XML::simple_element( Xfanout ) << XML::attribute( Xdest, dst )
@@ -3052,20 +3163,19 @@ namespace LQIO {
 	    _output << XML::end_element( Xprecedence ) << std::endl;
 	}
 
-	const std::map<const ActivityList::Type,const XML_Char *> Expat_Document::precedence_type_table =
-	{
-	    { ActivityList::Type::JOIN,     Xpre },
- 	    { ActivityList::Type::OR_JOIN,  Xpre_or },
-	    { ActivityList::Type::AND_JOIN, Xpre_and },
-	    { ActivityList::Type::FORK,     Xpost },
-	    { ActivityList::Type::OR_FORK,  Xpost_or },
-	    { ActivityList::Type::AND_FORK, Xpost_and },
-	    { ActivityList::Type::REPEAT,   Xpost_loop }
-	};
-
         void
         Expat_Document::exportPrecedence( std::ostream& output, const ActivityList& activity_list ) const
         {
+	    static const std::map<const ActivityList::Type,const XML_Char *> precedence_type_table = {
+		{ ActivityList::Type::JOIN,     Xpre },
+		{ ActivityList::Type::OR_JOIN,  Xpre_or },
+		{ ActivityList::Type::AND_JOIN, Xpre_and },
+		{ ActivityList::Type::FORK,     Xpost },
+		{ ActivityList::Type::OR_FORK,  Xpost_or },
+		{ ActivityList::Type::AND_FORK, Xpost_and },
+		{ ActivityList::Type::REPEAT,   Xpost_loop }
+	    };
+
 	    output << XML::start_element( precedence_type_table.at(activity_list.getListType()) );
             const AndJoinActivityList * join_list = dynamic_cast<const AndJoinActivityList *>(&activity_list);
             if ( join_list && hasResults() ) {
@@ -3132,7 +3242,7 @@ namespace LQIO {
                 }
                 output << "/>" << std::endl;
             }
-	    output << XML::end_element( precedence_type_table.at(activity_list.getListType()) ) << std::endl;
+            output << XML::end_element( precedence_type_table.at(activity_list.getListType()) ) << std::endl;
         }
 
 
@@ -3141,16 +3251,16 @@ namespace LQIO {
          * <synch-call dest="e2" calls-mean="20"/>
          */
 
-	const std::map<const Call::Type,const Expat_Document::call_type_table_t> Expat_Document::call_type_table =
-	{
-	    { Call::Type::SEND_NO_REPLY, { Xasynch_call, Xcalls_mean } },
-            { Call::Type::RENDEZVOUS, { Xsynch_call,  Xcalls_mean } },
-	    { Call::Type::FORWARD, { Xforwarding,  Xprob } }
-        };
-
         void
         Expat_Document::exportCall( std::ostream& output, const Call & call ) const
         {
+
+	    static const std::map<const Call::Type,const Expat_Document::call_type_table_t> call_type_table = {
+		{ Call::Type::SEND_NO_REPLY, { Xasynch_call, Xcalls_mean } },
+		{ Call::Type::RENDEZVOUS, { Xsynch_call,  Xcalls_mean } },
+		{ Call::Type::FORWARD, { Xforwarding,  Xprob } }
+	    };
+
 	    const std::map<const Call::Type,const Expat_Document::call_type_table_t>::const_iterator call_type = call_type_table.find(call.getCallType());
 	    assert( call_type != call_type_table.end() );
             const bool complex_type = hasResults() || call.hasHistogram() || hasSPEX();
@@ -3258,7 +3368,7 @@ namespace LQIO {
         void
 	Expat_Document::exportObservation( std::ostream& output, const DocumentObject * object ) const
 	{
-	    std::pair<Spex::obs_var_tab_t::const_iterator, Spex::obs_var_tab_t::const_iterator> range = Spex::get_observations().equal_range( object );
+	    std::pair<Spex::obs_var_tab_t::const_iterator, Spex::obs_var_tab_t::const_iterator> range = Spex::observations().equal_range( object );
     	    if ( range.first != range.second ) {
 		const bool has_95 = find_if( range.first, range.second, HasConfidenceObservation( 95 ) ) != range.second;
 		const bool has_99 = find_if( range.first, range.second, HasConfidenceObservation( 99 ) ) != range.second;
@@ -3306,13 +3416,11 @@ namespace LQIO {
 	void
 	Expat_Document::exportSPEXResults( std::ostream& output ) const
 	{
-	    const std::vector<Spex::var_name_and_expr>& results = Spex::get_result_variables();
+	    const std::vector<Spex::var_name_and_expr>& results = Spex::result_variables();
 	    if ( results.size() > 0 ) {
-		const std::map<std::string,LQX::SyntaxTreeNode *>& input_variables = Spex::get_input_variables();
 		const int precision = output.precision(10);
 		output << XML::start_element( Xspex_results ) << ">" /* <![CDATA[" */ << std::endl;
 		LQX::SyntaxTreeNode::setVariablePrefix( "$" );
-		std::for_each( input_variables.begin(), input_variables.end(), Spex::PrintInputArrayVariable( output ) );
 		std::for_each( results.begin(), results.end(), Spex::PrintResultVariable( output ) );
 		output /* << "]]>" << std::endl */ << XML::end_element( Xspex_results ) << std::endl;
 		output.precision(precision);
@@ -3560,85 +3668,6 @@ namespace LQIO {
 	const XML_Char * Expat_Document::Xnumber_of_retries  =            	"number-of-retries";
 	const XML_Char * Expat_Document::Xnumber_of_retries_variance =          "number-of-retries-variance";
 
-        const std::set<const XML_Char *,Expat_Document::attribute_table_t> Expat_Document::activity_table =
-	{
-            Xphase,
-            Xname,
-            Xbound_to_entry,
-            Xhost_demand_mean,
-            Xhost_demand_cvsq,
-            Xthink_time,
-            Xcall_order,
-            Xmax_service_time
-	};
-
-        const std::set<const XML_Char *,Expat_Document::attribute_table_t> Expat_Document::call_table =
-	{
-            Xdest,
-            Xcalls_mean,
-            Xprob
-	};
-
-        const std::set<const XML_Char *,Expat_Document::attribute_table_t> Expat_Document::decision_table =
-	{
-            Xname,
-	    Xentry_name,
-            Xtype,
-	    Xfrom_entry,
-            Xdecision_entry,
-            Xtimeout,
-            Xabort,
-            Xsleep,
-            Xmax_retries
-	};
-	
-        const std::set<const XML_Char *,Expat_Document::attribute_table_t> Expat_Document::decision_path_table =
-	{
-            Xname,
-	    Xentry_name,
-            Xtype,
-            Xto_entry
-	};
-
-        const std::set<const XML_Char *,Expat_Document::attribute_table_t> Expat_Document::entry_table =
-	{
-            Xname,
-            Xtype,
-            Xpriority,
-            Xopen_arrival_rate,
-            Xsemaphore,
-            Xrwlock
-	};
-
-        const std::set<const XML_Char *,Expat_Document::attribute_table_t> Expat_Document::group_table =
-	{
-            Xname,
-            Xcap,
-            Xshare
-	};
-
-        const std::set<const XML_Char *,Expat_Document::attribute_table_t> Expat_Document::histogram_table =
-	{
-            Xmin,
-            Xmax,
-//          Xbin_size,
-            Xnumber_bins,
-            Xphase,
-//          Xmean,
-//          Xstd_dev,
-//          Xskew,
-//          Xkurtosis
-	};
-
-        const std::set<const XML_Char *,Expat_Document::attribute_table_t> Expat_Document::model_table =
-	{
-            "description",
-            "lqncore-schema-version",
-            "lqn-schema-version",
-            Xname,
-            Xxml_debug
-	};
-
 	/* SPEX */
         const std::map<const XML_Char *,const Expat_Document::observation_table_t,Expat_Document::observation_table_t>  Expat_Document::observation_table =
 	{
@@ -3669,36 +3698,7 @@ namespace LQIO {
             { Xwaiting,                  	observation_table_t( KEY_WAITING ) },
             { Xwaiting_variance,         	observation_table_t( KEY_WAITING_VARIANCE ) }
 	};
-	    
-
-        const std::set<const XML_Char *,Expat_Document::attribute_table_t> Expat_Document::parameter_table = {
-            Xcomment,
-            Xconv_val,
-            Xit_limit,
-            Xprint_int,
-            Xunderrelax_coeff
-	};
-	    
-
-        const std::map<const XML_Char *,const ActivityList::ActivityList::Type,Expat_Document::attribute_table_t> Expat_Document::precedence_table =
-	{
-            { Xpre,        ActivityList::Type::JOIN },
-            { Xpre_or,     ActivityList::Type::OR_JOIN },
-            { Xpre_and,    ActivityList::Type::AND_JOIN },
-            { Xpost,       ActivityList::Type::FORK },
-            { Xpost_or,    ActivityList::Type::OR_FORK },
-            { Xpost_and,   ActivityList::Type::AND_FORK },
-            { Xpost_loop,  ActivityList::Type::REPEAT }
-	};
-
-        const std::set<const XML_Char *,Expat_Document::attribute_table_t> Expat_Document::processor_table = {
-            Xname,
-            Xscheduling,
-            Xquantum,
-            Xmultiplicity,
-            Xreplication,
-            Xspeed_factor
-	};
+	/*- SPEX */
 
         const std::map<const XML_Char *,const Expat_Document::result_table_t,Expat_Document::result_table_t>  Expat_Document::result_table =
 	{
@@ -3745,18 +3745,6 @@ namespace LQIO {
             { Xwaiting_variance,                result_table_t( &DocumentObject::setResultVarianceWaitingTime,       &DocumentObject::setResultVarianceWaitingTimeVariance ) }
 	};
 	
-        const std::set<const XML_Char *,Expat_Document::attribute_table_t> Expat_Document::task_table = {
-            Xname,
-            Xscheduling,
-            Xinitially,
-            Xqueue_length,
-            Xpriority,
-            Xthink_time,
-            Xmultiplicity,
-            Xreplication,
-            Xactivity_graph                 // ignored.
-	};
-
 	/* Maps srvn_gram.h KEY_XXX to XML attribute name */
 	const std::map<const int,const char *> Expat_Document::__key_lqx_function_map = {
 	    { KEY_ELAPSED_TIME,		 Xelapsed_time },

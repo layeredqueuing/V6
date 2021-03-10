@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_task.cpp 14215 2020-12-14 19:09:04Z greg $
+ *  $Id: dom_task.cpp 14498 2021-02-27 23:08:51Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -23,8 +23,8 @@ namespace LQIO {
 	const char * Task::__typeName = "task";
 
 	Task::Task(const Document * document, const std::string& task_name, const scheduling_type scheduling, const std::vector<Entry *>& entryList,
-		   const Processor* processor, ExternalVariable* queue_length, ExternalVariable * priority,
-		   ExternalVariable* n_copies, ExternalVariable* n_replicas, const Group * group )
+		   const Processor* processor, const ExternalVariable* queue_length, const ExternalVariable * priority,
+		   const ExternalVariable* n_copies, const ExternalVariable* n_replicas, const Group * group )
 	    : Entity(document, task_name, scheduling, n_copies, n_replicas ),
 	      _entryList(entryList),
 	      _queueLength(queue_length),
@@ -53,8 +53,7 @@ namespace LQIO {
 	}
 
 	Task::Task( const Task& src )
-	    : Entity( src.getDocument(), "", src.getSchedulingType(), const_cast<LQIO::DOM::ExternalVariable*>(src.getCopies()),
-		      const_cast<LQIO::DOM::ExternalVariable*>(src.getReplicas()) ),
+	    : Entity( src.getDocument(), "", src.getSchedulingType(), src.getCopies(), src.getReplicas()),
 	      _entryList(),				/* Need to reset this. */
 	      _queueLength(src._queueLength->clone()),
 	      _processor(),				/* Need to reset this */
@@ -72,10 +71,10 @@ namespace LQIO {
 		_resultPhaseUtilizations[p] = 0;
 		_resultPhaseUtilizationVariances[p] = 0;
 	    }
-	    for ( std::map<const std::string, LQIO::DOM::ExternalVariable *>::iterator fan_out = _fanOut.begin(); fan_out != _fanOut.end(); ++fan_out ) {
+	    for ( std::map<const std::string, const LQIO::DOM::ExternalVariable *>::iterator fan_out = _fanOut.begin(); fan_out != _fanOut.end(); ++fan_out ) {
 		fan_out->second = fan_out->second->clone();
 	    }
-	    for ( std::map<const std::string, LQIO::DOM::ExternalVariable *>::iterator fan_in = _fanIn.begin(); fan_in != _fanIn.end(); ++fan_in ) {
+	    for ( std::map<const std::string, const LQIO::DOM::ExternalVariable *>::iterator fan_in = _fanIn.begin(); fan_in != _fanIn.end(); ++fan_in ) {
 		fan_in->second = fan_in->second->clone();
 	    }
 	}
@@ -84,15 +83,6 @@ namespace LQIO {
 	{
 	    deleteActivities();
 	    deleteActivityLists();
-	    if ( _priority != nullptr ) delete _priority;
-	    if ( _queueLength != nullptr ) delete _queueLength;
-	    if ( _thinkTime != nullptr ) delete _thinkTime;
-	    for ( std::map<const std::string, LQIO::DOM::ExternalVariable *>::const_iterator fan_out = _fanOut.begin(); fan_out != _fanOut.end(); ++fan_out ) {
-		delete fan_out->second;
-	    }
-	    for ( std::map<const std::string, LQIO::DOM::ExternalVariable *>::const_iterator fan_in = _fanIn.begin(); fan_in != _fanIn.end(); ++fan_in ) {
-		delete fan_in->second;
-	    }
 	}
 
 	/* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- [Input Values] -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */
@@ -108,7 +98,7 @@ namespace LQIO {
 	    return getIntegerValue( getQueueLength(), 0 );
 	}
 
-	ExternalVariable * Task::getQueueLength() const
+	const ExternalVariable * Task::getQueueLength() const
 	{
 	    return _queueLength;
 	}
@@ -123,12 +113,12 @@ namespace LQIO {
 	    if ( _queueLength == nullptr ) {
 		_queueLength = new ConstantExternalVariable(value);
 	    } else {
-		_queueLength->set(value);
+		const_cast<ExternalVariable *>(_queueLength)->set(value);
 	    }
 	}
 
 
-	void Task::setQueueLength(ExternalVariable * queueLength)
+	void Task::setQueueLength(const ExternalVariable * queueLength)
 	{
 	    _queueLength = checkIntegerVariable( queueLength, 0 );
 	}
@@ -138,7 +128,7 @@ namespace LQIO {
 	    return getIntegerValue( getPriority(), 0 );
 	}
 	
-	ExternalVariable * Task::getPriority() const
+	const ExternalVariable * Task::getPriority() const
 	{
 	    return _priority;
 	}
@@ -148,7 +138,7 @@ namespace LQIO {
 	    return ExternalVariable::isPresent( getPriority(), 0 );
 	}
 
-	void Task::setPriority(ExternalVariable * priority)
+	void Task::setPriority(const ExternalVariable * priority)
 	{
 	    _priority = priority;
 	}
@@ -158,7 +148,7 @@ namespace LQIO {
 	    if ( _priority == nullptr ) {
 		_priority = new ConstantExternalVariable(value);
 	    } else {
-		_priority->set(value);
+		const_cast<ExternalVariable *>(_priority)->set(value);
 	    }
 	}
 
@@ -167,7 +157,7 @@ namespace LQIO {
 	    return getDoubleValue( getThinkTime(), 0. );
 	}
 
-	ExternalVariable * Task::getThinkTime() const
+	const ExternalVariable * Task::getThinkTime() const
 	{
 	    return _thinkTime;
 	}
@@ -182,11 +172,11 @@ namespace LQIO {
 	    if ( _thinkTime == nullptr ) {
 		_thinkTime = new ConstantExternalVariable(value);
 	    } else {
-		_thinkTime->set(value);
+		const_cast<ExternalVariable *>(_thinkTime)->set(value);
 	    }
 	}
 
-	void Task::setThinkTime(ExternalVariable * thinkTime)
+	void Task::setThinkTime(const ExternalVariable * thinkTime)
 	{
 	    _thinkTime = checkDoubleVariable( thinkTime, 0.0 );
 	}
@@ -211,7 +201,7 @@ namespace LQIO {
 	    _processor = processor;
 	}
 
-	void Task::setFanOut( const std::string& task, ExternalVariable *value )
+	void Task::setFanOut( const std::string& task, const ExternalVariable *value )
 	{
 	    _fanOut[task] = checkIntegerVariable( value, 1 );
 	}
@@ -221,13 +211,13 @@ namespace LQIO {
 	    if ( _fanOut[task] == nullptr ) {
 		_fanOut[task] = new ConstantExternalVariable(value);
 	    } else {
-		_fanOut[task]->set(value);
+		const_cast<ExternalVariable *>(_fanOut[task])->set(value);
 	    }
 	}
 
-	ExternalVariable * Task::getFanOut( const std::string& task ) const
+	const ExternalVariable * Task::getFanOut( const std::string& task ) const
 	{
-	    std::map<const std::string,ExternalVariable *>::const_iterator fanOut = _fanOut.find(task);
+	    std::map<const std::string,const ExternalVariable *>::const_iterator fanOut = _fanOut.find(task);
 	    if ( fanOut != _fanOut.end() ) {
 		return fanOut->second;
 	    } else {
@@ -241,13 +231,13 @@ namespace LQIO {
 	}
 
 
-	const std::map<const std::string,ExternalVariable *>& Task::getFanOuts() const
+	const std::map<const std::string,const ExternalVariable *>& Task::getFanOuts() const
 	{
 	    return _fanOut;
 	}
 
 
-	void Task::setFanIn( const std::string& task, ExternalVariable * value )
+	void Task::setFanIn( const std::string& task, const ExternalVariable * value )
 	{
 	    _fanIn[task] = checkIntegerVariable( value, 1 );
 	}
@@ -257,13 +247,13 @@ namespace LQIO {
 	    if ( _fanIn[task] == nullptr ) {
 		_fanIn[task] = new ConstantExternalVariable(value);
 	    } else {
-		_fanIn[task]->set(value);
+		const_cast<ExternalVariable *>(_fanIn[task])->set(value);
 	    }
 	}
 
-	ExternalVariable * Task::getFanIn( const std::string& task ) const
+	const ExternalVariable * Task::getFanIn( const std::string& task ) const
 	{
-	    std::map<const std::string,ExternalVariable *>::const_iterator fanIn = _fanIn.find(task);
+	    std::map<const std::string,const ExternalVariable *>::const_iterator fanIn = _fanIn.find(task);
 	    if ( fanIn != _fanIn.end() ) {
 		return fanIn->second;
 	    } else {
@@ -276,7 +266,7 @@ namespace LQIO {
 	    return getIntegerValue( getFanIn( task ), 1 );
 	}
 
-	const std::map<const std::string,ExternalVariable *>& Task::getFanIns() const
+	const std::map<const std::string,const ExternalVariable *>& Task::getFanIns() const
 	{
 	    return _fanIn;
 	}
@@ -594,8 +584,8 @@ namespace LQIO {
 	/* ------------------------------------------------------------------------ */
 
 	SemaphoreTask::SemaphoreTask(const Document * document, const char * name, const std::vector<DOM::Entry *>& entryList,
-				     const Processor* processor, ExternalVariable* queue_length, ExternalVariable * priority,
-				     ExternalVariable* n_copies, ExternalVariable* n_replicas,
+				     const Processor* processor, const ExternalVariable* queue_length, const ExternalVariable * priority,
+				     const ExternalVariable* n_copies, const ExternalVariable* n_replicas,
 				     const Group * group)
 	    : Task(document, name, SCHEDULE_SEMAPHORE, entryList, processor, queue_length, priority,
 		   n_copies, n_replicas, group ),
@@ -671,8 +661,8 @@ namespace LQIO {
 	}
 
 	RWLockTask::RWLockTask(const Document * document, const char * name, const std::vector<DOM::Entry *>& entryList,
-			       const Processor* processor, ExternalVariable* queue_length, ExternalVariable * priority,
-			       ExternalVariable* n_copies, ExternalVariable* n_replicas,
+			       const Processor* processor, const ExternalVariable* queue_length, const ExternalVariable * priority,
+			       const ExternalVariable* n_copies, const ExternalVariable* n_replicas,
 			       const Group * group )
 	    : Task(document, name, SCHEDULE_RWLOCK, entryList, processor,
 		   queue_length, priority, n_copies, n_replicas, group ),

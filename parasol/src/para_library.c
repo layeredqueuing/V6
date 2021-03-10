@@ -1,4 +1,4 @@
-/* $Id: para_library.c 14153 2020-11-30 18:03:53Z greg $ */
+/* $Id: para_library.c 14499 2021-02-27 23:24:12Z greg $ */
 
 /************************************************************************/
 /*	para_library.c - PARASOL library source file			*/
@@ -7721,13 +7721,15 @@ void mctx_create( mctx_t *mctx, void (*sf_addr)(void), void *sf_arg, void *sk_ad
 {
 	struct sigaction sa;
 	struct sigaction osa;
-#if HAVE_STACK_T
+/* #if HAVE_STACK_T */
 	stack_t ss;
 	stack_t oss;
+/*
 #else
 	struct sigaltstack ss;
 	struct sigaltstack oss;
 #endif
+*/
 	sigset_t osigs;
 	sigset_t sigs;
 

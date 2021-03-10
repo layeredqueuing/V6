@@ -3,9 +3,10 @@
 # Carleton University, Ottawa, Ontario, Canada. K1S 5B6
 #
 #----------------------------------------------------------------------
-# $Id: Makefile.am 11483 2013-08-16 12:47:24Z greg $
+# $Id: Makefile.am 14499 2021-02-27 23:24:12Z greg $
 #----------------------------------------------------------------------
 
+if HAVE_LATEX
 SUBDIRS = model calls activity-templ web-server pseudo-tasks
 DST = 	tutorial
 SRCS =	schema.fig activity-schema.fig
@@ -48,3 +49,7 @@ $(DST).txt: $(DST).dvi
 
 clean-local:
 	rm -f $(OBJS)  $(DST).aux $(DST).bbl $(DST).blg $(DST).dvi $(DST).log $(DST).pdf $(DST).ps $(DST).out *.fig.bak *.eps
+else
+all:
+	echo LaTeX is required to make the tutorial.
+endif

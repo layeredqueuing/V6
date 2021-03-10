@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- *  $Id: dom_call.h 14106 2020-11-18 14:33:50Z greg $
+ *  $Id: dom_call.h 14498 2021-02-27 23:08:51Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -9,7 +9,6 @@
 #ifndef __LQIO_DOM_CALL__
 #define __LQIO_DOM_CALL__
 
-#include "dom_object.h"
 #include "dom_object.h"
 
 namespace LQIO {
@@ -55,8 +54,8 @@ namespace LQIO {
 	public:
 
 	    /* Designated initializer for the call information */
-	    Call(const Document * document, const Call::Type type, Phase* source, Entry* destination, ExternalVariable* callMean=0 );
-	    Call(const Document * document, Entry *source, Entry* destination, ExternalVariable* callMean=0 );
+	    Call(const Document * document, const Type type, Phase* source, Entry* destination, const ExternalVariable* callMean=nullptr );
+	    Call(const Document * document, Entry *source, Entry* destination, const ExternalVariable* callMean=nullptr );
 	    virtual ~Call();
 	    Call * clone() const;
 
@@ -65,17 +64,17 @@ namespace LQIO {
 	    /* Accessors and Mutators */
 	    const char * getTypeName() const { return __typeName; }
 
-	    const Call::Type getCallType() const;
-	    void setCallType(const Call::Type callType);
+	    const Type getCallType() const;
+	    void setCallType(const Type callType);
 	    void setSourceObject( DocumentObject* );
 	    void setDestinationEntry( Entry* );
 	    const Histogram* getHistogram() const { return _histogram; }
 	    void setHistogram(Histogram* histogram);
 
 	    bool hasHistogram() const;
-	    bool hasRendezvous() const { return _callType == Type::RENDEZVOUS; }
-	    bool hasSendNoReply() const { return _callType == Type::SEND_NO_REPLY; }
-	    bool hasForwarding() const { return _callType == Type::FORWARD; }
+	    bool hasRendezvous() const { return _callType == Call::Type::RENDEZVOUS; }
+	    bool hasSendNoReply() const { return _callType == Call::Type::SEND_NO_REPLY; }
+	    bool hasForwarding() const { return _callType == Call::Type::FORWARD; }
 
 	    /* Accessors for Call Information */
 	    const DocumentObject* getSourceObject() const;
@@ -83,7 +82,7 @@ namespace LQIO {
 
 	    /* External Variable Access (Do not call until set) */
 	    const ExternalVariable* getCallMean() const;
-	    void setCallMean(ExternalVariable* callMean);
+	    void setCallMean(const ExternalVariable* callMean);
 	    const double getCallMeanValue() const;
 	    void setCallMeanValue(double);
 
@@ -108,12 +107,12 @@ namespace LQIO {
 	private:
 
 	    /* Type of Entry */
-	    Call::Type _callType;
+	    Type _callType;
 	    DocumentObject * _sourceObject;
 	    Entry* _destinationEntry;
 
 	    /* Variables which can be scripted */
-	    ExternalVariable* _callMean;
+	    const ExternalVariable* _callMean;
 	    Histogram * _histogram;
 
 	    /* Results for the call */

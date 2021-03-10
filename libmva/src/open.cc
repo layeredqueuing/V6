@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: open.cc 14310 2020-12-31 17:16:57Z greg $
+ * $Id: open.cc 14496 2021-02-27 02:36:12Z greg $
  *
  * Open Network solver.
  *
@@ -7,7 +7,7 @@
  * Department of Systems and Computer Engineering,
  * Carleton University, Ottawa, Ontario, Canada. K1S 5B6
  *
- * $Date: 2020-12-31 12:16:57 -0500 (Thu, 31 Dec 2020) $
+ * $Date: 2021-02-26 21:36:12 -0500 (Fri, 26 Feb 2021) $
  * ----------------------------------------------------------------------
  * Conventions:
  *    E - (scalar) number of entries for a given station.
@@ -83,7 +83,7 @@ operator<<( std::ostream& output, Open& model )
  *	U: Station utilization (Storage allocated by subclass)
  */
 
-Open::Open( Vector<Server *>& q) : M(q.size()), Q(q)
+Open::Open( Vector<Server *>& stns) : M(stns.size()), Q(stns)
 {
     /* Set index in each station */
 

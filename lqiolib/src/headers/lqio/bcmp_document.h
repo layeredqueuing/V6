@@ -11,6 +11,7 @@
 #include <string>
 #include <iostream>
 #include "input.h"
+#include "dom_extvar.h"
 
 namespace LQIO {
     namespace DOM {
@@ -19,8 +20,8 @@ namespace LQIO {
 }
 
 namespace BCMP {
+    using namespace LQIO;
     class Model {
-	
 
     public:
 	class Object {
@@ -29,115 +30,189 @@ namespace BCMP {
 	    virtual ~Object() {}
 
 	    std::string& getComment() { return _comment; }
+	    virtual const char * getTypeName() const = 0;
 
 	private:
 	    std::string _comment;
 	};
-	
-
-	/* ------------------------------------------------------------ */
-	/*                           Station                            */
-	/* ------------------------------------------------------------ */
 
-    public:
-	class Class : public Object {
-	    
+	class Result {
 	public:
-	    typedef std::map<const std::string,Class> map_t;
-	    typedef std::pair<const std::string,Class> pair_t;
+	    enum class Type { QUEUE_LENGTH, RESIDENCE_TIME, RESPONSE_TIME, THROUGHPUT, UTILIZATION };
+	    typedef std::map<Type,std::string> map_t;
+	    typedef std::pair<Type,std::string> pair_t;
 
-	    typedef enum { NONE, CLOSED, OPEN, MIXED } Type;
-	    
-	public:
-	    Class() : _type(NONE), _customers(0), _think_time(0.0) {}
-	    Class( Type type, unsigned int customers, double think_time ) : _type(type), _customers(customers), _think_time(think_time) {}
+	    Result() {}
 
-	    Type type() const { return _type; }
-	    unsigned int customers() const { return _customers; }
-	    void setCustomers( unsigned int customers ) { _customers = customers; }
-	    double think_time() const { return _think_time; }
-	    void setThinkTime( double think_time ) { _think_time = think_time; }
-	    bool isInClosedModel() const { return _type == CLOSED || _type == MIXED; }
-	    bool isInOpenModel() const { return _type == OPEN || _type == MIXED; }
-
-	private:
-	    Type _type;
-	    unsigned int _customers;
-	    double _think_time;
-
-	public:
-	    struct fold {
-		fold( const std::string& suffix="" ) : _suffix(suffix) {}
-		std::string operator()( const std::string& s1, const Class::pair_t& c2 ) const;
-	    private:
-		const std::string& _suffix;
-	    };
+	    virtual double throughput() const = 0;
+	    virtual double queue_length() const = 0;
+	    virtual double residence_time() const = 0;
+	    virtual double utilization() const = 0;
 	};
 
 	/* ------------------------------------------------------------ */
-	/*                           Station                            */
+	/*                            Chain                             */
 	/* ------------------------------------------------------------ */
 
-	class Station : public Object {
-	    
+    public:
+	class Chain : public Object  {
+	    friend class Model;
+
+	public:
+	    typedef std::map<const std::string,Chain> map_t;
+	    typedef std::pair<const std::string,Chain> pair_t;
+
+	    typedef enum { UNDEFINED, CLOSED, OPEN } Type;
+
+	public:
+	    Chain( Type type, const DOM::ExternalVariable* customers, const DOM::ExternalVariable* think_time ) : _type(Type::CLOSED), _customers(customers), _think_time(think_time), _arrival_rate(nullptr) { assert(type==Type::CLOSED); }
+	    Chain( Type type, const DOM::ExternalVariable* arrival_rate ) : _type(Type::OPEN), _customers(nullptr), _think_time(nullptr), _arrival_rate(arrival_rate) { assert(type==Type::OPEN); }
+
+	    virtual const char * getTypeName() const { return __typeName; }
+	    Type type() const { return _type; }
+ 	    const DOM::ExternalVariable* customers() const { assert(type()==Type::CLOSED); return _customers; }
+	    void setCustomers( DOM::ExternalVariable* customers ) { assert(type()==Type::CLOSED); _customers = customers; }
+	    const DOM::ExternalVariable* think_time() const { assert(type()==Type::CLOSED); return _think_time; }
+	    void setThinkTime( DOM::ExternalVariable* think_time ) { assert(type()==Type::CLOSED); _think_time = think_time; }
+	    const DOM::ExternalVariable* arrival_rate() const { assert(type()==Type::OPEN); return _arrival_rate; }
+	    void setArrivalRate( DOM::ExternalVariable* arrival_rate ) { assert(type()==Type::OPEN); _arrival_rate = arrival_rate; }
+	    bool isClosed() const { return _type == CLOSED; }
+	    bool isOpen() const { return _type == OPEN; }
+	    static bool closedChain( const Chain::pair_t& k ) { return k.second.type() == Type::CLOSED; }
+	    static bool openChain( const Chain::pair_t& k ) { return k.second.type() == Type::OPEN; }
+
+	    virtual double throughput() const { return 0; }
+	    virtual double queue_length() const { return 0; }
+	    virtual double residence_time() const { return 0; }
+	    virtual double utilization() const { return 0; }
+
+	    struct fold {
+		fold( const std::string& suffix="" ) : _suffix(suffix) {}
+		std::string operator()( const std::string& s1, const Chain::pair_t& c2 ) const;
+	    private:
+		const std::string& _suffix;
+	    };
+
+	private:
+	    struct is_a {
+		is_a( Type type ) : _type(type) {}
+		bool operator()( const Chain::pair_t& chain ) const { return chain.second.type() == _type; }
+	    private:
+		const Type _type;
+	    };
+
+	public:
+	    static const char * const __typeName;
+
+	private:
+	    Type _type;
+	    const DOM::ExternalVariable * _customers;
+	    const DOM::ExternalVariable * _think_time;
+	    const DOM::ExternalVariable * _arrival_rate;
+	};
+
+	/* -------------------------- Station ------------------------- */
+
+	class Station : public Object, public Result {
+	    friend class Model;
+
 	public:
 	    typedef std::map<const std::string,Station> map_t;
 	    typedef std::pair<const std::string,Station> pair_t;
 
-	    typedef enum { NOT_DEFINED, DELAY, LOAD_INDEPENDENT, MULTISERVER, CUSTOMER } Type;
+	    enum class Type { NOT_DEFINED, DELAY, LOAD_INDEPENDENT, MULTISERVER, CUSTOMER, SOURCE };
 
-	    class Demand {
+	    /* -------------------------------------------------------- */
+	    /*                          Class                           */
+	    /* -------------------------------------------------------- */
+
+	    class Class : public Result {
+		friend class Station;
+
 	    public:
-		typedef std::map<const std::string,Demand> map_t;
-		typedef std::pair<const std::string,Demand> pair_t;
+		typedef std::map<const std::string,Class> map_t;
+		typedef std::pair<const std::string,Class> pair_t;
 
-		Demand() : _visits(0.0), _service_time(0.0) {}
-		Demand( double visits, double service_time ) : _visits(visits), _service_time(service_time) {}
-		
-		double visits() const { return _visits; }
-		double service_time() const { return _service_time; }
-		double demand() const { return _service_time * _visits; }
-		void setVisits( double visits ) { _visits = visits; }
-		void setServiceTime( double service_time ) { _service_time = service_time; }
-		
-		Demand operator+( const Demand& augend ) const { return Demand( _visits + augend._visits, _service_time + augend._service_time ); }
-		Demand& operator+=( const Demand& addend ) { _visits += addend._visits; _service_time += addend._service_time; return *this; }
-		Demand& accumulate( double visits, double demand ) { _visits += visits; _service_time += demand; return *this; }
-		Demand& accumulate( const Demand& addend ) { _visits += addend._visits; _service_time += addend._service_time; return *this; }
-		static Demand::map_t collect( const Demand::map_t& augend_t, const Demand::pair_t& );
+		Class( const DOM::ExternalVariable* visits=nullptr, const DOM::ExternalVariable* service_time=nullptr );
+		~Class() {}
+
+		void setResults( double throughput, double queue_length, double residence_time, double utilization );
+		virtual const char * getTypeName() const { return __typeName; }
+
+		const DOM::ExternalVariable* visits() const { return _visits; }
+		const DOM::ExternalVariable* service_time() const { return _service_time; }
+		void setVisits( const DOM::ExternalVariable* visits ) { _visits = visits; }
+		void setServiceTime( const DOM::ExternalVariable* service_time ) { _service_time = service_time; }
+		Result::map_t& resultVariables()  { return _result_vars; }
+		const Result::map_t& resultVariables() const { return _result_vars; }
+
+		Class operator+( const Class& augend ) const;
+		Class& operator+=( const Class& addend );
+		Class& accumulate( double visits, double demand );
+		Class& accumulate( const Class& addend );
+
+		double throughput() const { return _results.at(Result::Type::THROUGHPUT); }
+		double queue_length() const { return _results.at(Result::Type::QUEUE_LENGTH); }
+		double residence_time() const { return _results.at(Result::Type::RESIDENCE_TIME); }
+		double utilization() const { return _results.at(Result::Type::UTILIZATION); }
+		Class& deriveResidenceTime();
+		void insertResultVariable( Result::Type, const std::string& );
 
 	    private:
-		double _visits;
-		double _service_time;
+		static Class::map_t collect( const Class::map_t& augend_t, const Class::pair_t& );
+
+	    public:
+		static const char * const __typeName;
+
+	    private:
+		const DOM::ExternalVariable* _visits;
+		const DOM::ExternalVariable* _service_time;
+		std::map<Result::Type,double> _results;
+		Result::map_t _result_vars;
 	    };
-	
-	/* -------------------------- Station ------------------------- */
+
+	/* ------------------------------------------------------------ */
+	/*                           Station                            */
+	/* ------------------------------------------------------------ */
 
 	public:
-	    Station() : _type(NOT_DEFINED), _scheduling(SCHEDULE_DELAY), _copies(1), _demands() {}
-	    Station( Type type, scheduling_type scheduling=SCHEDULE_DELAY, unsigned int copies=1 ) : _type(type), _scheduling(scheduling), _copies(copies) {}
+	    Station( Type type=Type::NOT_DEFINED, scheduling_type scheduling=SCHEDULE_DELAY, const DOM::ExternalVariable* copies=nullptr ) :
+		_type(type), _scheduling(scheduling), _copies(copies) {}
+	    ~Station();
 
-	    bool insertDemand( const std::string&, const Demand& );
-	    
+	    std::pair<Station::Class::map_t::iterator,bool> insertClass( const std::string&, const Class& );
+	    std::pair<Station::Class::map_t::iterator,bool> insertClass( const std::string&, const DOM::ExternalVariable* visits=nullptr, const DOM::ExternalVariable* service_time=nullptr );
+	    void insertResultVariable( Result::Type, const std::string& );
+
+	    virtual const char * getTypeName() const { return __typeName; }
 	    Type type() const { return _type; }
 	    void setType(Type type) { _type = type; }
 	    scheduling_type scheduling() const { return _scheduling; }
-	    unsigned int copies() const { return _copies; }
-	    Demand::map_t& demands() { return _demands; }
-	    const Demand::map_t& demands() const { return _demands; }
-	    Demand& demandAt( const std::string& name ) { return _demands.at(name); }
-	    const Demand& demandAt( const std::string& name ) const { return _demands.at(name); }
+	    const DOM::ExternalVariable* copies() const { return _copies; }
+	    void setCopies( const DOM::ExternalVariable* copies ) { _copies = copies; }
+	    Class::map_t& classes() { return _classes; }
+	    const Class::map_t& classes() const { return _classes; }
+	    Class& classAt( const std::string& name ) { return _classes.at(name); }
+	    const Class& classAt( const std::string& name ) const { return _classes.at(name); }
+	    Result::map_t& resultVariables() { return _result_vars; }
+	    const Result::map_t& resultVariables() const { return _result_vars; }
 
-	    bool hasClass( const std::string& name ) const { return _demands.find(name) != _demands.end(); }
+	    bool hasClass( const std::string& name ) const { return _classes.find(name) != _classes.end(); }
+	    Class::map_t::const_iterator findClass( const Class * k ) const;
 
-	    static bool isCustomer( const Station::pair_t& m ) { return m.second.type() == CUSTOMER; }
-	    static bool isServer( const Station::pair_t& m ) { return m.second.type() != CUSTOMER && m.second.type() != NOT_DEFINED; }
+	    static bool isCustomer( const Station::pair_t& m ) { return m.second.type() == Type::CUSTOMER; }
+	    static bool isServer( const Station::pair_t& m ) { return m.second.type() != Type::CUSTOMER && m.second.type() != Type::NOT_DEFINED; }
 
-	public:
+	    virtual double throughput() const;
+	    virtual double queue_length() const;
+	    virtual double residence_time() const;
+	    virtual double utilization() const;
+	    static Class sumResults( const Class& augend, const Class::pair_t& addend );
+
 	    struct select {
 		typedef bool (*predicate)( const Station::pair_t& );
 		select( const predicate test ) : _test(test) {}
-		Demand::map_t operator()( const Demand::map_t& augend, const Station::pair_t& m ) const;
+		Class::map_t operator()( const Class::map_t& augend, const Station::pair_t& m ) const;
 	    private:
 		const predicate _test;
 	    };
@@ -149,19 +224,84 @@ namespace BCMP {
 	    private:
 		const predicate _test;
 	    };
+
+	    bool any_of( const Chain::map_t& chains, Chain::Type type ) const;
+	    size_t count_if( const Chain::map_t& chains, Chain::Type type ) const;
 	    
-	    struct fold {
-		fold( const std::string& suffix="" ) : _suffix(suffix) {}
-		std::string operator()( const std::string& s1, const Station::pair_t& m ) const;
+	    struct is_a {
+		is_a( const Model& model, Chain::Type type ) : _model(model), _type(type) {}
+		bool operator()( const Station::pair_t& station ) const { return _type == Chain::Type::UNDEFINED || station.second.any_of( chains(), _type ); }
 	    private:
-		const std::string& _suffix;
+		const Chain::map_t& chains() const { return _model.chains(); }
+
+	    private:
+		const Model& _model;
+		const Chain::Type _type;
 	    };
-  
+
+	private:
+	    static double sum_throughput( double addend, const BCMP::Model::Station::Class::pair_t& augend );
+	    static double sum_utilization( double addend, const BCMP::Model::Station::Class::pair_t& augend );
+	    static double sum_residence_time( double addend, const BCMP::Model::Station::Class::pair_t& augend );
+	    static double sum_queue_length( double addend, const BCMP::Model::Station::Class::pair_t& augend );
+
+	public:
+	    static const char * const __typeName;
+
 	private:
 	    Type _type;
 	    scheduling_type _scheduling;
-	    unsigned int _copies;
-	    Demand::map_t _demands;
+	    const DOM::ExternalVariable* _copies;
+	    Class::map_t _classes;
+	    Result::map_t _result_vars;
+	};
+
+	/* ------------------------------------------------------------ */
+	/*                            Bound                             */
+	/* ------------------------------------------------------------ */
+
+	class Bound {
+	public:
+	    Bound( const Chain::pair_t& chain, const Station::map_t& stations );
+    
+	    double think_time() const;
+
+	    double D_max() const { return _D_max; }
+	    double D_sum() const { return _D_sum; }
+	    double Z() const { return _Z; }
+	    
+	private:
+	    const std::string& chain() const { return _chain.first; }
+	    const Station::map_t& stations() const { return _stations; }
+    
+	    void compute();
+
+	    struct max_demand {
+		max_demand( const std::string& chain ) : _class(chain) {}
+		double operator()( double, const Station::pair_t& );
+	    private:
+		const std::string& _class;
+	    };
+	
+	    struct sum_demand {
+		sum_demand( const std::string& chain ) : _class(chain) {}
+		double operator()( double, const Station::pair_t& );
+	    private:
+		const std::string& _class;
+	    };
+	
+	    struct sum_think_time {
+		sum_think_time( const std::string& chain ) : _class(chain) {}
+		double operator()( double, const Station::pair_t& );
+	    private:
+		const std::string& _class;
+	    };
+
+	    const Chain::pair_t _chain;
+	    const Station::map_t& _stations;
+	    double _D_max;
+	    double _D_sum;
+	    double _Z;
 	};
 
 	/* ------------------------------------------------------------ */
@@ -169,57 +309,73 @@ namespace BCMP {
 	/* ------------------------------------------------------------ */
 
     public:
-	Model() : _comment(), _classes(), _stations() {}
-	virtual ~Model() {}
+	Model() : _comment(), _chains(), _stations() {}
+	virtual ~Model();
 
-	bool empty() const { return _classes.size() == 0 || _stations.size() == 0; }
+	bool empty() const { return _chains.size() == 0 || _stations.size() == 0; }
 	const std::string& comment() const { return _comment; }
-	Class::map_t& classes() { return _classes; }
-	const Class::map_t& classes() const { return _classes; }
+	Chain::map_t& chains() { return _chains; }
+	const Chain::map_t& chains() const { return _chains; }
 	Station::map_t& stations() { return _stations; }
 	const Station::map_t& stations() const { return _stations; }
 	Station& stationAt( const std::string& name ) { return _stations.at(name); }
 	const Station& stationAt( const std::string& name ) const { return _stations.at(name); }
-	Class& classAt( const std::string& name ) { return _classes.at(name); }
-	const Class& classAt( const std::string& name ) const { return _classes.at(name); }
+	Chain& chainAt( const std::string& name ) { return _chains.at(name); }
+	const Chain& chainAt( const std::string& name ) const { return _chains.at(name); }
+
+	size_t n_chains(Chain::Type) const;
+	size_t n_stations(Chain::Type) const;
+	
+	Station::map_t::const_iterator findStation( const Station* m ) const;
 
 	bool insertComment( const std::string comment ) { _comment = comment; return true; }
-	bool insertClass( const std::string&, Class::Type, unsigned int, double=0.0 );
-	bool insertStation( const std::string&, const Station& ); 
-	bool insertStation( const std::string& name, Station::Type type, scheduling_type scheduling=SCHEDULE_DELAY, unsigned int copies=1 ) { return insertStation( name, Station( type, scheduling, copies ) ); }
-	bool insertDemand( const std::string&, const std::string&, const Station::Demand& );
+	std::pair<Chain::map_t::iterator,bool> insertClosedChain( const std::string&, const DOM::ExternalVariable *, const DOM::ExternalVariable * think_time=nullptr );
+	std::pair<Chain::map_t::iterator,bool> insertOpenChain( const std::string&, const DOM::ExternalVariable * );
+	std::pair<Station::map_t::iterator,bool> insertStation( const std::string&, const Station& );
+	std::pair<Station::map_t::iterator,bool> insertStation( const std::string& name, Station::Type type, scheduling_type scheduling=SCHEDULE_DELAY, const DOM::ExternalVariable* copies=nullptr ) { return insertStation( name, Station( type, scheduling, copies ) ); }
 
-	Station::Demand::map_t computeCustomerDemand( const std::string& ) const;
-	bool convertToLQN( LQIO::DOM::Document& ) const;
-	
+	Station::Class::map_t computeCustomerDemand( const std::string& ) const;
+	bool convertToLQN( DOM::Document& ) const;
+
+	double response_time( const std::string& ) const;
+	double throughput( const std::string& ) const;
+
 	virtual std::ostream& print( std::ostream& output ) const;	/* NOP (lqn2ps will render) */
+	static bool isSet( const LQIO::DOM::ExternalVariable * var, double default_value=0.0 );
 
 	struct pad_demand {
-	    pad_demand( const Class::map_t& classes ) : _classes(classes) {}
+	    pad_demand( const Chain::map_t& chains ) : _chains(chains) {}
 	    void operator()( const Station::pair_t& station ) const;
 	private:
-	    const Class::map_t& _classes;	
+	    const Chain::map_t& _chains;
 	};
 
 	struct sum_visits {
-	    sum_visits( const Station::Demand::map_t& visits ) : _visits(visits) {}
-	    Station::Demand::map_t operator()( const Station::Demand::map_t& input, const Station::Demand::pair_t& visit ) const;
+	    sum_visits( const Station::Class::map_t& visits ) : _visits(visits) {}
+	    Station::Class::map_t operator()( const Station::Class::map_t& input, const Station::Class::pair_t& visit ) const;
 	private:
-	    const Station::Demand::map_t& _visits;
+	    const Station::Class::map_t& _visits;
+	};
+
+	struct sum_residence_time {
+	    sum_residence_time( const std::string& name ) : _name(name) {}
+	    double operator()( double augend, const Station::pair_t& m ) const;
+	private:
+	    const std::string& _name;
 	};
 
     private:
 	struct update_demand {
-	    update_demand( Station& station, Station::Demand::map_t& demands ) : _station(station), _demands(demands) {}
-	    void operator()( const Class::pair_t& k ) { _station.demandAt( k.first ) = _demands.at( k.first ); }
+	    update_demand( Station& station, Station::Class::map_t& classes ) : _station(station), _classes(classes) {}
+	    void operator()( const Chain::pair_t& k ) { _station.classAt( k.first ) = _classes.at( k.first ); }
 	private:
 	    Station& _station;
-	    const Station::Demand::map_t& _demands;
+	    const Station::Class::map_t& _classes;
 	};
 
     private:
 	std::string _comment;
-	Class::map_t _classes;
+	Chain::map_t _chains;
 	Station::map_t _stations;
     };
 }

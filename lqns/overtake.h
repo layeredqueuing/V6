@@ -1,7 +1,7 @@
 /*  -*- c++ -*-
  * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/overtake.h $ -- Greg Franks
  *
- * $Id: overtake.h 14310 2020-12-31 17:16:57Z greg $
+ * $Id: overtake.h 14334 2021-01-05 03:03:03Z greg $
  */
 
 #ifndef _OVERTAKE_H

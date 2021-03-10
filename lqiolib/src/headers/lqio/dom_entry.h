@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- *  $Id: dom_entry.h 14168 2020-12-04 20:17:22Z greg $
+ *  $Id: dom_entry.h 14498 2021-02-27 23:08:51Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -82,11 +82,11 @@ namespace LQIO {
 	    Call* getCallToTarget(const Entry* target, unsigned phase) const;
 
 	    /* Additional Entry Parameters */
-	    void setOpenArrivalRate(ExternalVariable* value);
+	    void setOpenArrivalRate(const ExternalVariable* value);
 	    const ExternalVariable * getOpenArrivalRate() const { return _openArrivalRate; }
 	    double getOpenArrivalRateValue() const;
 	    bool hasOpenArrivalRate() const;
-	    void setEntryPriority(ExternalVariable* value);
+	    void setEntryPriority(const ExternalVariable* value);
 	    const ExternalVariable* getEntryPriority() const;
 	    int getEntryPriorityValue() const;
 	    bool hasEntryPriority() const;
@@ -101,9 +101,9 @@ namespace LQIO {
 
 	    bool isDefined() const;
 	    bool isStandardEntry() const;
-	    bool entryTypeOk(Entry::Type newType);
-	    const Entry::Type getEntryType() const;
-	    void setEntryType(Entry::Type newType);
+	    bool entryTypeOk(Type newType);
+	    const Type getEntryType() const;
+	    void setEntryType(Type newType);
 
 	    virtual bool hasHistogram() const;
 	    virtual bool hasHistogramForPhase( unsigned ) const;
@@ -240,15 +240,15 @@ namespace LQIO {
 
 	    /* Instance variables */
 
-	    Entry::Type _type;
+	    Type _type;
 	    std::map<unsigned, Phase*> _phases;
 	    unsigned int _maxPhase;
 	    Task* _task;
 	    std::map<unsigned, Histogram*> _histograms;
 
 	    /* Additional Entry Parameters */
-	    ExternalVariable* _openArrivalRate;
-	    ExternalVariable* _entryPriority;
+	    const ExternalVariable* _openArrivalRate;
+	    const ExternalVariable* _entryPriority;
 	    Semaphore _semaphoreType;
 	    RWLock _rwlockType;
 	    std::vector<Call *> _forwarding;

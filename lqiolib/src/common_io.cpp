@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: common_io.cpp 14302 2020-12-31 13:11:17Z greg $
+ * $Id: common_io.cpp 14519 2021-03-06 01:11:56Z greg $
  *
  * Read in XML input files.
  *
@@ -215,10 +215,24 @@ static inline double tv_to_double( struct timeval& tv ) { return (static_cast<do
 #if HAVE_GETEUID && HAVE_GETPWUID
 	    struct passwd * passwd = getpwuid(geteuid());
 	    output << passwd->pw_name;
-#elif defined(WINNT)
+#elif defined(__WINNT__)
 	    output << getenv("USERNAME");
 #endif
 	    return output;
 	}
     }
+
+    static const std::string WHITESPACE = " \n\r\t\f\v";
+ 
+    std::string ltrim(const std::string& s)
+    {
+	size_t start = s.find_first_not_of(WHITESPACE);
+	return (start == std::string::npos) ? "" : s.substr(start);
+    }
+ 
+    std::string rtrim(const std::string& s)
+    {
+	size_t end = s.find_last_not_of(WHITESPACE);
+	return (end == std::string::npos) ? "" : s.substr(0, end + 1);
+    }    
 }

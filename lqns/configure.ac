@@ -1,6 +1,6 @@
 # Process this file with autoconf to produce a configure script.
 # ------------------------------------------------------------------------
-# $Id: configure.ac 14310 2020-12-31 17:16:57Z greg $
+# $Id: configure.ac 14498 2021-02-27 23:08:51Z greg $
 # ------------------------------------------------------------------------
 AC_INIT(lqns, 6.1, greg@sce.carleton.ca)
 AC_CONFIG_AUX_DIR([../config])
@@ -33,6 +33,11 @@ fi
 AC_PROG_CC_STDC
 AC_PROG_INSTALL
 AC_PROG_LN_S
+if test -z "$XPS2PDF"; then
+  AC_MSG_NOTICE([Ps2pdf not found - Unable to create PDF version of the user manual])
+fi
+AM_CONDITIONAL([HAVE_PS2PDF], test -n "$XPS2PDF")
+
 # ----------------------------------------------------------------------
 # Checks for libraries.
 #

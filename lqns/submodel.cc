@@ -1,6 +1,6 @@
 /* -*- c++ -*-
  * submodel.C	-- Greg Franks Wed Dec 11 1996
- * $Id: submodel.cc 14310 2020-12-31 17:16:57Z greg $
+ * $Id: submodel.cc 14498 2021-02-27 23:08:51Z greg $
  *
  * MVA submodel creation and solution.  This class is the interface
  * between the input model consisting of processors, tasks, and entries,
@@ -432,23 +432,23 @@ MVASubmodel::rebuild()
     /* ------------------ Recreate servers for model. -----------------	*/
 
     for ( std::set<Entity *>::const_iterator server = _servers.begin(); server != _servers.end(); ++server ) {
-	if ( (*server)->nEntries() == 0 ) continue;	/* Null server. */
-	Server * oldStation = (*server)->serverStation();		/* Get old station		*/
+	if ( (*server)->nEntries() == 0 ) continue;		/* Null server. */
+	Server * oldStation = (*server)->serverStation();	/* Get old station		*/
 	const unsigned closedIndex = oldStation->closedIndex;		/* Copy over indicies.		*/
 	const unsigned openIndex   = oldStation->openIndex;
 
  	Server * newStation = (*server)->makeServer( nChains() );	/* Returns NULL on no change	*/
-	if ( !newStation )  continue;			/* Out with the old...		*/
+	if ( !newStation )  continue;				/* Out with the old...		*/
 
 	newStation->setMarginalProbabilitiesSize( _customers );
 
 	if ( closedIndex ) {
 	    newStation->closedIndex = closedIndex;
-	    closedStation[closedIndex] = newStation;	/* ... and in with the new...	*/
+	    closedStation[closedIndex] = newStation;		/* ... and in with the new...	*/
 	}
 	if ( openIndex ) {
 	    newStation->openIndex = openIndex;
-	    openStation[openIndex] = newStation;	/* ... and in with the new...	*/
+	    openStation[openIndex] = newStation;		/* ... and in with the new...	*/
 	}
     }
 

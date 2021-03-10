@@ -12,7 +12,7 @@
  * Comparison of srvn output results.
  * By Greg Franks.  August, 1991.
  *
- * $Id: srvndiff.cc 14163 2020-12-04 16:08:10Z greg $
+ * $Id: srvndiff.cc 14519 2021-03-06 01:11:56Z greg $
  */
 
 #define DIFFERENCE_MODE	1
@@ -90,7 +90,7 @@ struct stats_buf
     double p90th() const;
     double sum() const { return sum_; }
     double n() const { return n_; }
-    double ok() const { return all_ok; } 
+    double ok() const { return all_ok; }
 
 private:
     unsigned long n_;
@@ -161,7 +161,7 @@ static bool check_wait( unsigned i, unsigned j, unsigned k, unsigned p );
 
 /*
  * Main table of functions to get and print data.  See result_str_t.
- * Cast functions to common type for initializing table.  
+ * Cast functions to common type for initializing table.
  */
 
 static const char * fmt_e	= "%-16.16s";
@@ -426,7 +426,7 @@ static struct {
     { "processor-waiting",           'b', true,  no_argument,       "Print processor waiting times.", &print_processor_waiting },
     { "coefficient-of-variation",    'c', true,  no_argument,       "Pring coefficient of variation results.", &print_cv_square },
     { "asynch-send-variance",        'd', true,  no_argument,       "Print send-no-reply waiting time variance.", &print_snr_waiting_variance },
-    { "entry-throughput", 	     'e', true,  no_argument,       "Print entry throughput.", &print_entry_throughput }, 
+    { "entry-throughput", 	     'e', true,  no_argument,       "Print entry throughput.", &print_entry_throughput },
     { "format",                      'f', false, required_argument, "Set the output format for <col> to <arg>. Column can be separator, result, confidence, error, or percent-confidence. <arg> is passed to printf() as a format.", nullptr },
     { "group-utilization",	     'g', true,  no_argument,       "Print processor group utilizations.", &print_group_util },
     { "semaphore-utilization",       'h', true,  no_argument,       "Print semaphore utilization.", &print_sema_util },
@@ -642,7 +642,7 @@ main (int argc, char * const argv[])
 	case 'e':
 	    print_entry_throughput = enable;
 	    break;
-	    
+	
 	case 'E':
 	    if ( enable ) {
 		print_error_only   = true;
@@ -703,7 +703,7 @@ main (int argc, char * const argv[])
 	case 'g':
 	    print_group_util = true;
 	    break;
-	    
+	
 	case 'H':
 	    usage();
 	    exit( 0 );
@@ -885,17 +885,17 @@ main (int argc, char * const argv[])
 	    compact_flag = true;
 	    compact_format();
 	    break;
-	    
+	
 	case (512+'c'):
 	    print_comment = true;
 	    break;
-	    
+	
 	case (512+'h'):
 	    options = optarg;
 	    while ( *options ) {
 	    }
 	    break;
-	    
+	
 	case (512+'l'):
 	    print_latex = true;
 	    separator_format = " & ";
@@ -906,7 +906,7 @@ main (int argc, char * const argv[])
 	    no_replication = true;
 	    (void) fprintf( stderr, "--no-replication: Not implemented.\n" );
 	    break;
-	    
+	
         case 512+'s':
             resultdebug = true;
             break;
@@ -914,7 +914,7 @@ main (int argc, char * const argv[])
 	case 512+'v':
 	    verbose_flag = true;
 	    break;
-	    
+	
 	case (512+'w'):
 	    LQIO::severity_level = LQIO::ADVISORY_ONLY;		/* Ignore warnings. */
 	    break;
@@ -924,7 +924,7 @@ main (int argc, char * const argv[])
 	    LQIO::DOM::Expat_Document::__debugXML = true;
 	    break;
 #endif
-	    
+	
         case (512+'j'):
 	    LQIO::DOM::Json_Document::__debugJSON = true;
 	    break;
@@ -937,7 +937,7 @@ main (int argc, char * const argv[])
 
     if ( print_copyright ) {
 	char copyright_date[20];
-	sscanf( "$Date: 2020-12-04 11:08:10 -0500 (Fri, 04 Dec 2020) $", "%*s %s %*s", copyright_date );
+	sscanf( "$Date: 2021-03-05 20:11:56 -0500 (Fri, 05 Mar 2021) $", "%*s %s %*s", copyright_date );
 	(void) fprintf( stdout, "SRVN Difference, Version %s\n", VERSION );
 	(void) fprintf( stdout, "  Copyright %s the Real-Time and Distributed Systems Group,\n", copyright_date );
 	(void) fprintf( stdout, "  Department of Systems and Computer Engineering,\n" );
@@ -1037,7 +1037,7 @@ main (int argc, char * const argv[])
 }
 
 static void
-makeopts( std::string& opts, std::vector<struct option>& longopts ) 
+makeopts( std::string& opts, std::vector<struct option>& longopts )
 {
     struct option opt;
     opt.flag = 0;
@@ -1240,16 +1240,15 @@ my_fopen (const char *filename, const char *mode)
     }
     return fptr;
 }
-
 
 static void
 minimize_path_name( std::vector<std::string>& path_name )
 {
     const size_t passes = path_name.size();
     std::vector<std::string> dir_name = path_name;
-    
+
     /* find directory names */
-    
+
     for ( size_t j = 0; j < passes; ++j ) {
 	std::string temp = dir_name[j];
 	dir_name[j] = dirname( const_cast<char *>(temp.c_str()) );		/* Clobbers temp */
@@ -1258,7 +1257,7 @@ minimize_path_name( std::vector<std::string>& path_name )
 	    dir_name[j] = basename( getcwd( cwd, MAXPATHLEN ) );
 	}
     }
-    
+
     bool all_match = true;
     for ( size_t j = 1; all_match && j < passes; ++j ) {
 	all_match = dir_name[0] == dir_name[j];
@@ -1779,11 +1778,11 @@ print ( unsigned passes, char * const names[] )
     }
 
     /* Waiting */
-    
+
     if ( print_waiting ) {
 	print_forwarding_waiting( P_FWD_WAITING, file_name.c_str(), passes );
     }
-    
+
     /* Waiting time variance */
 
     if ( print_waiting_variance ) {
@@ -1872,7 +1871,6 @@ print ( unsigned passes, char * const names[] )
 	print_task_result( P_RWLOCK_READER_HOLD, file_name.c_str(), passes );
 	print_task_result( P_RWLOCK_WRITER_HOLD, file_name.c_str(), passes );
     }
-
     /*- RWLOCK */
 
 
@@ -1881,7 +1879,7 @@ print ( unsigned passes, char * const names[] )
     if ( print_entry_throughput ) {
 	print_entry_result( P_ENTRY_TPUT, file_name.c_str(), passes );
     }
-    
+
     if ( print_task_throughput ) {
 	print_task_result( P_THROUGHPUT, file_name.c_str(), passes );
     }
@@ -2767,8 +2765,8 @@ print_entry_activity( double value[], double conf_value[], const unsigned passes
 
     /* Accumulate statistics */
 
-    if ( j == 0 ) {
-	(*delta)[j].update( value[0] );
+    if ( j == FILE1 ) {
+	(*delta)[j].update( value[FILE1] );
     } else {
 	double error;
 	if ( std::isfinite( value[j] ) && std::isfinite( value[FILE1] ) ) {
@@ -2809,9 +2807,6 @@ print_rms_error ( const char * file_name, const result_str_t result, const std::
 
     if ( max_rms_error > error_threshold ) {
 	differences_found = true;	/* Ignore noise */
-	if ( verbose_flag ) {
-	    fprintf( stderr, "%s: %s - differences found.\n", file_name, result_str[(int)result].string );
-	}
     }
 
     if ( !print_results_only

@@ -1,7 +1,7 @@
 /* -*- c++ -*-
  * model.h	-- Greg Franks
  *
- * $Id: model.h 14241 2020-12-22 21:19:14Z greg $
+ * $Id: model.h 14498 2021-02-27 23:08:51Z greg $
  */
 
 #ifndef _MODEL_H
@@ -28,6 +28,7 @@ namespace LQIO {
     namespace DOM {
 	class Group;
 	class Entity;
+	class ExternalVariable;
     }
 }
 
@@ -218,7 +219,7 @@ private:
     Model& returnReplication();
 #endif
     Model& rename();
-    Model& squishNames();
+    Model& squish();
     Model const& format( Layer& aSubmodel );
 
     unsigned count( const taskPredicate ) const;
@@ -231,6 +232,9 @@ private:
     Model const& accumulateEntryStats( const std::string& ) const;	/* Does not count ref. tasks. */
     std::map<unsigned, LQIO::DOM::Entity *>& remapEntities() const;
 
+#if JMVA_OUTPUT || QNAP2_OUTPUT
+    std::ostream& printBCMP( std::ostream& output ) const;
+#endif
     std::ostream& printEEPIC( std::ostream& output ) const;
 #if defined(EMF_OUTPUT)
     std::ostream& printEMF( std::ostream& output ) const;
@@ -238,9 +242,6 @@ private:
     std::ostream& printFIG( std::ostream& output ) const;
 #if HAVE_LIBGD
     std::ostream& printGD( std::ostream& output, outputFuncPtr func ) const;
-#endif
-#if defined(JMVA_OUTPUT)
-    std::ostream& printJMVA( std::ostream& output ) const;
 #endif
     std::ostream& printPostScript( std::ostream& output ) const;
 #if defined(SVG_OUTPUT)
@@ -267,12 +268,6 @@ private:
     std::ostream& printRTF( std::ostream& output ) const;
     std::ostream& printJSON( std::ostream& output ) const;
     std::ostream& printXML( std::ostream& output ) const;
-#if defined(QNAP_OUTPUT)
-    std::ostream& printQNAP( std::ostream& output ) const;
-#endif
-#if defined(PMIF_OUTPUT)
-    std::ostream& printPMIF( std::ostream& output ) const;
-#endif
 
     std::ostream& printLayers( std::ostream& ) const;
 
@@ -307,7 +302,10 @@ private:
     unsigned int _modelNumber;
     double _scaling;
 
+public:
+#if BUG_270
     static std::vector<Entity *> __zombies;	/* transmorgrify	*/
+#endif
 };
 
 /* --------------------- Batched Partition Model ---------------------- */

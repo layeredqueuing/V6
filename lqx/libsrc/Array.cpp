@@ -48,19 +48,14 @@ namespace LQX {
   
   std::string ArrayObject::description() const
   {
-    /* Return a very simple description */
+    /* output as CSV list */
     std::stringstream ss;
-    ss << "[";
     std::map<SymbolAutoRef,SymbolAutoRef>::const_iterator iter;
     for (iter = _map.begin(); iter != _map.end(); ++iter) {
-      ss << iter->first->description() << "=>" << iter->second->description();
-      if (iter != --(_map.end())) {
-        ss << ", ";
-      }
+      if ( iter != _map.begin() ) ss << ", ";
+      ss << iter->second->description();
     }
-    
     /* Finish up */
-    ss << "]";
     return ss.str();
   }
   
@@ -271,6 +266,30 @@ namespace LQX {
     return Symbol::encodeObject(array);
   }
   
+  ImplementLanguageMethod(ArrayObject::array_keys)
+  {
+    /* Return a new instance of the ArrayObject type */
+    ArrayObject* builtObject = new ArrayObject();
+
+    /* Decode all of the arguments from the list given */
+    LanguageObject* lo = decodeObject(args, 0);
+    
+    /* Make sure things are what we think they are */
+    ArrayObject* array = dynamic_cast<ArrayObject *>(lo);
+    if ( !array ) {
+      throw RuntimeException("Argument is not an instance of `Array'");
+    }
+    int i = 0;
+    for ( std::map<SymbolAutoRef,SymbolAutoRef>::const_iterator iter = array->_map.begin(); iter != array->_map.end(); ++iter ) {
+      SymbolAutoRef keySym = Symbol::encodeDouble(i++);
+      SymbolAutoRef symbol = Symbol::encodeNull();	/* Create a copy. */
+      symbol->copyValue( *iter->first );
+      builtObject->put(keySym, symbol);
+      
+    }
+
+    return Symbol::encodeObject(builtObject);
+  }
 
 
 #pragma mark -
@@ -285,6 +304,7 @@ namespace LQX {
     table->registerMethod(new ArrayObject::array_get());
     table->registerMethod(new ArrayObject::array_has());
     table->registerMethod(new ArrayObject::array_append());
+    table->registerMethod(new ArrayObject::array_keys());
   }
   
 };

@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: json_document.cpp 14302 2020-12-31 13:11:17Z greg $
+ * $Id: json_document.cpp 14498 2021-02-27 23:08:51Z greg $
  *
  * Read in JSON input files.
  *
@@ -2472,7 +2472,7 @@ namespace LQIO {
 
 	    if ( !document.instantiated() && Spex::numberOfInputVariables() > 0 ) {
 		_output << begin_array( Xparameters );
-		const std::map<std::string,LQX::SyntaxTreeNode *>& vars = Spex::get_input_variables();
+		const std::map<std::string,LQX::SyntaxTreeNode *>& vars = Spex::input_variables();
 		std::for_each( vars.begin(), vars.end(), ExportParameters( _output, _conf_95 ) );
 		_output << end_array() << ",";
 	    }
@@ -2484,9 +2484,9 @@ namespace LQIO {
 	    std::for_each( processors.begin(), processors.end(), ExportProcessor( _output, _conf_95 ) );
 	    _output << end_array();
 
-	    const std::vector<Spex::var_name_and_expr>& results = Spex::get_result_variables();
+	    const std::vector<Spex::var_name_and_expr>& results = Spex::result_variables();
 	    if ( !document.instantiated() && results.size() > 0 ) {
-		const std::map<std::string,LQX::SyntaxTreeNode *>& input_variables = Spex::get_input_variables();
+		const std::map<std::string,LQX::SyntaxTreeNode *>& input_variables = Spex::input_variables();
 		LQX::SyntaxTreeNode::setVariablePrefix( "$" );
 		_output << next_begin_array( Xresults );
 		std::for_each( input_variables.begin(), input_variables.end(), ExportInputVariables( _output, _conf_95 ) );
@@ -2515,8 +2515,8 @@ namespace LQIO {
 	Json_Document::ExportGeneral::print( const Document& document ) const
 	{
 	    _output << begin_object( Xgeneral );
-	    const char * comment = document.getModelCommentString();
-	    if ( comment ) {
+	    const std::string& comment = document.getModelCommentString();
+	    if ( !comment.empty() ) {
 		_output << attribute( Xcomment, comment ) << ",";
 	    }
 	    _output << attribute( Xconv_val, *document.getModelConvergence() )
@@ -2531,7 +2531,7 @@ namespace LQIO {
 		_output << end_array();
 	    }
 
-	    const std::vector<LQIO::Spex::ObservationInfo> doc_vars = LQIO::Spex::get_document_variables();
+	    const std::vector<LQIO::Spex::ObservationInfo> doc_vars = LQIO::Spex::document_variables();
 	    if ( doc_vars.size() > 0 ) {
 		_output << next_begin_object( Xobserve );
 		std::for_each ( doc_vars.begin(), doc_vars.end(), ExportObservation( _output, _conf_95 ) );
@@ -2608,7 +2608,7 @@ namespace LQIO {
 
 /*+ JSON-SPEX */
 	    if ( !processor.getDocument()->instantiated() ) {
-		std::pair<Spex::obs_var_tab_t::const_iterator, Spex::obs_var_tab_t::const_iterator> range = Spex::get_observations().equal_range( &processor );
+		std::pair<Spex::obs_var_tab_t::const_iterator, Spex::obs_var_tab_t::const_iterator> range = Spex::observations().equal_range( &processor );
 		if ( range.first != range.second ) {
 		    _output << next_begin_object( Xobserve );
 		    std::for_each( range.first, range.second, ExportObservation( _output, _conf_95 ) );
@@ -2652,7 +2652,7 @@ namespace LQIO {
 
 /*+ JSON-SPEX */
 	    if ( !group.getDocument()->instantiated() ) {
-		std::pair<Spex::obs_var_tab_t::const_iterator, Spex::obs_var_tab_t::const_iterator> range = Spex::get_observations().equal_range( &group );
+		std::pair<Spex::obs_var_tab_t::const_iterator, Spex::obs_var_tab_t::const_iterator> range = Spex::observations().equal_range( &group );
 		if ( range.first != range.second ) {
 		    _output << next_begin_object( Xobserve );
 		    std::for_each( range.first, range.second, ExportObservation( _output, _conf_95 ) );
@@ -2723,7 +2723,7 @@ namespace LQIO {
 
 /*+ JSON-SPEX */
 	    if ( !task.getDocument()->instantiated() ) {
-		std::pair<Spex::obs_var_tab_t::const_iterator, Spex::obs_var_tab_t::const_iterator> range = Spex::get_observations().equal_range( &task );
+		std::pair<Spex::obs_var_tab_t::const_iterator, Spex::obs_var_tab_t::const_iterator> range = Spex::observations().equal_range( &task );
 		if ( range.first != range.second ) {
 		    const unsigned int n_phases = task.getDocument()->getMaximumPhase();
 		    _output << next_begin_object( Xobserve );
@@ -2869,7 +2869,7 @@ namespace LQIO {
 
 /*+ JSON-SPEX */
 	    if ( !entry.getDocument()->instantiated() ) {
-		std::pair<Spex::obs_var_tab_t::const_iterator, Spex::obs_var_tab_t::const_iterator> range = Spex::get_observations().equal_range( &entry );
+		std::pair<Spex::obs_var_tab_t::const_iterator, Spex::obs_var_tab_t::const_iterator> range = Spex::observations().equal_range( &entry );
 		if ( range.first != range.second ) {
 		    _output << next_begin_object( Xobserve );
 		    std::for_each( range.first, range.second, ExportObservation( _output, _conf_95 ) );
@@ -3054,7 +3054,7 @@ namespace LQIO {
 /*+ JSON-SPEX */
 	    if ( !call->getDocument()->instantiated() ) {
 		/* Observations are stored by entry in spex, so, we have to collect them all */
-		std::pair<Spex::obs_var_tab_t::const_iterator, Spex::obs_var_tab_t::const_iterator> range = Spex::get_observations().equal_range( call );
+		std::pair<Spex::obs_var_tab_t::const_iterator, Spex::obs_var_tab_t::const_iterator> range = Spex::observations().equal_range( call );
 		if ( range.first != range.second ) {
 		    _output << next_begin_object( Xobserve );
 		    std::for_each( range.first, range.second, ExportObservation( _output, _conf_95 ) );
@@ -3132,7 +3132,7 @@ namespace LQIO {
 	{
 /*+ JSON-SPEX */
 	    if ( !phase.getDocument()->instantiated() ) {
-		std::pair<Spex::obs_var_tab_t::const_iterator, Spex::obs_var_tab_t::const_iterator> range = Spex::get_observations().equal_range( &phase );
+		std::pair<Spex::obs_var_tab_t::const_iterator, Spex::obs_var_tab_t::const_iterator> range = Spex::observations().equal_range( &phase );
 		if ( range.first != range.second ) {
 		    _output << next_begin_object( Xobserve );
 		    std::for_each( range.first, range.second, ExportObservation( _output, _conf_95 ) );
@@ -3239,7 +3239,7 @@ namespace LQIO {
 		    }
 		    if ( fork.getListType() == ActivityList::Type::OR_FORK || fork.getListType() == ActivityList::Type::REPEAT ) {
 			_output << "{ \"" << (*activity)->getName() << "\": ";
-			ExternalVariable * value = fork.getParameter( *activity );
+			const ExternalVariable * value = fork.getParameter( *activity );
 			if ( value ) {
 			    _output << "\"" << *value << "\"";
 			} else {
@@ -3301,7 +3301,7 @@ namespace LQIO {
 
 
 	void
-	Json_Document::ExportFanInOut::print( const std::pair<const std::string, ExternalVariable *>& fan_in_out ) const
+	Json_Document::ExportFanInOut::print( const std::pair<const std::string, const ExternalVariable *>& fan_in_out ) const
 	{
 	    _output << separator() << indent() << "{ \"" << fan_in_out.first << "\": " << print_value( *fan_in_out.second ) << " }";
 	}

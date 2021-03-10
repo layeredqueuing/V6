@@ -1,6 +1,6 @@
 /* srvn2eepic.c	-- Greg Franks Sun Jan 26 2003
  *
- * $Id: main.cc 14235 2020-12-17 13:56:55Z greg $
+ * $Id: main.cc 14519 2021-03-06 01:11:56Z greg $
  */
 
 #include "lqn2ps.h"
@@ -24,6 +24,7 @@ std::string command_line;
 
 bool Flags::annotate_input		= false;
 bool Flags::async_topological_sort      = true;
+bool Flags::bcmp_model			= false;
 bool Flags::clear_label_background 	= false;
 bool Flags::convert_to_reference_task	= true;
 bool Flags::debug			= false;
@@ -102,14 +103,14 @@ const char * Options::integer [] =
 const char * Options::io[] =
 {
     "eepic",
-#if defined(EMF_OUTPUT)
+#if EMF_OUTPUT
     "emf",
 #endif
     "fig",
 #if HAVE_GD_H && HAVE_LIBGD && HAVE_GDIMAGEGIFPTR
     "gif",
 #endif
-#if defined(JMVA_OUTPUT)
+#if JMVA_OUTPUT
     "jmva",
 #endif
 #if HAVE_GD_H && HAVE_LIBGD && HAVE_LIBJPEG
@@ -119,6 +120,9 @@ const char * Options::io[] =
     "lqx",
     "null",
     "out",
+#if QNAP2_OUTPUT
+    "qnap2",
+#endif
     "parseable",
 #if defined(PMIF_OUTPUT)
     "pmif",
@@ -146,7 +150,7 @@ const char * Options::io[] =
     "x11",
 #endif
     "xml",
-    0
+    nullptr
 };
 
 const char * Options::justification[] =
@@ -189,6 +193,7 @@ const char * Options::layering[] =
 const char * Options::special[] = {
     "annotate",				/* SPECIAL_ANNOTATE,                    */
     "arrow-scaling",			/* SPECIAL_ARROW_SCALING,		*/
+    "bcmp",				/* SPECIAL_BCMP				*/
     "clear-label-background", 		/* SPECIAL_CLEAR_LABEL_BACKGROUND,	*/
     "exhaustive-topological-sort",	/* SPECIAL_EXHAUSTIVE_TOPOLOGICAL_SORT,	*/
     "flatten",				/* SPECIAL_FLATTEN_SUBMODEL,		*/
@@ -201,14 +206,16 @@ const char * Options::special[] = {
     "no-phase-type",			/* SPECIAL_NO_PHASE_TYPE,		*/
     "no-reference-task-conversion",	/* SPECIAL_NO_REF_TASK_CONVERSION,	*/
     "prune",				/* SPECIAL_PRUNE			*/
+    "processor-scheduling"		/* SPECIAL_PROCESSOR_SCHEDULING		*/
     "quorum-reply",			/* SPECIAL_QUORUM_REPLY,		*/
     "rename",				/* SPECIAL_RENAME			*/
     "sort",				/* SPECIAL_SORT,			*/
     "squish",				/* SPECIAL_SQUISH_ENTRY_NAMES,		*/
+    "no-header",			/* SPECIAL_SPEX_HEADER			*/
     "submodels",			/* SPECIAL_SUBMODEL_CONTENTS,		*/
     "tasks-only",			/* SPECIAL_TASKS_ONLY			*/
-    "no-header",			/* SPECIAL_SPEX_HEADER			*/
-    0
+    "task-scheduling",			/* SPECIAL_TASK_SCHEDULING		*/
+    nullptr
 };
 
 const char * Options::processor[] = {
@@ -216,12 +223,12 @@ const char * Options::processor[] = {
     "default",
     "non-infinite",
     "all",
-    0
+    nullptr
 };
 
 const char * Options::real [] = {
     "float",
-    0
+    nullptr
 };
 
 const char * Options::replication [] =
@@ -229,7 +236,7 @@ const char * Options::replication [] =
     "none",
     "remove",
     "expand",
-    0
+    nullptr
 };
 
 const char * Options::sort [] = {
@@ -237,12 +244,12 @@ const char * Options::sort [] = {
     "descending",
     "topological",
     "none",
-    0
+    nullptr
 };
 
 const char * Options::string [] = {
     "string",
-    0
+    nullptr
 };
 
 static bool get_bool( const std::string&, bool default_value );
@@ -321,7 +328,7 @@ Options::find_if( const char** values, const std::string& s )
     for ( ; values[i] != nullptr; ++i ) {
 	if ( s == values[i] ) return i;
     }
-    return i;
+    return i+1;
 }
 
 bool
@@ -375,8 +382,16 @@ special( const std::string& parameter, const std::string& value, LQIO::DOM::Prag
 	case SPECIAL_SQUISH_ENTRY_NAMES:	  Flags::squish_names			= get_bool( value, true ); break;
 	case SPECIAL_SUBMODEL_CONTENTS:		  Flags::print_submodels		= get_bool( value, true ); break;
 	    
+	case SPECIAL_BCMP:
+	    pragmas.insert(LQIO::DOM::Pragma::_bcmp_, value );
+	    break;
+	    
+	case SPECIAL_PROCESSOR_SCHEDULING:
+	    pragmas.insert(LQIO::DOM::Pragma::_processor_scheduling_, value );
+	    break;
+	    
 	case SPECIAL_PRUNE:
-	    pragmas.insert(LQIO::DOM::Pragma::_prune_, get_bool( value, true ) ? "true" : "false" );
+	    pragmas.insert(LQIO::DOM::Pragma::_prune_, value );
 	    break;
 
 	case SPECIAL_QUORUM_REPLY:
@@ -388,6 +403,10 @@ special( const std::string& parameter, const std::string& value, LQIO::DOM::Prag
 	    if ( Flags::sort == INVALID_SORT ) throw std::domain_error( value );
 	    break;
 
+	case SPECIAL_TASK_SCHEDULING:
+	    pragmas.insert(LQIO::DOM::Pragma::_task_scheduling_, value );
+	    break;
+	    
 	case SPECIAL_TASKS_ONLY:
 	    Flags::print[AGGREGATION].value.i = AGGREGATE_ENTRIES;
 	    if ( Flags::icon_height == DEFAULT_ICON_HEIGHT ) {
@@ -619,53 +638,3 @@ IntegerManip temp_indent( const int i ) { return IntegerManip( &temp_indent_str,
 Integer2Manip conf_level( const int fill, const int level ) { return Integer2Manip( &conf_level_str, fill, level ); }
 StringPlural plural( const std::string& s, const unsigned i ) { return StringPlural( &pluralize, s, i ); }
 DoubleManip opt_pct( const double aDouble ) { return DoubleManip( &opt_pct_str, aDouble ); }
-
-namespace XML {
-    std::ostream& printStartElement( std::ostream& output, const std::string& element, bool complex_element )
-    {
-	output << indent( complex_element ? 1 : 0  ) << "<" << element;
-	return output;
-    }
-
-    std::ostream& printEndElement( std::ostream& output, const std::string& element, bool complex_element )
-    {
-	if ( complex_element ) {
-	    output << indent( -1 ) << "</" << element << ">";
-	} else {
-	    output << "/>";
-	}
-	return output;
-    }
-
-    std::ostream& printInlineElement( std::ostream& output, const std::string& e, const std::string& a, const std::string& v, double d )
-    {
-	output << indent( 0 ) << "<" << e << attribute( a, v )  << ">" << d << "</" << e << ">";
-	return output;
-    }
-    
-    static std::ostream& printAttribute( std::ostream& output, const std::string& a, const std::string& v )
-    {
-	output << " " << a << "=\"" << v << "\"";
-	return output;
-    }
-    
-    static std::ostream& printAttribute( std::ostream& output, const std::string&  a, double v )
-    {
-	output << " " << a << "=\"" << v << "\"";
-	return output;
-    }
-    
-    static std::ostream& printAttribute( std::ostream& output, const std::string&  a, unsigned int v )
-    {
-	output << " " << a << "=\"" << v << "\"";
-	return output;
-    }
-
-    BooleanManip start_element( const std::string& e, bool b ) { return BooleanManip( &printStartElement, e, b ); }
-    BooleanManip end_element( const std::string& e, bool b ) { return BooleanManip( &printEndElement, e, b ); }
-    BooleanManip simple_element( const std::string& e ) { return BooleanManip( &printStartElement, e, false ); }
-    InlineElementManip inline_element( const std::string& e, const std::string& a, const std::string& v, double d ) { return InlineElementManip( &printInlineElement, e, a, v, d ); }
-    StringManip attribute( const std::string& a, const std::string& v ) { return StringManip( &printAttribute, a, v ); }
-    DoubleManip attribute( const std::string&a, double v ) { return DoubleManip( &printAttribute, a, v ); }
-    UnsignedManip attribute( const std::string&a, unsigned v ) { return UnsignedManip( &printAttribute, a, v ); }
-}

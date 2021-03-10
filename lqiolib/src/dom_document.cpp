@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_document.cpp 14302 2020-12-31 13:11:17Z greg $
+ *  $Id: dom_document.cpp 14534 2021-03-09 23:58:14Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -49,7 +49,7 @@ namespace LQIO {
 	const char * Document::XSpexUnderrelaxation = "spex_underrelax_coeff";
     
 	Document::Document( input_format format ) 
-	    : _modelComment(), _documentComment(),
+	    : _extraComment(),
 	      _processors(), _groups(), _tasks(), _entries(), 
 	      _entities(), _variables(), _controlVariables(), _nextEntityId(0), 
 	      _format(format), 
@@ -95,22 +95,27 @@ namespace LQIO {
 		delete group->second;
 	    }
 
-	    for ( std::map<const char *, ExternalVariable*>::const_iterator var = _controlVariables.begin(); var != _controlVariables.end(); ++var ) {
+	    for ( std::map<const char *, const ExternalVariable*>::const_iterator var = _controlVariables.begin(); var != _controlVariables.end(); ++var ) {
 		delete var->second;
 	    }
 
+	    /* BUG_277 Delete External Variables */
+
+	    for ( std::map<std::string, SymbolExternalVariable*>::const_iterator var = _variables.begin(); var != _variables.end(); ++var ) {
+		delete var->second;
+	    }
+	    
+	    LQIO::Spex::clear();
+
 	    __document = nullptr;
 	    __input_file_name = "";
-
-	    LQIO::Spex::clear();
 	}
     
 	void Document::setModelParameters(const std::string& comment, LQIO::DOM::ExternalVariable* conv_val, LQIO::DOM::ExternalVariable* it_limit, LQIO::DOM::ExternalVariable* print_int, LQIO::DOM::ExternalVariable* underrelax_coeff, const void * element )
 	{
 	    /* Set up initial model parameters, but only if they were not set using SPEX variables */
 
-	    ExternalVariable * var;		// Querk of map<>[].
-	    var = _controlVariables[XComment];
+	    const ExternalVariable * var = _controlVariables[XComment];
 	    if ( !var ) {
 		_controlVariables[XComment] = new ConstantExternalVariable( comment.c_str() );
 	    }
@@ -132,17 +137,17 @@ namespace LQIO {
 	    }
 	}
 
-	const char * Document::getModelCommentString() const 
+	std::string Document::getModelCommentString() const 
 	{
 	    const char * s;
-	    const std::map<const char *, ExternalVariable *>::const_iterator iter = _controlVariables.find(XComment);
+	    const std::map<const char *, const ExternalVariable *>::const_iterator iter = _controlVariables.find(XComment);
 	    if ( iter != _controlVariables.end() && iter->second->wasSet() ) {
-		if ( iter->second->getString( s ) ) return s;
+		if ( iter->second->getString( s ) ) return std::string(s);
 	    } 
-	    return _modelComment.c_str();
+	    return std::string("");
 	}
 
-	Document& Document::setModelComment( ExternalVariable * comment )
+	Document& Document::setModelComment( const ExternalVariable * comment )
 	{	
 	    _controlVariables[XComment] = comment;
 	    return *this;
@@ -154,48 +159,48 @@ namespace LQIO {
 	    return *this;
 	}
 
-	const std::string& Document::getDocumentComment() const 
+	const std::string& Document::getExtraComment() const 
 	{
-	    return _documentComment;
+	    return _extraComment;
 	}
 
-	Document& Document::setDocumentComment( const std::string& value )
+	Document& Document::setExtraComment( const std::string& value )
 	{	
-	    _documentComment = value;
+	    _extraComment = value;
 	    return *this;
 	}
 
-	Document& Document::setModelConvergence( ExternalVariable * value )
+	Document& Document::setModelConvergence( const ExternalVariable * value )
 	{	
 	    _controlVariables[XConvergence] = value;
 	    return *this;
 	}
 
-	Document& Document::setModelIterationLimit( ExternalVariable * value ) 
+	Document& Document::setModelIterationLimit( const ExternalVariable * value ) 
 	{
 	    _controlVariables[XIterationLimit] = value;
 	    return *this;
 	}
 
-	Document& Document::setModelPrintInterval( ExternalVariable * value ) 
+	Document& Document::setModelPrintInterval( const ExternalVariable * value ) 
 	{
 	    _controlVariables[XPrintInterval] = value;
 	    return *this;
 	}
 
-	Document& Document::setModelUnderrelaxationCoefficient( ExternalVariable * value ) 
+	Document& Document::setModelUnderrelaxationCoefficient( const ExternalVariable * value ) 
 	{
 	    _controlVariables[XUnderrelaxationCoefficient] = value;
 	    return *this;
 	}
 
-	Document& Document::setSpexConvergenceIterationLimit( ExternalVariable * spexIterationLimit )
+	Document& Document::setSpexConvergenceIterationLimit( const ExternalVariable * spexIterationLimit )
 	{
 	    _controlVariables[XSpexIterationLimit] = spexIterationLimit;
 	    return *this;
 	}
 
-	Document& Document::setSpexConvergenceUnderrelaxation( ExternalVariable * spexUnderrelaxation )
+	Document& Document::setSpexConvergenceUnderrelaxation( const ExternalVariable * spexUnderrelaxation )
 	{
 	    _controlVariables[XSpexUnderrelaxation] = spexUnderrelaxation;
 	    return *this;
@@ -205,7 +210,7 @@ namespace LQIO {
 	{
 	    /* Set to default value if NOT set elsewhere (usually the control program) */
 	    double value = __initialValues[index];
-	    const std::map<const char *, ExternalVariable *>::const_iterator iter = _controlVariables.find(index);
+	    const std::map<const char *, const ExternalVariable *>::const_iterator iter = _controlVariables.find(index);
 	    if ( iter != _controlVariables.end() ) {
 		const ExternalVariable * var = iter->second;
 		if ( var != nullptr && var->wasSet() ) {
@@ -217,7 +222,7 @@ namespace LQIO {
 
 	const ExternalVariable * Document::get( const char * index ) const
 	{
-	    const std::map<const char *, ExternalVariable *>::const_iterator iter = _controlVariables.find(index);
+	    const std::map<const char *, const ExternalVariable *>::const_iterator iter = _controlVariables.find(index);
 	    if ( iter != _controlVariables.end() ) {
 		const ExternalVariable * var = iter->second;
 		if ( var ) {
@@ -412,18 +417,14 @@ namespace LQIO {
     
 	bool Document::areAllExternalVariablesAssigned() const
 	{
-	    return std::all_of( _variables.begin(), _variables.end(), &Document::var_was_set );
+	    /* Check to make sure all external variables were set */
+	    return std::all_of( _variables.begin(), _variables.end(), &wasSet );
 	}
     
 	std::vector<std::string> Document::getUndefinedExternalVariables() const
 	{
 	    std::vector<std::string> names;
-	    return std::accumulate( _variables.begin(), _variables.end(), names, &Document::var_was_not_set );
-	}
-
-	std::vector<std::string>& Document::var_was_not_set( std::vector<std::string>& names, const std::pair<std::string, SymbolExternalVariable*>& var )
-	{
-	    if ( !var.second->wasSet() ) names.push_back(var.first);
+	    std::for_each( _variables.begin(), _variables.end(), notSet(names) );
 	    return names;
 	}
 	
@@ -472,7 +473,7 @@ namespace LQIO {
 
 		/* Get value if set */
 		double value = init_iter->second;
-		ConstantExternalVariable* constant = dynamic_cast<ConstantExternalVariable *>(_controlVariables[name]);
+		const ConstantExternalVariable* constant = dynamic_cast<const ConstantExternalVariable *>(_controlVariables[name]);
 		if ( constant ) {
 		    constant->getValue( value );
 		    delete constant;
@@ -484,16 +485,16 @@ namespace LQIO {
 		_controlVariables[name] = current;
 	    }
 
-	    ConstantExternalVariable* constant = dynamic_cast<ConstantExternalVariable *>(_controlVariables[XComment]);
-	    const char * s = _modelComment.c_str();
+	    const ConstantExternalVariable* constant = dynamic_cast<const ConstantExternalVariable *>(_controlVariables[XComment]);
+	    const char * s = nullptr;
 	    if ( constant ) {
 		constant->getString( s );			// get set value.
+		current = new SymbolExternalVariable(XComment);
+		current->registerInEnvironment(program);		// This assigns _externalSymbol
+		current->setString( s );				// Set value.
+		_controlVariables[XComment] = current;
+		delete constant;
 	    }
-	    current = new SymbolExternalVariable(XComment);
-	    current->registerInEnvironment(program);		// This assigns _externalSymbol
-	    current->setString( s );				// Set value.
-	    _controlVariables[XComment] = current;
-	    if ( constant ) delete constant;
 	}
     
 	void Document::addPragma(const std::string& param, const std::string& value )
@@ -769,11 +770,11 @@ namespace LQIO {
 		format = getInputFormatFromFilename( input_filename );
 	    }
 
-	    bool rc = true;
-	    LQIO::Spex::clear();
 	    /* Create a document to store the product */
 	
+	    bool rc = true;
 	    Document * document = new Document( format );
+	    LQIO::Spex::__global_variables = &document->_variables;	/* For SPEX */
 
 	    /* Read in the model, invoke the builder, and see what happened */
 

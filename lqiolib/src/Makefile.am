@@ -1,10 +1,11 @@
-# $Id: Makefile.am 14302 2020-12-31 13:11:17Z greg $
+# $Id: Makefile.am 14498 2021-02-27 23:08:51Z greg $
 # -------------------------------------------------------------------- [Libtool libsrvnio2]
 
 # This project uses Libtool to generate a product
 SUBDIRS = headers/lqio
 lib_LTLIBRARIES = liblqio.la
-liblqio_la_SOURCES = bcmp_document.cpp \
+liblqio_la_SOURCES = bcmp_bindings.cpp \
+	bcmp_document.cpp \
 	bcmp_to_lqn.cpp \
 	commandline.cpp \
 	common_io.cpp \
@@ -29,7 +30,6 @@ liblqio_la_SOURCES = bcmp_document.cpp \
 	filename.cpp \
 	getsbopt.cc \
 	glblerr.cpp \
-	jmva_document.cpp \
 	json_document.cpp \
 	labels.cpp \
 	pmif_document.cpp \
@@ -50,7 +50,7 @@ noinst_HEADERS = srvn_gram.h  srvn_result_gram.h
 #liblqio_la_LIBADD = ../../lqx/libsrc/liblqx.la 
 liblqio_la_LIBADD = -L../../lqx/libsrc/.libs -llqx
 if EXPAT
-liblqio_la_SOURCES += expat_document.cpp
+liblqio_la_SOURCES += expat_document.cpp jmva_document.cpp
 liblqio_la_LIBADD += -lexpat
 endif
 
@@ -80,4 +80,3 @@ srvn_input.cpp: srvn_gram.h
 
 # Files to remove during cleanup
 MOSTLYCLEANFILES = srvn_gram.h srvn_gram.c srvn_scan.c srvn_result_gram.h srvn_result_gram.c srvn_result_scan.c
-

@@ -1,6 +1,6 @@
 /* label.cc	-- Greg Franks Wed Jan 29 2003
  * 
- * $Id: label.cc 14235 2020-12-17 13:56:55Z greg $
+ * $Id: label.cc 14498 2021-02-27 23:08:51Z greg $
  */
 
 #include "lqn2ps.h"

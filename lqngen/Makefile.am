@@ -1,6 +1,6 @@
 # Makefile for .
 # Copyright (C) 2003 Greg Franks <rgfranks@alumni.uwaterloo.ca>
-# $Id: Makefile.am 14106 2020-11-18 14:33:50Z greg $
+# $Id: Makefile.am 14499 2021-02-27 23:24:12Z greg $
 # ----------------------------------------------------------------------
 ACLOCAL_AMFLAGS=-I ../config
 SUBDIRS		= 
@@ -19,27 +19,32 @@ lqngen_LDFLAGS	= @STATIC@
 
 man1_MANS	= lqngen.1 lqn2lqx.1
 
-clean-local:
+if HAVE_PS2PDF
+install-data-local:	srvndiff.pdf
+endif
 
 distclean-local:
 	rm -f config.cache
 
-install-exec-hook:
-	for i in $(OTHEREXE); do \
-	  $(RM) $(DESTDIR)$(bindir)/$$i$(EXEEXT); \
-	  (cd $(DESTDIR)$(bindir); $(LN_S) lqngen$(EXEEXT) $$i$(EXEEXT)); \
-	done
+if HAVE_PS2PDF
+srvndiff.pdf:	srvndiff.ps
+		ps2pdf srvndiff.ps
+endif
 
+if HAVE_PS2PDF
 install-data-local: lqngen.pdf lqn2lqx.pdf
+endif
 
 lqngen.ps: lqngen.1
 	cat lqngen.1  | groff -man > lqngen.ps
 
-lqngen.pdf: lqngen.ps
-	ps2pdf lqngen.ps
-
 lqn2lqx.ps: lqn2lqx.1
 	cat lqn2lqx.1  | groff -man > lqn2lqx.ps
 
+if HAVE_PS2PDF
+lqngen.pdf: lqngen.ps
+	ps2pdf lqngen.ps
+
 lqn2lqx.pdf: lqn2lqx.ps
 	ps2pdf lqn2lqx.ps
+endif

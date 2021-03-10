@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: entry.h 14310 2020-12-31 17:16:57Z greg $
+ * $Id: entry.h 14498 2021-02-27 23:08:51Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -268,6 +268,7 @@ public:
 
     unsigned int index() const { return _index; }
     unsigned int entryId() const { return _entryId; }
+    LQIO::DOM::Phase::Type phaseTypeFlag( const unsigned p ) const { return _phase[p].phaseTypeFlag(); }
     double openArrivalRate() const;
     double computeCV_sqr() const;
     int priority() const;

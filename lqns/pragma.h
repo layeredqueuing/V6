@@ -10,7 +10,7 @@
  * November, 1994
  * December, 2020
  *
- * $Id: pragma.h 14198 2020-12-10 11:43:03Z greg $
+ * $Id: pragma.h 14498 2021-02-27 23:08:51Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -125,6 +125,16 @@ public:
 	    return __cache->_processor_scheduling;
 	}
 
+#if BUG_270
+    static bool prune()
+	{
+	    assert( __cache != nullptr );
+	    return __cache->_prune;
+	    return __cache->_processor_scheduling;
+ 	}
+#endif
+
+
 #if HAVE_LIBGSL && HAVE_LIBGSLCBLAS
     static QuorumDistribution getQuorumDistribution()
 	{
@@ -173,6 +183,18 @@ public:
 	{
 	    assert( __cache != nullptr );
 	    return __cache->_stop_on_bogus_utilization;
+	}
+
+    static scheduling_type taskScheduling()
+	{
+	    assert( __cache != nullptr );
+	    return __cache->_task_scheduling;
+	}
+
+    static bool defaultTaskScheduling()
+	{
+	    assert( __cache != nullptr );
+	    return __cache->_default_task_scheduling;
 	}
 
     static double tau()
@@ -226,6 +248,9 @@ private:
     void setMva(const std::string&);
     void setOvertaking(const std::string&);
     void setProcessorScheduling(const std::string&);
+#if BUG_270
+    void setPrune(const std::string&);
+#endif
 #if HAVE_LIBGSL && HAVE_LIBGSLCBLAS
     void setQuorumDistribution(const std::string&);
     void setQuorumDelayedCalls(const std::string&);
@@ -238,11 +263,10 @@ private:
     void setSpexHeader(const std::string&);
     void setStopOnBogusUtilization(const std::string&);
     void setStopOnMessageLoss(const std::string&);
+    void setTaskScheduling(const std::string&);
     void setTau(const std::string&);
     void setThreads(const std::string&);
     void setVariance(const std::string&);
-
-    static bool isTrue(const std::string&);
 
 public:
     static void set( const std::map<std::string,std::string>& );
@@ -259,6 +283,9 @@ private:
     MVA _mva;
     Overtaking _overtaking;
     scheduling_type _processor_scheduling;
+#if BUG_270
+    bool _prune;
+#endif
 #if HAVE_LIBGSL && HAVE_LIBGSLCBLAS
     QuorumDistribution _quorum_distribution;
     QuorumDelayedCalls _quorum_delayed_calls;
@@ -271,11 +298,13 @@ private:
     bool _spex_header;
     double _stop_on_bogus_utilization;
     bool _stop_on_message_loss;
+    scheduling_type _task_scheduling;
     unsigned  _tau;
     Threads _threads;
     Variance _variance;
     /* bonus */
     bool _default_processor_scheduling;
+    bool _default_task_scheduling;
     bool _disable_processor_cfs;
     bool _entry_variance;
     bool _init_variance_only;
@@ -284,21 +313,5 @@ private:
 
     static Pragma * __cache;
     static const std::map<const std::string,const Pragma::fptr> __set_pragma;
-
-    static const std::map<const std::string,const Pragma::ForceMultiserver> __force_multiserver;
-    static const std::map<const std::string,const Pragma::Layering> __layering_pragma;
-    static const std::map<const std::string,const Pragma::MVA> __mva_pragma;
-    static const std::map<const std::string,const Pragma::Multiserver> __multiserver_pragma;
-    static const std::map<const std::string,const Pragma::Overtaking> __overtaking_pragma;
-    static const std::map<const std::string,const scheduling_type> __processor_scheduling_pragma;
-#if HAVE_LIBGSL && HAVE_LIBGSLCBLAS
-    static const std::map<const std::string,const Pragma::QuorumDistribution> __quorum_distribution_pragma;
-    static const std::map<const std::string,const Pragma::QuorumDelayedCalls> __quorum_delayed_calls_pragma;
-    static const std::map<const std::string,const Pragma::QuorumIdleTime> __quorum_idle_time_pragma;
-#endif
-    static const std::map<const std::string,const LQIO::severity_t> __serverity_level_pragma;
-    static const std::map<const std::string,const Pragma::Threads> __threads_pragma;
-    static const std::map<const std::string,const Pragma::Variance> __variance_pragma;
-
 };
 #endif

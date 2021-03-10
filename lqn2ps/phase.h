@@ -8,7 +8,7 @@
  *
  * November, 1994
  *
- * $Id: phase.h 14235 2020-12-17 13:56:55Z greg $
+ * $Id: phase.h 14498 2021-02-27 23:08:51Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -18,7 +18,8 @@
 
 #include <lqio/input.h>
 #include <lqio/dom_phase.h>
-#include "demand.h"
+#include <lqio/bcmp_document.h>
+#include <lqio/dom_phase.h>
 
 class Call;
 class Entry;
@@ -74,11 +75,12 @@ private:
 	callPredicate _f;
     };
 
+
 public:
     Phase();
+    Phase( const Phase& );
     virtual ~Phase();
     Phase& operator=( const Phase& );
-    Phase( const Phase& );		/* Copying is verbotten */ 
 	
     int operator==( const Phase& aPhase ) const { return &aPhase == this; }
 
@@ -91,8 +93,8 @@ public:
 
     /* Instance variable access */
 	
-    Phase& setDOM( const LQIO::DOM::Phase * dom ) { _documentObject = dom; return *this; }
-    virtual const LQIO::DOM::Phase * getDOM() const { return _documentObject; }
+    Phase& setDOM( const LQIO::DOM::Phase * dom ) { _dom = dom; return *this; }
+    virtual const LQIO::DOM::Phase * getDOM() const { return _dom; }
     int phase() const { return _phase; }
     const Entry * entry() const { return _entry; }
     virtual const Task * owner() const;
@@ -116,7 +118,9 @@ public:
     double serviceExceeded() const;
     double queueingTime() const;
     double utilization() const;
-    static Demand accumulate_demand( const Demand& augend, const std::pair<unsigned,Phase>& );
+    static const LQIO::DOM::ExternalVariable * accumulate_service( const LQIO::DOM::ExternalVariable *, const std::pair<unsigned int, Phase>& );
+    static BCMP::Model::Station::Class accumulate_demand( const BCMP::Model::Station::Class& augend, const std::pair<unsigned,Phase>& );
+    static double accumulate_execution( double, const std::pair<unsigned int, Phase>& );
 
     bool hasQueueingTime() const;
     bool isNonExponential() const;
@@ -147,7 +151,7 @@ protected:
     Histogram _histogram;		/* Histogram information	*/
 
 private:
-    const LQIO::DOM::Phase * _documentObject;
+    const LQIO::DOM::Phase * _dom;
     Entry *_entry;
     unsigned _phase;
 };

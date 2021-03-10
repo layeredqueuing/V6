@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: errmsg.cc 14235 2020-12-17 13:56:55Z greg $
+ * $Id: errmsg.cc 14498 2021-02-27 23:08:51Z greg $
  *
  * Error messages.
  *
@@ -36,6 +36,7 @@ struct LQIO::error_message_type local_error_messages[] = {
     { LQIO::RUNTIME_ERROR, "\"%s\" -- Not implemented." },                                                                      /* LQIO::ERR_NOT_IMPLEMENTED            */
     { LQIO::RUNTIME_ERROR, "\"%s\" -- Should not implement." },                                                                 /* LQIO::ERR_SHOULD_NOT_IMPLEMENT       */
     { LQIO::RUNTIME_ERROR, "The model has unassigned variables." },								/* LQIO::ERR_UNASSIGNED_VARIABLES	*/
+    { LQIO::RUNTIME_ERROR, "BCMP model trasformation failed; the following tasks were not pruned: %s." },			/* LQIO::ERR_BCMP_CONVERSION_FAILURE	*/
     { LQIO::WARNING_ONLY,  "Coefficient of variation is incompatible with phase type at %s \"%s\" %s \"%s\"." },                /* WRN_COEFFICIENT_OF_VARIATION         */
     { LQIO::WARNING_ONLY,  "Mixed phase type detected during merge: source %s \"%s\", destination %s \"%s\"." },		/* WRN_MIXED_PHASE_TYPE			*/
 };

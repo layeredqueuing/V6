@@ -9,7 +9,7 @@
  * November, 1994
  *
  * ------------------------------------------------------------------------
- * $Id: processor.h 14235 2020-12-17 13:56:55Z greg $
+ * $Id: processor.h 14498 2021-02-27 23:08:51Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -24,6 +24,7 @@
 
 class Task;
 class Share;
+class Demand;
 
 class Processor : public Entity {
 public:
@@ -45,9 +46,9 @@ public:
     const std::set<Share *,LT<Share> >& shares() const { return _shares; }
     int nShares() const { return _shares.size(); }
     bool hasRate() const;
-    LQIO::DOM::ExternalVariable& rate() const;
+    const LQIO::DOM::ExternalVariable& rate() const;
     bool hasQuantum() const;
-    LQIO::DOM::ExternalVariable& quantum() const;
+    const LQIO::DOM::ExternalVariable& quantum() const;
     size_t taskDepth() const;
     double meanLevel() const;
 	
@@ -77,6 +78,8 @@ public:
     virtual Graphic::colour_type colour() const;
 
     virtual Processor& label();
+    virtual Processor& labelBCMPModel( const BCMP::Model::Station::Class::map_t&, const std::string& class_name="" );
+
     virtual Processor& rename();
 
     Processor& addTask( Task * task ) { _tasks.insert(task); return *this; }
@@ -95,13 +98,13 @@ public:
     virtual const Processor& draw( std::ostream& output ) const;
 
 protected:
-#if defined(BUG_270)
-    virtual void accumulateDemand( std::map<const Task *,Demand>& ) const;
-#endif
+    virtual void accumulateDemand( BCMP::Model::Station& ) const;
 
 public:
     static std::ostream& printHeader( std::ostream& );
     static std::set<Processor *, LT<Processor> > __processors;
+    static std::map<std::string,unsigned> __key_table;		/* For squish	*/
+    static std::map<std::string,std::string> __symbol_table;	/* For squish	*/
 
 private:
     Processor( const Processor& );

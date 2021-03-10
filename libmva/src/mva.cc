@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: mva.cc 14310 2020-12-31 17:16:57Z greg $
+ * $Id: mva.cc 14496 2021-02-27 02:36:12Z greg $
  *
  * MVA solvers: Exact, Bard-Schweitzer, Linearizer and Linearizer2.
  * Abstract superclass does no operation by itself.
@@ -137,7 +137,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cassert>
-#include "fpgoop.h"
 #include "mva.h"
 #include "vector.h"
 #include "server.h"
@@ -194,20 +193,6 @@ MVA::MVA( Vector<Server *>& q, const Population& N,
       waitCount(0), sortedPrio(), nPrio(0), stepCount(0), _isThread(), maxOffset(0)
 {
     assert( M > 0 && K > 0 );
-
-    for ( unsigned m = 1; m <= M; ++m ) {
-	Q[m]->closedIndex = m;					/* Set index in each station */
-	Q[m]->setMarginalProbabilitiesSize( N );
-	maxP[m] = 0;
-	const unsigned E   = Q[m]->nEntries();			/* ++ BUG 190 ++ */
-	for ( unsigned k = 1; k <= K; ++k ) {
-	    for ( unsigned e = 0; e <= E; ++e ) {		/* Note: start from 0! */
-		Q[m]->setRealCustomer( e, k, N[k] );
-		Q[m]->setMaxCustomers( e, k, N[k] );
-	    }
-	}							/* -- BUG 190 -- */
-    }
-
     initialize();
 }
 
@@ -221,7 +206,6 @@ MVA::~MVA()
 {
     dimension( 0 );
 }
-
 
 
 /*
@@ -252,11 +236,11 @@ MVA::dimension( const size_t mapMaxOffset )
 		L[n][m] = new double * [E+1];
 		LL[n][m] = new double * [E+1];
 		U[n][m] = new double * [E+1];
-		P[n][m] = 0;
+		P[n][m] = nullptr;
 
-		L[n][m][0] = 0;
+		L[n][m][0] = nullptr;
 		LL[n][m][0] = 0;
-		U[n][m][0] = 0;
+		U[n][m][0] = nullptr;
 		for ( unsigned e = 1; e <= E; ++e ) {
 		    L[n][m][e] = new double [K+1];
 		    LL[n][m][e] = new double [K+1];
@@ -334,12 +318,12 @@ MVA::dimension( std::vector<double **>& array, const size_t mapMaxOffset )
     for ( unsigned n = 0; n < mapMaxOffset; ++n ) {
 	for ( unsigned m = 1; m <= M; ++m ) {
 	    const unsigned J = Q[m]->marginalProbabilitiesSize();
-	    if ( J != maxP[m] && array[n][m] ) {	// Size change
+	    if ( (J == 0 || J != maxP[m]) && array[n][m] ) {	// Size change
 		delete [] array[n][m];
-		array[n][m] = 0;
+		array[n][m] = nullptr;
 		rc = true;
 	    }
-	    if ( J != 0 && array[n][m] == 0 ) {
+	    if ( J != 0 && array[n][m] == nullptr ) {
 		array[n][m] = new double [J+1];
 		for ( unsigned j = 0; j <= J; ++j ) {
 		    array[n][m][j] = 0.0;
@@ -416,6 +400,19 @@ MVA::reset()
 void
 MVA::initialize()
 {
+    for ( unsigned m = 1; m <= M; ++m ) {
+	Q[m]->closedIndex = m;					/* Set index in each station */
+	Q[m]->setMarginalProbabilitiesSize( NCust.size() );
+	maxP[m] = 0;
+	const unsigned E   = Q[m]->nEntries();			/* ++ BUG 190 ++ */
+	for ( unsigned k = 1; k <= K; ++k ) {
+	    for ( unsigned e = 0; e <= E; ++e ) {		/* Note: start from 0! */
+		Q[m]->setRealCustomer( e, k, NCust[k] );
+		Q[m]->setMaxCustomers( e, k, NCust[k] );
+	    }
+	}							/* -- BUG 190 -- */
+    }
+	
     sortedPrio.resize(K);
     _isThread.resize(K+1);
 
@@ -1486,20 +1483,6 @@ MVA::throughput( const Server& station, const unsigned k ) const
 
 
 
-#if defined(TESTMVA)
-double
-MVA::throughput( const unsigned m, const unsigned k ) const
-{
-    const unsigned n = offset(NCust);						/* Hoist */
-    if ( std::isfinite( X[n][k] ) ) {
-	return X[n][k] * Q[m]->V(k);
-    } else {
-	return 0;
-    }
-}
-#endif
-
-
 /*
  * Return throughtput at `station', entry `e'
  */
@@ -1563,6 +1546,18 @@ MVA::normalizedThroughput( const Server& station, const unsigned e,  const unsig
 	return sum / totCust;
     } else {
 	return 0.0;
+    }
+}
+
+
+double
+MVA::throughput( const unsigned m, const unsigned k, const Population& N ) const
+{
+    const unsigned n = offset(N);						/* Hoist */
+    if ( std::isfinite( X[n][k] ) ) {
+	return X[n][k] * Q[m]->V(k);
+    } else {
+	return 0;
     }
 }
 
@@ -2302,6 +2297,8 @@ MVA::printVectorP( std::ostream& output, const unsigned m, const Population& N )
 
 /* ---------------------------- Exact MVA. ---------------------------- */
 
+const char * const ExactMVA::__typeName = "Exact MVA";
+
 ExactMVA::ExactMVA( Vector<Server *>&q, const Population& N, const VectorMath<double>& z, const Vector<unsigned>& prio, const VectorMath<double>* of )
     : MVA( q, N, z, prio, of), map(N)
 {
@@ -2313,7 +2310,7 @@ ExactMVA::ExactMVA( Vector<Server *>&q, const Population& N, const VectorMath<do
  * to nCust.  The dimensionality of N is limited by stack size...
  */
 
-void
+bool
 ExactMVA::solve()
 {
     /* Allocate array space and initialize */
@@ -2326,6 +2323,7 @@ ExactMVA::solve()
     for ( PopulationMap::iterator n = map.begin(); n != map.end(); ++n ) {
 	step( *n );
     }
+    return true;
 }
 
 
@@ -2525,6 +2523,8 @@ SchweitzerCommon::reset()
 void
 SchweitzerCommon::initialize()
 {
+    MVA::initialize();
+    
     unsigned m;
     const unsigned n = offset(NCust);						/* Hoist */
     unsigned k;
@@ -3000,6 +3000,8 @@ SchweitzerCommon::priorityInflation( const Server& station, const Population &N,
 
 /* ------------------------- Bard Schweitzer. ------------------------- */
 
+const char * const Schweitzer::__typeName = "Bard-Schweitzer";
+
 /*
  * Allocate storage and distribute customers to queues.  All populations
  * are of type SpecialPop since we don't need to go through the entire
@@ -3051,7 +3053,7 @@ Schweitzer::estimate_P( const Population & N )
  * Solve the model.  This member function is very very complicated.
  */
 
-void
+bool
 Schweitzer::solve()
 {
     map.dimension( NCust );			/* Reset ALL associated arrays */
@@ -3072,10 +3074,14 @@ Schweitzer::solve()
     }
     catch ( const MVA::iteration_limit& error ) {
 	faultCount += 1;
+	return false;
     }
+    return true;
 }
 
 /* -------------------------- One Step MVA. --------------------------- */
+
+const char * const OneStepMVA::__typeName = "One-Step";
 
 /*
  * Constructor...
@@ -3092,7 +3098,7 @@ OneStepMVA::OneStepMVA( Vector<Server *>&q, const Population & n, const VectorMa
  * and one step only.
  */
 
-void
+bool
 OneStepMVA::solve()
 {
     map.dimension( NCust );			/* Reset ALL associated arrays */
@@ -3110,9 +3116,12 @@ OneStepMVA::solve()
     estimate_L( NCust );
     estimate_P( NCust );
     step( NCust );
+    return true;
 }
 
 /* --------------------------- Linearizer. ---------------------------- */
+
+const char * const Linearizer::__typeName = "Linearizer";
 
 /*
  * Constructor...
@@ -3265,7 +3274,7 @@ Linearizer::reset()
  * Solver for linearizer.  See reference for description.
  */
 
-void
+bool
 Linearizer::solve()
 {
     Population N;			/* Population vector.		*/
@@ -3316,10 +3325,12 @@ Linearizer::solve()
     }
     catch ( const MVA::iteration_limit& error ) {
 	faultCount += 1;
+	return false;
     }
     //setNonILRate( );
     setNonILRate( NCust );
     setQueueWeight( NCust );
+    return true;
 }
 
 
@@ -3500,6 +3511,8 @@ Linearizer::printD( std::ostream& output, const Population & N ) const
 
 /* ----------------------- One Step Linearizer. ----------------------- */
 
+const char * const OneStepLinearizer::__typeName = "One-Step Linearizer";
+
 /*
  * Constructor...
  */
@@ -3515,7 +3528,7 @@ OneStepLinearizer::OneStepLinearizer( Vector<Server *>&q, const Population & n, 
  * and one step only.
  */
 
-void
+bool
 OneStepLinearizer::solve()
 {
     Population N;				/* Population vector.		*/
@@ -3553,6 +3566,7 @@ OneStepLinearizer::solve()
     estimate_L( NCust );
     estimate_P( NCust );
     step( NCust );
+    return true;
 }
 
 /* ------------------------ Linearizer variant. ----------------------- */
@@ -3571,6 +3585,8 @@ OneStepLinearizer::solve()
  *
  * Warning: This algorithm has FP stability problems.
  */
+
+const char * const Linearizer2::__typeName = "Fast Linearizer";
 
 
 /*
@@ -3758,115 +3774,4 @@ Linearizer2::sumOf_SL_m( const Server& station, const Population &N, const unsig
     const unsigned Nej = offset_e_c_e_j(c,j);
 
     return Lm[Nej][station.closedIndex];
-}
-
-/* ----------------------- One Step Linearizer. ----------------------- */
-
-/*
- * Constructor...
- */
-
-Linearizer3::Linearizer3( Vector<Server *>&q, const Population & n, const VectorMath<double>& z, const Vector<unsigned>& prio, const VectorMath<double>* of )
-    : Linearizer( q, n, z, prio, of)
-{
-}
-
-
-Linearizer3::~Linearizer3()
-{
-}
-
-
-/*
- * Perform ONE STEP of the MVA algorithm (linearizer approximaation)
- * and one step only.
- */
-
-void
-Linearizer3::solve()
-{
-    const double termination_test = 1.0 / ( 4000 + 16 * NCust.sum() );
-    Population N;		/* Population vector.		*/
-
-    /* Initialize */
-
-    map.dimension( NCust );			/* Reset ALL associated arrays */
-    clearCount();
-
-    c = 0;
-    const unsigned n = offset_e_c_e_j(c, 0);		/* Hoist */
-
-    initialize();
-
-    do {
-	copy_L( n );
-
-	/*
-	 * NB: `c' is an instance variable used by our Lm function.
-	 */
-
-	for ( c = 0; c <= K; ++c ) {
-	    N = NCust;
-
-	    if ( c > 0 ) N[c] -= 1;
-
-	    save_L();
-	    estimate_L( N );
-	    estimate_P( N );
-	    step( N );
-	    step( N );
-//	    step( N );
-//	    step( N );
-
-	    restore_L();
-
-	}
-
-	c = 0;
-	update_Delta( NCust );
-
-	estimate_L( NCust );
-	estimate_P( NCust );
-	step( NCust );
-	step( NCust );
-//	step( NCust );
-//	step( NCust );
-
-    } while ( max_delta_L( n, N ) >= termination_test );
-}
-
-
-/*
- * Update fraction of jobs at station.
- */
-
-void
-Linearizer3::update_Delta( const Population & N )
-{
-    const unsigned n = offset_e_c_e_j(0, 0);			/* Hoist */
-
-    for ( unsigned m = 1; m <= M; ++m ) {
-	if ( !Q[m]->updateD() ) continue;	/* For synch servers. */
-	const unsigned E = Q[m]->nEntries();
-
-	for ( unsigned j = 1; j <= K; ++j ) {
-	    if ( N[j] < 1 ) continue;
-	    const unsigned Nej = offset_e_c_e_j(0, j);		/* Hoist */
-
-	    for ( unsigned e = 1; e <= E; ++e ) {
-		for ( unsigned k = 1; k <= K; ++k ) {
-		    const unsigned old_D = D[m][e][k][j];
-		    if ( N[k] > ( k == j ) ) {
-			D[m][e][k][j] = (( L[Nej][m][e][k] / (N[k] - ( k == j )) )
-					 -  ( L[n][m][e][k] / N[k] )) * 0.8 + old_D * 0.2;
-		    } else {
-			D[m][e][k][j] = 0.0;
-		    }
-		}
-	    }
-	}
-    }
-#if DEBUG_MVA
-    if ( debug_D ) printD( std::cout, N );
-#endif
 }
