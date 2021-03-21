@@ -10,7 +10,7 @@
  * November, 1994
  *
  * ------------------------------------------------------------------------
- * $Id: report.cc 14334 2021-01-05 03:03:03Z greg $
+ * $Id: report.cc 14569 2021-03-19 13:29:09Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -93,7 +93,7 @@ std::ostream&
 MVACount::printHeader( std::ostream& output, int faulty )
 {
     output << "  n   k srv     step()       mean     stddev     wait()       mean     stddev    ";
-#if defined(HAVE_SYS_TIMES_H)
+#if defined(HAVE_SYS_TIME_H)
     output << "    User      System     ";
 #endif
     output << "Elapsed   ";
@@ -138,7 +138,7 @@ MVACount::print( std::ostream& output ) const
 	   << std::setw(10) << mean( _n, wait ) << " "
 	   << std::setw(10) << stddev( _n, wait, wait_sqr ) << " ";
 
-#if	defined(HAVE_SYS_TIMES_H)
+#if	defined(HAVE_SYS_TIME_H)
     output << LQIO::DOM::CPUTime::print( _total_time.getUserTime() ) << " " 
 	   << LQIO::DOM::CPUTime::print( _total_time.getSystemTime() ) << " ";
 #endif
@@ -307,7 +307,7 @@ SolverReport::print( std::ostream& output ) const
     }
 #endif
     output << "    Real:    " << LQIO::DOM::CPUTime::print( _delta_time.getRealTime() ) << std::endl;
-#if defined(HAVE_SYS_TIMES_H)
+#if defined(HAVE_SYS_TIME_H)
     output << "    User:    " << LQIO::DOM::CPUTime::print( _delta_time.getUserTime() ) << std::endl;
     output << "    System:  " << LQIO::DOM::CPUTime::print( _delta_time.getSystemTime() ) << std::endl;
 #endif

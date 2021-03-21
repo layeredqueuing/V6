@@ -1,3 +1,14 @@
+2021-03-16  Gregory Franks  <greg@Gregs-Retina-iMac.local>
+
+	* lqns
+	- fixes for phase think times
+	* lqx
+	- Add unary + and -, remove negative numbers from lexical analyzer.
+	* qnsolver
+	- Generate gnuplot for throughput, residence time, response
+	  time, number of customers and wait times.  Will plot bounds for
+	  two classes.
+
 2021-02-24  Gregory Franks  <greg@Gregs-MacBookPro-2.local>
 
 	* lqiolib
@@ -504,4 +515,4 @@
 	* parasrvn:
 	- Peter Maly added service time distributions.  See '-H' option.
 
-$Id: ChangeLog 14499 2021-02-27 23:24:12Z greg $
+$Id: ChangeLog 14554 2021-03-17 00:48:05Z greg $

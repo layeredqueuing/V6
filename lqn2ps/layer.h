@@ -1,7 +1,7 @@
 /* -*- c++ -*-
  * layer.h	-- Greg Franks
  *
- * $Id: layer.h 14498 2021-02-27 23:08:51Z greg $
+ * $Id: layer.h 14552 2021-03-17 00:47:06Z greg $
  */
 
 #ifndef _LQN2PS_LAYER_H
@@ -83,7 +83,7 @@ public:
     Layer& erase( std::vector<Entity *>::iterator );
     int operator!() const { return _entities.size() == 0; }	/* Layer is empty! */
     const std::vector<Entity *>& entities() const { return _entities; }
-    const std::vector<Entity *>& clients() const { return _clients; }
+    const std::vector<Task *>& clients() const { return _clients; }
     Layer& number( const unsigned n );
     unsigned number() const { return _number; }
     unsigned nChains() const { return _chains; }
@@ -146,7 +146,7 @@ private:
     unsigned _number;
     Label * _label;
 
-    std::vector<Entity *> _clients;		/* Only if doing a submodel 	*/
+    std::vector<Task *> _clients;		/* Only if doing a submodel 	*/
     mutable unsigned _chains;			/* Only set if doing a submodel */
     BCMP::Model  _bcmp_model;			/* For queuing output		*/
 };

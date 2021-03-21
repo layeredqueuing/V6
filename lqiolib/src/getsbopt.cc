@@ -13,7 +13,7 @@
  *
  * Written by Greg Franks.  August, 1991.
  *
- * $Id: getsbopt.cc 9266 2010-03-23 19:26:48Z greg $
+ * $Id: getsbopt.cc 14569 2021-03-19 13:29:09Z greg $
  */
 
 #if defined(HAVE_CONFIG_H)
@@ -27,10 +27,6 @@
 #include "getsbopt.h"
 #include <string.h>
 #include <ctype.h>
-
-#ifndef lint
-static char * RCSid = "$Header$";
-#endif
 
 int 
 getsubopt (char **optionp, char * const * tokens, char **valuep)

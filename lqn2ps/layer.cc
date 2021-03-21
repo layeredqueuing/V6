@@ -1,6 +1,6 @@
 /* layer.cc	-- Greg Franks Tue Jan 28 2003
  *
- * $Id: layer.cc 14498 2021-02-27 23:08:51Z greg $
+ * $Id: layer.cc 14552 2021-03-17 00:47:06Z greg $
  *
  * A layer consists of a set of tasks with the same nesting depth from
  * reference tasks.  Reference tasks are in layer 1, the immediate
@@ -500,14 +500,14 @@ Layer::generateSubmodel()
 
     /* Set the chains in the model */
 
-    for ( std::vector<Entity *>::const_iterator client = clients().begin(); client != clients().end(); ++client ) {
+    for ( std::vector<Task *>::const_iterator client = clients().begin(); client != clients().end(); ++client ) {
 	if ( (*client)->isInClosedModel( entities() ) ) {
 	    _chains += 1;
-	    _chains = const_cast<Entity *>(*client)->setChain( _chains, &GenericCall::hasRendezvous );
+	    _chains = const_cast<Task *>(*client)->setChain( _chains, &GenericCall::hasRendezvous );
 	}
 	if ( (*client)->isInOpenModel( entities() ) ) {
 	    _chains += 1;
-	    _chains = const_cast<Entity *>(*client)->setChain( _chains, &GenericCall::hasSendNoReply );
+	    _chains = const_cast<Task *>(*client)->setChain( _chains, &GenericCall::hasSendNoReply );
 	}
     }
 
@@ -601,9 +601,8 @@ Layer::transmorgrify( LQIO::DOM::Document * document, Processor *& surrogate_pro
 
     /* ---------- Clients ---------- */
 
-    for ( std::vector<Entity *>::const_iterator client = clients().begin(); client != clients().end(); ++client ) {
-	Task * aTask = dynamic_cast<Task *>(*client);
-	if ( !aTask ) continue;
+    for ( std::vector<Task *>::const_iterator client = clients().begin(); client != clients().end(); ++client ) {
+	Task * aTask = *client;
 
 	LQIO::DOM::Task * dom_task = const_cast<LQIO::DOM::Task *>(dynamic_cast<const LQIO::DOM::Task *>(aTask->getDOM()));
 	dom_task->setSchedulingType( SCHEDULE_CUSTOMER );   // Clients become reference tasks.
@@ -772,7 +771,7 @@ Layer::createBCMPModel()
      * Create all of the chains for the model.
      */
 
-    std::for_each( clients().begin(),  clients().end(),  Entity::create_chain( _bcmp_model, entities() ) );
+    std::for_each( clients().begin(), clients().end(), Task::create_chain( _bcmp_model, entities() ) );
 
     /*
      * Create all of the stations except for the terminals (which are
@@ -787,7 +786,7 @@ Layer::createBCMPModel()
      */
     
     BCMP::Model::Station terminals(BCMP::Model::Station::Type::CUSTOMER);
-    std::for_each( clients().begin(),  clients().end(),  Entity::create_customers( terminals ) );
+    std::for_each( clients().begin(), clients().end(), Task::create_customers( terminals ) );
     _bcmp_model.insertStation( ReferenceTask::__BCMP_station_name, terminals );	// QNAP2 limit is 8.
     return true;
 }
@@ -824,7 +823,7 @@ Layer::printSubmodel( std::ostream& output ) const
 
     if ( n_clients > 0 ) {
 	output << "Clients: " << std::endl;
-	for ( std::vector<Entity *>::const_iterator client = _clients.begin(); client != _clients.end(); ++client ) {
+	for ( std::vector<Task *>::const_iterator client = _clients.begin(); client != _clients.end(); ++client ) {
 	    (*client)->print( output );
 	}
     }
@@ -898,7 +897,7 @@ std::ostream&
 Layer::drawQueueingNetwork( std::ostream& output ) const
 {
     double max_x = x() + width();
-    for ( std::vector<Entity *>::const_iterator client = clients().begin(); client != clients().end(); ++client ) {
+    for ( std::vector<Task *>::const_iterator client = clients().begin(); client != clients().end(); ++client ) {
 	bool is_in_open_model = false;
 	bool is_in_closed_model = false;
 	if ( (*client)->isInClosedModel( entities() ) ) {

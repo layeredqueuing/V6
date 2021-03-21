@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: phase.h 14498 2021-02-27 23:08:51Z greg $
+ * $Id: phase.h 14570 2021-03-20 22:14:51Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -129,6 +129,7 @@ public:
 	std::set<Entity *>& _servers;
     };
 
+private:
     struct add_IL_wait {
 	add_IL_wait( unsigned int submodel ) : _submodel(submodel) {}
 	double operator()( double sum, const Phase& phase ) { return sum + phase.isPresent() ? phase._interlockedWait[_submodel] : 0.0; }
@@ -136,7 +137,6 @@ public:
 	const unsigned int _submodel;
     };
     
-private:
     struct add_utilization_to {
 	add_utilization_to( const Entry * entry ) : _entry(entry) {}
 	double operator()( double sum, const Phase& phase ) const;
@@ -144,24 +144,27 @@ private:
 	const Entry * _entry;
     };
     
-    struct get_interlocked_tasks {
-	get_interlocked_tasks( Interlock::CollectTasks& path ) : _path(path) {}
-	bool operator()( bool rc, Call * call ) const;
+    struct add_weighted_wait {
+	add_weighted_wait( unsigned int submodel, double total ) : _submodel(submodel), _total(total) {}
+	double operator()( double sum, const Call * call ) const { return call->submodel() == _submodel ? sum + call->wait() * call->rendezvous() / _total: sum; }
     private:
-	Interlock::CollectTasks& _path;
+	const unsigned int _submodel;
+	const double _total;
     };
 
-private:
     /* Bonus entries are created on devices for each phase */
     class DeviceInfo {
+	friend class Phase;
+	
     public:
-	typedef enum { HOST, PROCESSOR, THINK_TIME } Type;
+	enum class Type { HOST, PROCESSOR, THINK_TIME, CFS_DELAY };
 
 	DeviceInfo( const Phase&, const std::string&, Type );		/* True if this device is the phase's processor */
 	~DeviceInfo();
 
-	bool isHost() const { return _type == HOST; }
-	bool isProcessor() const { return _type == HOST || _type == PROCESSOR; }
+	bool isHost() const { return _type == Type::HOST; }
+	bool isProcessor() const { return _type == Type::HOST || _type == Type::PROCESSOR; }
+	bool isCFSDelay() const { return _type == Type::CFS_DELAY; }
 	ProcessorCall * call() const { return _call; }
 	DeviceEntry * entry() const { return _entry; }
 	DeviceInfo& recalculateDynamicValues();
@@ -172,6 +175,16 @@ private:
 	double n_calls() const { return _phase.numberOfSlices(); }
 	double cv_sqr() const { return _phase.CV_sqr(); }
 
+	static void initWait( DeviceInfo * device ) { device->call()->initWait(); }
+	static std::set<Entity *>& add_server( std::set<Entity *>&, const DeviceInfo * );
+
+	struct add_wait {
+	    add_wait( unsigned int submodel ) : _submodel(submodel) {}
+	    double operator()( double sum, const DeviceInfo * call ) const;
+	private:
+	    const unsigned int _submodel;
+	};
+
     private:
 	const Phase& _phase;
 	const std::string _name;
@@ -180,6 +193,22 @@ private:
 	ProcessorCall * _call;
 	LQIO::DOM::Entry * _entry_dom;		/* Only for ~Phase		*/
 	LQIO::DOM::Call * _call_dom;		/* Only for ~Phase		*/
+    };
+
+    struct follow_interlock {
+	follow_interlock( Interlock::CollectTable& path ) : _path(path) {}
+	void operator()( const Call * call ) const;
+	void operator()( const DeviceInfo* device ) const;
+    private:
+	Interlock::CollectTable& _path;
+    };
+    
+    struct get_interlocked_tasks {
+	get_interlocked_tasks( Interlock::CollectTasks& path ) : _path(path) {}
+	bool operator()( bool rc, Call * call ) const;
+	bool operator()( bool rc, const DeviceInfo* device ) const;
+    private:
+	Interlock::CollectTasks& _path;
     };
 
 public:
@@ -258,6 +287,7 @@ public:
     double processorCalls() const;
     double queueingTime() const;
     double processorWait() const;
+    const std::vector<DeviceInfo *>& devices() const { return _devices; }
 	
     /* Queries */
 
@@ -293,6 +323,9 @@ public:
 //    void cfsRecalculateDynamicValues(double ratio1, double newthinktime);
 
     /*+ DPS +*/
+    Phase::DeviceInfo * getCFSDelayServer() const;
+    ProcessorCall * getCFSCall() const;
+    DeviceEntry * getCFSEntry() const;
     Phase& computeCFSDelay(double rate, double groupratio);
     double getCFSDelay() const { return _cfs_delay; }
     Phase& reset_lowerbound() { if ( _cfs_delay > 0. ) _cfs_delay_lowerbound = 0.; return *this; }
@@ -326,11 +359,6 @@ protected:
 
 private:
     std::vector<DeviceInfo *> _devices;	/* Will replace below			*/
-    ProcessorCall * _thinkCall;		/* Link to processor.                   */
-    DeviceEntry * _thinkEntry;         	/*                                      */
-    LQIO::DOM::Entry * _thinkEntryDOM;	/* Only for ~Phase			*/
-    LQIO::DOM::Call * _thinkCallDOM;	/* Only for ~Phase			*/
-
     VectorMath<double> _surrogateDelay;	/* Saved old surrogate delay. REP N-R	*/
     Probability _prOvertaking;
 

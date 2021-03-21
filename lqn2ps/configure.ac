@@ -2,10 +2,10 @@
 # Process this file with autoconf to produce a configure script.
 # $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqn2ps/configure.ac $
 # ------------------------------------------------------------------------
-# $Id: configure.ac 14498 2021-02-27 23:08:51Z greg $
+# $Id: configure.ac 14569 2021-03-19 13:29:09Z greg $
 # ------------------------------------------------------------------------
-AC_PREREQ(2.57)
-AC_INIT(lqn2ps, 6.1, greg@sce.carleton.ca)
+AC_PREREQ([2.69])
+AC_INIT([lqn2ps],[6.1],[greg@sce.carleton.ca])
 AC_CONFIG_AUX_DIR([../config])
 AC_CONFIG_SRCDIR([lqn2ps.h])
 AC_CONFIG_HEADERS([config.h])
@@ -17,12 +17,9 @@ AC_SUBST(STATIC)
 #
 AC_LANG(C++)
 AC_PROG_CXX
-AM_PROG_LEX
 AC_PROG_YACC
 # Add in libtool.
-AC_PROG_LIBTOOL
 LT_INIT
-
 if test "x$enable_shared" = "xno"; then
    echo "Static build."
    STATIC=-all-static
@@ -36,6 +33,7 @@ fi
 #
 AC_PROG_INSTALL
 AC_PROG_LN_S
+AC_CHECK_PROGS(XPS2PDF, ps2pdf)
 if test -z "$XPS2PDF"; then
   AC_MSG_NOTICE([Ps2pdf not found - Unable to create PDF version of the user manual])
 fi
@@ -56,7 +54,6 @@ fi
 # ----------------------------------------------------------------------
 # Checks for header files.
 #
-AC_HEADER_STDC
 AC_CHECK_HEADERS([float.h ieeefp.h])
 if test "x$enable_shared" = "xyes"; then
    AC_CHECK_HEADERS([gd.h])

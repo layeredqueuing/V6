@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: model.h 14334 2021-01-05 03:03:03Z greg $
+ * $Id: model.h 14571 2021-03-20 22:32:44Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -73,7 +73,7 @@ public:
     void setRunDPS( double );
 
     unsigned nSubmodels() const { return _submodels.size(); }
-    unsigned syncModelNumber() const { return sync_submodel; }
+    unsigned syncModelNumber() const { return __sync_submodel; }
     const Vector<Submodel *>& getSubmodels() const { return _submodels; }
 
     bool solve();
@@ -117,9 +117,6 @@ private:
     std::ostream& printOvertaking( std::ostream& ) const;
 
 public:
-    static unsigned sync_submodel;	/* Level of special sync model. */
-    static Processor * thinkServer;
-
     static double convergence_value;
     static unsigned iteration_limit;
     static double underrelaxation;
@@ -129,6 +126,10 @@ public:
     static std::set<Group *> __group;
     static std::set<Task *> __task;
     static std::set<Entry *> __entry;
+    static Processor * __think_server;	/* Delay server for think times	*/
+    static Processor * __cfs_server;	/* Delay server for CFS Procs.	*/
+    static unsigned __sync_submodel;	/* Level of special sync model. */
+
     
 protected:
     Vector<Submodel *> _submodels;

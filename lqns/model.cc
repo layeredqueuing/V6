@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: model.cc 14498 2021-02-27 23:08:51Z greg $
+ * $Id: model.cc 14571 2021-03-20 22:32:44Z greg $
  *
  * Layer-ization of model.  The basic concept is from the reference
  * below.  However, model partioning is more complex than task vs device.
@@ -85,8 +85,9 @@ double Model::convergence_value = 0.00001;
 unsigned Model::iteration_limit = 50;;
 double Model::underrelaxation = 1.0;
 unsigned Model::print_interval = 1;
-Processor * Model::thinkServer = nullptr;
-unsigned Model::sync_submodel = 0;
+Processor * Model::__think_server = nullptr;
+Processor * Model::__cfs_server = nullptr;
+unsigned Model::__sync_submodel = 0;
 LQIO::DOM::Document::input_format Model::input_format = LQIO::DOM::Document::AUTOMATIC_INPUT;
 
 std::set<Processor *> Model::__processor;
@@ -446,7 +447,7 @@ Model::setModelParameters( const LQIO::DOM::Document* doc )
 Model::Model( const LQIO::DOM::Document * document, const std::string& inputFileName, const std::string& outputFileName )
     : _converged(false), _iterations(0), _step_count(0), _model_initialized(false), _document(document), _input_file_name(inputFileName), _output_file_name(outputFileName)
 {
-    sync_submodel = 0;
+    __sync_submodel = 0;
 }
 
 /*
@@ -470,9 +471,13 @@ Model::~Model()
     }
     __group.clear();
 
-    if ( thinkServer ) {
-	delete thinkServer;
-	thinkServer = nullptr;
+    if ( __think_server ) {
+	delete __think_server;
+	__think_server = nullptr;
+    }
+    if ( __cfs_server ) {
+	delete __cfs_server;
+	__cfs_server = nullptr;
     }
 
     for ( std::set<Task *>::const_iterator task = __task.begin(); task != __task.end(); ++task ) {
@@ -525,8 +530,8 @@ Model::generate()
 
     if ( std::count_if( __task.begin(), __task.end(), Predicate<Task>( &Task::hasForks ) ) > 0 ) {
 	max_depth += 1;
-	sync_submodel = max_depth;
-	_submodels.push_back(new SynchSubmodel(sync_submodel));
+	__sync_submodel = max_depth;
+	_submodels.push_back(new SynchSubmodel(__sync_submodel));
     }
 
     /* Build model. */
@@ -558,11 +563,17 @@ Model::extendModel()
 
 	/* Add a delay server for think times. */
 
-	if ( aTask->hasThinkTime() || aTask->getProcessor()->isCFSserver() ) {
-	    if ( !thinkServer ) {
-		thinkServer = new DelayServer();
+	if ( aTask->hasThinkTime() ) {
+	    if ( !__think_server ) {
+		__think_server = new DelayServer("THINK_DELAY");
 	    }
-	    thinkServer->addTask( aTask );	/* link the task in */
+	    __think_server->addTask( aTask );	/* link the task in */
+	}
+	if ( aTask->getProcessor()->isCFSserver() ) {
+	    if ( !__cfs_server ) {
+		__cfs_server = new DelayServer("CFS_DELAY");
+	    }
+	    __cfs_server->addTask( aTask );	/* link the task in */
 	}
 
 #if HAVE_LIBGSL && HAVE_LIBGSLCBLAS
@@ -601,8 +612,11 @@ Model::configure()
 {
     for_each( __task.begin(), __task.end(), Exec1<Entity,unsigned>( &Entity::configure, nSubmodels() ) );
     for_each( __processor.begin(), __processor.end(), Exec1<Entity,unsigned>( &Entity::configure, nSubmodels() ) );
-    if ( thinkServer ) {
-	thinkServer->configure( nSubmodels() );
+    if ( __think_server ) {
+	__think_server->configure( nSubmodels() );
+    }
+    if ( __cfs_server ) {
+	__cfs_server->configure( nSubmodels() );
     }
 }
 
@@ -1225,10 +1239,10 @@ MOL_Model::addToSubmodel()
 	    _submodels[(*task)->submodel()]->addServer( (*task) );
 	}
 	if ( (*task)->hasForks() ) {
-	    _submodels[sync_submodel]->addClient( (*task) );
+	    _submodels[__sync_submodel]->addClient( (*task) );
 	}
 	if ( (*task)->hasSyncs() ) {
-	    _submodels[sync_submodel]->addServer( (*task) );
+	    _submodels[__sync_submodel]->addServer( (*task) );
 	}
     }
 
@@ -1239,9 +1253,13 @@ MOL_Model::addToSubmodel()
 	_submodels[HWSubmodel]->addServer( (*processor) );
     }
 
-    if ( thinkServer ) {
-	thinkServer->setSubmodel( HWSubmodel );		// Force all devices to this level
-	_submodels[HWSubmodel]->addServer(thinkServer);
+    if ( __think_server ) {
+	__think_server->setSubmodel( HWSubmodel );		// Force all devices to this level
+	_submodels[HWSubmodel]->addServer(__think_server);
+    }
+    if ( __cfs_server ) {
+	__cfs_server->setSubmodel( HWSubmodel );		// Force all devices to this level
+	_submodels[HWSubmodel]->addServer(__cfs_server);
     }
 }
 
@@ -1354,10 +1372,10 @@ Batch_Model::addToSubmodel()
 	    _submodels[i]->addServer( (*task) );
 	}
 	if ( (*task)->hasForks() ) {
-	    _submodels[sync_submodel]->addClient( (*task) );
+	    _submodels[__sync_submodel]->addClient( (*task) );
 	}
 	if ( (*task)->hasSyncs() ) { // Answer is always NO for now.
-	    _submodels[sync_submodel]->addServer( (*task) );
+	    _submodels[__sync_submodel]->addServer( (*task) );
 	}
     }
 
@@ -1367,10 +1385,16 @@ Batch_Model::addToSubmodel()
 	_submodels[i]->addServer( (*processor) );
     }
 
-    if ( thinkServer ) {
-	const int i = thinkServer->submodel();
+    if ( __think_server ) {
+	const int i = __think_server->submodel();
 	if ( i > 0 ) {
-	    _submodels[i]->addServer( thinkServer );
+	    _submodels[i]->addServer( __think_server );
+	}
+    }
+    if ( __cfs_server ) {
+	const int i = __cfs_server->submodel();
+	if ( i > 0 ) {
+	    _submodels[i]->addServer( __cfs_server );
 	}
     }
 }
@@ -1469,8 +1493,11 @@ SRVN_Model::assignSubmodel()
 	if ( (*processor)->submodel() <= 0 ) continue;
 	servers.insert( (*processor) );
     }
-    if ( thinkServer && thinkServer->submodel() > 0 ) {
-        servers.insert( thinkServer );
+    if ( __think_server && __think_server->submodel() > 0 ) {
+        servers.insert( __think_server );
+    }
+    if ( __cfs_server && __cfs_server->submodel() > 0 ) {
+        servers.insert( __cfs_server );
     }
 
     unsigned int submodel = 1;
@@ -1509,8 +1536,11 @@ Squashed_Model::assignSubmodel()
 	    (*processor)->setSubmodel( 1 );
 	}
     }
-    if ( thinkServer && thinkServer->submodel() > 0 ) {
-        thinkServer->setSubmodel( 1 );
+    if ( __think_server && __think_server->submodel() > 0 ) {
+        __think_server->setSubmodel( 1 );
+    }
+    if ( __cfs_server && __cfs_server->submodel() > 0 ) {
+        __cfs_server->setSubmodel( 1 );
     }
 
     return 1;
@@ -1544,8 +1574,11 @@ HwSw_Model::assignSubmodel()
 	    (*processor)->setSubmodel( 2 );
 	}
     }
-    if ( thinkServer && thinkServer->submodel() > 0 ) {
-        thinkServer->setSubmodel( 2 );
+    if ( __think_server && __think_server->submodel() > 0 ) {
+        __think_server->setSubmodel( 2 );
+    }
+    if ( __cfs_server && __cfs_server->submodel() > 0 ) {
+        __cfs_server->setSubmodel( 2 );
     }
 
     return 2;

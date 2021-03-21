@@ -11,7 +11,7 @@
  * May, 2009
  *
  * ------------------------------------------------------------------------
- * $Id: processor.h 14334 2021-01-05 03:03:03Z greg $
+ * $Id: processor.h 14571 2021-03-20 22:32:44Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -144,16 +144,19 @@ private:
 class DelayServer : public Processor
 {
 public:
-    DelayServer() : Processor( 0 ) {}		/* No Dom */
+    DelayServer( const std::string& name ) : Processor( nullptr ), _name(name) {}		/* No Dom */
     virtual bool check() const { return true; }
 
     virtual double rate() const { return 1.0; }
-    virtual const std::string& name() const { static const std::string s="DELAY"; return s; }
+    virtual const std::string& name() const { return _name; }
     virtual scheduling_type scheduling() const { return SCHEDULE_DELAY; }
     virtual unsigned copies() const { return 1; }
     virtual unsigned replicas() const { return 1; }
     virtual bool isInfinite() const { return true; }
 
     virtual const DelayServer& insertDOMResults() const { return *this; }	/* NOP */
+
+private:
+    const std::string _name;
 };
 #endif

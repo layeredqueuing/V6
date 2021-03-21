@@ -10,7 +10,7 @@
  * April 2010.
  *
  * ------------------------------------------------------------------------
- * $Id: task.h 14498 2021-02-27 23:08:51Z greg $
+ * $Id: task.h 14552 2021-03-17 00:47:06Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -59,6 +59,23 @@ class Task : public Entity {
     };
 #endif
     
+public:
+    struct create_chain {
+	create_chain( BCMP::Model& model, const std::vector<Entity *>& servers ) : _model(model), _servers(servers) {}
+	void operator()( const Task * ) const;
+    private:
+	BCMP::Model& _model;
+	const std::vector<Entity *>& _servers;
+    };
+
+    struct create_customers {
+	create_customers( BCMP::Model::Station& terminals ) : _terminals(terminals) {}
+	void operator()( const Task * entity );
+    private:
+	BCMP::Model::Station& _terminals;
+    };
+
+
 public:
     enum class root_level_t { IS_NON_REFERENCE, IS_REFERENCE, HAS_OPEN_ARRIVALS };
 
@@ -139,7 +156,7 @@ public:
 
     virtual bool check() const;
     virtual unsigned referenceTasks( std::vector<Entity *>&, Element * dst ) const;
-    virtual unsigned clients( std::vector<Entity *>&, const callPredicate = 0 ) const;
+    virtual unsigned clients( std::vector<Task *>&, const callPredicate = nullptr ) const;
     virtual unsigned servers( std::vector<Entity *>& ) const;
     unsigned maxPhase() const { return _maxPhase; }			/* Max phase over all entries	*/
 

@@ -1,9 +1,9 @@
 #                                               -*- Autoconf -*-
-# $Id: configure.ac 13832 2020-09-18 12:58:04Z greg $
+# $Id: configure.ac 14569 2021-03-19 13:29:09Z greg $
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ(2.58)
-AC_INIT(liblqio, 0.4.0, martinmroz@gmail.com)
+AC_PREREQ([2.69])
+AC_INIT([liblqio],[0.3.0],[martinmroz@gmail.com])
 AC_CONFIG_AUX_DIR([../config])
 AC_CONFIG_MACRO_DIR([../config])
 AM_INIT_AUTOMAKE
@@ -11,9 +11,8 @@ AC_CONFIG_SRCDIR([src])
 AC_CONFIG_HEADERS([config.h])
 
 # Checks for programs.
-AC_LIBTOOL_WIN32_DLL
-AC_PROG_LIBTOOL
-AM_PROG_LEX
+LT_INIT
+AC_PROG_LEX([noyywrap])
 AC_PROG_YACC
 AC_PROG_CXX
 AC_PROG_CC
@@ -21,7 +20,6 @@ AC_LANG(C++)
 
 # Checks for header files.
 AC_FUNC_ALLOCA
-AC_HEADER_STDC
 AC_CHECK_HEADERS([sys/mman.h])
 AC_CHECK_HEADERS([float.h inttypes.h pwd.h malloc.h stddef.h stdlib.h string.h strings.h unistd.h values.h time.h])
 AC_CHECK_HEADERS([sys/param.h sys/resource.h sys/time.h sys/times.h])

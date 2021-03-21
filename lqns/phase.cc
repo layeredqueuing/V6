@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: phase.cc 14498 2021-02-27 23:08:51Z greg $
+ * $Id: phase.cc 14570 2021-03-20 22:14:51Z greg $
  *
  * Everything you wanted to know about an phase, but were afraid to ask.
  *
@@ -250,14 +250,6 @@ Phase::Phase( const std::string& name )
       _entry(nullptr),
       _callList(),
       _devices(),
-//      _processorCall(nullptr),
-      _thinkCall(nullptr),
-//      _processorEntry(nullptr),
-//      _procEntryDOM(nullptr),
-//      _procCallDOM(nullptr),
-      _thinkEntry(nullptr),
-      _thinkEntryDOM(nullptr),
-      _thinkCallDOM(nullptr),
       _prOvertaking(0.),
       _cfs_delay(0.0),
       _cfs_delay_upperbound(0.0),
@@ -272,14 +264,6 @@ Phase::Phase()
       _entry(nullptr),
       _callList(),
       _devices(),
-//      _processorCall(nullptr),
-      _thinkCall(nullptr),
-//      _processorEntry(nullptr),
-//      _procEntryDOM(nullptr),
-//      _procCallDOM(nullptr),
-      _thinkEntry(nullptr),
-      _thinkEntryDOM(nullptr),
-      _thinkCallDOM(nullptr),
       _prOvertaking(0.),
       _cfs_delay(0.0),
       _cfs_delay_upperbound(0.0),
@@ -297,13 +281,6 @@ Phase::~Phase()
     for ( std::vector<DeviceInfo *>::const_iterator x = _devices.begin(); x != _devices.end(); ++x ) {
 	delete *x;
     }
-//    if ( _processorCall ) delete _processorCall;
-//    if ( _procCallDOM != nullptr ) delete _procCallDOM;
-//    if ( _procEntryDOM != nullptr ) delete _procEntryDOM;
-/*    if ( _thinkCall ) delete _thinkCall;	Don't do this as it is in the callList */
-    if ( _thinkCallDOM != nullptr ) delete _thinkCallDOM;
-    if ( _thinkEntryDOM != nullptr ) delete _thinkEntryDOM;
-
     /* Release forward links */
     for ( std::set<Call *>::const_iterator call = callList().begin(); call != callList().end(); ++call ) {
 	delete *call;
@@ -353,9 +330,10 @@ Phase::findChildren( Call::stack& callStack, const bool directPath ) const
 	    }
 	}
     }
-    if ( processorCall() ) {
-	callStack.push_back( processorCall() );
-	const Entity * child = processorCall()->dstTask();
+    for ( std::vector<DeviceInfo *>::const_iterator device = devices().begin(); device != devices().end(); ++device ) {
+	Call * call = (*device)->call();
+	callStack.push_back( call );
+	const Entity * child = call->dstTask();
 	max_depth = std::max( child->findChildren( callStack, directPath ), max_depth );
 	callStack.pop_back();
     }
@@ -413,10 +391,8 @@ Phase::initReplication( const unsigned maxSize )
 Phase&
 Phase::initWait()
 {
-    for_each( callList().begin(), callList().end(), Exec<Call>( &Call::initWait ) );
-    if ( processorCall() ) {
-	processorCall()->initWait();
-    }
+    std::for_each( callList().begin(), callList().end(), Exec<Call>( &Call::initWait ) );
+    std::for_each( devices().begin(), devices().end(), &DeviceInfo::initWait );
     return *this;
 }
 
@@ -511,11 +487,9 @@ Phase::hasVariance() const
 void
 Phase::callsPerform( const CallExec& exec ) const
 {
-    for_each( callList().begin(), callList().end(), exec );
-
-    Call * call = processorCall();
-    if ( call != nullptr ) {
-	exec( call );
+    std::for_each( callList().begin(), callList().end(), exec );
+    for ( std::vector<DeviceInfo *>::const_iterator device = devices().begin(); device != devices().end(); ++device ) {
+	exec( (*device)->call() );
     }
 }
 
@@ -813,8 +787,8 @@ Phase::utilization() const
 Phase::DeviceInfo *
 Phase::getProcessor() const
 {
-    for ( std::vector<DeviceInfo *>::const_iterator x = _devices.begin(); x != _devices.end(); ++x ) {
-	if ( (*x)->isHost() ) return *x;
+    for ( std::vector<DeviceInfo *>::const_iterator device = devices().begin(); device != devices().end(); ++device ) {
+	if ( (*device)->isHost() ) return *device;
     }
     return nullptr;
 }
@@ -936,11 +910,42 @@ Phase::waitExceptChain( const unsigned submodel, const unsigned k )
 
 
 /* DPS */
+Phase::DeviceInfo *
+Phase::getCFSDelayServer() const
+{
+    for ( std::vector<DeviceInfo *>::const_iterator device = devices().begin(); device != devices().end(); ++device ) {
+	if ( (*device)->isCFSDelay() ) return *device;
+    }
+    return nullptr;
+}
+
+
+ProcessorCall *
+Phase::getCFSCall() const
+{
+    DeviceInfo * delay = getCFSDelayServer();
+    if ( delay ) return delay->call();
+    return nullptr;
+}
+
+
+
+DeviceEntry *
+Phase::getCFSEntry() const
+{
+    DeviceInfo * delay = getCFSDelayServer();
+    if ( delay ) return delay->entry();
+    return nullptr;
+}
+
+
+
 Phase&
 Phase::computeCFSDelay( double ratio1, double ratio2 )
 {
-    double newThinkTime = 0.;
-
+    double newCFSDelay = 0.;
+    const double oldCFSDelay = getCFSCall()->wait();
+    
     if ( flags.trace_cfs ) {
 	std::cout << "Phase " << owner()->name() << "-" << name() << ": task ratio=" << ratio1 << ", group ratio=" << ratio2;
     }
@@ -951,11 +956,11 @@ Phase::computeCFSDelay( double ratio1, double ratio2 )
 	_cfs_delay_upperbound = -1.;
 	_cfs_delay_lowerbound = 0.;
 
-    } else if ( ratio1 > 0. && _thinkCall->wait() > 0.0001 ) {
+    } else if ( ratio1 > 0. && oldCFSDelay > 0.0001 ) {
 	if ( ratio2 > 0. ) {	    //it is the case of :util >share
-	    _cfs_delay_lowerbound = std::max( _thinkCall->wait(), _cfs_delay_lowerbound );
+	    _cfs_delay_lowerbound = std::max( oldCFSDelay, _cfs_delay_lowerbound );
 	} else {
-	    _cfs_delay_upperbound = _thinkCall->wait();
+	    _cfs_delay_upperbound = oldCFSDelay;
 	}
     }
 
@@ -967,30 +972,31 @@ Phase::computeCFSDelay( double ratio1, double ratio2 )
     }
 
     if ( ratio1 >= 1.0 ) { //this group has only one task;
-	newThinkTime = cfsThinkTime( dynamic_cast<const Task *>(owner())->group()->getRatio2() );
+	newCFSDelay = cfsThinkTime( dynamic_cast<const Task *>(owner())->group()->getRatio2() );
     } else if ( ratio1 > 0. ) {
-	newThinkTime = cfsThinkTime( ratio2 );
+	newCFSDelay = cfsThinkTime( ratio2 );
     } else {
-	newThinkTime = 0.0;
+	newCFSDelay = 0.0;
     }
 
-    newThinkTime = std::max( newThinkTime, 0. );
-    const double oldThinkTime = _thinkEntry->serviceTimeForPhase(1);
-//    under_relax( newThinkTime, oldThinkTime, 1. );
-    if ( oldThinkTime != newThinkTime  ) {
-	_thinkEntry->setServiceTime(newThinkTime);
-	_thinkEntry->initVariance();	// Reset variance.
-	_thinkEntry->initWait();	// Reset values in wait[].
+    newCFSDelay = std::max( newCFSDelay, 0. );
+    DeviceEntry * cfs_delay_entry = getCFSEntry();
+    const double oldThinkTime = cfs_delay_entry->serviceTimeForPhase(1);
+//    under_relax( newCFSDelay, oldThinkTime, 1. );
+    if ( oldThinkTime != newCFSDelay  ) {
+	cfs_delay_entry->setServiceTime(newCFSDelay);
+	cfs_delay_entry->initVariance();	// Reset variance.
+	cfs_delay_entry->initWait();	// Reset values in wait[].
 	
 	/* Recompute dynamic values. */
 
-	_thinkCall->setWait( newThinkTime );
+	getCFSCall()->setWait( newCFSDelay );
     }
 
     if ( flags.trace_cfs ) {
-	std::cout << ", lower bound=" << _cfs_delay_lowerbound << ", CFS delay=" << newThinkTime << ", upper bound=" << _cfs_delay_upperbound << std::endl;
+	std::cout << ", lower bound=" << _cfs_delay_lowerbound << ", CFS delay=" << newCFSDelay << ", upper bound=" << _cfs_delay_upperbound << std::endl;
     }
-    _cfs_delay = newThinkTime;
+    _cfs_delay = newCFSDelay;
     return *this;
 }
 
@@ -998,14 +1004,16 @@ Phase::computeCFSDelay( double ratio1, double ratio2 )
 double
 Phase::cfsThinkTime( double groupRatio )
 {
-    double newThinkTime = _thinkCall->wait() + groupRatio * elapsedTime();
-    if ( groupRatio < 0. && newThinkTime < 0. ) {
-	newThinkTime = _thinkCall->wait() / 2.0;
+
+    const double oldCFSDelay = getCFSCall()->wait();
+    double newCFSDelay = oldCFSDelay + groupRatio * elapsedTime();
+    if ( groupRatio < 0. && newCFSDelay < 0. ) {
+	newCFSDelay = oldCFSDelay / 2.0;
     }
-    if ( _cfs_delay_upperbound > 0. && ( newThinkTime < _cfs_delay_lowerbound || _cfs_delay_upperbound < newThinkTime ) ) {
-	newThinkTime = (_cfs_delay_upperbound + _cfs_delay_lowerbound) / 2.0;
+    if ( _cfs_delay_upperbound > 0. && ( newCFSDelay < _cfs_delay_lowerbound || _cfs_delay_upperbound < newCFSDelay ) ) {
+	newCFSDelay = (_cfs_delay_upperbound + _cfs_delay_lowerbound) / 2.0;
     }
-    return newThinkTime;
+    return newCFSDelay;
 }
 
 
@@ -1037,10 +1045,10 @@ Phase::cfsRecalculateDynamicValues(double ratio1, double newthinktime)
 	_processorCall->setWait( newWait );		/* extrapolate value */
     }
 
-    const double newThinkTime = newthinktime;
+    const double newCFSDelay = newthinktime;
     const double oldThinkTime = _thinkEntry->serviceTimeForPhase(1);
-    if ( oldThinkTime != newThinkTime  ) {
-	_thinkEntry->setServiceTime(newThinkTime)
+    if ( oldThinkTime != newCFSDelay  ) {
+	_thinkEntry->setServiceTime(newCFSDelay)
 	    .initVariance()		// Reset variance.
 	    .initWait();		// Reset values in wait[].
 		
@@ -1048,8 +1056,8 @@ Phase::cfsRecalculateDynamicValues(double ratio1, double newthinktime)
 	//print out
 	
 	cout<<"++++++++Phase("<<name()<<")-> think entry("<<_thinkEntry->name()<<"):, group ratio is "<<ratio1<<endl;
-	cout<<"old think time: "<<oldThinkTime <<", new think time: "<<newThinkTime<<".++++++++"<<endl;
-	_thinkCall->setWait( newThinkTime );
+	cout<<"old think time: "<<oldThinkTime <<", new think time: "<<newCFSDelay<<".++++++++"<<endl;
+	_thinkCall->setWait( newCFSDelay );
     }
 }
 #endif
@@ -1089,15 +1097,11 @@ Phase::updateWait( const Submodel& aSubmodel, const double relax )
     const unsigned submodel = aSubmodel.number();
     const double oldWait    = _wait[submodel];
 
-    /* Sum up waits to all other tasks in this submodel */
+    /* Sum up waits to all other tasks and devices in this submodel */
 
-    double newWait = std::accumulate( callList().begin(), callList().end(), 0.0, Call::add_wait( submodel ) );
-
-    /* Tack on processor delay if necessary */
-
-    if ( processorCall() && processorCall()->submodel() == submodel ) {
-	newWait += processorCall()->rendezvousDelay();
-    }
+    const double newWait = std::accumulate( devices().begin(), devices().end(),
+					    std::accumulate( callList().begin(), callList().end(), 0.0, Call::add_wait( submodel ) ),
+					    DeviceInfo::add_wait( submodel ) );
 
     /* Now update waiting values */
 
@@ -1306,13 +1310,24 @@ Phase::updateWaitReplication( const Submodel& aSubmodel )
 const Phase&
 Phase::followInterlock( Interlock::CollectTable& path ) const
 {
-    for_each( callList().begin(), callList().end(), ConstExec1<Call,Interlock::CollectTable&>( &Call::followInterlock, path ) );
-
-    if ( processorCall() ) {
-	processorCall()->followInterlock( path );
-    }
+    for_each( callList().begin(), callList().end(), follow_interlock( path ) );
+    for_each( devices().begin(), devices().end(), follow_interlock( path ) );
     return *this;
 }
+
+
+void
+Phase::follow_interlock::operator()( const Call * call ) const
+{
+    call->followInterlock( _path );
+}
+
+void
+Phase::follow_interlock::operator()( const DeviceInfo* device ) const
+{
+    device->call()->followInterlock( _path );
+}
+
 
 
 /*
@@ -1328,8 +1343,9 @@ Phase::followInterlock( Interlock::CollectTable& path ) const
 bool
 Phase::getInterlockedTasks( Interlock::CollectTasks& path ) const
 {
-    bool found = std::accumulate( callList().begin(), callList().end(), false, get_interlocked_tasks( path ) );
-    return ( processorCall() && processorCall()->dstEntry()->getInterlockedTasks( path ) ) || found;	/* don't short circuit! */
+    return std::accumulate( callList().begin(), callList().end(),
+			    std::accumulate( devices().begin(), devices().end(), false, get_interlocked_tasks( path ) ),
+			    get_interlocked_tasks( path ) );
 }
 
 
@@ -1345,6 +1361,12 @@ Phase::get_interlocked_tasks::operator()( bool found, Call * call ) const
     }
 }
 
+bool
+Phase::get_interlocked_tasks::operator()( bool found, const DeviceInfo* device ) const
+{
+    const Entry * entry = device->call()->dstEntry();
+    return (!_path.has_entry( entry ) && entry->getInterlockedTasks( _path )) || found;			/* don't short circuit! */
+}
 
 
 Phase&
@@ -1445,7 +1467,7 @@ Phase::insertDOMResults() const
 Phase&
 Phase::recalculateDynamicValues()
 {	
-    for_each( _devices.begin(), _devices.end(), Exec<Phase::DeviceInfo>( &Phase::DeviceInfo::recalculateDynamicValues ) );
+    for_each( devices().begin(), devices().end(), Exec<Phase::DeviceInfo>( &Phase::DeviceInfo::recalculateDynamicValues ) );
     return *this;
 }
 
@@ -1709,7 +1731,7 @@ Phase::initProcessor()
 	std::string entry_name( owner()->name() );
 	entry_name += ':';
 	entry_name += name();
-	_devices.push_back( new DeviceInfo( *this, entry_name, DeviceInfo::HOST ) );
+	_devices.push_back( new DeviceInfo( *this, entry_name, DeviceInfo::Type::HOST ) );
 	if ( owner()->getProcessor()->isCFSserver() ) {
 	    initCFSProcessor();
 	}
@@ -1721,10 +1743,10 @@ Phase::initProcessor()
 
     if ( hasThinkTime() ) {
 	std::string entry_name;
-	entry_name = Model::thinkServer->name();
+	entry_name = Model::__think_server->name();
 	entry_name += ":";
 	entry_name += name();
-	_devices.push_back( new DeviceInfo( *this, entry_name, DeviceInfo::THINK_TIME ) );
+	_devices.push_back( new DeviceInfo( *this, entry_name, DeviceInfo::Type::THINK_TIME ) );
     }
 
     return *this;
@@ -1738,23 +1760,37 @@ Phase::DeviceInfo::DeviceInfo( const Phase& phase, const std::string& name, Type
     const Processor * processor = _phase.owner()->getProcessor();
 
     _entry_dom = new LQIO::DOM::Entry( document, name );
-    if ( isProcessor() ) {
+    switch ( type ) {
+    case Type::THINK_TIME:
+	_entry = new DeviceEntry( _entry_dom, Model::__entry.size() + 1, Model::__think_server );
+	break;
+    case Type::CFS_DELAY:
+	_entry = new DeviceEntry( _entry_dom, Model::__entry.size() + 1, Model::__cfs_server );
+	break;
+    default:
 	_entry = new DeviceEntry( _entry_dom, Model::__entry.size() + 1, const_cast<Processor *>( processor ) );
-    } else {
-	_entry = new DeviceEntry( _entry_dom, Model::__entry.size() + 1, Model::thinkServer );
+	break;
     }
+
     Model::__entry.insert( _entry );
 		
-    if ( isProcessor() ) {
+    switch ( type ) {
+    case Type::THINK_TIME:
+	_entry->setServiceTime( think_time() )
+	    .setCV_sqr( 1.0 )
+	    .initVariance();
+	break;
+    case Type::CFS_DELAY:
+	_entry->setServiceTime( 0.00001 )
+	    .setCV_sqr( 1.0 )
+	    .initVariance();
+	break;
+    default:
 	_entry->setServiceTime( service_time() / n_calls() )
 	    .setCV_sqr( cv_sqr() )
 	    .initVariance()
 	    .setPriority( phase.owner()->priority() );
-
-    } else {
-	_entry->setServiceTime( think_time() )
-	    .setCV_sqr( 1.0 )
-	    .initVariance();
+	break;
     }
 
 
@@ -1822,40 +1858,42 @@ Phase::initCFSProcessor()
 {	
     if ( !owner()->getProcessor()->isCFSserver() ) return;
 
-    if ( !hasThinkTime() ) {
+    if ( getCFSEntry() == nullptr ) {
 
-	std::string think_entry_name;
-	think_entry_name = Model::thinkServer->name();
-	think_entry_name += "-";
-	think_entry_name += name();
-	const LQIO::DOM::Document * aDocument = getDOM()->getDocument();
-	_thinkEntryDOM = new LQIO::DOM::Entry( aDocument, think_entry_name );
-	_thinkEntry = new DeviceEntry( _thinkEntryDOM, Model::__entry.size() + 1,
-				       Model::thinkServer );
-	Model::__entry.insert( _thinkEntry );
-		
-	_thinkEntry->setServiceTime( 0.00001 ).setCV_sqr(1.0);
-	_thinkEntry->initVariance();
-
-	_thinkCall = new ProcessorCall( this, _thinkEntry );
-	_thinkCallDOM = new LQIO::DOM::Call(aDocument, LQIO::DOM::Call::Type::QUASI_RENDEZVOUS,
-					    nullptr, _thinkEntry->getDOM(),
-					    new LQIO::DOM::ConstantExternalVariable(1));
-	_thinkCall->rendezvous( _thinkCallDOM );
-	addSrcCall( _thinkCall );
+	std::string cfs_entry_name;
+	cfs_entry_name = Model::__cfs_server->name();
+	cfs_entry_name += "-";
+	cfs_entry_name += name();
+	_devices.push_back( new DeviceInfo( *this, cfs_entry_name, DeviceInfo::Type::CFS_DELAY ) );
     }
-
     _cfs_delay=0.00001;
+}
+
+
+std::set<Entity *>& Phase::DeviceInfo::add_server( std::set<Entity *>& servers, const DeviceInfo * device )
+{
+    servers.insert(const_cast<Entity *>(device->call()->dstTask()));
+    return servers;
+}
+
+double
+Phase::DeviceInfo::add_wait::operator()( double sum, const DeviceInfo * device ) const
+{
+    const Call * call = device->call();
+    if ( call->submodel() == _submodel ) sum += call->rendezvousDelay();
+    return sum;
 }
 
 void
 Phase::get_servers::operator()( const Phase& phase ) const		// For phases
 {
     _servers = std::accumulate( phase.callList().begin(), phase.callList().end(), _servers, Call::add_server );
+    _servers = std::accumulate( phase.devices().begin(),  phase.devices().end(),  _servers, DeviceInfo::add_server );
 }
 
 void
 Phase::get_servers::operator()( const Phase* phase ) const		// For activities
 {
     _servers = std::accumulate( phase->callList().begin(), phase->callList().end(), _servers, Call::add_server );
+    _servers = std::accumulate( phase->devices().begin(),  phase->devices().end(),  _servers, DeviceInfo::add_server );
 }

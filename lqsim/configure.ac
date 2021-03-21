@@ -1,9 +1,9 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 # ------------------------------------------------------------------------
-# $Id: configure.ac 14498 2021-02-27 23:08:51Z greg $
+# $Id: configure.ac 14569 2021-03-19 13:29:09Z greg $
 # ------------------------------------------------------------------------
-AC_INIT(lqsim, 6.1, greg@sce.carleton.ca)
+AC_INIT([lqsim],[6.1],[greg@sce.carleton.ca])
 AC_CONFIG_AUX_DIR([../config])
 AC_CONFIG_SRCDIR([lqsim.h])
 AC_CONFIG_HEADERS([config.h])
@@ -16,7 +16,7 @@ AC_SUBST(STATIC)
 AC_LANG(C++)
 AC_PROG_CXX
 # Add in libtool.
-AC_PROG_LIBTOOL
+LT_INIT
 LT_INIT
 
 if test "x$enable_shared" = "xno"; then
