@@ -1,6 +1,6 @@
 /* layer.cc	-- Greg Franks Tue Jan 28 2003
  *
- * $Id: layer.cc 14552 2021-03-17 00:47:06Z greg $
+ * $Id: layer.cc 14590 2021-04-04 14:13:54Z greg $
  *
  * A layer consists of a set of tasks with the same nesting depth from
  * reference tasks.  Reference tasks are in layer 1, the immediate
@@ -785,7 +785,8 @@ Layer::createBCMPModel()
      * Populate the customers.  This will create a terminals station.
      */
     
-    BCMP::Model::Station terminals(BCMP::Model::Station::Type::CUSTOMER);
+    BCMP::Model::Station terminals(BCMP::Model::Station::Type::DELAY);
+    terminals.setReference(true);
     std::for_each( clients().begin(), clients().end(), Task::create_customers( terminals ) );
     _bcmp_model.insertStation( ReferenceTask::__BCMP_station_name, terminals );	// QNAP2 limit is 8.
     return true;

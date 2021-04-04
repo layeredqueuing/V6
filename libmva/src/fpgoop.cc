@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: fpgoop.cc 14496 2021-02-27 02:36:12Z greg $
+ * $Id: fpgoop.cc 14587 2021-04-02 18:09:46Z greg $
  *
  * Floating point exception handling.  It is all different on all machines.
  * See:
@@ -49,8 +49,8 @@
 
 #include "fpgoop.h"
 
-#if defined(__hpux) || (HAVE_IEEEFP_H && !defined(MSDOS) && !defined(WINNT))
-typedef	fp_except fp_bit_type;
+#if HAVE_IEEEFP_H && !defined(MSDOS) && !defined(WINNT)
+typedef	fp_except_t fp_bit_type;
 #elif defined(_AIX)
 typedef	fpflag_t fp_bit_type;
 #else

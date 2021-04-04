@@ -7,7 +7,7 @@
 /************************************************************************/
 
 /*
- * $Id: lqsim.cc 14498 2021-02-27 23:08:51Z greg $
+ * $Id: lqsim.cc 14587 2021-04-02 18:09:46Z greg $
  */
 
 #define STACK_TESTING
@@ -57,8 +57,8 @@
 
 extern FILE* Timeline_Open(char* file_name); /* Open the timeline output stream */
 
-#if defined(__hpux) || (defined(HAVE_IEEEFP_H) && !defined(MSDOS) && !defined(__WINNT__))
-typedef	fp_except fp_bit_type;
+#if defined(HAVE_IEEEFP_H) && !defined(MSDOS) && !defined(__WINNT__)
+typedef	fp_except_t fp_bit_type;
 #elif defined(_AIX)
 typedef	fpflag_t fp_bit_type;
 #else
@@ -333,7 +333,7 @@ main( int argc, char * argv[] )
     LQIO::io_vars.init( VERSION, basename( argv[0] ), severity_action, local_error_messages, LSTLCLERRMSG-LQIO::LSTGBLERRMSG );
 
     command_line = LQIO::io_vars.lq_toolname;
-    (void) sscanf( "$Date: 2021-02-27 18:08:51 -0500 (Sat, 27 Feb 2021) $", "%*s %s %*s", copyright_date );
+    (void) sscanf( "$Date: 2021-04-02 14:09:46 -0400 (Fri, 02 Apr 2021) $", "%*s %s %*s", copyright_date );
     stddbg    = stdout;
 
     /* Stuff set from the input file.				*/

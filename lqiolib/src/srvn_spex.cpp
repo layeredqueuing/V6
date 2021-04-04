@@ -1,5 +1,5 @@
 /*
- *  $Id: srvn_spex.cpp 14564 2021-03-18 02:32:02Z greg $
+ *  $Id: srvn_spex.cpp 14583 2021-03-25 11:07:48Z greg $
  *
  *  Created by Greg Franks on 2012/05/03.
  *  Copyright 2012 __MyCompanyName__. All rights reserved.
@@ -31,7 +31,7 @@ extern "C" {
 
 namespace LQIO {
 
-    Spex::Spex() : _gnuplot()
+    Spex::Spex() : _gnuplot(), _result_pos()
     {
     }
 
@@ -53,6 +53,7 @@ namespace LQIO {
 	__result_list = nullptr;
 	__convergence_list = nullptr;
 	spex._gnuplot.clear();
+	spex._result_pos.clear();
     }
 
 
@@ -304,16 +305,22 @@ namespace LQIO {
 	if ( var_p != __array_variables.end() ) {
 	    std::string name = *var_p;	/* Make local copy because we force to local */
 	    const std::map<std::string,Spex::ComprehensionInfo>::const_iterator i = __comprehensions.find( *var_p );
+	    LQX::SyntaxTreeNode * expr = foreach_loop( std::next( var_p ), result, convergence );
+	    if ( !_gnuplot.empty() && std::next( var_p ) != __array_variables.end() ) {
+		expr_list * loop_body = new expr_list;
+		loop_body->push_back( expr );
+		loop_body->push_back( new LQX::FilePrintStatementNode( new expr_list, true, false ) );	/* Insert a blank line */
+		expr = new LQX::CompoundStatementNode( loop_body );
+	    }
 	    if ( i == __comprehensions.end() ) {
 		/* if we have $x = [...] */
 		name[0] = '_';			/* Array name */
 		return new LQX::ForeachStatementNode( "", &name[1], /* key ext */ false, /* val */ false,
-						      new LQX::VariableExpression( name, false ),
-						      foreach_loop( ++var_p, result, convergence ) );
+						      new LQX::VariableExpression( name, false ), expr );
 	    } else {
 		/* for ( i = begin; i < end; ++i )
 		   $x = f(i); */
-		return new LQX::LoopStatementNode( i->second.init(&name[1]), i->second.test(&name[1]), i->second.step(&name[1]), foreach_loop( ++var_p, result, convergence ) );
+		return new LQX::LoopStatementNode( i->second.init(&name[1]), i->second.test(&name[1]), i->second.step(&name[1]), expr );
 	    }
 	} else if ( convergence ) {
 	    return new LQX::CompoundStatementNode( convergence_loop( convergence, result ) );
@@ -516,12 +523,11 @@ namespace LQIO {
     Spex::plot( expr_list * args )
     {
 	expr_list * list = new expr_list;
-	std::string x1_var;			// Dependent variable name
-	std::string x2_var;			// Not used at present (for splot)
-	std::vector<std::string> y1_vars;	// Independent variables (y1 axis)
-	std::vector<std::string> y2_vars;	// Independent variables (y2 axis)
-	int y1_obs_key = 0;			// Independent (y1 axis) type.
-	int y2_obs_key = 0;			// Independent (y2 axis) type.
+	size_t y1_vars = 0;			// dependent variable count (y1 axis)
+	size_t y2_vars = 0;			// dependent variable count (y2 axis)
+	int y1_obs_key = 0;			// dependent (y1 axis) type.
+	int y2_obs_key = 0;			// dependent (y2 axis) type.
+	const std::map<const LQX::SyntaxTreeNode *,std::string> index = get_plot_args( list, args );
 	std::ostringstream plot;		// Plot command collected here.
 
 	const std::string comment = "set title \"" + DOM::__document->getModelCommentString() + "\"";
@@ -529,28 +535,142 @@ namespace LQIO {
 
 	/* Go through the args, (x, y11, y12..., y21, y22...). */
 	
-	size_t count = 1;
-	for ( std::vector<LQX::SyntaxTreeNode*>::const_iterator arg = args->begin(); arg != args->end(); ++arg, ++count ) {
-	    std::ostringstream expr;
-	    (*arg)->print(expr);			/* convert the expression to a string */
-	    std::string name = expr.str();		/* See if it can be converted to a variable */
+	size_t x = 0;		/* Index of first x (and only) variable. */
+	for ( std::vector<LQX::SyntaxTreeNode*>::const_iterator arg = args->begin(); arg != args->end(); ++arg ) {
+	    const std::string& name = index.at(*arg);
 	    if ( arg == args->begin() ) {
 		/* X independent variable */
 
-		x1_var = name;
+		x = _result_pos.at(name);
 		_gnuplot.push_back( print_node( "set xlabel \"" + name + "\"" ) );
 
 	    } else if ( has_array_var( name ) ) {
 		/* X2 handling here */
 
-		// Too many independent variables 
+		// Too many independent variables
 		LQIO::input_error2( ADV_TOO_MANY_GNUPLOT_VARIABLES, name.c_str() );
 		continue;		/* Ignore */
 
 	    } else {
 
 		/* Y dependent variable */
-		if ( isalpha( name[0] ) ) name.insert( 0, "$" );		/* Convert to external variable */
+		const ObservationInfo * obs = findObservation( name );
+		int key = 0;
+		std::string key_name;
+		size_t delta = 0;	/* Index of delta (for interval) */
+		
+		/* If name is an observation, use obs type as Y label.  Otherwise punt. */
+		if ( obs != nullptr ) {
+
+		    /*
+		     * If there is a confidence interval, and it was on the argument list, then add it as a result
+		     * variable (goto done), but don't run the plot code.  When the primary variable is processed
+		     * and the observation has a confidence interval, plot both at the same time by setting 'delta'.
+		     */
+		
+		    const std::string& conf_name = obs->getConfVariableName();
+		    if ( !conf_name.empty() ) {
+			const std::map<std::string,size_t>::const_iterator i = _result_pos.find(conf_name);
+			if ( i == _result_pos.end() 		/* Not requested, so ignore	*/
+			     || conf_name == name ) continue;	/* Handled by main result 	*/
+			delta = i->second;			/* set position of conf int.	*/
+		    }
+		    key = obs->getKey();
+		    key_name = obs->getKeyName();
+		} else {
+		    key_name = name;
+		}
+
+		if ( y1_vars == 0 ) {
+		    y1_obs_key = key;
+		    _gnuplot.push_back( print_node( "set ylabel \"" + key_name + "\"" ) );
+		    y1_vars += 1;
+		    plot << "plot ";
+		} else if ( y1_vars > 0 && y1_obs_key == key ) {
+		    plot << ", ";
+		    y1_vars += 1;
+		} else if ( y2_vars == 0 ) {
+		    y2_obs_key = key;
+		    _gnuplot.push_back( print_node( "set y2label \"" + key_name + "\"" ) );
+		    _gnuplot.push_back( print_node( "set y2tics" ) );
+		    _gnuplot.push_back( print_node( "set key top left" ) );
+		    _gnuplot.push_back( print_node( "set key box" ) );
+		    plot << ", ";
+		    y2_vars += 1;
+		} else if ( y2_vars > 0 && y2_obs_key == key ) {
+		    plot << ", ";
+		    y2_vars += 1;
+ 		} else {
+		    // Too many dependent variable types.
+		    LQIO::input_error2( ADV_TOO_MANY_GNUPLOT_VARIABLES, name.c_str() );
+		    continue;
+		}
+		const size_t y = _result_pos.at(name);		/* Index of this y variable 	*/
+
+		/* Append plot command to plot */
+		plot << "\"$DATA\" using " << x << ":" << y;
+		if ( delta == 0 ) {
+		    plot << " with linespoints";
+		} else {
+		    plot << ":" << delta << " with yerrorlines";	/* Confidence interval */
+		}
+
+		if ( y2_vars > 0 ) {
+		    plot << " axes x1y2";
+		}
+		plot << " title \"" << name << "\"";
+	    }
+	}
+
+	/* Append the plot command to the program (plot has to be near the end) */
+	_gnuplot.push_back( print_node( "set datafile separator \",\"" ) );		/* Use CSV. */
+	_gnuplot.push_back( print_node( plot.str() ) );
+	return list;
+    }
+
+
+    expr_list *
+    Spex::splot( expr_list * args )
+    {
+	expr_list * list = new expr_list;
+	size_t z_vars = 0;			// Dependent variable count (y2 axis)
+	int z_obs_key = 0;			// Dependent (y2 axis) type.
+	const std::map<const LQX::SyntaxTreeNode *,std::string> index = get_plot_args( list, args );
+	std::ostringstream splot;		// Plot command collected here.
+
+	const std::string comment = "set title \"" + DOM::__document->getModelCommentString() + "\"";
+	_gnuplot.push_back( print_node( comment ) );
+
+	/* Go through the args, (x, y, z1, z2, z3..). */
+	
+	size_t count = 1;
+	size_t x = 0;		/* Index of first x variable. */
+	size_t y = 0;		/* Index of first y variable. */
+	for ( std::vector<LQX::SyntaxTreeNode*>::const_iterator arg = args->begin(); arg != args->end(); ++arg, ++count ) {
+	    const std::string& name = index.at(*arg);
+
+	    if ( arg == args->begin() ) {
+		/* X independent variable */
+
+		x = _result_pos.at( name );
+		_gnuplot.push_back( print_node( "set xlabel \"" + name + "\"" ) );
+
+	    } else if ( has_array_var( name ) ) {
+		/* Y independent variable */
+
+		if ( y == 0 ) {
+		    y = _result_pos.at( name );
+		    _gnuplot.push_back( print_node( "set ylabel \"" + name + "\"" ) );
+
+		} else {
+		// Too many independent variables
+		    LQIO::input_error2( ADV_TOO_MANY_GNUPLOT_VARIABLES, name.c_str() );
+		    continue;		/* Ignore */
+		}
+
+	    } else {
+
+		/* Z dependent variable */
 		const ObservationInfo * obs = findObservation( name );
 		int key = 0;
 		std::string key_name;
@@ -560,55 +680,59 @@ namespace LQIO {
 		    key = obs->getKey();
 		    key_name = obs->getKeyName();
 		} else {
-		    name = "$" + std::to_string( count );
-		    key_name = expr.str();
+		    key_name = name;
 		}
 
-		if ( y1_vars.empty() ) {
-		    y1_obs_key = key;
-		    _gnuplot.push_back( print_node( "set ylabel \"" + key_name + "\"" ) );
-		    plot << "plot ";
-		    y1_vars.emplace_back( expr.str() );
-		} else if ( !y1_vars.empty() && (y1_obs_key == key) ) {
-		    plot << ", ";
-		    y1_vars.emplace_back( expr.str() );
-		} else if ( y2_vars.empty() ) {
-		    y2_obs_key = key;
-		    _gnuplot.push_back( print_node( "set y2label \"" + key_name + "\"" ) );
-		    _gnuplot.push_back( print_node( "set y2tics" ) );
-		    _gnuplot.push_back( print_node( "set key top left" ) );
-		    _gnuplot.push_back( print_node( "set key box" ) );
-		    plot << ", ";
-		    y2_vars.emplace_back( expr.str() );
-		} else if ( !y2_vars.empty() && (y2_obs_key == key) ) {
-		    plot << ", ";
-		    y2_vars.emplace_back( expr.str() );
+		if ( z_vars == 0 ) {
+		    z_obs_key = key;
+		    _gnuplot.push_back( print_node( "set zlabel \"" + key_name + "\"" ) );
+		    z_vars += 1;
+		    splot << "splot ";
+		} else if ( z_vars > 0 && (z_obs_key == key) ) {
+		    splot << ", ";
+		    z_vars += 1;
  		} else {
 		    // Too many dependent variable types.
-		    LQIO::input_error2( ADV_TOO_MANY_GNUPLOT_VARIABLES, expr.str().c_str() );
+		    LQIO::input_error2( ADV_TOO_MANY_GNUPLOT_VARIABLES, name.c_str() );
 		    continue;
 		}
 
 		/* Append plot command to plot */
-		const size_t x = 1;		/* GNUPLOT starts from 1, not 0 */
-		const size_t y = x + y1_vars.size() + y2_vars.size();
-		plot << "\"$DATA\" using " << x << ":" << y << " with linespoints";
-		if ( !y2_vars.empty() ) {
-		    plot << " axes x1y2";
-		}
-		plot << " title \"" << expr.str() << "\"";
+		const size_t z = _result_pos.at(name);
+		splot << "\"$DATA\" using " << x << ":" << y << ":" << z << " with linespoints";
+		splot << " title \"" << name << "\"";
 	    }
-		
-	    /* Save variable as a result variable */
-	    LQIO::Spex::__result_variables.push_back( LQIO::Spex::var_name_and_expr(name,*arg) );		/* Save variable name for printing */
-	    /* Convert to locals */
-	    list->push_back( *arg );
 	}
 
 	/* Append the plot command to the program (plot has to be near the end) */
 	_gnuplot.push_back( print_node( "set datafile separator \",\"" ) );		/* Use CSV. */
-	_gnuplot.push_back( print_node( plot.str() ) );
+	_gnuplot.push_back( print_node( splot.str() ) );
 	return list;
+    }
+
+    /* 
+     * Collect the position for all args.  Generate a name for each arg 
+     */
+    
+    std::map<const LQX::SyntaxTreeNode *,std::string> Spex::get_plot_args( expr_list * list, expr_list * args )
+    {
+	std::map<const LQX::SyntaxTreeNode *,std::string>  index;
+	for ( std::vector<LQX::SyntaxTreeNode*>::const_iterator arg = args->begin(); arg != args->end(); ++arg ) {
+	    std::ostringstream expr;
+	    (*arg)->print(expr);			/* convert the expression to a string */
+	    std::string name = expr.str();		/* See if it can be converted to a variable */
+	    if ( dynamic_cast<const LQX::VariableExpression *>(*arg) != nullptr && name[0] != '$' ) {
+		name.insert( 0, "$" );			/* Convert to external variable */
+	    }
+	    index.emplace( *arg, name );
+	    _result_pos.emplace( name, _result_pos.size() + 1 );	/* GNUPlot starts at 1. */
+
+	    /* Save variable as a result variable */
+	    LQIO::Spex::__result_variables.push_back( LQIO::Spex::var_name_and_expr(name,*arg) );		/* Save variable name for printing */
+	    list->push_back( *arg );	    /* Convert to locals */
+	}
+	
+	return index;
     }
 
     /*
@@ -642,7 +766,7 @@ namespace LQIO {
     {
 	for ( obs_var_tab_t::iterator i = __observations.begin(); i != __observations.end(); ++i ) {
 	    ObservationInfo& obs = i->second;
-	    if ( obs.getVariableName() == name ) {
+	    if ( obs.getVariableName() == name || obs.getConfVariableName() == name ) {
 		return &obs;
 	    }
 	}
@@ -657,7 +781,6 @@ namespace LQIO {
 	}
 	return begin;
     }
-
 
     /* ------------------------------------------------------------------------ */
     /* lqn 'input' output functions for printing spex stuff out in input file.	*/
@@ -1203,6 +1326,10 @@ void * spex_array_reference( void * arg1, void * arg3 )
     return new LQX::MethodInvocationExpression( "array_get", list );
 }
 
+/*
+ * Intercept plot and splot here.
+ */
+
 void * spex_invoke_function( const char * s, void * arg )
 {
     if ( arg ) {
@@ -1316,9 +1443,18 @@ void * spex_activity_call_observation( const void * task, const void * activity,
 
 void * spex_result_assignment_statement( const char * name, void * expr )
 {
-    LQIO::Spex::__result_variables.push_back( LQIO::Spex::var_name_and_expr(name,static_cast<LQX::SyntaxTreeNode *>(expr)) );		/* Save variable name for printing */
+    std::string var_name;
+    if ( name != nullptr ) {
+	var_name = name;
+    } else {
+	std::ostringstream ss;
+	static_cast<LQX::SyntaxTreeNode *>(expr)->print( ss );
+	var_name = ss.str();
+    }
 
-    LQX::VariableExpression * variable = static_cast<LQX::VariableExpression * >(spex_get_symbol( name ));
+    LQIO::Spex::__result_variables.push_back( LQIO::Spex::var_name_and_expr(var_name,static_cast<LQX::SyntaxTreeNode *>(expr)) );		/* Save variable name for printing */
+
+    LQX::VariableExpression * variable = static_cast<LQX::VariableExpression * >(spex_get_symbol( var_name.c_str() ));
     if ( expr ) {
 	return new LQX::AssignmentStatementNode( variable, static_cast<LQX::SyntaxTreeNode *>(expr) );
     } else {
@@ -1328,17 +1464,18 @@ void * spex_result_assignment_statement( const char * name, void * expr )
 
 /*
  * The args are a list of variables for printing.  Return an array with the args.  I also have to set up the gnuplot stuff.
- * Args is a list of variables.  
+ * Args is a list of variables.
  */
 
-void * spex_result_function( const char * s, void * args )
+void * spex_result_function( const char * s, void * arg )
 {
-    if ( strcmp( s, "plot" ) != 0 ) {
-	LQIO::input_error( "%s: not defined.\n" );
-    } else if ( args != nullptr ) {
-	return LQIO::spex.plot( static_cast<expr_list *>( args ) );
+    if ( strcmp( s, "plot" ) == 0 ) {
+	return LQIO::spex.plot( static_cast<expr_list *>( arg ) );
+    } else if ( strcmp( s, "splot" ) == 0 ) {
+	return LQIO::spex.splot( static_cast<expr_list *>( arg ) );
+    } else {
+	return nullptr;
     }
-    return nullptr;
 }
 
 

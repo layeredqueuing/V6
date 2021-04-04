@@ -702,7 +702,7 @@ r_decl_list		: r_decl				{ $$ = spex_list( 0, $1 ); }
 			;
 
 r_decl			: VARIABLE '=' ternary_expr		{ $$ = spex_result_assignment_statement( $1, $3 ); }
-			| VARIABLE				{ $$ = spex_result_assignment_statement( $1, 0 ); }
+			| expression				{ $$ = spex_result_assignment_statement( NULL, $1 ); }
 			;
 /*- Spex */
 
@@ -718,7 +718,6 @@ c_decl_list		: c_decl				{ $$ = spex_list( 0, $1 ); }
 			;
 
 c_decl			: VARIABLE '=' ternary_expr		{ $$ = spex_convergence_assignment_statement( $1, $3 ); }
-			| VARIABLE				{ $$ = spex_convergence_assignment_statement( $1, 0 ); }
 			;
 /*- spex */
 

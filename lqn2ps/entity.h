@@ -1,7 +1,7 @@
 /* -*- c++ -*-
  * entity.h	-- Greg Franks
  *
- * $Id: entity.h 14552 2021-03-17 00:47:06Z greg $
+ * $Id: entity.h 14590 2021-04-04 14:13:54Z greg $
  */
 
 #ifndef _ENTITY_H
@@ -71,11 +71,10 @@ public:
     };
 
     struct create_station {
-	create_station( BCMP::Model& model, BCMP::Model::Station::Type type = BCMP::Model::Station::Type::NOT_DEFINED ) : _model(model), _type(type) {}
+	create_station( BCMP::Model& model, BCMP::Model::Station::Type type = BCMP::Model::Station::Type::NOT_DEFINED ) : _model(model) {}
 	void operator()( const Entity * entity ) const;
     private:
 	BCMP::Model& _model;
-	const BCMP::Model::Station::Type _type;
     };
 
     struct label_BCMP_server {
