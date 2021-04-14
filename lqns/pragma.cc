@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: pragma.cc 14498 2021-02-27 23:08:51Z greg $ *
+ * $Id: pragma.cc 14597 2021-04-14 16:04:02Z greg $ *
  * Pragma processing and definitions.
  *
  * Copyright the Real-Time and Distributed Systems Group,
@@ -456,9 +456,12 @@ Pragma::usage( std::ostream& output )
 	    if ( args != nullptr && args->size() > 1 ) {
 		output << " = {";
 
+		size_t count = 0;
 		for ( std::set<std::string>::const_iterator q = args->begin(); q != args->end(); ++q ) {
-		    if ( q != args->begin() ) output << ",";
+		    if ( q->empty() ) continue;
+		    if ( count > 1 ) output << ",";
 		    output << *q;
+		    count += 1;
 		}
 		output << "}" << std::endl;
 	    } else {
