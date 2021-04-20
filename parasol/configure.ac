@@ -5,7 +5,8 @@
 
 AC_PREREQ([2.69])
 AC_INIT([parsol],[3.2],[greg@sce.carleton.ca])
-AC_CONFIG_AUX_DIR([config])
+AC_CONFIG_AUX_DIR([../config])
+AC_CONFIG_MACRO_DIR([../config])
 AC_CONFIG_SRCDIR([src])
 AC_CONFIG_HEADERS([config.h])
 AM_INIT_AUTOMAKE
@@ -20,7 +21,7 @@ AC_PROG_RANLIB
 AC_CHECK_LIB([m], [sqrt])
 
 # Checks for header files.
-AC_CHECK_HEADERS([fenv.h ieeefp.h malloc.h signal.h stddef.h stdlib.h string.h sys/param.h sys/time.h ucontext.h unistd.h])
+AC_CHECK_HEADERS([fenv.h ieeefp.h malloc.h signal.h stddef.h stdlib.h string.h sys/param.h sys/time.h unistd.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -29,13 +30,13 @@ AC_TYPE_SIZE_T
 AC_CHECK_HEADERS_ONCE([sys/time.h])
 AC_CHECK_TYPES([ptrdiff_t])
 AC_CHECK_TYPES([struct sigaltstack])
-AC_CHECK_TYPES([stack_t])
+AC_CHECK_TYPES([stack_t], [], [], [[#include <signal.h>]])
 
 # Checks for library functions.
 AC_FUNC_FORK
 AC_FUNC_MEMCMP
 AC_FUNC_SELECT_ARGTYPES
-AC_CHECK_FUNCS([bzero getpagesize drand48 feenableexcept fpsetmask kill _longjmp makecontext memset memmove pow _setjmp select sigaltstack sqrt strcasecmp strchr strncasecmp strrchr strstr])
+AC_CHECK_FUNCS([bzero getpagesize drand48 feenableexcept fpsetmask kill _longjmp memset memmove pow _setjmp select sigaltstack sqrt strcasecmp strchr strncasecmp strrchr strstr])
 if test ${ac_cv_func_drand48} = "no"; then
    DRAND48=drand48.o
 fi
