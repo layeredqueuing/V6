@@ -10,7 +10,7 @@
  * January 2001
  *
  * ------------------------------------------------------------------------
- * $Id: task.cc 14552 2021-03-17 00:47:06Z greg $
+ * $Id: task.cc 14602 2021-04-16 12:06:43Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -2630,9 +2630,19 @@ ReferenceTask::accumulateDemand( BCMP::Model::Station& station ) const
 ServerTask::ServerTask( const LQIO::DOM::Task* dom, const Processor * aProc, const Share * aShare, const std::vector<Entry *>& entries )
     : Task( dom, aProc, aShare, entries )
 {
-    if ( !isMultiServer() && scheduling() != SCHEDULE_DELAY && !Pragma::defaultTaskScheduling() ) {
-	/* Change scheduling type for fixed rate servers (usually from FCFS to DELAY) */
-	const_cast<LQIO::DOM::Task *>(dom)->setSchedulingType(Pragma::taskScheduling());
+    if ( scheduling() != SCHEDULE_DELAY ) {
+	if ( isMultiServer() ) {
+	    if ( Pragma::forceInfinite( Pragma::ForceInfinite::MULTISERVERS ) ) {
+		const_cast<LQIO::DOM::Task *>(dom)->setSchedulingType(SCHEDULE_DELAY);
+	    }
+	} else {
+	    if ( Pragma::forceInfinite( Pragma::ForceInfinite::FIXED_RATE ) ) {
+		const_cast<LQIO::DOM::Task *>(dom)->setSchedulingType(SCHEDULE_DELAY);
+	    } else if ( !Pragma::defaultTaskScheduling() ) {
+		/* Change scheduling type for fixed rate servers (usually from FCFS to DELAY) */
+		const_cast<LQIO::DOM::Task *>(dom)->setSchedulingType(Pragma::taskScheduling());
+	    }
+	}
     }
 }
 

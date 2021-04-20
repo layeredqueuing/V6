@@ -7,7 +7,7 @@
 /************************************************************************/
 
 /*
- * $Id: lqsim.cc 14587 2021-04-02 18:09:46Z greg $
+ * $Id: lqsim.cc 14609 2021-04-18 14:09:42Z greg $
  */
 
 #define STACK_TESTING
@@ -333,7 +333,7 @@ main( int argc, char * argv[] )
     LQIO::io_vars.init( VERSION, basename( argv[0] ), severity_action, local_error_messages, LSTLCLERRMSG-LQIO::LSTGBLERRMSG );
 
     command_line = LQIO::io_vars.lq_toolname;
-    (void) sscanf( "$Date: 2021-04-02 14:09:46 -0400 (Fri, 02 Apr 2021) $", "%*s %s %*s", copyright_date );
+    (void) sscanf( "$Date: 2021-04-18 10:09:42 -0400 (Sun, 18 Apr 2021) $", "%*s %s %*s", copyright_date );
     stddbg    = stdout;
 
     /* Stuff set from the input file.				*/

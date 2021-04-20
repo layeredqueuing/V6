@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: multserv.h 14310 2020-12-31 17:16:57Z greg $
+ * $Id: multserv.h 14612 2021-04-19 21:44:17Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -46,6 +46,7 @@ public:
     virtual const char * typeStr() const { return "Reiser_Multi_Server"; }
     virtual std::ostream& printHeading( std::ostream& output = std::cout ) const;
 
+    virtual unsigned int copies() const { return J; }
     virtual unsigned int marginalProbabilitiesSize() const { return J; }
 
 protected:

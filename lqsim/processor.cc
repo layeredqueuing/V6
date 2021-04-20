@@ -11,7 +11,7 @@
  *
  * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqsim/processor.cc $
  *
- * $Id: processor.cc 14131 2020-11-25 02:17:53Z greg $
+ * $Id: processor.cc 14609 2021-04-18 14:09:42Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -19,8 +19,9 @@
 #include <cassert>
 #include <algorithm>
 #include <sstream>
-#include "lqsim.h"
 #include <cstdlib>
+#include <cstdarg>
+#include "lqsim.h"
 #include <lqio/input.h>
 #include <lqio/error.h>
 #include <lqio/labels.h>

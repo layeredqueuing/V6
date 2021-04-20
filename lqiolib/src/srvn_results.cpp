@@ -1,5 +1,5 @@
 /*
- *  $Id: srvn_results.cpp 14498 2021-02-27 23:08:51Z greg $
+ *  $Id: srvn_results.cpp 14609 2021-04-18 14:09:42Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -15,11 +15,11 @@
 #include <sys/types.h>
 #include <sys/mman.h>
 #endif
-
-#include <string.h>
+#include <cstdarg>
+#include <cstring>
 #include <errno.h>
-#include "dom_document.h"
 #include <algorithm>
+#include "dom_document.h"
 #include "dom_processor.h"
 #include "dom_task.h"
 #include "dom_entry.h"

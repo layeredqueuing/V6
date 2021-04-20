@@ -1,13 +1,13 @@
 /* -*- C++ -*-
  * help.h	-- Greg Franks
  *
- * $Id: help.h 14498 2021-02-27 23:08:51Z greg $
+ * $Id: help.h 14609 2021-04-18 14:09:42Z greg $
  */
 
 #ifndef _HELP_H
 #define _HELP_H
 
-//#include "dim.h"
+#include "dim.h"
 #include <config.h>
 #include <map>
 #include "lqns.h"
@@ -99,7 +99,6 @@ public:
 
 protected:
    static std::map<const int,help_fptr,lt_int> option_table;
-
 
 protected:
     virtual std::ostream& preamble( std::ostream& output ) const = 0;
@@ -217,6 +216,7 @@ public:
 
     std::ostream& pragmaCycles( std::ostream& output, bool verbose ) const;
     std::ostream& pragmaStopOnMessageLoss( std::ostream& output, bool verbose ) const;
+    std::ostream& pragmaForceInfinite( std::ostream& output, bool verbose ) const;
     std::ostream& pragmaForceMultiserver( std::ostream& output, bool verbose ) const;
     std::ostream& pragmaInterlock( std::ostream& output, bool verbose ) const;
     std::ostream& pragmaLayering( std::ostream& output, bool verbose ) const;
@@ -243,6 +243,11 @@ public:
 
     std::ostream& pragmaCyclesAllow( std::ostream& output, bool verbose ) const;
     std::ostream& pragmaCyclesDisallow( std::ostream& output, bool verbose ) const;
+
+    std::ostream& pragmaForceInfiniteNone( std::ostream& output, bool verbose ) const;
+    std::ostream& pragmaForceInfiniteFixedRate( std::ostream& output, bool verbose ) const;
+    std::ostream& pragmaForceInfiniteMultiServers( std::ostream& output, bool verbose ) const;
+    std::ostream& pragmaForceInfiniteAll( std::ostream& output, bool verbose ) const;
 
     std::ostream& pragmaForceMultiserverNone( std::ostream& output, bool verbose ) const;
     std::ostream& pragmaForceMultiserverProcessors( std::ostream& output, bool verbose ) const;
@@ -338,6 +343,7 @@ protected:
     
 private:
     static parameter_map_t  __cycles_args;
+    static parameter_map_t  __force_infinite_args;
     static parameter_map_t  __force_multiserver_args;
     static parameter_map_t  __interlock_args;
     static parameter_map_t  __layering_args;

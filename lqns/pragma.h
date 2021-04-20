@@ -10,7 +10,7 @@
  * November, 1994
  * December, 2020
  *
- * $Id: pragma.h 14498 2021-02-27 23:08:51Z greg $
+ * $Id: pragma.h 14609 2021-04-18 14:09:42Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -18,11 +18,10 @@
 #if	!defined(PRAGMA_H)
 #define	PRAGMA_H
 
-#include "dim.h"
 #include <string>
 #include <map>
 #include <lqio/input.h>
-#include <lqio/dom_document.h>
+#include <lqio/dom_pragma.h>
 #include "help.h"
 
 /* -------------------------------------------------------------------- */
@@ -32,6 +31,8 @@ class Pragma {
 public:
     typedef void (Pragma::*fptr)(const std::string&);
 
+    enum class ForceInfinite { NONE, FIXED_RATE, MULTISERVERS, ALL };
+    enum class ForceMultiserver { NONE, PROCESSORS, TASKS, ALL };
     enum class Layering { BACKPROPOGATE_BATCHED, BATCHED, METHOD_OF_LAYERS, BACKPROPOGATE_METHOD_OF_LAYERS, SRVN, SQUASHED, HWSW };
     enum class MVA { LINEARIZER, EXACT, SCHWEITZER, FAST, ONESTEP, ONESTEP_LINEARIZER };
     enum class Multiserver { DEFAULT, CONWAY, REISER, REISER_PS, ROLIA, ROLIA_PS, BRUELL, SCHMIDT, SURI };
@@ -41,9 +42,8 @@ public:
     enum class QuorumDelayedCalls { DEFAULT, KEEP_ALL, ABORT_ALL, ABORT_LOCAL_ONLY, ABORT_REMOTE_ONLY };
     enum class QuorumIdleTime { DEFAULT, JOINDELAY, ROOTENTRY };
 #endif
-    enum class Variance { DEFAULT, NONE, STOCHASTIC, MOL };
     enum class Threads { MAK_LUNDSTROM, HYPER, NONE };
-    enum class ForceMultiserver { NONE, PROCESSORS, TASKS, ALL };
+    enum class Variance { DEFAULT, NONE, STOCHASTIC, MOL };
 
 private:
     Pragma();
@@ -63,6 +63,13 @@ public:
 	{
 	    assert( __cache != nullptr );
 	    return __cache->_exponential_paths;
+	}
+
+    static bool forceInfinite( Pragma::ForceInfinite arg )
+	{
+	    assert( __cache != nullptr );
+	    return (__cache->_force_infinite != ForceInfinite::NONE && arg == __cache->_force_infinite)
+		|| (__cache->_force_infinite == ForceInfinite::ALL  && arg != ForceInfinite::NONE );
 	}
 
     static bool forceMultiserver( Pragma::ForceMultiserver arg )
@@ -241,6 +248,7 @@ public:
 private:
     void setAllowCycles(const std::string&);
     void setExponential_paths(const std::string&);
+    void setForceInfinite(const std::string&);
     void setForceMultiserver(const std::string&);
     void setInterlock(const std::string&);
     void setLayering(const std::string&);
@@ -276,6 +284,7 @@ public:
 private:
     bool _allow_cycles;
     bool _exponential_paths;
+    ForceInfinite _force_infinite;
     ForceMultiserver _force_multiserver;
     bool _interlock;
     Layering  _layering;

@@ -10,7 +10,7 @@
 /*
  * Input output processing.
  *
- * $Id: instance.cc 14153 2020-11-30 18:03:53Z greg $
+ * $Id: instance.cc 14609 2021-04-18 14:09:42Z greg $
  */
 
 /*
@@ -19,13 +19,14 @@
 
 #define COUNT_FIRST_SCHEDULE	1
 
-#include <iostream>
+#include <cassert>
+#include <cstdarg>
+#include <cstring>
 #include <iomanip>
+#include <iostream>
 #include <sstream>
 #include <parasol.h>
 #include "lqsim.h"
-#include <assert.h>
-#include <string.h>
 #include <lqio/input.h>
 #include <lqio/error.h>
 #include "processor.h"

@@ -1,7 +1,7 @@
 /* -*- c++ -*-
  * lqn2ps.h	-- Greg Franks
  *
- * $Id: lqn2ps.h 14519 2021-03-06 01:11:56Z greg $
+ * $Id: lqn2ps.h 14602 2021-04-16 12:06:43Z greg $
  *
  */
 
@@ -215,6 +215,7 @@ typedef enum {
     SPECIAL_CLEAR_LABEL_BACKGROUND,
     SPECIAL_EXHAUSTIVE_TOPOLOGICAL_SORT,
     SPECIAL_FLATTEN_SUBMODEL,
+    SPECIAL_FORCE_INFINITE,
     SPECIAL_FORWARDING_DEPTH,
     SPECIAL_GROUP,
     SPECIAL_LAYER_NUMBER,

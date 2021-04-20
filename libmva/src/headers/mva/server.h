@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: server.h 14310 2020-12-31 17:16:57Z greg $
+ * $Id: server.h 14612 2021-04-19 21:44:17Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -137,6 +137,7 @@ public:
 
     virtual double prOt( const unsigned, const unsigned, const unsigned ) const { return 0.0; }
 
+    virtual unsigned int copies() const { return 0; }
     virtual unsigned int marginalProbabilitiesSize() const { return 0; }
     virtual void setMarginalProbabilitiesSize( const Population& ) { return; }
     virtual int vectorProbabilities() const { return 0; }
