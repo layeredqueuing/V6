@@ -12,8 +12,6 @@
  * ------------------------------------------------------------------------
  */
 
-#include "json_document.h"
-
 #if HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -23,6 +21,7 @@
 #include <iomanip>
 #include <cstdlib>
 #include <cstdio>
+#include <cstdarg>
 #include <vector>
 #include <cassert>
 #include <cmath>
@@ -47,6 +46,7 @@
 #endif
 #include <lqx/SyntaxTree.h>
 
+#include "json_document.h"
 #include "srvn_results.h"
 #include "input.h"
 #include "error.h"
