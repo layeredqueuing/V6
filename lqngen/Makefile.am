@@ -20,15 +20,15 @@ lqngen_LDFLAGS	= @STATIC@
 man1_MANS	= lqngen.1 lqn2lqx.1
 
 if HAVE_PS2PDF
-install-data-local:	srvndiff.pdf
+install-data-local:	lqngen.pdf
 endif
 
 distclean-local:
 	rm -f config.cache
 
 if HAVE_PS2PDF
-srvndiff.pdf:	srvndiff.ps
-		ps2pdf srvndiff.ps
+lqngen.pdf:	lqngen.ps
+		ps2pdf lqngen.ps
 endif
 
 if HAVE_PS2PDF
