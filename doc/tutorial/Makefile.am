@@ -3,7 +3,7 @@
 # Carleton University, Ottawa, Ontario, Canada. K1S 5B6
 #
 #----------------------------------------------------------------------
-# $Id: Makefile.am 14499 2021-02-27 23:24:12Z greg $
+# $Id: Makefile.am 14620 2021-04-21 14:33:55Z greg $
 #----------------------------------------------------------------------
 
 if HAVE_LATEX
@@ -48,7 +48,7 @@ $(DST).txt: $(DST).dvi
 	dvi2tty -w132 $(DST).dvi > $(DST).txt
 
 clean-local:
-	rm -f $(OBJS)  $(DST).aux $(DST).bbl $(DST).blg $(DST).dvi $(DST).log $(DST).pdf $(DST).ps $(DST).out *.fig.bak *.eps
+	rm -f $(DST).aux $(DST).bbl $(DST).blg $(DST).dvi $(DST).log $(DST).pdf $(DST).ps $(DST).out *.fig.bak 
 else
 all:
 	echo LaTeX is required to make the tutorial.
