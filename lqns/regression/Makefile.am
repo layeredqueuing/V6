@@ -2,7 +2,7 @@
 # Copyright (C) 2005 Greg Franks <greg@sce.carleton.ca>
 #
 # ------------------------------------------------------------------------
-# $Id: Makefile.am 14110 2020-11-20 15:37:56Z greg $
+# $Id: Makefile.am 14617 2021-04-21 13:26:44Z greg $
 # ------------------------------------------------------------------------
 
 SRVN=	../lqns
@@ -68,7 +68,9 @@ OTHER=	90-A01.lqxo \
 	94-5101-a2-q2b1.lqxo
 
 VAR=	90-A01-novar.lqxo \
-	90-A01-stoch.lqxo 
+	90-A01-stoch.lqxo
+
+DISTTEST=disttest
 
 
 # Can't do: $(SYNC)  Should omit $(SIM) to, as the results aren't meaningful.
@@ -127,6 +129,15 @@ check-syntax:
 check-verbose:
 	FILES=`echo $(OBJS) | tr -s " " "\n" | srvndiff $(DIFFOPTS) -@- . ../../models/regression/lqns-results`; \
 	for i in $$FILES; do j=`echo $$i | sed -e's/lqxo/p/'`; srvndiff -A +t ../../models/regression/lqns-results/$$j $$i; done
+
+disttest: disttest.o randomvar.o
+	$(CXX) -L../../libmva/src/.libs -lmva -o $@ disttest.o randomvar.o
+
+randomvar.o:	../randomvar.cc ../randomvar.h
+	$(CXX) -DTESTDIST -I.. -I../../libmva/src/headers -c -o randomvar.o ../randomvar.cc
+
+disttest.o:	disttest.cc
+	$(CXX) -I.. -I../../libmva/src/headers -c -o disttest.o disttest.cc
 
 clean:
 	@-rm -f $(OBJS) $(FAIR) *.out *.diff

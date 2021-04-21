@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: pragma.cc 14609 2021-04-18 14:09:42Z greg $ *
+ * $Id: pragma.cc 14617 2021-04-21 13:26:44Z greg $ *
  * Pragma processing and definitions.
  *
  * Copyright the Real-Time and Distributed Systems Group,
@@ -410,7 +410,7 @@ void Pragma::setThreads(const std::string& value)
 {
     static const std::map<const std::string,const Pragma::Threads> __threads_pragma = {
 	{ LQIO::DOM::Pragma::_hyper_,	Threads::HYPER },
-	{ LQIO::DOM::Pragma::_mak_,		Threads::MAK_LUNDSTROM },
+	{ LQIO::DOM::Pragma::_mak_,	Threads::MAK_LUNDSTROM },
 	{ LQIO::DOM::Pragma::_none_,	Threads::NONE }
     };
 
