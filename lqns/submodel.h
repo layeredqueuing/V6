@@ -7,7 +7,7 @@
  *
  * June 2007
  *
- * $Id: submodel.h 14334 2021-01-05 03:03:03Z greg $
+ * $Id: submodel.h 14627 2021-05-10 16:22:27Z greg $
  */
 
 #ifndef _SUBMODEL_H
@@ -81,7 +81,9 @@ public:
     virtual Submodel& build() { return *this; }
     virtual Submodel& rebuild() { return *this; }
 
+#if PAN_REPLICATION
     virtual double nrFactor( const Server *, const unsigned, const unsigned ) const { return 0; }
+#endif
 
     virtual unsigned n_closedStns() const { return 0; }
     virtual unsigned n_openStns() const { return 0; }
@@ -144,14 +146,18 @@ public:
     virtual unsigned n_openStns() const { return openStation.size(); }
     virtual VectorMath<double> * getOverlapFactor() const { return _overlapFactor; } 
 
+#if PAN_REPLICATION
     virtual double nrFactor( const Server *, const unsigned e, const unsigned k ) const;
+#endif
 
     virtual MVASubmodel& solve( long, MVACount&, const double );
 	
     virtual std::ostream& print( std::ostream& ) const;
 
 private:
-    bool hasReplication() const { return _hasReplication; }
+#if PAN_REPLICATION
+    bool hasReplication() const;
+#endif
     bool hasThreads() const { return _hasThreads; }
     bool hasSynchs() const { return _hasSynchs; }
 
@@ -164,7 +170,6 @@ protected:
     std::ostream& printMaxCustomers( std::ostream& output ) const;	/*+ interlock -*/
 
 private:
-    bool _hasReplication;		/* True if replication present.	*/
     bool _hasThreads;			/* True if client has forks.	*/
     bool _hasSynchs;			/* True if server has joins.	*/
 

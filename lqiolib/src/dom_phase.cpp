@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_phase.cpp 14498 2021-02-27 23:08:51Z greg $
+ *  $Id: dom_phase.cpp 14627 2021-05-10 16:22:27Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -51,7 +51,7 @@ namespace LQIO {
 	      _serviceTime(src._serviceTime),
 	      _phaseTypeFlag(src.getPhaseTypeFlag()), _entry(const_cast<LQIO::DOM::Entry*>(src.getSourceEntry())),
 	      _thinkTime(src._thinkTime),
-	      _coeffOfVariationSq(src._coeffOfVariationSq->clone()),
+	      _coeffOfVariationSq(ExternalVariable::clone(src._coeffOfVariationSq)),
 	      _histogram(nullptr),	/* not copied */
 	      _resultServiceTime(0.0), _resultServiceTimeVariance(0.0),
 	      _resultVarianceServiceTime(0.0), _resultVarianceServiceTimeVariance(0.0),

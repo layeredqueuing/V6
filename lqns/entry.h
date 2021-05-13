@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: entry.h 14498 2021-02-27 23:08:51Z greg $
+ * $Id: entry.h 14627 2021-05-10 16:22:27Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -259,7 +259,9 @@ public:
     virtual Entry& initWait() = 0;
     Entry& initThroughputBound();
     Entry& initServiceTime();
+#if PAN_REPLICATION
     Entry& initReplication( const unsigned );	// REPL
+#endif
     Entry& resetInterlock();
     Entry& createInterlock();
     Entry& initInterlock( Interlock::CollectTable& path );
@@ -297,7 +299,9 @@ public:
     bool phaseIsPresent( const unsigned p ) const { return _phase[p].isPresent(); }
     virtual double openWait() const { return 0.; }
     LQIO::DOM::Entry* getDOM() const { return _dom; }
+#if PAN_REPLICATION
     Entry& resetReplication();
+#endif
 	
     void addDstCall( Call * aCall ) { _callerList.insert(aCall); }
     void removeDstCall( Call *aCall ) { _callerList.erase(aCall); }
@@ -338,7 +342,9 @@ public:
     std::set<Entity *>& getServers( const std::set<Entity *>& ) const;	// Called tasks/processors
 
     virtual double waitExcept( const unsigned, const unsigned, const unsigned ) const;	/* For client service times */
+#if PAN_REPLICATION
     virtual double waitExceptChain( const unsigned, const unsigned, const unsigned ) const; //REP N-R
+#endif
     double getProcWait( const unsigned p, int submodel )  { return _phase[p].getProcWait(submodel, 0) ;}	
 
     double elapsedTime() const { return _total.elapsedTime(); }			/* Found through deltaWait  */
@@ -361,7 +367,9 @@ public:
     void sliceTime( const Entry& dst, Slice_Info phase_info[], double y_xj[] ) const;
     virtual Entry& computeVariance() { return *this; }
     virtual Entry& updateWait( const Submodel&, const double ) = 0;
+#if PAN_REPLICATION
     virtual double updateWaitReplication( const Submodel&, unsigned& ) = 0;
+#endif
     virtual Entry& saveOpenWait( const double aWait ) = 0;
     Entry& saveThroughput( double );
     Entry& setPrOvertaking( const unsigned p, const Probability& pr ) { _phase[p].setPrOvertaking(pr); return *this; }
@@ -369,7 +377,9 @@ public:
 
     void set( const Entry * src, const Activity::Collect& );
     Entry& aggregate( const unsigned, const unsigned p, const Exponential& );
+#if PAN_REPLICATION
     Entry& aggregateReplication( const Vector< VectorMath<double> >& );
+#endif
 
     const Entry& callsPerform( callFunc aFunc, const unsigned submodel, const unsigned k ) const;
 
@@ -485,7 +495,9 @@ public:
     virtual double queueingTime( const unsigned ) const;		// Time queued for processor.
     virtual TaskEntry& computeVariance();
     virtual TaskEntry& updateWait( const Submodel&, const double );
+#if PAN_REPLICATION
     virtual double updateWaitReplication( const Submodel&, unsigned& );
+#endif
     virtual TaskEntry& saveOpenWait( const double aWait ) { _nextOpenWait = aWait; return *this; }
     virtual double openWait() const { return _openWait; }
     
@@ -522,7 +534,9 @@ public:
     virtual double queueingTime( const unsigned ) const;		// Time queued for processor.
     virtual DeviceEntry& updateWait( const Submodel&, const double );
     virtual DeviceEntry& saveOpenWait( const double aWait ) { return *this; }
+#if PAN_REPLICATION
     virtual double updateWaitReplication( const Submodel&, unsigned& );
+#endif
 
 private:
     const Entity * myProcessor;

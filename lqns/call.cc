@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: call.cc 14499 2021-02-27 23:24:12Z greg $
+ * $Id: call.cc 14639 2021-05-13 21:25:02Z greg $
  *
  * Everything you wanted to know about a call to an entry, but were afraid to ask.
  *
@@ -264,9 +264,11 @@ Call::hasOvertaking() const
     return hasRendezvous() && dstEntry()->maxPhase() > 1;
 }
 
+
+
 /*
- * Return the total wait along this arc.  Take into
- * account replication.
+ * Return the total wait along this arc.  Take into account
+ * replication.  This applies for both Pan and Bug 299 replication.
  */
 
 double
@@ -280,7 +282,7 @@ Call::rendezvousDelay() const
 }
 
 
-
+#if PAN_REPLICATION
 /*
  * Compute and save old rendezvous delay.		// REPL
  */
@@ -294,6 +296,7 @@ Call::rendezvousDelay( const unsigned k )
 	return Call::rendezvousDelay();	// rendezvousDelay is already multiplied by fanOut.
     }
 }
+#endif
 
 
 
@@ -355,6 +358,7 @@ Call::insertDOMResults() const
 }
 
 
+#if PAN_REPLICATION
 /*
  * Return the adjustment factor for this call.  //REPL
  */
@@ -365,6 +369,7 @@ Call::nrFactor( const Submodel& aSubmodel, const unsigned k ) const
     const Entity * dst_task = dstTask();
     return aSubmodel.nrFactor( dst_task->serverStation(), index(), k ) * fanOut() * rendezvous();	// 5.20
 }
+#endif
 
 
 
@@ -428,7 +433,11 @@ Call::setVisits( const unsigned k, const unsigned p, const double rate )
     if ( aServer->hasServerChain( k ) && hasRendezvous() && !srcTask()->hasInfinitePopulation() ) {
 	Server * aStation = aServer->serverStation();
 	const unsigned e = dstEntry()->index();
+#if BUG_299
+	aStation->addVisits( e, k, p, rendezvous() / fanOut() * rate );
+#else
 	aStation->addVisits( e, k, p, rendezvous() * rate );
+#endif
     }
 }
 

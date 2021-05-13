@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: lqn2ps.cc 14498 2021-02-27 23:08:51Z greg $
+ * $Id: lqn2ps.cc 14639 2021-05-13 21:25:02Z greg $
  *
  * Command line processing.
  *
@@ -194,7 +194,7 @@ lqn2ps( int argc, char *argv[] )
     int arg;
     std::string output_file_name = "";
 
-    sscanf( "$Date: 2021-02-27 18:08:51 -0500 (Sat, 27 Feb 2021) $", "%*s %s %*s", copyrightDate );
+    sscanf( "$Date: 2021-05-13 17:25:02 -0400 (Thu, 13 May 2021) $", "%*s %s %*s", copyrightDate );
 
     static std::string opts = "";
 #if HAVE_GETOPT_H
@@ -783,9 +783,6 @@ lqn2ps( int argc, char *argv[] )
 #if defined(QNAP_OUTPUT)
 		    && Flags::print[OUTPUT_FORMAT].value.i != FORMAT_QNAP
 #endif
-#if defined(PMIF_OUTPUT)
-		    && Flags::print[OUTPUT_FORMAT].value.i != FORMAT_PMIF
-#endif
 		    && Flags::print[OUTPUT_FORMAT].value.i != FORMAT_LQX
 		    && Flags::print[OUTPUT_FORMAT].value.i != FORMAT_XML
 		    && Flags::print[OUTPUT_FORMAT].value.i != FORMAT_JSON
@@ -804,8 +801,8 @@ lqn2ps( int argc, char *argv[] )
 	    Flags::squish_names		= true;
 	}
 #endif
-#if defined(QNAP_OUTPUT) || defined(PMIF_OUTPUT)
-    } else if ( Flags::print[OUTPUT_FORMAT].value.i == FORMAT_QNAP || Flags::print[OUTPUT_FORMAT].value.i == FORMAT_PMIF ) {
+#if defined(QNAP_OUTPUT)
+    } else if ( Flags::print[OUTPUT_FORMAT].value.i == FORMAT_QNAP ) {
 	std::cerr << LQIO::io_vars.lq_toolname << ": -Q<submodel> must be used with the "
 		  <<  Options::io[Flags::print[OUTPUT_FORMAT].value.i] << " output format." << std::endl;
 	exit( 1 );

@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: phase.cc 14552 2021-03-17 00:47:06Z greg $
+ * $Id: phase.cc 14639 2021-05-13 21:25:02Z greg $
  *
  * Everything you wanted to know about a phase, but were afraid to ask.
  *
@@ -481,6 +481,10 @@ Phase::replicatePhase( LQIO::DOM::Phase * root, unsigned int replica )
     return *this;
 }
 
+
+/*
+ * This is used to MERGE all calls to a single call.  Adjust back to original value??
+ */
 
 Phase&
 Phase::replicateCall()

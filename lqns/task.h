@@ -10,7 +10,7 @@
  * November, 1994
  * May 2009.
  *
- * $Id: task.h 14334 2021-01-05 03:03:03Z greg $
+ * $Id: task.h 14627 2021-05-10 16:22:27Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -138,7 +138,6 @@ public:
     virtual Task& initThroughputBound();
     Task& createInterlock();
     virtual Task& initThreads();
-    void resetReplication();
 
     void findParents();
     virtual double countCallers( std::set<Task *>& reject ) const;
@@ -162,6 +161,9 @@ public:
     virtual double thinkTime( const unsigned = 0, const unsigned = 0 ) const;
     virtual unsigned int fanOut( const Entity * ) const;
     virtual unsigned int fanIn( const Task * ) const;
+#if PAN_REPLICATION
+    void resetReplication();
+#endif
     Task& addThread( Thread * aThread ) { _threads.push_back(aThread); return *this; }
 
     /* Queries */
@@ -193,7 +195,9 @@ public:
     virtual root_level_t rootLevel() const;
     Server * makeClient( const unsigned, const unsigned  );
     Task& initClientStation( Submodel& );
+#if PAN_REPLICATION
     Task& modifyClientServiceTime( const MVASubmodel& );
+#endif
     Task& saveClientResults( const MVASubmodel& );
     const Task& callsPerform( callFunc, const unsigned submodel ) const;
     const Task& openCallsPerform( callFunc, const unsigned submodel ) const;
@@ -208,7 +212,9 @@ public:
     virtual Task& recalculateDynamicValues();
     virtual Task& computeVariance();
     virtual Task& updateWait( const Submodel&, const double );
+#if PAN_REPLICATION
     virtual double updateWaitReplication( const Submodel&, unsigned& );
+#endif
     Task& computeOvertaking( Entity * );
 
     /* Interlock */
@@ -235,7 +241,9 @@ public:
     unsigned threadIndex( const unsigned submodel, const unsigned k ) const;
     void forkOverlapFactor( const Submodel& ) const;
     double waitExcept( const unsigned, const unsigned, const unsigned ) const;	/* For client service times */
+#if PAN_REPLICATION
     double waitExceptChain( const unsigned ix, const unsigned submodel, const unsigned k, const unsigned p ) const;
+#endif
 
     /* Synchronization */
 
@@ -277,7 +285,9 @@ protected:
     bool PPR_Scheduling() const;
 
 private:
+#if PAN_REPLICATION
     Task& initReplication( const unsigned );	 	// REP N-R
+#endif
     double bottleneckStrength() const;
     void store_activity_service_time ( const char * activity_name, const double service_time );	// quorum.
 

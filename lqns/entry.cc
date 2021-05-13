@@ -12,7 +12,7 @@
  * July 2007.
  *
  * ------------------------------------------------------------------------
- * $Id: entry.cc 14499 2021-02-27 23:24:12Z greg $
+ * $Id: entry.cc 14627 2021-05-10 16:22:27Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -292,6 +292,7 @@ Entry::initServiceTime()
 
 
 
+#if PAN_REPLICATION
 /*
  * Allocate storage for oldSurgDelay.
  */
@@ -302,6 +303,7 @@ Entry::initReplication( const unsigned n_chains )
     std::for_each ( _phase.begin(), _phase.end(), Exec1<Phase,const unsigned>( &Phase::initReplication, n_chains ) );
     return *this;
 }
+#endif
 
 
 
@@ -701,6 +703,7 @@ Entry::processorCalls() const
 
 
 
+#if PAN_REPLICATION
 /*
  * Clear replication variables for this pass.
  */
@@ -711,6 +714,7 @@ Entry::resetReplication()
     std::for_each( _phase.begin(), _phase.end(), Exec<Phase>( &Phase::resetReplication ) );
     return *this;
 }
+#endif
 
 
 
@@ -761,6 +765,7 @@ Entry::waitExcept( const unsigned submodel, const unsigned k, const unsigned p )
 }
 
 
+#if PAN_REPLICATION
 /*
  * Return waiting time.  Normally, we exclude all of chain k, but with
  * replication, we have to include replicas-1 wait for chain k too.
@@ -781,6 +786,7 @@ Entry::waitExceptChain( const unsigned submodel, const unsigned k, const unsigne
 	return task->waitExceptChain( ix, submodel, k, p );
     }
 }
+#endif
 
 
 
@@ -887,6 +893,7 @@ Entry::aggregate( const unsigned submodel, const unsigned p, const Exponential& 
 
 
 
+#if PAN_REPLICATION
 /*
  */
 
@@ -898,7 +905,7 @@ Entry::aggregateReplication( const Vector< VectorMath<double> >& addend )
     }
     return *this;
 }
-
+#endif
 
 
 /*
@@ -1637,11 +1644,13 @@ Entry::set( const Entry * src, const Activity::Collect& data )
                 _phase[p]._wait[submodel] = 0.0;
             }
         }
+#if PAN_REPLICATION
     } else if ( f == &Activity::collectReplication ) {
         for ( unsigned p = 1; p <= maxPhase(); ++p ) {
             _phase[p]._surrogateDelay.resize( src->_phase[p]._surrogateDelay.size() );
             _phase[p].resetReplication();
         }
+#endif
     } else if ( f == &Activity::setMaxCustomers ) {
 	saveMaxCustomers(getMaxCustomers(), false);
 	if ( flags.trace_customers ) {
@@ -1709,6 +1718,7 @@ TaskEntry::updateWait( const Submodel& submodel, const double relax )
 
 
 
+#if PAN_REPLICATION
 /* BUG_1
  * Calculate total wait for a particular submodel and save.  Return
  * the difference between this pass and the previous.
@@ -1734,6 +1744,7 @@ TaskEntry::updateWaitReplication( const Submodel& submodel, unsigned & n_delta )
     }
     return delta;
 }
+#endif
 
 /* -------------------------- Device Entries -------------------------- */
 
@@ -1864,6 +1875,7 @@ DeviceEntry::updateWait( const Submodel&, const double )
 }
 
 
+#if PAN_REPLICATION
 /*
  * Return the waiting time for group `g' phase `p'.
  */
@@ -1874,6 +1886,7 @@ DeviceEntry::updateWaitReplication( const Submodel&, unsigned&  )
     throw should_not_implement( "DeviceEntry::updateWaitReplication", __FILE__, __LINE__ );
     return 0.0;
 }
+#endif
 
 
 /*

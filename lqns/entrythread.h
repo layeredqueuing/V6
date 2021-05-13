@@ -8,7 +8,7 @@
  * January, 2005
  *
  *
- * $Id: entrythread.h 14334 2021-01-05 03:03:03Z greg $
+ * $Id: entrythread.h 14627 2021-05-10 16:22:27Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -57,7 +57,9 @@ public:
     double thinkTime() const { return myThinkTime; }
     Thread& estimateCDF();
     virtual double waitExcept( const unsigned, const unsigned, const unsigned ) const;	/* For client service times */
+#if PAN_REPLICATION
     virtual double waitExceptChain( const unsigned, const unsigned, const unsigned ) const; //REP N-R
+#endif
 
 private:
     double myThinkTime;

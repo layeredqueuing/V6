@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: model.h 14571 2021-03-20 22:32:44Z greg $
+ * $Id: model.h 14627 2021-05-10 16:22:27Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -104,7 +104,7 @@ protected:
     void printIntermediate( const double ) const;
 	
 private:
-    static bool checkModel();
+    static bool check();
     bool generate();	/* Create layers.	*/
     static void extendModel();
     static void initProcessors();

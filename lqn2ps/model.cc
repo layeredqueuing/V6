@@ -1,6 +1,6 @@
 /* model.cc	-- Greg Franks Mon Feb  3 2003
  *
- * $Id: model.cc 14552 2021-03-17 00:47:06Z greg $
+ * $Id: model.cc 14639 2021-05-13 21:25:02Z greg $
  *
  * Load, slice, and dice the lqn model.
  */
@@ -33,9 +33,6 @@
 #include <lqio/dom_document.h>
 #include <lqio/srvn_output.h>
 #include <lqio/srvn_spex.h>
-#if defined(PMIF_OUTPUT)
-#include <lqio/pmif_document.h>
-#endif
 #include "model.h"
 #include "entry.h"
 #include "activity.h"
@@ -1606,10 +1603,16 @@ Model::expandModel()
 
     /* Expand Processors and entries */
 
-    for_each( old_processor.begin(), old_processor.end(), Exec<Processor>( &Processor::expandProcessor ) );
-    for_each( old_entry.begin(), old_entry.end(), Exec<Entry>( &Entry::expandEntry ) );
-    for_each( old_task.begin(), old_task.end(), Exec<Task>( &Task::expandTask ) );
-    for_each( old_entry.begin(), old_entry.end(), Exec<Entry>( &Entry::expandCall ) );
+    try {
+	for_each( old_processor.begin(), old_processor.end(), Exec<Processor>( &Processor::expandProcessor ) );
+	for_each( old_entry.begin(), old_entry.end(), Exec<Entry>( &Entry::expandEntry ) );
+	for_each( old_task.begin(), old_task.end(), Exec<Task>( &Task::expandTask ) );
+	for_each( old_entry.begin(), old_entry.end(), Exec<Entry>( &Entry::expandCall ) );
+    }
+    catch ( const std::domain_error& e ) {
+	LQIO::solution_error( ERR_REPLICATION_NOT_SET, e.what() );
+	return *this;
+    }
 
     /*  Delete all original Entities from the symbol table and collections */
 

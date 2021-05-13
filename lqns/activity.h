@@ -11,7 +11,7 @@
  * July 2007
  *
  * ------------------------------------------------------------------------
- * $Id: activity.h 14334 2021-01-05 03:03:03Z greg $
+ * $Id: activity.h 14627 2021-05-10 16:22:27Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -223,7 +223,9 @@ public:
 
     bool checkReplies( Activity::Count_If& data ) const;
     void collectWait( Entry *, const Activity::Collect& ) const;
+#if PAN_REPLICATION
     void collectReplication( Entry *, const Activity::Collect& ) const;
+#endif
     void collectServiceTime( Entry *, const Activity::Collect& ) const;
     void setThroughput( Entry *, const Activity::Collect& ) const;
     void setMaxCustomers( Entry *, const Activity::Collect& ) const;

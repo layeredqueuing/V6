@@ -1,4 +1,4 @@
-# $Id: Makefile.am 14498 2021-02-27 23:08:51Z greg $
+# $Id: Makefile.am 14639 2021-05-13 21:25:02Z greg $
 # -------------------------------------------------------------------- [Libtool libsrvnio2]
 
 # This project uses Libtool to generate a product
@@ -37,11 +37,11 @@ liblqio_la_SOURCES = bcmp_bindings.cpp \
 	srvn_gram.y \
 	srvn_input.cpp \
 	srvn_output.cpp \
+	srvn_result_gram.y \
 	srvn_result_scan.l \
 	srvn_results.cpp \
 	srvn_scan.l \
 	srvn_spex.cpp \
-	srvn_result_gram.y \
 	xml_input.cpp \
 	xml_output.cpp
 

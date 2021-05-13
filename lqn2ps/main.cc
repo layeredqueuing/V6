@@ -1,6 +1,6 @@
 /* srvn2eepic.c	-- Greg Franks Sun Jan 26 2003
  *
- * $Id: main.cc 14602 2021-04-16 12:06:43Z greg $
+ * $Id: main.cc 14639 2021-05-13 21:25:02Z greg $
  */
 
 #include "lqn2ps.h"
@@ -471,9 +471,6 @@ graphical_output()
 	&& Flags::print[OUTPUT_FORMAT].value.i != FORMAT_NULL
 	&& Flags::print[OUTPUT_FORMAT].value.i != FORMAT_OUTPUT
 	&& Flags::print[OUTPUT_FORMAT].value.i != FORMAT_PARSEABLE
-#if defined(PMIF_OUTPUT)
-	&& Flags::print[OUTPUT_FORMAT].value.i != FORMAT_PMIF
-#endif
 #if defined(QNAP_OUTPUT)
 	&& Flags::print[OUTPUT_FORMAT].value.i != FORMAT_QNAP
 #endif

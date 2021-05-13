@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: errmsg.h 14498 2021-02-27 23:08:51Z greg $
+ * $Id: errmsg.h 14639 2021-05-13 21:25:02Z greg $
  *
  * Copyright the Real-Time and Distributed Systems Group,
  * Department of Systems and Computer Engineering,
@@ -35,6 +35,7 @@ enum {
     ERR_ACTIVITY_NOT_REACHABLE,
     ERR_REPLICATION_PROCESSOR,
     ERR_REPLICATION,
+    ERR_REPLICATION_NOT_SET,
     ERR_NO_CALLS_TO_ENTRY,
     ERR_NO_OBJECTS,
     ERR_NOT_IMPLEMENTED,

@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: processor.cc 14552 2021-03-17 00:47:06Z greg $
+ * $Id: processor.cc 14639 2021-05-13 21:25:02Z greg $
  *
  * Everything you wanted to know about a task, but were afraid to ask.
  *
@@ -100,16 +100,15 @@ Processor::~Processor()
  */
 
 Processor *
-Processor::clone( const std::string& new_name ) const
+Processor::clone( const std::string& name ) const
 {
-    std::set<Processor *>::const_iterator nextProcessor = find_if( __processors.begin(), __processors.end(), EQStr<Processor>( new_name ) );
+    std::set<Processor *>::const_iterator nextProcessor = find_if( __processors.begin(), __processors.end(), EQStr<Processor>( name ) );
     if ( nextProcessor != __processors.end() ) {
-	std::string msg = "Processor::expandProcessor(): cannot add symbol ";
-	msg += new_name;
+	const std::string msg = "Processor::clone(): cannot add symbol " + name;
 	throw std::runtime_error( msg );
     }
     LQIO::DOM::Processor * dom = new LQIO::DOM::Processor( *dynamic_cast<const LQIO::DOM::Processor*>(getDOM()) );
-    dom->setName( new_name );
+    dom->setName( name );
     const_cast<LQIO::DOM::Document *>(getDOM()->getDocument())->addProcessorEntity( dom );
     
     return new Processor( dom );

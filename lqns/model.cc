@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: model.cc 14571 2021-03-20 22:32:44Z greg $
+ * $Id: model.cc 14639 2021-05-13 21:25:02Z greg $
  *
  * Layer-ization of model.  The basic concept is from the reference
  * below.  However, model partioning is more complex than task vs device.
@@ -118,7 +118,7 @@ Model::createModel( const LQIO::DOM::Document * document, const std::string& inp
      * disable model checking and expansion at this stage with LQX programs
      */
 
-    if ( LQIO::io_vars.anError() == false && (check_model == false || checkModel() ) ) {
+    if ( LQIO::io_vars.anError() == false && (check_model == false || check() ) ) {
 
 	extendModel();			/* Do this before initProcessors() */
 
@@ -182,7 +182,7 @@ Model::initializeModel()
     /* perform all actions normally done in createModel() that need to be delayed until after */
     /* LQX programs begin execution to avoid problems with unset variables */
 
-    checkModel();
+    check();
 
     if ( !_model_initialized ) {
 	initProcessors();		/* Set Processor Service times.	*/
@@ -373,18 +373,27 @@ Model::recalculateDynamicValues( const LQIO::DOM::Document* document )
 }
 
 
+
 /*
  * Check input parameters.  Return true if all went well.  Return false
  * and set anError to true otherwise.
  */
 
 bool
-Model::checkModel()
+Model::check()
 {
     bool rc = true;
     rc = std::all_of( __processor.begin(), __processor.end(), Predicate<Processor>( &Processor::check ) ) && rc;
     rc = std::all_of( __group.begin(), __group.end(), Predicate<Group>( &Group::check ) ) && rc; 
     rc = std::all_of( __task.begin(), __task.end(), Predicate<Task>( &Task::check ) ) && rc;
+
+#if !PAN_REPLICATION && !BUG_299
+    if ( std::any_of( __task.begin(), __task.end(), Predicate<Task>( &Task::isReplicated ) )
+	 || std::any_of( __processor.begin(), __processor.end(), Predicate<Processor>( &Processor::isReplicated ) ) ) {
+	rc = false;
+	LQIO::solution_error( ERR_REPLICATION_NOT_SUPPORTED );
+    }
+#endif
 
     if ( std::count_if( __task.begin(), __task.end(), Predicate<Task>( &Task::isReferenceTask ) ) == 0 && Entry::totalOpenArrivals == 0 ) {
 	LQIO::solution_error( LQIO::ERR_NO_REFERENCE_TASKS );

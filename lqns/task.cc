@@ -10,7 +10,7 @@
  * November, 1994
  *
  * ------------------------------------------------------------------------
- * $Id: task.cc 14612 2021-04-19 21:44:17Z greg $
+ * $Id: task.cc 14639 2021-05-13 21:25:02Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -155,6 +155,19 @@ Task::check() const
 	const double temp = static_cast<double>(srcReplicas) / static_cast<double>(dstReplicas);
 	if ( trunc( temp ) != temp  ) {			/* Integer multiple */
 	    LQIO::solution_error( ERR_REPLICATION_PROCESSOR, srcReplicas, name().c_str(), dstReplicas, getProcessor()->name().c_str() );
+	}
+	const LQIO::DOM::Document* document = getDOM()->getDocument();
+	const std::map<const std::string,const LQIO::DOM::ExternalVariable *>& fanOuts = getDOM()->getFanOuts();
+	for ( const auto& dst : fanOuts ) {
+	    if ( document->getTaskByName( dst.first ) == nullptr ) {
+		LQIO::solution_error( ERR_INVALID_FANINOUT_PARAMETER, "fan out", name().c_str(), dst.first.c_str(), "Destination task not defined" );
+	    }
+	}
+	const std::map<const std::string,const LQIO::DOM::ExternalVariable *>& fanIns = getDOM()->getFanIns();
+	for ( const auto& src : fanIns ) {
+	    if ( document->getTaskByName( src.first ) == nullptr ) {
+		LQIO::solution_error( ERR_INVALID_FANINOUT_PARAMETER, "fan in", name().c_str(), src.first.c_str(), "Source task not defined" );
+	    }
 	}
     }
 
@@ -313,6 +326,7 @@ Task::initThroughputBound()
 
 
 
+#if PAN_REPLICATION
 /*
  * Allocate storage for oldSurgDelay (used by Newton Raphson
  * iteration.  This step must be done AFTER we have the chain
@@ -328,6 +342,7 @@ Task::initReplication( const unsigned n_chains )
     std::for_each( activities().begin(), activities().end(), Exec1<Phase,unsigned int>( &Phase::initReplication, n_chains ) );
     return *this;
 }
+#endif
 
 
 
@@ -463,6 +478,9 @@ Task::addPrecedence( ActivityList * aPrecedence )
     _precedences.push_back( aPrecedence );
 }
 
+
+
+#if PAN_REPLICATION
 /*
  * Clear replication variables for this pass.
  */
@@ -473,6 +491,7 @@ Task::resetReplication()
     std::for_each( entries().begin(), entries().end(), Exec<Entry>( &Entry::resetReplication ) );
     std::for_each( activities().begin(), activities().end(), Exec<Phase>( &Phase::resetReplication ) );
 }
+#endif
 
 
 /*
@@ -759,7 +778,9 @@ Task::PPR_Scheduling() const
 Server *
 Task::makeClient( const unsigned n_chains, const unsigned submodel )
 {
+#if PAN_REPLICATION
     initReplication( n_chains );
+#endif
 
     Server * aStation = new Client( nEntries(), n_chains, maxPhase() );
 
@@ -834,6 +855,8 @@ Task::setChain( const MVASubmodel& submodel ) const
 }
 
 
+
+#if PAN_REPLICATION
 /*
  * If I am replicated and I have multiple chains, I have to add on the
  * waiting time made to all other tasks in my partition but NOT in my
@@ -864,6 +887,7 @@ Task::modifyClientServiceTime( const MVASubmodel& submodel )
     }
     return *this;
 }
+#endif
 
 
 
@@ -890,6 +914,7 @@ Task::saveClientResults( const MVASubmodel& submodel )
 	    for ( std::vector<Entry *>::const_iterator entry = entries().begin(); entry != entries().end(); ++entry ) {
 		double lambda = 0;
 
+#if PAN_REPLICATION
 		if ( submodel.hasReplication() ) {
 
 		    /*
@@ -900,8 +925,11 @@ Task::saveClientResults( const MVASubmodel& submodel )
 
 		    lambda = submodel.closedModel->normalizedThroughput( *station, (*entry)->index(), chains[1] ) * population();
 		} else {
+#endif
 		    lambda = submodel.closedModel->throughput( *station, (*entry)->index(), chains[1] );
+#if PAN_REPLICATION
 		}
+#endif
 		(*entry)->saveThroughput( lambda );
 	    }
 	}
@@ -1036,6 +1064,7 @@ Task::updateWait( const Submodel& submodel, const double relax )
 
 
 
+#if PAN_REPLICATION
 /*
  * Compute change in waiting times for this task.
  */
@@ -1054,6 +1083,7 @@ Task::updateWaitReplication( const Submodel& submodel, unsigned & n_delta )
 
     return delta;
 }
+#endif
 
 
 /*
@@ -1303,6 +1333,7 @@ Task::waitExcept( const unsigned ix, const unsigned submodel, const unsigned p )
 
 
 
+#if PAN_REPLICATION
 /*
  * Return the waiting time for all submodels except submodel for phase
  * `p'.  If this is an activity entry, we have to return the chain k
@@ -1316,6 +1347,7 @@ Task::waitExceptChain( const unsigned ix, const unsigned submodel, const unsigne
 {
     return _threads[ix]->waitExceptChain( submodel, k, p );
 }
+#endif
 
 
 
@@ -1516,8 +1548,8 @@ Task::expandQuorumGraph()
 	AndJoinActivityList *  quorumAndJoinList = dynamic_cast<AndJoinActivityList *>(*join_list);
 	if (!quorumAndJoinList) { continue; }
 
-	AndForkActivityList *  newAndForkList = NULL;
-	AndJoinActivityList *  newAndJoinList = NULL;
+	AndForkActivityList *  newAndForkList = nullptr;
+	AndJoinActivityList *  newAndJoinList = nullptr;
 
         if ( quorumAndJoinList->hasQuorum() ) {
 
@@ -1570,9 +1602,9 @@ Task::expandQuorumGraph()
 //	    store_activity_service_time ( finalActivityName, 0 );
 
 	    newAndJoinList = dynamic_cast<AndJoinActivityList *>(localQuorumDelayActivity->act_and_join_list( newAndJoinList, 0 ));
-	    if ( newAndJoinList == NULL ) throw std::logic_error( "Task::expandQuorumGraph" );
+	    if ( newAndJoinList == nullptr ) throw std::logic_error( "Task::expandQuorumGraph" );
 	    newAndForkList= dynamic_cast<AndForkActivityList *> (localQuorumDelayActivity->act_and_fork_list( newAndForkList, 0 ));
-	    if ( newAndForkList == NULL ) throw std::logic_error( "Task::expandQuorumGraph" );
+	    if ( newAndForkList == nullptr ) throw std::logic_error( "Task::expandQuorumGraph" );
 
 #if 0
 #warning dead code and probably broken... graph changes
@@ -2366,10 +2398,10 @@ Task::create( LQIO::DOM::Task* dom, const std::vector<Entry *>& entries )
 
     if ( entries.size() == 0 ) {
 	LQIO::input_error2( LQIO::ERR_NO_ENTRIES_DEFINED_FOR_TASK, task_name );
-	return NULL;
+	return nullptr;
     } else if ( std::any_of( Model::__task.begin(), Model::__task.end(), EQStr<Task>( task_name ) ) ) {
 	LQIO::input_error2( LQIO::ERR_DUPLICATE_SYMBOL, "Task", task_name );
-	return NULL;
+	return nullptr;
     }
 
     const char* processor_name = dom->getProcessor()->getName().c_str();
@@ -2377,7 +2409,7 @@ Task::create( LQIO::DOM::Task* dom, const std::vector<Entry *>& entries )
 
     if ( !processor ) {
 	LQIO::input_error2( LQIO::ERR_NOT_DEFINED, processor_name );
-	return NULL;
+	return nullptr;
     }
 
     const LQIO::DOM::Group * group_dom = dom->getGroup();

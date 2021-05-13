@@ -10,7 +10,7 @@
  * November, 1994
  * March, 2004
  *
- * $Id: call.h 14498 2021-02-27 23:08:51Z greg $
+ * $Id: call.h 14639 2021-05-13 21:25:02Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -243,12 +243,16 @@ public:
     unsigned submodel() const;	/* Proxy */
 
     double rendezvousDelay() const;
+#if PAN_REPLICATION
     double rendezvousDelay( const unsigned k );
+#endif
     double wait() const { return _wait; }
     double elapsedTime() const;
     double queueingTime() const;
     virtual const Call& insertDOMResults() const;
+#if PAN_REPLICATION
     double nrFactor( const Submodel& aSubmodel, const unsigned k ) const;
+#endif
 
     /* Computation */
 

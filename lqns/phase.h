@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: phase.h 14570 2021-03-20 22:14:51Z greg $
+ * $Id: phase.h 14627 2021-05-10 16:22:27Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -242,8 +242,10 @@ public:
 	
     virtual Phase& initProcessor();
     void initCFSProcessor();
+#if PAN_REPLICATION
     Phase& initReplication( const unsigned );
     Phase& resetReplication();
+#endif
     Phase& initWait();
     Phase& initVariance();
 
@@ -304,16 +306,20 @@ public:
     /* computation */
 	
     virtual double waitExcept( const unsigned ) const;
+#if PAN_REPLICATION
     double waitExceptChain( const unsigned, const unsigned k );
+#endif
     double computeVariance();	 			/* Computed variance.		*/
     Phase& updateWait( const Submodel&, const double ); 
     double getProcWait( unsigned int submodel, const double relax ); // tomari quorum
     double getTaskWait( unsigned int submodel, const double relax );
     double getRendezvous( unsigned int submodel, const double relax );
+#if PAN_REPLICATION
     double updateWaitReplication( const Submodel& );
     double getReplicationProcWait( unsigned int submodel, const double relax );
     double getReplicationTaskWait( unsigned int submodel, const double relax ); //tomari quorum
     double getReplicationRendezvous( unsigned int submodel, const double relax );
+#endif
     virtual bool getInterlockedTasks( Interlock::CollectTasks& path ) const;
     Phase& updateInterlockedWait( const Submodel& aSubmodel, const double relax );
 
@@ -344,7 +350,9 @@ private:
     Phase const& addForwardingRendezvous( Call::stack& callStack ) const;
     Phase& forwardedRendezvous( const Call * fwdCall, const double value );
     double sumOfRendezvous() const;
+#if PAN_REPLICATION
     double nrFactor( const Call * aCall, const Submodel& aSubmodel ) const;
+#endif
     double mol_phase() const;
     double stochastic_phase() const;
     double deterministic_phase() const;
@@ -359,7 +367,9 @@ protected:
 
 private:
     std::vector<DeviceInfo *> _devices;	/* Will replace below			*/
+#if PAN_REPLICATION
     VectorMath<double> _surrogateDelay;	/* Saved old surrogate delay. REP N-R	*/
+#endif
     Probability _prOvertaking;
 
     double _cfs_delay;

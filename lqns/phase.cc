@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: phase.cc 14609 2021-04-18 14:09:42Z greg $
+ * $Id: phase.cc 14639 2021-05-13 21:25:02Z greg $
  *
  * Everything you wanted to know about an phase, but were afraid to ask.
  *
@@ -370,6 +370,7 @@ Phase::addForwardingRendezvous( Call::stack& callStack ) const
 }
 
 
+#if PAN_REPLICATION
 /*
  * Grow _surrogateDelay array as neccesary.  Initialize to zero.  Used
  * by Newton Raphson step.
@@ -381,6 +382,7 @@ Phase::initReplication( const unsigned maxSize )
     _surrogateDelay.resize( maxSize );
     return *this;
 }
+#endif
 
 
 
@@ -411,6 +413,7 @@ Phase::initVariance()
 }
 
 
+#if PAN_REPLICATION
 /*
  * Clear replication variables.
  */
@@ -421,6 +424,7 @@ Phase::resetReplication()
     _surrogateDelay = 0.;
     return *this;
 }
+#endif
 
 
 /*
@@ -890,6 +894,9 @@ Phase::waitExcept( const unsigned submodel ) const
     return wait;
 }
 
+
+
+#if PAN_REPLICATION
 /*
  * Return waiting time.  Normally, we exclude all of chain k, but with
  * replication, we have to include replicas-1 wait for chain k too.
@@ -906,6 +913,7 @@ Phase::waitExceptChain( const unsigned submodel, const unsigned k )
 	return waitExcept( submodel );
     }
 }
+#endif
 
 
 
@@ -918,6 +926,7 @@ Phase::getCFSDelayServer() const
     }
     return nullptr;
 }
+
 
 
 ProcessorCall *
@@ -1063,6 +1072,7 @@ Phase::cfsRecalculateDynamicValues(double ratio1, double newthinktime)
 #endif
 
 
+#if PAN_REPLICATION
 double
 Phase::nrFactor( const Call * aCall, const Submodel& aSubmodel ) const
 {
@@ -1083,6 +1093,7 @@ Phase::nrFactor( const Call * aCall, const Submodel& aSubmodel ) const
 	return 0;
     }
 }
+#endif
 
 
 
@@ -1117,7 +1128,7 @@ Phase::updateWait( const Submodel& aSubmodel, const double relax )
 
 
 
-
+#if PAN_REPLICATION
 double
 Phase::getReplicationProcWait( unsigned int submodel, const double relax )
 {
@@ -1145,11 +1156,13 @@ Phase::getReplicationProcWait( unsigned int submodel, const double relax )
 
     return newWait;
 }
+#endif
 
 
 
-/*
- * Sum up waits to all other tasks in this submodel
+#if PAN_REPLICATION
+/* 
+ * Sum up waits to all other tasks in this submodel 
  */
 
 double
@@ -1157,13 +1170,17 @@ Phase::getReplicationTaskWait( unsigned int submodel, const double relax )
 {
     return std::accumulate( callList().begin(), callList().end(), 0., add_using<Call>( &Call::wait ) );
 }
+#endif
 
 
-double
+
+#if PAN_REPLICATION
+double 
 Phase::getReplicationRendezvous( unsigned int submodel, const double relax ) //tomari : quorum
 {
     return std::accumulate( callList().begin(), callList().end(), 0.0, Call::add_replicated_rendezvous( submodel ) );
 }
+#endif
 
 
 double
@@ -1206,7 +1223,8 @@ Phase::getRendezvous( unsigned int submodel, const double relax ) //tomari : quo
 
 
 
-/*
+#if PAN_REPLICATION
+/* 
  * Calculate the surrogatedelay of a chain k of a
  *specific thread....tomari
  */
@@ -1295,6 +1313,7 @@ Phase::updateWaitReplication( const Submodel& aSubmodel )
     }
     return delta;
 }
+#endif
 
 /* -------------------------------------------------------------------- */
 /*			      Interlock					*/
