@@ -1,3 +1,8 @@
+2021-05-17  Gregory Franks  <greg@Gregs-Retina-iMac.local>
+
+	* lqiolib
+	- splot().  Pragma::replication.
+
 2021-03-16  Gregory Franks  <greg@Gregs-Retina-iMac.local>
 
 	* lqns
@@ -515,4 +520,4 @@
 	* parasrvn:
 	- Peter Maly added service time distributions.  See '-H' option.
 
-$Id: ChangeLog 14554 2021-03-17 00:48:05Z greg $
+$Id: ChangeLog 14653 2021-05-17 14:31:57Z greg $

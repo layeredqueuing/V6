@@ -1,71 +1,81 @@
+* Bugs fixed in 6.1
+151 	lqns 	 	93-simple-ucm
+223 	lqns 	 	12-interlock regression: Send interlock merge issue.
+254 	lqiolib  	XML results for entry waiting don't match parseable results for 09-sanity
+257 	lqiolib  	Update JSON document handling.
+263 	lqsim 	 	46-activities: Segmentation Fault.
+265 	lqsim 	 	EXC_BAD_ACCESS lqsim`Server_Task::set_synchronization_server() + 4
+287 	lqn2xxx  	Output queueing model for JMVA
+301 	lqns 	 	Rolia (Conway) multiservers appear to be sensitive to initial conditions which show up when using SPEX.
+
 * Bugs fixed in 6.0.X
-151 	lqns 	RESO 	FIXE 	93-simple-ucm 	08:39:36
-152 	lqns 	RESO 	FIXE 	14-interlock 	Tue 16:31
-191 	lqns 	RESO 	FIXE 	Failed unit-tests!!! 	2020-09-10
-223 	lqns 	RESO 	FIXE 	12-interlock regression: Send interlock merge issue.
+151 	lqns 	 	93-simple-ucm
+152 	lqns 	 	14-interlock
+191 	lqns 	 	Failed unit-tests!!!
+223 	lqns 	 	12-interlock regression: Send interlock merge issue.
 
 * Bugs fixed in 5.19
-294 	lqns 		07-sanity 
-208 	lqiolib 	Add --gnuplot output. 
-290 	lqx 		lqx parser doesn't like -1... sometimes. 
-286 	lqiolib 	GNUPlot enhancements. 	
-293 	lqns 	 	Phase think time not being used by analytic solver. 
+294 	lqns 		07-sanity
+208 	lqiolib 	Add --gnuplot output.
+290 	lqx 		lqx parser doesn't like -1... sometimes.
+286 	lqiolib 	GNUPlot enhancements.
+293 	lqns 	 	Phase think time not being used by analytic solver.
 196 	lqx 	 	Print only array key or value as a comma separated list.
 211 	lqn2xxx 	SIGSEGV Layer::transmorgrify(LQIO::DOM::Document*, Processor*&, Task*&)
-266 	lqn2xxx 	LQIO::should_implement 	
+266 	lqn2xxx 	LQIO::should_implement
 269 	lqn2xxx 	EXC_BAD_ACCESS lqn2svg`Layer::aggregate(this=0x0000000101009c70) at layer.cc:514:17
-272 	lqns 	  	failure with telephone switch model 
+272 	lqns 	  	failure with telephone switch model
 274 	lqn2xxx 	lqn2lqn: error: Invalid rate for processor "server": 0.5 < 1.
-276 	lqiolib 	lqn2xml -Olqx does not output LQX. 
+276 	lqiolib 	lqn2xml -Olqx does not output LQX.
 277 	lqns 	 	Refactor External Variable handling.
-278 	lqiolib 	signal SIGFPE, Arithmetic exception. SchweitzerCommon::marginalProbabilities () at mva.cc:2398 
+278 	lqiolib 	signal SIGFPE, Arithmetic exception. SchweitzerCommon::marginalProbabilities () at mva.cc:2398
 280 	lqiolib 	JMVA to LQN conversion in lqns fails.
-275 	lqiolib 	Output queueing model for QNAP2 
-261 	lqiolib 	LQIO::DOM::Entry::EntryType and Lqns Entry::entry_type not compatible. 
+275 	lqiolib 	Output queueing model for QNAP2
+261 	lqiolib 	LQIO::DOM::Entry::EntryType and Lqns Entry::entry_type not compatible.
 
 * Bugs fixed in 5.18
-243 	lqns 	 	Bruell and Schmidt multiserver fail in the population code. 
-252 	lqns 	 	Aggregation with nested loop on branch is faulty. 	
-253 	lqns 	 	Regression -- 86-fork 
-251 	lqns 		Compute the "rate" value for an activity during configure and store it. 
-255 	srvndiff 	EXC_BAD_ACCESS libsystem_platform.dylib`_platform_strlen + 18 	
-256 	lqns 		Split or-fork causes phase change (abort) 
+243 	lqns 	 	Bruell and Schmidt multiserver fail in the population code.
+252 	lqns 	 	Aggregation with nested loop on branch is faulty.
+253 	lqns 	 	Regression -- 86-fork
+251 	lqns 		Compute the "rate" value for an activity during configure and store it.
+255 	srvndiff 	EXC_BAD_ACCESS libsystem_platform.dylib`_platform_strlen + 18
+256 	lqns 		Split or-fork causes phase change (abort)
 
 * Bugs fixed in 5.17.1
-245 	lqns 		uncaught exception of type subclass_responsibility: Server::setVariance: server.cc 246: Subclass responsibility. 
-247 	lqns 		Variance calculation changed for no apparent reason. 
-188 	lqns 		Model with open arrivals fails to solve. 
-194 	lqns 		Floating point error while solving model using LQNS 
-243 	lqns 		Bruell and Schmidt multiserver fail in the population code. 
-244 	lqiolib 	Assertion failed: (newEntry != NULL), function prepare, file model.cc, line 305. 
-246 	lqn2xxx 	Loading results from a .p file whacks infinite servers. 
+245 	lqns 		uncaught exception of type subclass_responsibility: Server::setVariance: server.cc 246: Subclass responsibility.
+247 	lqns 		Variance calculation changed for no apparent reason.
+188 	lqns 		Model with open arrivals fails to solve.
+194 	lqns 		Floating point error while solving model using LQNS
+243 	lqns 		Bruell and Schmidt multiserver fail in the population code.
+244 	lqiolib 	Assertion failed: (newEntry != NULL), function prepare, file model.cc, line 305.
+246 	lqn2xxx 	Loading results from a .p file whacks infinite servers.
 
 * Bugs fixed in 5.17
-238 	srvndiff 	XML results for forwarding delay are not saved. 
-239 	lqsim 		Split configure(). 
-240 	lqiolib 	Group handling for .lqn files borked. 
+238 	srvndiff 	XML results for forwarding delay are not saved.
+239 	lqsim 		Split configure().
+240 	lqiolib 	Group handling for .lqn files borked.
 241 	lqiolib 	65-buffer.in:18: error: syntax error.
 
 * Bugs fixes in 6.0.5
-175     lqn2xxx RESO    FIXE    Rendering botched when an entry makes a Y and F to the same destination.        Thu 17:25
-176     lqn2xxx RESO    FIXE    Rendering botched when an entry makes a Y and F to the same destination for --tasks-only.       Thu 15:06
-177     lqn2xxx RESO    FIXE    Max-Service-Time parameter is not handled.      Mon 16:11
+175     lqn2xxx 	Rendering botched when an entry makes a Y and F to the same destination.
+176     lqn2xxx 	Rendering botched when an entry makes a Y and F to the same destination for --tasks-only.
+177     lqn2xxx 	Max-Service-Time parameter is not handled.
 
 * Bugs fixed in 5.16
 220 	lqns 		V5: lqns regression failures.
 224 	lqns 		Backport V6 changes to V5.
 236 	lqiolib 	lqns: floating point error - Floating point exception: mva.cc 532: Divide by zero, Inexact result
-235 	lqns 		Infeasible multiserver solutions with Exact MVA 
+235 	lqns 		Infeasible multiserver solutions with Exact MVA
 
 * Bugs fixes in 6.0.4
-159     lqns    RESO    FIXE    signal SIGFPE, Arithmetic exception. in Phase::getTaskWait (this=0x74ba20, submodel=2, relax=1) at phase.cc:1364        2017-12-19
-161     lqns    RESO    FIXE    SIGSEGV, Segmentation fault in Entity::submodel (this=0x0) at entity.h:109      2018-01-17
-163     lqns    RESO    FIXE    queuenet3 - entry think times cause bogus results.      2018-04-03
-165     lqn2xxx RESO    FIXE    EXC_BAD_ACCESS liblqio.0.dylib`LQIO::DOM::to_double(arg=0x0000000100a09cc0) at dom_extvar.cpp:19 [opt]  Mon 10:47
-166     lqns    RESO    FIXE    Fan out not reflected properly in a replicated model.   2018-03-02
-169     lqsim   RESO    FIXE    Assertion failed: (_std_port < 1000), function Instance, file instance.cc, line 65.     2018-03-19
-170     lqns    RESO    FIXE    telephoneSwitch.lqn: terminating with uncaught exception of type std::domain_error: Probability::check  Wed 11:56
-171     lqns    RESO    FIXE    lqns: vector.h:82: Type& Vector<Type>::operator[](unsigned int) [with Type = double]: Assertion `ix && ix <= sz' failed.        2018-03-22
+159     lqns            signal SIGFPE, Arithmetic exception. in Phase::getTaskWait (this=0x74ba20, submodel=2, relax=1) at phase.cc:1364
+161     lqns            SIGSEGV, Segmentation fault in Entity::submodel (this=0x0) at entity.h:109
+163     lqns            queuenet3 - entry think times cause bogus results.
+165     lqn2xxx         EXC_BAD_ACCESS liblqio.0.dylib`LQIO::DOM::to_double(arg=0x0000000100a09cc0) at dom_extvar.cpp:19 [opt]
+166     lqns            Fan out not reflected properly in a replicated model.
+169     lqsim           Assertion failed: (_std_port < 1000), function Instance, file instance.cc, line 65.
+170     lqns            telephoneSwitch.lqn: terminating with uncaught exception of type std::domain_error: Probability::check
+171     lqns            lqns: vector.h:82: Type& Vector<Type>::operator[](unsigned int) [with Type = double]: Assertion `ix && ix <= sz' failed.
 
 * Bugs fixed in 5.7
 620    nor  P3   VERI   FIXE   lqiolib    signal SIGABRT in LQIO::DOM::DocumentObject::subclass (this=0x100b0dea0) at dom_object.cpp:51
@@ -82,13 +92,13 @@
 635    nor  P3   VERI   FIXE   lqns       signal EXC_BAD_ACCESS 0x0000000100365162 in LQIO::DOM::Task::Task (this=0x100703690, document=0x100700890, task_name=0x100702e10 "server2",
 637    maj  P3   VERI   INVA   lqns       signal EXC_BAD_ACCESS in SpecialPopulationMap::dimension (this=0x1000017f0, maxCustomers=@0x48f87d8948000001) at pop.cc:116
 638    nor  P3   VERI   FIXE   lqns       Multiserver model fails to solve.
-639    cri  P1   VERI   FIXE   lqns       EXC_BAD_ACCESS, in Schweitzer::core (this=0x1006264b0, N=@0x1006199e0) at mva.cc:2197 
+639    cri  P1   VERI   FIXE   lqns       EXC_BAD_ACCESS, in Schweitzer::core (this=0x1006264b0, N=@0x1006199e0) at mva.cc:2197
 
 * Bugs fixed in 5.6
 620    nor  P3   RESO   FIXE   lqiolib    signal SIGABRT in LQIO::DOM::DocumentObject::subclass (this=0x100b0dea0) at dom_object.cpp:51
 622    nor  P3   RESO   FIXE   lqiolib    XML Results with groups do not parse.
 629    nor  P3   RESO   FIXE   lqiolib    Group specification for models without groups causes parsing to fail.
-640    enh  P5   RESO   FIXE   lqiolib    signal SIGABRT, Aborted. in LQIO::DOM::Entity::getCopiesValue (this=0x100606ec0) at dom_entity.cpp:63 
+640    enh  P5   RESO   FIXE   lqiolib    signal SIGABRT, Aborted. in LQIO::DOM::Entity::getCopiesValue (this=0x100606ec0) at dom_entity.cpp:63
 613    nor  P3   RESO   INVA   lqn2ps     -I and -T are borked.
 618    nor  P3   RESO   FIXE   lqn2ps     Default fill for EMF is black. It should be white.
 623    nor  P3   RESO   FIXE   lqn2ps     Colour is wrong for processors with speed-factor (rate) set.
@@ -120,7 +130,7 @@
 610    nor  P3   RESO   FIXE   lqsim      Group creation with LQX requires re-work.
 487    nor  P2   RESO   FIXE   Papers     Write paper on layering strategies.
 589    nor  P3   RESO   FIXE   schema     Fan-in/out for replication are not represented correctly.
-601    enh  P3   RESO   FIXE   srvndiff   There is no group utilization display. 
+601    enh  P3   RESO   FIXE   srvndiff   There is no group utilization display.
 
 * Bugs fixed in 5.4
 588    nor  P3   RESO   FIXE   document   The "man" sections for lqns/lqsim are out of date.
@@ -128,7 +138,7 @@
 547    nor  P1   RESO   FIXE   lqns       Utilization is too high at fixed rate servers.
 583    nor  P3   RESO   INVA   lqns       Program received signal SIGABRT in Entry::setEntryInformation
 597    nor  P1   RESO   FIXE   lqns       Utilization is too high at fixed rate servers.
-558    cri  P1   RESO   FIXE   lqsim      Signal EXC_BAD_ACCESS: in Instance::compute () at instance.cc:843 
+558    cri  P1   RESO   FIXE   lqsim      Signal EXC_BAD_ACCESS: in Instance::compute () at instance.cc:843
 
 * Bugs fixed in 5.2/5.3
 574    maj  P1   RESO   FIXE   lqns       Split interlocker broken in V5 when multiplicity > 1
@@ -146,7 +156,7 @@
 576    nor  P3   RESO   FIXE   lqns       40-activities fails regression.
 575    nor  P3   RESO   FIXE   lqiolib    Parseable output wrong for activities.
 572    nor  P3   RESO   FIXE   lqiolib    signal EXC_BAD_ACCESS in LQIO::DOM::Expat_Document::start () at expat_document.cpp:399
-549    nor  P3   RESO   FIXE   lqiolib    Parseable output errors. 
+549    nor  P3   RESO   FIXE   lqiolib    Parseable output errors.
 
 * Bugs fixed in 5.1
 535    nor  P2   VERI   FIXE   Build Sy   Lemon parser stuff should be auto-maked
@@ -289,7 +299,7 @@
 386    nor  P2   VERI   FIXE   srvndiff   Task/Entry etc arrays are not bounds checked.
 451    nor  P2   VERI   FIXE   srvndiff   The -@<file-list> <dir1> <dir2> command doesn't work for mixed output file types
 15     enh  P2   VERI   FIXE   srvnioli   Input values should be parameterized.
-350    enh  P2   VERI   FIXE   srvnioli   Deprecate SPEX/MutliSRVN - move into libsrvnio 
+350    enh  P2   VERI   FIXE   srvnioli   Deprecate SPEX/MutliSRVN - move into libsrvnio
 
 * Bugs fixed in 4.2.1 (windows)
 372    nor  P2   RESO   FIXE   lqsim      Bursty arrival process
@@ -382,10 +392,10 @@
 201    nor  P2   VERI   FIXE   srvnioli   Really large "integers" are not converted properly.
 230    nor  P2   VERI   FIXE   srvnioli   Parser should use left-recursion where possible.
 217    min  P3   VERI   FIXE   srvnioli   Processor utilization for tasks defined by activities not...
-                                          
+
 * Bugs fixed in 3.9
 141    nor  P2   VERI   FIXE   lqsim      err_cycle_in_activity_graph.in: infinite loop
-119    nor  P2   RESO   FIXE   lqsim      The lqsim manual page is out of date.     
+119    nor  P2   RESO   FIXE   lqsim      The lqsim manual page is out of date.
 145    min  P4   VERI   FIXE   lqsim      -H<alpha> should warn if no entries have 'M value'
 101    nor  P2   VERI   FIXE   multisrv   FanIn and Out are not being generated for activity calls.
 152    nor  P2   RESO   FIXE   multisrv   Appending variable declarations to parsed output doesn't
@@ -729,7 +739,7 @@
 628    cri  P1   VERI   FIXE   lqns       Infinities for copies not reset when running LQX.
 635    nor  P3   VERI   FIXE   lqns       signal EXC_BAD_ACCESS 0x0000000100365162 in LQIO::DOM::Task::Task (this=0x100703690, document=0x100700890, task_name=0x100702e10 "server2",
 638    nor  P3   VERI   FIXE   lqns       Multiserver model fails to solve.
-639    cri  P1   VERI   FIXE   lqns       EXC_BAD_ACCESS, in Schweitzer::core (this=0x1006264b0, N=@0x1006199e0) at mva.cc:2197 
+639    cri  P1   VERI   FIXE   lqns       EXC_BAD_ACCESS, in Schweitzer::core (this=0x1006264b0, N=@0x1006199e0) at mva.cc:2197
 619    cri  P1   RESO   FIXE   lqsim      Processor waiting time for CFS scheduled processors is wrong.
 710    maj  P1   RESO   FIXE   lqsim      Computed service time for activities with service time is zero.
 654    nor  P2   RESO   FIXE   miscella   Mingw update had broken floating point handling.
@@ -738,7 +748,7 @@
 659    nor  P5   RESO   FIXE   petrisrv   Regression tests failing
 660    nor  P5   RESO   FIXE   petrisrv   LQX model construction aborts.
 679    maj  P5   RESO   FIXE   petrisrv   Reference task multiplicity is not updated with LQX
-700    maj  P2   RESO   FIXE   petrisrv   Memory fault on second solve - model activities. 
+700    maj  P2   RESO   FIXE   petrisrv   Memory fault on second solve - model activities.
 
 * Bugs fixed in 5.7
 620    nor  P3   VERI   FIXE   lqiolib    signal SIGABRT in LQIO::DOM::DocumentObject::subclass (this=0x100b0dea0) at dom_object.cpp:51
@@ -755,13 +765,13 @@
 635    nor  P3   VERI   FIXE   lqns       signal EXC_BAD_ACCESS 0x0000000100365162 in LQIO::DOM::Task::Task (this=0x100703690, document=0x100700890, task_name=0x100702e10 "server2",
 637    maj  P3   VERI   INVA   lqns       signal EXC_BAD_ACCESS in SpecialPopulationMap::dimension (this=0x1000017f0, maxCustomers=@0x48f87d8948000001) at pop.cc:116
 638    nor  P3   VERI   FIXE   lqns       Multiserver model fails to solve.
-639    cri  P1   VERI   FIXE   lqns       EXC_BAD_ACCESS, in Schweitzer::core (this=0x1006264b0, N=@0x1006199e0) at mva.cc:2197 
+639    cri  P1   VERI   FIXE   lqns       EXC_BAD_ACCESS, in Schweitzer::core (this=0x1006264b0, N=@0x1006199e0) at mva.cc:2197
 
 * Bugs fixed in 5.6
 620    nor  P3   RESO   FIXE   lqiolib    signal SIGABRT in LQIO::DOM::DocumentObject::subclass (this=0x100b0dea0) at dom_object.cpp:51
 622    nor  P3   RESO   FIXE   lqiolib    XML Results with groups do not parse.
 629    nor  P3   RESO   FIXE   lqiolib    Group specification for models without groups causes parsing to fail.
-640    enh  P5   RESO   FIXE   lqiolib    signal SIGABRT, Aborted. in LQIO::DOM::Entity::getCopiesValue (this=0x100606ec0) at dom_entity.cpp:63 
+640    enh  P5   RESO   FIXE   lqiolib    signal SIGABRT, Aborted. in LQIO::DOM::Entity::getCopiesValue (this=0x100606ec0) at dom_entity.cpp:63
 613    nor  P3   RESO   INVA   lqn2ps     -I and -T are borked.
 618    nor  P3   RESO   FIXE   lqn2ps     Default fill for EMF is black. It should be white.
 623    nor  P3   RESO   FIXE   lqn2ps     Colour is wrong for processors with speed-factor (rate) set.
@@ -793,7 +803,7 @@
 610    nor  P3   RESO   FIXE   lqsim      Group creation with LQX requires re-work.
 487    nor  P2   RESO   FIXE   Papers     Write paper on layering strategies.
 589    nor  P3   RESO   FIXE   schema     Fan-in/out for replication are not represented correctly.
-601    enh  P3   RESO   FIXE   srvndiff   There is no group utilization display. 
+601    enh  P3   RESO   FIXE   srvndiff   There is no group utilization display.
 
 * Bugs fixed in 5.4
 588    nor  P3   RESO   FIXE   document   The "man" sections for lqns/lqsim are out of date.
@@ -801,7 +811,7 @@
 547    nor  P1   RESO   FIXE   lqns       Utilization is too high at fixed rate servers.
 583    nor  P3   RESO   INVA   lqns       Program received signal SIGABRT in Entry::setEntryInformation
 597    nor  P1   RESO   FIXE   lqns       Utilization is too high at fixed rate servers.
-558    cri  P1   RESO   FIXE   lqsim      Signal EXC_BAD_ACCESS: in Instance::compute () at instance.cc:843 
+558    cri  P1   RESO   FIXE   lqsim      Signal EXC_BAD_ACCESS: in Instance::compute () at instance.cc:843
 
 * Bugs fixed in 5.2/5.3
 574    maj  P1   RESO   FIXE   lqns       Split interlocker broken in V5 when multiplicity > 1
@@ -819,7 +829,7 @@
 576    nor  P3   RESO   FIXE   lqns       40-activities fails regression.
 575    nor  P3   RESO   FIXE   lqiolib    Parseable output wrong for activities.
 572    nor  P3   RESO   FIXE   lqiolib    signal EXC_BAD_ACCESS in LQIO::DOM::Expat_Document::start () at expat_document.cpp:399
-549    nor  P3   RESO   FIXE   lqiolib    Parseable output errors. 
+549    nor  P3   RESO   FIXE   lqiolib    Parseable output errors.
 
 * Bugs fixed in 5.1
 535    nor  P2   VERI   FIXE   Build Sy   Lemon parser stuff should be auto-maked
@@ -962,7 +972,7 @@
 386    nor  P2   VERI   FIXE   srvndiff   Task/Entry etc arrays are not bounds checked.
 451    nor  P2   VERI   FIXE   srvndiff   The -@<file-list> <dir1> <dir2> command doesn't work for mixed output file types
 15     enh  P2   VERI   FIXE   srvnioli   Input values should be parameterized.
-350    enh  P2   VERI   FIXE   srvnioli   Deprecate SPEX/MutliSRVN - move into libsrvnio 
+350    enh  P2   VERI   FIXE   srvnioli   Deprecate SPEX/MutliSRVN - move into libsrvnio
 
 * Bugs fixed in 4.2.1 (windows)
 372    nor  P2   RESO   FIXE   lqsim      Bursty arrival process
@@ -1055,10 +1065,10 @@
 201    nor  P2   VERI   FIXE   srvnioli   Really large "integers" are not converted properly.
 230    nor  P2   VERI   FIXE   srvnioli   Parser should use left-recursion where possible.
 217    min  P3   VERI   FIXE   srvnioli   Processor utilization for tasks defined by activities not...
-                                          
+
 * Bugs fixed in 3.9
 141    nor  P2   VERI   FIXE   lqsim      err_cycle_in_activity_graph.in: infinite loop
-119    nor  P2   RESO   FIXE   lqsim      The lqsim manual page is out of date.     
+119    nor  P2   RESO   FIXE   lqsim      The lqsim manual page is out of date.
 145    min  P4   VERI   FIXE   lqsim      -H<alpha> should warn if no entries have 'M value'
 101    nor  P2   VERI   FIXE   multisrv   FanIn and Out are not being generated for activity calls.
 152    nor  P2   RESO   FIXE   multisrv   Appending variable declarations to parsed output doesn't
@@ -1340,5 +1350,3 @@
 * Bugs fixed in 2.9
 
 * Bugs fixed in 2.8
-=======
->>>>>>> .merge-right.r13685
