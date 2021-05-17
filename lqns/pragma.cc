@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: pragma.cc 14652 2021-05-17 14:16:16Z greg $ *
+ * $Id: pragma.cc 14656 2021-05-17 15:20:19Z greg $ *
  * Pragma processing and definitions.
  *
  * Copyright the Real-Time and Distributed Systems Group,
@@ -477,12 +477,12 @@ Pragma::usage( std::ostream& output )
 	if ( i->first == LQIO::DOM::Pragma::_tau_ ) {
 	    output << " = <int>" << std::endl;
 	} else {
-	    const std::set<const std::string>* args = LQIO::DOM::Pragma::getValues( i->first );
+	    const std::set<std::string>* args = LQIO::DOM::Pragma::getValues( i->first );
 	    if ( args != nullptr && args->size() > 1 ) {
 		output << " = {";
 
 		size_t count = 0;
-		for ( std::set<const std::string>::const_iterator q = args->begin(); q != args->end(); ++q ) {
+		for ( std::set<std::string>::const_iterator q = args->begin(); q != args->end(); ++q ) {
 		    if ( q->empty() ) continue;
 		    if ( count > 0 ) output << ",";
 		    output << *q;

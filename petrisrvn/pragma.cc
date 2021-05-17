@@ -1,7 +1,7 @@
 /* pragma.cc	-- Greg Franks Tue Sep  1 2009
  *
  * ------------------------------------------------------------------------
- * $Id: pragma.cc 14652 2021-05-17 14:16:16Z greg $
+ * $Id: pragma.cc 14656 2021-05-17 15:20:19Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -53,7 +53,7 @@ Pragma::set( const std::map<std::string,std::string>& list )
 
     for ( std::map<std::string,std::string>::const_iterator i = list.begin(); i != list.end(); ++i ) {
 	const std::string& param = i->first;
-	const std::map<const std::string,fptr>::const_iterator j = __set_pragma.find(param);
+	const std::map<std::string,fptr>::const_iterator j = __set_pragma.find(param);
 	if ( j != __set_pragma.end() ) {
 	    try {
 		fptr f = j->second;

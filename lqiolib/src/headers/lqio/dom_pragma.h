@@ -8,7 +8,7 @@
 /************************************************************************/
 
 /*
- * $Id: dom_pragma.h 14652 2021-05-17 14:16:16Z greg $
+ * $Id: dom_pragma.h 14656 2021-05-17 15:20:19Z greg $
  */
 
 #ifndef __LQIO_DOM_PRAGMA_H__
@@ -40,7 +40,7 @@ namespace LQIO {
 	    const std::map<std::string,std::string>& getList() const;
 	    size_t size() const { return getList().size(); }
 	    const std::string get( const std::string& ) const;
-	    static const std::set<const std::string>* getValues( const std::string& );
+	    static const std::set<std::string>* getValues( const std::string& );
 	    static bool isTrue(const std::string& value);
 	    static LQIO::severity_t getSeverityLevel( const std::string& value );
 
@@ -50,25 +50,25 @@ namespace LQIO {
 	private:
 	    std::map<std::string,std::string> _loadedPragmas;
 
-	    const static std::map<const std::string,const std::set<const std::string>*> __pragmas;
-	    const static std::set<const std::string> __bcmp_args;
-	    const static std::set<const std::string> __force_infinite_args;
-	    const static std::set<const std::string> __force_multiserver_args;
-	    const static std::set<const std::string> __layering_args;
-	    const static std::set<const std::string> __multiserver_args;
-	    const static std::set<const std::string> __mva_args;
-	    const static std::set<const std::string> __overtaking_args;
-	    const static std::set<const std::string> __processor_args;
-	    const static std::set<const std::string> __quorum_delayed_calls_args;
-	    const static std::set<const std::string> __quorum_distribution_args;
-	    const static std::set<const std::string> __quorum_idle_time_args;
-	    const static std::set<const std::string> __replication_args;
-	    const static std::set<const std::string> __scheduling_model_args;
-	    const static std::set<const std::string> __task_args;
-	    const static std::set<const std::string> __threads_args;
-	    const static std::set<const std::string> __true_false_arg;
-	    const static std::set<const std::string> __variance_args;
-	    const static std::set<const std::string> __warning_args;
+	    const static std::map<const std::string,const std::set<std::string>*> __pragmas;
+	    const static std::set<std::string> __bcmp_args;
+	    const static std::set<std::string> __force_infinite_args;
+	    const static std::set<std::string> __force_multiserver_args;
+	    const static std::set<std::string> __layering_args;
+	    const static std::set<std::string> __multiserver_args;
+	    const static std::set<std::string> __mva_args;
+	    const static std::set<std::string> __overtaking_args;
+	    const static std::set<std::string> __processor_args;
+	    const static std::set<std::string> __quorum_delayed_calls_args;
+	    const static std::set<std::string> __quorum_distribution_args;
+	    const static std::set<std::string> __quorum_idle_time_args;
+	    const static std::set<std::string> __replication_args;
+	    const static std::set<std::string> __scheduling_model_args;
+	    const static std::set<std::string> __task_args;
+	    const static std::set<std::string> __threads_args;
+	    const static std::set<std::string> __true_false_arg;
+	    const static std::set<std::string> __variance_args;
+	    const static std::set<std::string> __warning_args;
 
 	public:
 	    static const char * _abort_all_;		// Quorum
