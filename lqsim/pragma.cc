@@ -207,11 +207,11 @@ Pragma::usage( std::ostream& output )
 	if ( i->first == LQIO::DOM::Pragma::_nice_ ) {
 	    output << " = <int>" << std::endl;
 	} else {
-	    const std::set<std::string>* args = LQIO::DOM::Pragma::getValues( i->first );
+	    const std::set<const std::string>* args = LQIO::DOM::Pragma::getValues( i->first );
 	    if ( args && args->size() > 1 ) {
 		output << " = {";
 
-		for ( std::set<std::string>::const_iterator q = args->begin(); q != args->end(); ++q ) {
+		for ( std::set<const std::string>::const_iterator q = args->begin(); q != args->end(); ++q ) {
 		    if ( q != args->begin() ) output << ",";
 		    output << *q;
 		}

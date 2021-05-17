@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: pragma.cc 14617 2021-04-21 13:26:44Z greg $ *
+ * $Id: pragma.cc 14652 2021-05-17 14:16:16Z greg $ *
  * Pragma processing and definitions.
  *
  * Copyright the Real-Time and Distributed Systems Group,
@@ -343,6 +343,22 @@ void Pragma::setQuorumIdleTime(const std::string& value)
 #endif
 
 
+void Pragma::setReplication(const std::string& value)
+{
+    static const std::map<const std::string,const Pragma::Replication> __replication_pragma = {
+	{ LQIO::DOM::Pragma::_expand_,		Pragma::Replication::EXPAND },
+	{ LQIO::DOM::Pragma::_pan_,		Pragma::Replication::PAN }
+    };
+
+    const std::map<const std::string,const Pragma::Replication>::const_iterator pragma = __replication_pragma.find( value );
+    if ( pragma != __replication_pragma.end() ) {
+	_replication = pragma->second;
+    } else {
+	throw std::domain_error( value );
+    }
+}
+
+
 #if RESCHEDULE
 void Pragma::setRescheduleOnAsyncSend(const std::string& value)
 {
@@ -461,12 +477,12 @@ Pragma::usage( std::ostream& output )
 	if ( i->first == LQIO::DOM::Pragma::_tau_ ) {
 	    output << " = <int>" << std::endl;
 	} else {
-	    const std::set<std::string>* args = LQIO::DOM::Pragma::getValues( i->first );
+	    const std::set<const std::string>* args = LQIO::DOM::Pragma::getValues( i->first );
 	    if ( args != nullptr && args->size() > 1 ) {
 		output << " = {";
 
 		size_t count = 0;
-		for ( std::set<std::string>::const_iterator q = args->begin(); q != args->end(); ++q ) {
+		for ( std::set<const std::string>::const_iterator q = args->begin(); q != args->end(); ++q ) {
 		    if ( q->empty() ) continue;
 		    if ( count > 0 ) output << ",";
 		    output << *q;

@@ -8,7 +8,7 @@
 /************************************************************************/
 
 /*
- * $Id: dom_pragma.h 14609 2021-04-18 14:09:42Z greg $
+ * $Id: dom_pragma.h 14652 2021-05-17 14:16:16Z greg $
  */
 
 #ifndef __LQIO_DOM_PRAGMA_H__
@@ -40,7 +40,7 @@ namespace LQIO {
 	    const std::map<std::string,std::string>& getList() const;
 	    size_t size() const { return getList().size(); }
 	    const std::string get( const std::string& ) const;
-	    static const std::set<std::string>* getValues( const std::string& );
+	    static const std::set<const std::string>* getValues( const std::string& );
 	    static bool isTrue(const std::string& value);
 	    static LQIO::severity_t getSeverityLevel( const std::string& value );
 
@@ -50,24 +50,25 @@ namespace LQIO {
 	private:
 	    std::map<std::string,std::string> _loadedPragmas;
 
-	    const static std::map<const std::string,const std::set<std::string>*> __pragmas;
-	    const static std::set<std::string> __bcmp_args;
-	    const static std::set<std::string> __force_infinite_args;
-	    const static std::set<std::string> __force_multiserver_args;
-	    const static std::set<std::string> __layering_args;
-	    const static std::set<std::string> __multiserver_args;
-	    const static std::set<std::string> __mva_args;
-	    const static std::set<std::string> __overtaking_args;
-	    const static std::set<std::string> __processor_args;
-	    const static std::set<std::string> __quorum_delayed_calls_args;
-	    const static std::set<std::string> __quorum_distribution_args;
-	    const static std::set<std::string> __quorum_idle_time_args;
-	    const static std::set<std::string> __scheduling_model_args;
-	    const static std::set<std::string> __task_args;
-	    const static std::set<std::string> __threads_args;
-	    const static std::set<std::string> __true_false_arg;
-	    const static std::set<std::string> __variance_args;
-	    const static std::set<std::string> __warning_args;
+	    const static std::map<const std::string,const std::set<const std::string>*> __pragmas;
+	    const static std::set<const std::string> __bcmp_args;
+	    const static std::set<const std::string> __force_infinite_args;
+	    const static std::set<const std::string> __force_multiserver_args;
+	    const static std::set<const std::string> __layering_args;
+	    const static std::set<const std::string> __multiserver_args;
+	    const static std::set<const std::string> __mva_args;
+	    const static std::set<const std::string> __overtaking_args;
+	    const static std::set<const std::string> __processor_args;
+	    const static std::set<const std::string> __quorum_delayed_calls_args;
+	    const static std::set<const std::string> __quorum_distribution_args;
+	    const static std::set<const std::string> __quorum_idle_time_args;
+	    const static std::set<const std::string> __replication_args;
+	    const static std::set<const std::string> __scheduling_model_args;
+	    const static std::set<const std::string> __task_args;
+	    const static std::set<const std::string> __threads_args;
+	    const static std::set<const std::string> __true_false_arg;
+	    const static std::set<const std::string> __variance_args;
+	    const static std::set<const std::string> __warning_args;
 
 	public:
 	    static const char * _abort_all_;		// Quorum
@@ -88,6 +89,7 @@ namespace LQIO {
 	    static const char * _default_natural_;
 	    static const char * _deterministic_;	// Quorum
 	    static const char * _exact_;
+	    static const char * _expand_;
 	    static const char * _exponential_;
 	    static const char * _extended_;		// BUG 270
 	    static const char * _false_;
@@ -124,6 +126,7 @@ namespace LQIO {
 	    static const char * _one_step_;
 	    static const char * _one_step_linearizer_;
 	    static const char * _overtaking_;
+	    static const char * _pan_;
 	    static const char * _precision_;
 	    static const char * _processor_scheduling_;
 	    static const char * _processors_;
@@ -134,6 +137,7 @@ namespace LQIO {
 	    static const char * _quorum_reply_;		// Quroum
 	    static const char * _reiser_;
 	    static const char * _reiser_ps_;
+	    static const char * _replication_;
 	    static const char * _reschedule_on_async_send_;
 	    static const char * _rolia_;
 	    static const char * _rolia_ps_;

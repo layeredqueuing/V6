@@ -1,7 +1,7 @@
 /* -*- c++ -*-
  * model.h	-- Greg Franks
  *
- * $Id: model.h 14498 2021-02-27 23:08:51Z greg $
+ * $Id: model.h 14645 2021-05-14 15:09:50Z greg $
  */
 
 #ifndef _MODEL_H
@@ -214,7 +214,7 @@ private:
 
     bool check() const;
 #if defined(REP2FLAT)
-    Model& expandModel();
+    Model& expand();
     Model& removeReplication();
     Model& returnReplication();
 #endif

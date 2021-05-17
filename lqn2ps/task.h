@@ -10,7 +10,7 @@
  * April 2010.
  *
  * ------------------------------------------------------------------------
- * $Id: task.h 14552 2021-03-17 00:47:06Z greg $
+ * $Id: task.h 14645 2021-05-14 15:09:50Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -213,7 +213,7 @@ public:
 #endif
 #if defined(REP2FLAT)
     virtual Task& removeReplication();
-    Task& expandTask();
+    Task& expand();
     Task& replicateCall();
     Task& replicateActivity();
     Task& replicateTask( LQIO::DOM::DocumentObject ** );

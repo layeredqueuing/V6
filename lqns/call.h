@@ -10,7 +10,7 @@
  * November, 1994
  * March, 2004
  *
- * $Id: call.h 14639 2021-05-13 21:25:02Z greg $
+ * $Id: call.h 14645 2021-05-14 15:09:50Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -93,7 +93,7 @@ public:
 
     static double add_rendezvous( double sum, const Call * call ) { return sum + call->rendezvous() * call->fanOut(); }
     static double add_rendezvous_no_fwd( double sum, const Call * call ) { return !call->isForwardedCall() ? sum + call->rendezvous() * call->fanOut() : sum; }
-    static double add_forwarding( double sum, const Call * call ) { return sum + call->forward() * call->fanOut(); }
+    static double add_forwarding( double sum, const Call * call ) { return sum + call->forward(); }		/* BUG_304 BUG_299 */
     static double add_IL_queue_length( double sum, const Call * call ) { return call->isAlongILPath() ? sum + call->getQueueLength() : sum; }
     static std::set<Task *>& add_client( std::set<Task *>&, const Call * );
     static std::set<Entity *>& add_server( std::set<Entity *>&, const Call * );
@@ -201,7 +201,7 @@ public:
     int operator!=( const Call& item ) const;
 
     virtual Call& initWait() = 0;
-    bool check() const;
+    virtual bool check() const;
 
     /* Instance variable access */
 
@@ -347,12 +347,14 @@ class ForwardedCall : public TaskCall {
 public:
     ForwardedCall( const Phase *, const Entry * toEntry, const Call * fwdCall );
 
+    virtual bool check() const;
+
     virtual bool isForwardedCall() const { return true; }
     virtual const std::string& srcName() const;
     virtual const ForwardedCall& insertDOMResults() const;
 
 private:
-    const Call * myFwdCall;		// Original forwarded call
+    const Call * _fwdCall;		// Original forwarded call
 };
 
 class ProcessorCall : public Call {

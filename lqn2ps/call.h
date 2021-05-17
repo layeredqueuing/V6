@@ -10,7 +10,7 @@
  * May 2010
  *
  * ------------------------------------------------------------------------
- * $Id: call.h 14498 2021-02-27 23:08:51Z greg $
+ * $Id: call.h 14645 2021-05-14 15:09:50Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -269,6 +269,7 @@ public:
     virtual std::ostream& print( std::ostream& ) const;
 
 #if defined(REP2FLAT)
+    virtual Call& expand( const Entry& );
     virtual Call& replicateCall( std::vector<Call *>&, Call ** );
 #endif
 
