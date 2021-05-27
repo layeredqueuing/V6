@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: dim.h 14650 2021-05-15 14:03:10Z greg $
+ * $Id: dim.h 14704 2021-05-27 12:20:22Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -64,9 +64,9 @@ struct lt_str
     bool operator()(const char* s1, const char* s2) const { return strcmp(s1, s2) < 0; }
 };
 
-struct lt_int
+template <class Type> struct lt_replica
 {
-    bool operator()(const int i1, const int i2) const { return i1 < i2;	}
+    bool operator()(const Type * a, const Type * b) const { return a->name() < b->name() || a->getReplicaNumber() < b->getReplicaNumber(); }
 };
 
 template <class Type> struct Exec
@@ -211,20 +211,20 @@ private:
 };
 
 
-template <class Type> struct EQ
-{
-    EQ<Type>( const Type * const a ) : _a(a) {}
-    bool operator()( const Type * const b ) const { return _a == b; }
-private:
-    const Type * const _a;
-};
-
 template <class Type> struct EQStr
 {
     EQStr( const std::string & s ) : _s(s) {}
     bool operator()(const Type * e1 ) const { return e1->name() == _s; }
 private:
     const std::string & _s;
+};
+
+template <class Type> struct EqualsReplica {
+    EqualsReplica<Type>( const std::string& name, unsigned int replica=1 ) : _name(name), _replica(replica) {}
+    bool operator()( const Type * object ) const { return object->name() == _name && object->getReplicaNumber() == _replica; }
+private:
+    const std::string _name;
+    const unsigned int _replica;
 };
 
 template <class Type> struct Predicate

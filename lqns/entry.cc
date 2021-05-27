@@ -12,7 +12,7 @@
  * July 2007.
  *
  * ------------------------------------------------------------------------
- * $Id: entry.cc 14627 2021-05-10 16:22:27Z greg $
+ * $Id: entry.cc 14704 2021-05-27 12:20:22Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -43,36 +43,65 @@
 #include "variance.h"
 
 unsigned Entry::totalOpenArrivals   = 0;
-
 unsigned Entry::max_phases	    = 0;
-
-const char * Entry::phaseTypeFlagStr [] = { "Stochastic", "Determin" };
-
 
 /* ------------------------ Constructors etc. ------------------------- */
 
 
-Entry::Entry( LQIO::DOM::Entry* dom, const unsigned id, const unsigned index )
+Entry::Entry( LQIO::DOM::Entry* dom, unsigned int index, bool global )
     : _dom(dom),
       _phase(dom && dom->getMaximumPhase() > 0 ? dom->getMaximumPhase() : 1 ),
-      _total(),
+      _total( "total" ),
       _maxCusts(1.0),   //reset in submodel.cc
-      _startActivity(NULL),
-      _entryId(id),
+      _startActivity(nullptr),
+      _entryId(global ? Model::__entry.size()+1 : 0),
       _index(index+1),
       _entryType(LQIO::DOM::Entry::Type::NOT_DEFINED),
       _semaphoreType(dom ? dom->getSemaphoreFlag() : LQIO::DOM::Entry::Semaphore::NONE),
       _calledBy(RequestType::NOT_CALLED),
       _throughput(0.0),
       _throughputBound(0.0),
-      _callerList()
+      _callerList(),
+      _interlock(),
+      _replica_number(1)		/* This object is not a replica	*/
 {
     const size_t size = _phase.size();
     for ( size_t p = 1; p <= size; ++p ) {
-	std::string s;
-	s = "123"[p-1];
 	_phase[p].setEntry( this )
-	    .setName( s );
+	    .setName( name() + "_" + "123"[p-1] )
+	    .setPhaseNumber( p );
+    }
+}
+
+
+/*
+ * Deep copy (except DOM).
+ */
+
+Entry::Entry( const Entry& src, unsigned int replica )
+    : _dom(src._dom),
+      _phase(src._phase.size()),
+      _total(src._total._name),
+      _nextOpenWait(0.0),
+      _startActivity(nullptr),
+      _entryId(src._entryId != 0 ? Model::__entry.size()+1 : 0),
+      _index(src._index),
+      _entryType(src._entryType),
+      _semaphoreType(src._semaphoreType),
+      _calledBy(src._calledBy),
+      _throughput(0.0),
+      _throughputBound(0.0),
+      _callerList(),
+      _interlock(),
+      _replica_number(replica)		/* This object is a replica	*/
+{
+    /* Copy over phases.  Call lists will be done later */
+    const size_t size = _phase.size();
+    for ( size_t p = 1; p <= size; ++p ) {
+	_phase[p].setEntry( this )
+	    .setName( src._phase[p].name() )
+	    .setPhaseNumber( p )
+	    .setDOM( src._phase[p].getDOM() );
     }
 }
 
@@ -151,7 +180,7 @@ bool
 Entry::check() const
 {
     if ( isStandardEntry() ) {
-	std::for_each ( _phase.begin(), _phase.end(), Predicate<Phase>( &Phase::check ) );
+	std::for_each( _phase.begin(), _phase.end(), Predicate<Phase>( &Phase::check ) );
     } else if ( !isActivityEntry() ) {
 	LQIO::solution_error( LQIO::ERR_ENTRY_NOT_SPECIFIED, name().c_str() );
     }
@@ -213,6 +242,38 @@ Entry::configure( const unsigned nSubmodels )
     initServiceTime();
     return *this;
 }
+
+
+
+/*
+ * Expand replicas (Not PAN_REPLICATION)
+ */
+
+Entry&
+Entry::expand()
+{
+    const unsigned replicas = owner()->replicas();
+    for ( unsigned int replica = 2; replica <= replicas; ++replica ) {
+	Model::__entry.insert( clone( replica ) );
+    }
+    return *this;
+}
+
+
+
+/*
+ * Expand the replicas of the calls (Not PAN_REPLICATION).  This has
+ * to be done separately because all of the replica entries have to
+ * exist first (just like Model::prepare)
+ */
+
+Entry&
+Entry::expandCalls()
+{
+    std::for_each( _phase.begin(), _phase.end(), Exec<Phase>( &Phase::expandCalls ) );
+    return *this;
+}
+
 
 
 /*
@@ -375,7 +436,7 @@ Entry::setEntryInformation( LQIO::DOM::Entry * entryInfo )
 Entry&
 Entry::setDOM( unsigned p, LQIO::DOM::Phase* phaseInfo )
 {
-    if (phaseInfo == NULL) return *this;
+    if (phaseInfo == nullptr) return *this;
     setMaxPhase(p);
     _phase[p].setDOM(phaseInfo);
     return *this;
@@ -576,7 +637,7 @@ Entry::saveThroughput( const double value )
 Entry&
 Entry::rendezvous( Entry * toEntry, const unsigned p, const LQIO::DOM::Call* callDOMInfo )
 {
-    if ( callDOMInfo == NULL ) return *this;
+    if ( callDOMInfo == nullptr ) return *this;
     setMaxPhase( p );
 
     _phase[p].rendezvous( toEntry, callDOMInfo );
@@ -621,7 +682,7 @@ Entry::rendezvous( const Entity *dstTask, VectorMath<double>& calls ) const
 Entry&
 Entry::sendNoReply( Entry * toEntry, const unsigned p, const LQIO::DOM::Call* callDOMInfo )
 {
-    if ( callDOMInfo == NULL ) return *this;
+    if ( callDOMInfo == nullptr ) return *this;
 
     setMaxPhase( p );
 
@@ -963,6 +1024,8 @@ Entry::computeCFSDelay( double ratio1, double ratio2 )
 const Entry&
 Entry::insertDOMResults(double *phaseUtils) const
 {
+    if ( getReplicaNumber() != 1 ) return *this;		/* NOP */
+
     double totalPhaseUtil = 0.0;
 
     /* Write the results into the DOM */
@@ -1125,16 +1188,13 @@ Entry::getInterlockedTasks( Interlock::CollectTasks& path ) const
 
 /*
  * find out whether the source entry is a direct caller of this entry
+ * !!! move body of loop into call.  Subclass.
  */
 
 bool
 Entry::isCalledBy(const Entry * src_entry ) const
 {
-    for ( std::set<Call *>::const_iterator call = callerList().begin(); call != callerList().end(); ++call ) {
-	if ( ((*call)->isActivityCall() && src_entry->owner() == (*call)->srcTask() && src_entry->hasStartActivity() )
-	     || (!(*call)->isActivityCall() && (*call)->srcEntry() == src_entry) ) return true;
-    }
-    return false;
+    return std::any_of( callerList().begin(), callerList().end(), Predicate1<Call,const Entry *>( &Call::isCalledBy, src_entry ) );
 }
 
 
@@ -1203,7 +1263,7 @@ Entry::getInterlockPr( const MVASubmodel& submodel, const Entity * server ) cons
     // if this is a sending interlock;
     double sum = 0.0;
     if ( !owner()->isReferenceTask() && !isSendingTask( submodel ) ) {
-	sum = std::accumulate( callerList().begin(), callerList().end(), 0.0, Call::add_interlock_pr( server ) );
+	sum = std::accumulate( callerList().begin(), callerList().end(), 0.0, Call::add_interlock_pr( this, server ) );
     }
     if ( sum == 0.0 ) {
 	sum = 1.0 / owner()->population();
@@ -1293,18 +1353,6 @@ Entry::fractionUtilizationTo(const Entry * dst_entry ) const
 
 
 
-unsigned
-Entry::getPhaseNum(const Phase * aPhase) const
-{
-    for (unsigned int p=1;p<=maxPhase();p++){
-	if(aPhase==&(_phase[p]) )
-	    return p;
-    }
-    return -1;
-}
-
-
-
 /*
  * Get call from the chain number.  only get the first call if there
  * are 2 phase calls
@@ -1358,7 +1406,7 @@ Entry::setMaxCustomersForChain( unsigned int k ) const
     if ( !call ) return *this;
 	
     Server * station = owner()->serverStation();
-    if (call->isActivityCall()){
+    if ( dynamic_cast<ActivityCall *>(call) ){
 	station->setMaxCustomers( index(), k, call->getMaxCustomers() );
     } else {
 	station->setMaxCustomers( index(), k, std::min( call->getMaxCustomers(), call->srcTask()->population() ));
@@ -1507,6 +1555,26 @@ Entry::set_interlock_PrUpper::operator()( const Entry * entry ) const
 /*- Interlock -*/
 
 /* --------------------------- Task Entries --------------------------- */
+
+
+TaskEntry::TaskEntry( LQIO::DOM::Entry* domEntry, unsigned int index, bool global )
+    : Entry(domEntry,index,global),
+      _task(nullptr),
+      _openWait(0.),
+      _nextOpenWait(0.)
+{
+}
+
+TaskEntry::TaskEntry( const TaskEntry& src, unsigned int replica )
+    : Entry(src,replica),
+      _task(nullptr),
+      _openWait(0.0),
+      _nextOpenWait(0.0)
+{
+    /* Set to replica task */
+    _task = Task::find( src._task->name(), replica );
+}
+    
 
 /*
  * Initialize processor waiting time, variance and priority
@@ -1752,12 +1820,19 @@ TaskEntry::updateWaitReplication( const Submodel& submodel, unsigned & n_delta )
  * Make a processor Entry.
  */
 
-DeviceEntry::DeviceEntry( LQIO::DOM::Entry* dom, const unsigned id, Processor * aProc )
-    : Entry(dom,id,aProc->nEntries()), myProcessor(aProc)
+DeviceEntry::DeviceEntry( LQIO::DOM::Entry* dom, Processor * processor )
+    : Entry( dom, processor->nEntries() ), _processor(processor)
 {
-    aProc->addEntry( this );
+    processor->addEntry( this );
 }
 
+
+DeviceEntry::DeviceEntry( const DeviceEntry& src, unsigned int replica )
+    : Entry( src, replica ),
+      _processor(nullptr)
+{
+    /* !!! See task.cc to find the replica processor */
+}
 
 
 DeviceEntry::~DeviceEntry()
@@ -1826,7 +1901,7 @@ DeviceEntry&
 DeviceEntry::setServiceTime( const double service_time )
 {
     LQIO::DOM::Phase* phaseDom = _dom->getPhase(1);
-    phaseDom->setServiceTime(new LQIO::DOM::ConstantExternalVariable(service_time/dynamic_cast<const Processor *>(myProcessor)->rate()));
+    phaseDom->setServiceTime(new LQIO::DOM::ConstantExternalVariable(service_time/dynamic_cast<const Processor *>(_processor)->rate()));
     setDOM(1, phaseDom );
     return *this;
 }
@@ -1924,7 +1999,8 @@ DeviceEntry::queueingTime( const unsigned ) const
  */
 
 VirtualEntry::VirtualEntry( const Activity * anActivity )
-    : TaskEntry( new LQIO::DOM::Entry(anActivity->getDOM()->getDocument(), anActivity->name().c_str()), 0, anActivity->owner()->nEntries() )
+    : TaskEntry( new LQIO::DOM::Entry(anActivity->getDOM()->getDocument(), anActivity->name().c_str()),
+		 anActivity->owner()->nEntries(), false )	/* Don't create an global entry id */
 {
     owner( anActivity->owner() );
 }
@@ -1937,7 +2013,6 @@ VirtualEntry::VirtualEntry( const Activity * anActivity )
 VirtualEntry::~VirtualEntry()
 {
     delete _dom;
-    _dom = nullptr;
 }
 
 
@@ -1953,19 +2028,19 @@ VirtualEntry::setStartActivity( Activity * anActivity )
 }
 
 static bool
-map_entry_name( const char * entry_name, Entry * & outEntry, bool receiver, const LQIO::DOM::Entry::Type aType = LQIO::DOM::Entry::Type::NOT_DEFINED )
+map_entry_name( const std::string& entry_name, Entry * & outEntry, bool receiver, const LQIO::DOM::Entry::Type aType = LQIO::DOM::Entry::Type::NOT_DEFINED )
 {
     bool rc = true;
     outEntry = Entry::find( entry_name );
 
     if ( !outEntry ) {
-	LQIO::input_error2( LQIO::ERR_NOT_DEFINED, entry_name );
+	LQIO::input_error2( LQIO::ERR_NOT_DEFINED, entry_name.c_str() );
 	rc = false;
     } else if ( receiver && outEntry->isReferenceTaskEntry() ) {
-	LQIO::input_error2( LQIO::ERR_REFERENCE_TASK_IS_RECEIVER, outEntry->owner()->name().c_str(), entry_name );
+	LQIO::input_error2( LQIO::ERR_REFERENCE_TASK_IS_RECEIVER, outEntry->owner()->name().c_str(), entry_name.c_str() );
 	rc = false;
     } else if ( aType != LQIO::DOM::Entry::Type::NOT_DEFINED && !outEntry->entryTypeOk( aType ) ) {
-	LQIO::input_error2( LQIO::ERR_MIXED_ENTRY_TYPES, entry_name );
+	LQIO::input_error2( LQIO::ERR_MIXED_ENTRY_TYPES, entry_name.c_str() );
     }
 
     return rc;
@@ -2054,7 +2129,7 @@ CallInfoItem::isProcessorCall() const
  * Create a collection so that the () operator can step over it.
  */
 
-CallInfo::CallInfo( const Entry& entry, const unsigned callType )
+CallInfo::CallInfo( const Entry& entry, Call::Type callType )
     : _calls()
 {
     if ( !entry.isStandardEntry() ) return;
@@ -2064,11 +2139,9 @@ CallInfo::CallInfo( const Entry& entry, const unsigned callType )
 	for ( std::set<Call *>::const_iterator call = callList.begin(); call != callList.end(); ++call ) {
 	    if ( (*call)->isProcessorCall() || (*call)->dstEntry()->owner()->isProcessor() ) continue;
 
-	    if ( (    (callType & Call::SEND_NO_REPLY_CALL) && (*call)->hasSendNoReply() )
-		 || ( (callType & Call::FORWARDED_CALL) && (*call)->isForwardedCall() )
-//		 || ( (callType & Call::FORWARDED_CALL) && (*call)->hasForwarding() )
-		 || ( (callType & Call::RENDEZVOUS_CALL) && (*call)->hasRendezvous() && !(*call)->isForwardedCall() )
-		 || ( (callType & Call::OVERTAKING_CALL) && (*call)->hasOvertaking() && !(*call)->isForwardedCall() )
+	    if ( (    (callType == Call::Type::SEND_NO_REPLY) && (*call)->hasSendNoReply() )
+		 || ( (callType == Call::Type::FORWARDED) && (*call)->isForwardedCall() )
+		 || ( (callType == Call::Type::RENDEZVOUS) && (*call)->hasRendezvous() && !(*call)->isForwardedCall() )
 		) {
 
 		std::vector<CallInfoItem>::iterator item = find_if( _calls.begin(), _calls.end(), compare( (*call)->dstEntry() ) );
@@ -2099,18 +2172,18 @@ CallInfo::CallInfo( const Entry& entry, const unsigned callType )
 Entry *
 Entry::create(LQIO::DOM::Entry* dom, unsigned int index )
 {
-    const char* entry_name = dom->getName().c_str();
+    const std::string& entry_name = dom->getName();
 
-    if ( std::any_of( Model::__entry.begin(), Model::__entry.end(), EQStr<Entry>( entry_name ) ) ) {
-	LQIO::input_error2( LQIO::ERR_DUPLICATE_SYMBOL, "Entry", entry_name );
+    if ( Entry::find( entry_name ) != nullptr ) {
+	LQIO::input_error2( LQIO::ERR_DUPLICATE_SYMBOL, "Entry", entry_name.c_str() );
 	return nullptr;
     } else {
-	Entry * entry = new TaskEntry( dom, Model::__entry.size() + 1, index );
+	Entry * entry = new TaskEntry( dom, index );
 	Model::__entry.insert( entry );
 
 	/* Make sure that the entry type is set properly for all entries */
 	if (entry->entryTypeOk(dom->getEntryType()) == false) {
-	    LQIO::input_error2( LQIO::ERR_MIXED_ENTRY_TYPES, entry_name );
+	    LQIO::input_error2( LQIO::ERR_MIXED_ENTRY_TYPES, entry_name.c_str() );
 	}
 
 	/* Set field width for entry names. */
@@ -2130,7 +2203,7 @@ Entry::add_call( const unsigned p, const LQIO::DOM::Call* domCall )
     }
 
     LQIO::DOM::Entry* toDOMEntry = const_cast<LQIO::DOM::Entry*>(domCall->getDestinationEntry());
-    const char* to_entry_name = toDOMEntry->getName().c_str();
+    const std::string& to_entry_name = toDOMEntry->getName();
 
     /* Internal Entry references */
     Entry * toEntry;
@@ -2146,6 +2219,8 @@ Entry::add_call( const unsigned p, const LQIO::DOM::Call* domCall )
 	}
     }
 }
+
+
 
 Entry&
 Entry::setForwardingInformation( Entry* toEntry, LQIO::DOM::Call * call )
@@ -2166,28 +2241,31 @@ void
 set_start_activity (Task* newTask, LQIO::DOM::Entry* theDOMEntry)
 {
     Activity* activity = newTask->findActivity(theDOMEntry->getStartActivity()->getName());
-    Entry* realEntry = NULL;
+    Entry* realEntry = nullptr;
 
-    map_entry_name( theDOMEntry->getName().c_str(), realEntry, false, LQIO::DOM::Entry::Type::ACTIVITY );
+    map_entry_name( theDOMEntry->getName(), realEntry, false, LQIO::DOM::Entry::Type::ACTIVITY );
     realEntry->setStartActivity(activity);
     activity->setEntry(realEntry);
 }
 
 /* ---------------------------------------------------------------------- */
 
+bool
+Entry::equals::operator()( const Entry * entry ) const
+{
+    return entry->name() == _name && entry->getReplicaNumber() == _replica;
+}
+
+
 /*
  * Find the entry and return it.
  */
 
 /* static */ Entry *
-Entry::find( const std::string& entry_name )
+Entry::find( const std::string& name, unsigned int replica )
 {
-    std::set<Entry *>::const_iterator nextEntry = find_if( Model::__entry.begin(), Model::__entry.end(), EQStr<Entry>( entry_name ) );
-    if ( nextEntry == Model::__entry.end() ) {
-	return nullptr;
-    } else {
-	return *nextEntry;
-    }
+    std::set<Entry *>::const_iterator entry = std::find_if( Model::__entry.begin(), Model::__entry.end(), EqualsReplica<Entry>( name, replica ) );
+    return ( entry != Model::__entry.end() ) ? *entry : nullptr;
 }
 
 
@@ -2208,5 +2286,3 @@ Entry::get_servers::operator()( const Entry * entry ) const
     if ( entry->isActivityEntry() ) return;
     std::for_each( entry->_phase.begin(), entry->_phase.end(), Phase::get_servers( _servers ) );
 }
-
-

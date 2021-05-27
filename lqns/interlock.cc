@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: interlock.cc 14334 2021-01-05 03:03:03Z greg $
+ * $Id: interlock.cc 14704 2021-05-27 12:20:22Z greg $
  *
  * Call-chain/interlock finder.
  *
@@ -668,8 +668,8 @@ Interlock::isBranchPoint( const Entry& srcX, const Entry& entryA, const Entry& s
      * go to a and b respectively
      */
 
-    CallInfo nextX( srcX, Call::RENDEZVOUS_CALL );
-    CallInfo nextY( srcY, Call::RENDEZVOUS_CALL );
+    CallInfo nextX( srcX, Call::Type::RENDEZVOUS );
+    CallInfo nextY( srcY, Call::Type::RENDEZVOUS );
 
     const unsigned a = entryA.entryId();
     const unsigned b = entryB.entryId();

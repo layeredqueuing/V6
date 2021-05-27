@@ -102,6 +102,7 @@ public:
 	    return 0;
 	}
 
+    bool empty() const { return sz == 0; }
     size_type size() const { return sz; }
     size_type max_size() const { return mx; }
     void resize( size_type amt, const value_type val = value_type() )

@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: lqns.cc 14627 2021-05-10 16:22:27Z greg $
+ * $Id: lqns.cc 14697 2021-05-26 13:36:54Z greg $
  *
  * Command line processing.
  *
@@ -535,7 +535,7 @@ process( const std::string& inputFileName, const std::string& outputFileName )
 
     /* Make sure we got a document */
 
-    if ( document == NULL || LQIO::io_vars.anError() ) return INVALID_INPUT;
+    if ( document == nullptr || LQIO::io_vars.anError() ) return INVALID_INPUT;
 
     document->mergePragmas( pragmas.getList() );       /* Save pragmas -- prepare will process */
     if ( Model::prepare(document) == false ) return INVALID_INPUT;
@@ -545,7 +545,7 @@ process( const std::string& inputFileName, const std::string& outputFileName )
     }
 
     /* declare Model * at this scope but don't instantiate due to problems with LQX programs and registering external symbols*/
-    Model * aModel = NULL;
+    Model * aModel = nullptr;
     int rc = 0;
 
     /* We can simply run if there's no control program */
@@ -563,15 +563,13 @@ process( const std::string& inputFileName, const std::string& outputFileName )
 		Model::recalculateDynamicValues( document );
 
 		/* create Model just before it is needed */
-		aModel = Model::createModel( document, inputFileName, outputFileName );
-		if ( !aModel ) throw std::runtime_error( "could not create model" );
 
-		if ( flags.verbose ) {
-		    std::cerr << "Solve..." << std::endl;
-		}
-
+		aModel = Model::create( document, inputFileName, outputFileName );
 		/* Simply invoke the solver for the current DOM state */
-		aModel->solve();
+
+		if ( aModel->initialize() ) {
+		    aModel->solve();
+		}
 	    }
 	} else {
 
@@ -587,8 +585,7 @@ process( const std::string& inputFileName, const std::string& outputFileName )
 	    }
 	
 	    /* create Model after registering external symbols above, disabling checking at this stage */
-	    aModel = Model::createModel( document, inputFileName, outputFileName, false );
-	    if ( !aModel ) throw std::runtime_error( "could not create model" );
+	    aModel = Model::create( document, inputFileName, outputFileName, false );
 		
 	    LQX::Environment * environment = program->getEnvironment();
 	    if ( flags.restart ) {
@@ -698,11 +695,7 @@ void init_flags()
     flags.reload_only                = false;
     flags.restart		     = false;
 }
-
-
-
 
-#if !defined(TESTMVA)
 /*
  * Common underrelaxation code.  
  */
@@ -716,36 +709,4 @@ under_relax( double& old_value, const double new_value, const double relax )
 	old_value = new_value;
     }
 }
-#endif
 
-#if defined(__GNUC__) || (defined(__INTEL_COMPILER) && (__INTEL_COMPILER >= 700))
-#include <mva/prob.h>
-#include <mva/server.h>
-#if !defined(TESTMVA) && !defined(TESTDIST)
-#include "randomvar.h"
-#include "activity.h"
-#include "phase.h"
-#include "call.h"
-#include "entity.h"
-#include "entry.h"
-#include "processor.h"
-#include "task.h"
-#include "group.h"
-#include "report.h"
-#include "phase.h"
-#include "randomvar.h"
-#include "submodel.h"
-#include "interlock.h"
-#include "actlist.h"
-#include "entrythread.h"
-#endif
-#if !defined(TESTMVA) || defined(TESTDIST)
-#include "randomvar.h"
-#endif
-#include <mva/vector.h>
-
-template std::ostream& operator<< ( std::ostream& output, const Vector<unsigned int>& self );
-template std::ostream& operator<< ( std::ostream& output, const VectorMath<unsigned int>& self );
-template std::ostream& operator<< ( std::ostream& output, const VectorMath<Probability>& self );
-template std::ostream& operator<< ( std::ostream& output, const VectorMath<double>& self );
-#endif

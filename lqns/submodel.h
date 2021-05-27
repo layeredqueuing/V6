@@ -7,7 +7,7 @@
  *
  * June 2007
  *
- * $Id: submodel.h 14627 2021-05-10 16:22:27Z greg $
+ * $Id: submodel.h 14692 2021-05-25 17:49:24Z greg $
  */
 
 #ifndef _SUBMODEL_H
@@ -129,6 +129,8 @@ class MVASubmodel : public Submodel {
     friend class Processor;		/* closedModel */
     friend class CFS_Processor;
 
+    enum class cached { SET_FALSE, SET_TRUE, NOT_SET };
+
 public:
     MVASubmodel( const unsigned );
     virtual ~MVASubmodel();
@@ -156,7 +158,7 @@ public:
 
 private:
 #if PAN_REPLICATION
-    bool hasReplication() const;
+    bool hasPanReplication() const;
 #endif
     bool hasThreads() const { return _hasThreads; }
     bool hasSynchs() const { return _hasSynchs; }
@@ -172,6 +174,9 @@ protected:
 private:
     bool _hasThreads;			/* True if client has forks.	*/
     bool _hasSynchs;			/* True if server has joins.	*/
+#if PAN_REPLICATION
+    mutable cached _hasPanReplication;
+#endif
 
     /* MVA Stuff */
 	

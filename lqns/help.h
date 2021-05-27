@@ -1,7 +1,7 @@
 /* -*- C++ -*-
  * help.h	-- Greg Franks
  *
- * $Id: help.h 14609 2021-04-18 14:09:42Z greg $
+ * $Id: help.h 14704 2021-05-27 12:20:22Z greg $
  */
 
 #ifndef _HELP_H
@@ -98,7 +98,7 @@ public:
     std::ostream& print( std::ostream& ) const;
 
 protected:
-   static std::map<const int,help_fptr,lt_int> option_table;
+   static std::map<const int,help_fptr> option_table;
 
 protected:
     virtual std::ostream& preamble( std::ostream& output ) const = 0;

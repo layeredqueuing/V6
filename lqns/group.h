@@ -9,7 +9,7 @@
  *
  * November, 2008
  *
- * $Id: group.h 14334 2021-01-05 03:03:03Z greg $
+ * $Id: group.h 14704 2021-05-27 12:20:22Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -54,6 +54,7 @@ public:
     void reinitialize();
     Group& reset();
     Group& initGroupTask();
+    unsigned getReplicaNumber() const { return _replica_number; }
 
     void changeShare( double ratio ) { _share *= (1.0 + ratio); }
 
@@ -93,8 +94,7 @@ private:
     bool hasSpareShare() const { return _status == status_t::CONTRIBUTING; }
 
 public:
-    static Group * find( const std::string& );
-
+    static Group * find( const std::string&, unsigned int=1 );
 private:
     static std::map<const status_t,const std::string> state_str;
     
@@ -108,6 +108,7 @@ private:
     status_t _state;			/* State that I am in		*/
     double _ratio1;                    	/* ratio for the processor entry. */
     double _ratio2;                     /* ratio for the adjustment, based on (util-share) */
+    unsigned int _replica_number;
 };
 
 inline std::ostream& operator<<( std::ostream& output, const Group& self ) { return self.print( output ); }

@@ -10,7 +10,7 @@
  * November, 2008
  *
  * ------------------------------------------------------------------------
- * $Id: group.cc 14334 2021-01-05 03:03:03Z greg $
+ * $Id: group.cc 14704 2021-05-27 12:20:22Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -39,7 +39,11 @@ std::map<const Group::status_t,const std::string> Group::state_str = {
 /* ------------------------ Constructors etc. ------------------------- */
 
 Group::Group( LQIO::DOM::Group* dom, const CFS_Processor * processor )
-    : _dom(dom), _tasks(), _processor(processor), _share(0.0)
+    : _dom(dom),
+      _tasks(),
+      _processor(processor),
+      _share(0.0),
+      _replica_number(1)
 { 
     initialize();
 }
@@ -241,14 +245,10 @@ Group::insertDOMResults() const
 
 
 Group *
-Group::find( const std::string& group_name )
+Group::find( const std::string& group_name, unsigned int replica )
 {
-    std::set<Group *>::const_iterator nextGroup = find_if( Model::__group.begin(), Model::__group.end(), EQStr<Group>( group_name ) );
-    if ( nextGroup == Model::__group.end() ) {
-	return nullptr;
-    } else {
-	return *nextGroup;
-    }
+    const std::set<Group *>::const_iterator group = find_if( Model::__group.begin(), Model::__group.end(), EqualsReplica<Group>( group_name, replica ) );
+    return group != Model::__group.end() ? *group : nullptr;
 }
 
 
@@ -263,7 +263,7 @@ Group::create( const std::pair<std::string,LQIO::DOM::Group*>& p )
     const std::string& group_name = p.first;
     
     /* Check that no group was added with the existing name */
-    if ( std::any_of( Model::__group.begin(), Model::__group.end(), EQStr<Group>( group_name ) ) ) {
+    if ( Group::find( group_name ) != nullptr ) {
 	LQIO::input_error2( LQIO::ERR_DUPLICATE_SYMBOL, "Group", group_name.c_str() );
 	return;
     } 
@@ -272,7 +272,6 @@ Group::create( const std::pair<std::string,LQIO::DOM::Group*>& p )
     CFS_Processor* processor = dynamic_cast<CFS_Processor *>(Processor::find(group_dom->getProcessor()->getName()));
 	
     /* Generate a new group with the parameters and add it to the list */
-
     Group * group = new Group( group_dom, processor );
 
     if ( processor != nullptr ) {

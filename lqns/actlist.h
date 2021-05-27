@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: actlist.h 14334 2021-01-05 03:03:03Z greg $
+ * $Id: actlist.h 14704 2021-05-27 12:20:22Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -426,7 +426,7 @@ public:
     unsigned quorumCount () const { return myQuorumCount;}
 
     virtual bool isSync() const { return _joinType == JoinType::SYNCHRONIZATION_POINT; }
-    bool joinType( const JoinType );
+    bool joinType( JoinType );
     bool hasQuorum() const { return 0 < quorumCount() && quorumCount() < activityList().size(); }
 	
     virtual void followInterlock( Interlock::CollectTable& ) const;
@@ -440,7 +440,7 @@ protected:
     virtual const char * typeStr() const { return "&"; }
 
 private:
-    JoinType _joinType;		/* Barrier synch point.	*/
+    JoinType _joinType;			/* Barrier synch point.	*/
     mutable unsigned myQuorumCount;
     unsigned  myQuorumListNum;
 };

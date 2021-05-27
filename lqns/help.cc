@@ -1,6 +1,6 @@
 /* help.cc	-- Greg Franks Wed Oct 12 2005
  *
- * $Id: help.cc 14602 2021-04-16 12:06:43Z greg $
+ * $Id: help.cc 14704 2021-05-27 12:20:22Z greg $
  */
 
 #include <config.h>
@@ -192,7 +192,7 @@ usage( const char c, const char * s )
 /* Man page generation.							*/
 /* -------------------------------------------------------------------- */
 
-std::map<const int,Help::help_fptr,lt_int> Help::option_table;
+std::map<const int,Help::help_fptr> Help::option_table;
 
 Help::Help()
 {
@@ -1947,7 +1947,7 @@ HelpTroff::preamble( std::ostream& output ) const
     output << __comment << " t -*- nroff -*-" << std::endl
 	   << ".TH lqns 1 \"" << date << "\" \"" << VERSION << "\"" << std::endl;
 
-    output << __comment << " $Id: help.cc 14602 2021-04-16 12:06:43Z greg $" << std::endl
+    output << __comment << " $Id: help.cc 14704 2021-05-27 12:20:22Z greg $" << std::endl
 	   << __comment << std::endl
 	   << __comment << " --------------------------------" << std::endl;
 
@@ -2244,7 +2244,7 @@ HelpLaTeX::preamble( std::ostream& output ) const
 	   << __comment << " Created:             " << date << std::endl
 	   << __comment << "" << std::endl
 	   << __comment << " ----------------------------------------------------------------------" << std::endl
-	   << __comment << " $Id: help.cc 14602 2021-04-16 12:06:43Z greg $" << std::endl
+	   << __comment << " $Id: help.cc 14704 2021-05-27 12:20:22Z greg $" << std::endl
 	   << __comment << " ----------------------------------------------------------------------" << std::endl << std::endl;
 
     output << "\\chapter{Invoking the Analytic Solver ``lqns''}" << std::endl

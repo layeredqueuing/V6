@@ -1,5 +1,5 @@
 /*
- *  $Id: srvn_output.cpp 14569 2021-03-19 13:29:09Z greg $
+ *  $Id: srvn_output.cpp 14704 2021-05-27 12:20:22Z greg $
  *
  * Copyright the Real-Time and Distributed Systems Group,
  * Department of Systems and Computer Engineering,
@@ -1312,7 +1312,7 @@ namespace LQIO {
             _output << "Comment: " << comment << newline;
         }
         if ( !document.getExtraComment().empty() ) {
-            _output << "Other:                  " << document.getExtraComment() << newline;
+            _output << "Other:   " << document.getExtraComment() << newline;
         }
         if ( document.getSymbolExternalVariableCount() > 0 ) {
             _output << "Variables: ";

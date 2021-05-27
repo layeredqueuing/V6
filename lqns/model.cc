@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: model.cc 14639 2021-05-13 21:25:02Z greg $
+ * $Id: model.cc 14704 2021-05-27 12:20:22Z greg $
  *
  * Layer-ization of model.  The basic concept is from the reference
  * below.  However, model partioning is more complex than task vs device.
@@ -90,117 +90,23 @@ Processor * Model::__cfs_server = nullptr;
 unsigned Model::__sync_submodel = 0;
 LQIO::DOM::Document::input_format Model::input_format = LQIO::DOM::Document::AUTOMATIC_INPUT;
 
-std::set<Processor *> Model::__processor;
-std::set<Group *> Model::__group;
-std::set<Task *> Model::__task;
-std::set<Entry *> Model::__entry;
+std::set<Processor *,lt_replica<Processor>> Model::__processor;
+std::set<Group *,lt_replica<Group>> Model::__group;
+std::set<Task *,lt_replica<Task>> Model::__task;
+std::set<Entry *,lt_replica<Entry>> Model::__entry;
 
 /*----------------------------------------------------------------------*/
 /*                           Factory Methods                            */
 /*----------------------------------------------------------------------*/
 
 /*
- * Factory method for creating the layers and initializing the MVA submodels
+ * Step 1: load model.
  */
-
-Model *
-Model::createModel( const LQIO::DOM::Document * document, const std::string& inputFileName, const std::string& outputFileName, bool check_model )
-{
-    Model *aModel = 0;
-
-    Activity::actConnections.clear();
-    Activity::domToNative.clear();
-    MVA::__bounds_limit = Pragma::tau();
-    MVA::__enable_interlock = Pragma::interlock();
-
-    /*
-     * Fold, Mutilate and Spindle before main loop processing in solve.c
-     * disable model checking and expansion at this stage with LQX programs
-     */
-
-    if ( LQIO::io_vars.anError() == false && (check_model == false || check() ) ) {
-
-	extendModel();			/* Do this before initProcessors() */
-
-	if ( check_model ) {
-	    initProcessors();		/* Set Processor Service times.	*/
-	}
-
-	switch ( Pragma::layering() ) {
-	case Pragma::Layering::BATCHED: 
-	    aModel = new Batch_Model( document, inputFileName, outputFileName );
-	    break;
-
-	case Pragma::Layering::BACKPROPOGATE_BATCHED:
-	    aModel = new BackPropogate_Batch_Model( document, inputFileName, outputFileName );
-	    break;
-
-	case Pragma::Layering::METHOD_OF_LAYERS:
-	    aModel = new MOL_Model( document, inputFileName, outputFileName );
-	    break;
-
-	case Pragma::Layering::BACKPROPOGATE_METHOD_OF_LAYERS:
-	    aModel = new BackPropogate_MOL_Model( document, inputFileName, outputFileName );
-	    break;
-
-	case Pragma::Layering::SRVN:
-	    aModel = new SRVN_Model( document, inputFileName, outputFileName );
-	    break;
-
-	case Pragma::Layering::SQUASHED:
-	    aModel = new Squashed_Model( document, inputFileName, outputFileName );
-	    break;
-
-	case Pragma::Layering::HWSW:
-	    aModel = new HwSw_Model( document, inputFileName, outputFileName );
-	    break;
-	}
-
-	assert( aModel != 0 );
-
-	try {
-	    if ( check_model ) {
-		if ( aModel->generate() ) {
-		    aModel->setInitialized();
-		} else {
-		    delete aModel;
-		    aModel = nullptr;
-		}
-	    }
-	}
-	catch ( const exception_handled& e ) {
-	    delete aModel;
-	    aModel = nullptr;
-	}
-    }
-    return aModel;
-}
-
-bool
-Model::initializeModel()
-{
-    /* perform all actions normally done in createModel() that need to be delayed until after */
-    /* LQX programs begin execution to avoid problems with unset variables */
-
-    check();
-
-    if ( !_model_initialized ) {
-	initProcessors();		/* Set Processor Service times.	*/
-
-	_runDPS = false;
-	if ( generate() ) {
-	    setInitialized();
-	}
-    }
-    return !LQIO::io_vars.anError();
-}
 
 LQIO::DOM::Document*
 Model::load( const std::string& input_filename, const std::string& output_filename )
 {
-    if ( flags.verbose ) {
-	std::cerr << "Load: " << input_filename << "..." << std::endl;
-    }
+    if ( flags.verbose ) std::cerr << "Load: " << input_filename << "..." << std::endl;
 
     /*
      * Initialize everything that needs it before parsing
@@ -213,7 +119,6 @@ Model::load( const std::string& input_filename, const std::string& output_filena
 
     LQIO::io_vars.reset();
     Entry::reset();
-    Task::reset();
 
     /*
      * Read input file and parse it.
@@ -227,14 +132,15 @@ Model::load( const std::string& input_filename, const std::string& output_filena
 
 
 /* 
- * Factory.
+ * Step 2: convert DOM into lqn entities.
  */
 
 bool
 Model::prepare(const LQIO::DOM::Document* document)
 {
     /* Tell the user that we are starting to load up */
-    DEBUG(endl << "[0]: Beginning model load, setting parameters." << std::endl);
+    if ( flags.verbose ) std::cerr << "Prepare: ..." << std::endl;
+    DEBUG(std::endl << "[0]: Beginning model load, setting parameters." << std::endl);
 
     Pragma::set( document->getPragmaList() );
     LQIO::io_vars.severity_level = Pragma::severityLevel();
@@ -243,12 +149,12 @@ Model::prepare(const LQIO::DOM::Document* document)
     /* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- [Step 1: Add Processors] */
 
     const std::map<std::string,LQIO::DOM::Processor *>& procList = document->getProcessors();
-    for_each( procList.begin(), procList.end(), Processor::create );
+    std::for_each( procList.begin(), procList.end(), Processor::create );
 
     /* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- [Step 1.5: Add Groups] */
 
     const std::map<std::string,LQIO::DOM::Group*>& groups = document->getGroups();
-    for_each( groups.begin(), groups.end(), Group::create );
+    std::for_each( groups.begin(), groups.end(), Group::create );
 
     /* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- [Step 2: Add Tasks/Entries] */
 
@@ -270,7 +176,7 @@ Model::prepare(const LQIO::DOM::Document* document)
 	/* Add the entries so we can reverse them */
 	for ( std::vector<LQIO::DOM::Entry*>::const_iterator nextEntry = task->getEntryList().begin(); nextEntry != task->getEntryList().end(); ++nextEntry ) {
 	    entries.push_back( Entry::create( *nextEntry, entries.size() ) );
-	    if ((*nextEntry)->getStartActivity() != NULL) {
+	    if ((*nextEntry)->getStartActivity() != nullptr) {
 		activityEntries.push_back(*nextEntry);
 	    }
 	}
@@ -317,7 +223,7 @@ Model::prepare(const LQIO::DOM::Document* document)
 	    std::vector<LQIO::DOM::Call*>::const_iterator iter;
 
 	    /* Add all of the calls to the system */
-	    for_each( originatingCalls.begin(), originatingCalls.end(), Call::Create( newEntry, p ) );
+	    std::for_each( originatingCalls.begin(), originatingCalls.end(), Call::Create( newEntry, p ) );
 
 	    /* Set the phase information for the entry */
 	    newEntry->setDOM(p, phase);
@@ -367,46 +273,77 @@ void
 Model::recalculateDynamicValues( const LQIO::DOM::Document* document )
 {
     setModelParameters(document);
-    for_each( __processor.begin(), __processor.end(), Exec<Processor>( &Processor::recalculateDynamicValues ) );
-    for_each( __group.begin(), __group.end(), Exec<Group>( &Group::recalculateDynamicValues ) );
-    for_each( __task.begin(), __task.end(), Exec<Task>( &Task::recalculateDynamicValues ) );
+    std::for_each( __processor.begin(), __processor.end(), Exec<Processor>( &Processor::recalculateDynamicValues ) );
+    std::for_each( __group.begin(), __group.end(), Exec<Group>( &Group::recalculateDynamicValues ) );
+    std::for_each( __task.begin(), __task.end(), Exec<Task>( &Task::recalculateDynamicValues ) );
 }
 
 
 
 /*
- * Check input parameters.  Return true if all went well.  Return false
- * and set anError to true otherwise.
+ * Step 3: Factory method for creating the layers and initializing the MVA submodels
  */
 
-bool
-Model::check()
+Model *
+Model::create( const LQIO::DOM::Document * document, const std::string& inputFileName, const std::string& outputFileName, bool check_model )
 {
-    bool rc = true;
-    rc = std::all_of( __processor.begin(), __processor.end(), Predicate<Processor>( &Processor::check ) ) && rc;
-    rc = std::all_of( __group.begin(), __group.end(), Predicate<Group>( &Group::check ) ) && rc; 
-    rc = std::all_of( __task.begin(), __task.end(), Predicate<Task>( &Task::check ) ) && rc;
+    Model *model = nullptr;
 
-#if !PAN_REPLICATION && !BUG_299
-    if ( std::any_of( __task.begin(), __task.end(), Predicate<Task>( &Task::isReplicated ) )
-	 || std::any_of( __processor.begin(), __processor.end(), Predicate<Processor>( &Processor::isReplicated ) ) ) {
-	rc = false;
-	LQIO::solution_error( ERR_REPLICATION_NOT_SUPPORTED );
+    Activity::actConnections.clear();
+    Activity::domToNative.clear();
+    MVA::__bounds_limit = Pragma::tau();
+    MVA::__enable_interlock = Pragma::interlock();
+
+    /*
+     * Fold, Mutilate and Spindle before main loop processing in solve.c
+     * disable model checking and expansion at this stage with LQX programs
+     */
+
+    if ( LQIO::io_vars.anError() == false && (check_model != true || check()) ) {
+
+	if ( flags.verbose ) std::cerr << "Create: " << Pragma::getLayeringStr() << " layers..." << std::endl;
+	
+	switch ( Pragma::layering() ) {
+	case Pragma::Layering::BATCHED: 
+	    model = new Batch_Model( document, inputFileName, outputFileName );
+	    break;
+
+	case Pragma::Layering::BACKPROPOGATE_BATCHED:
+	    model = new BackPropogate_Batch_Model( document, inputFileName, outputFileName );
+	    break;
+
+	case Pragma::Layering::METHOD_OF_LAYERS:
+	    model = new MOL_Model( document, inputFileName, outputFileName );
+	    break;
+
+	case Pragma::Layering::BACKPROPOGATE_METHOD_OF_LAYERS:
+	    model = new BackPropogate_MOL_Model( document, inputFileName, outputFileName );
+	    break;
+
+	case Pragma::Layering::SRVN:
+	    model = new SRVN_Model( document, inputFileName, outputFileName );
+	    break;
+
+	case Pragma::Layering::SQUASHED:
+	    model = new Squashed_Model( document, inputFileName, outputFileName );
+	    break;
+
+	case Pragma::Layering::HWSW:
+	    model = new HwSw_Model( document, inputFileName, outputFileName );
+	    break;
+	}
     }
-#endif
 
-    if ( std::count_if( __task.begin(), __task.end(), Predicate<Task>( &Task::isReferenceTask ) ) == 0 && Entry::totalOpenArrivals == 0 ) {
-	LQIO::solution_error( LQIO::ERR_NO_REFERENCE_TASKS );
-    }
+    if ( !model ) throw std::runtime_error( "could not create model" );
 
-    return rc && !LQIO::io_vars.anError();
+    return model;
 }
 
 
 
 /*
- *	Called from the parser to set important modelling parameters.
- *	It can also check validity of same if so desired.
+ * Called from the parser to set important modelling parameters.  It
+ * can also check validity of same if so desired.
  */
 
 void
@@ -503,6 +440,123 @@ Model::~Model()
 
 
 /*
+ * Step 4: Called AFTER lqx has run to initialize variables.
+ */
+
+bool
+Model::initialize()
+{
+    if ( flags.verbose ) std::cerr << "Initialize..." << std::endl;
+
+    /* perform all actions normally done in createModel() that need to be delayed until after */
+    /* LQX programs begin execution to avoid problems with unset variables */
+
+     _runDPS = false;
+    if ( !_model_initialized ) {
+	extend();			/* Do this before Task::initProcessor() */
+	check();
+	for_each( __task.begin(), __task.end(), Exec<Task>( &Task::initProcessor ) );	/* Set Processor Service times.	*/
+
+	if ( flags.verbose ) std::cerr << "Generate... " << std::endl;
+	if ( generate() ) {
+	    _model_initialized = true;
+	    configure();		/* Dimension arrays and threads	*/
+	    initStations();		/* Init MVA values (pop&waits). */		/* -- Step 2 -- */
+	}
+    } else {
+	check();
+	reinitStations();
+    }
+
+    return !LQIO::io_vars.anError();
+}
+
+
+/*
+ * Expand replicas, add think centers for think time.
+ */
+
+void
+Model::extend()
+{
+    /* Replicas. Create extra objects as needed.  */
+
+    if ( Pragma::replication() == Pragma::Replication::EXPAND ) {
+	/* Copy over original sets because we are going to insert the new objects directly */
+	const std::set<Processor *,lt_replica<Processor>> processors(Model::__processor);
+//	const std::set<Group *,lt_replica<Group>> Model::__group;
+	const std::set<Task *,lt_replica<Task>> tasks(Model::__task);
+	const std::set<Entry *,lt_replica<Entry>> entries(Model::__entry);
+	
+	/* Create processors and entries first as tasks need them.  */
+	std::for_each( processors.begin(), processors.end(), Exec<Processor>( &Processor::expand ) );
+	std::for_each( entries.begin(), entries.end(), Exec<Entry>( &Entry::expand ) );
+	std::for_each( tasks.begin(), tasks.end(), Exec<Task>( &Task::expand ) );
+
+	/* Calls are done after all entries have been created */
+	std::for_each( entries.begin(), entries.end(), Exec<Entry>( &Entry::expandCalls ) );
+    }
+    
+    /* Think times. */
+    
+    for ( std::set<Task *>::const_iterator task = __task.begin(); task != __task.end(); ++task ) {
+
+	/* Add a delay server for think times. */
+
+	if ( (*task)->hasThinkTime() ) {
+	    if ( !__think_server ) {
+		__think_server = new DelayServer("THINK_DELAY");
+	    }
+	    __think_server->addTask( *task );	/* link the task in */
+	}
+	if ( (*task)->getProcessor()->isCFSserver() ) {
+	    if ( !__cfs_server ) {
+		__cfs_server = new DelayServer("CFS_DELAY");
+	    }
+	    __cfs_server->addTask( *task );	/* link the task in */
+	}
+
+#if HAVE_LIBGSL && HAVE_LIBGSLCBLAS
+	if ( Pragma::getQuorumDelayedCalls() == Pragma::QuorumDelayedCalls::KEEP_ALL &&
+	     (*task)->hasForks() && !flags.disable_expanding_quorum_tree ) {
+	    (*task)->expandQuorumGraph();
+	}
+#endif
+    }
+}
+
+
+
+/*
+ * Check input parameters.  Return true if all went well.  Return false
+ * and set anError to true otherwise.
+ */
+
+bool
+Model::check()
+{
+    bool rc = true;
+    rc = std::all_of( __processor.begin(), __processor.end(), Predicate<Processor>( &Processor::check ) ) && rc;
+    rc = std::all_of( __task.begin(), __task.end(), Predicate<Task>( &Task::check ) ) && rc;
+
+#if !PAN_REPLICATION && !BUG_299
+    if ( std::any_of( __task.begin(), __task.end(), Predicate<Task>( &Task::isReplicated ) )
+	 || std::any_of( __processor.begin(), __processor.end(), Predicate<Processor>( &Processor::isReplicated ) ) ) {
+	rc = false;
+	LQIO::solution_error( ERR_REPLICATION_NOT_SUPPORTED );
+    }
+#endif
+
+    if ( std::none_of( __task.begin(), __task.end(), Predicate<Task>( &Task::isReferenceTask ) ) && Entry::totalOpenArrivals == 0 ) {
+	LQIO::solution_error( LQIO::ERR_NO_REFERENCE_TASKS );
+    }
+
+    return rc && !LQIO::io_vars.anError();
+}
+
+
+
+/*
  * Generate layers.  Tag all top-level tasks (i.e., those without any
  * calls thereto) and then locate their children.  findChildren will()
  * set the depth value for each task and _max_depth.  There should be a
@@ -537,7 +591,7 @@ Model::generate()
     
     /* Add submodel for join delay calculation */
 
-    if ( std::count_if( __task.begin(), __task.end(), Predicate<Task>( &Task::hasForks ) ) > 0 ) {
+    if ( std::any_of( __task.begin(), __task.end(), Predicate<Task>( &Task::hasForks ) ) ) {
 	max_depth += 1;
 	__sync_submodel = max_depth;
 	_submodels.push_back(new SynchSubmodel(__sync_submodel));
@@ -548,65 +602,14 @@ Model::generate()
     _MVAStats.resize(max_depth);	/* MVA statistics by level.	*/
 //    prune();				/* Delete unused stuff. 	*/
     addToSubmodel();			/* Add tasks to layers.		*/
-    configure();			/* Dimension arrays and threads	*/
-    initialize();			/* Init MVA values (pop&waits). */		/* -- Step 2 -- */
 
-    if ( Options::Debug::layers() ) {
-	printLayers( std::cout );	/* Print out layers... 		*/
+    if ( Options::Debug::layers() ) {	/* Print out layers... 		*/
+	std::for_each( _submodels.begin(), _submodels.end(), ConstPrint<Submodel>( &Submodel::print, std::cout ) );
     }
 
     return  !LQIO::io_vars.anError();
 }
 
-
-
-/*
- * Add think centers for think time.
- */
-
-void
-Model::extendModel()
-{
-    for ( std::set<Task *>::const_iterator nextTask = __task.begin(); nextTask != __task.end(); ++nextTask ) {
-	Task * aTask = *nextTask;
-
-	/* Add a delay server for think times. */
-
-	if ( aTask->hasThinkTime() ) {
-	    if ( !__think_server ) {
-		__think_server = new DelayServer("THINK_DELAY");
-	    }
-	    __think_server->addTask( aTask );	/* link the task in */
-	}
-	if ( aTask->getProcessor()->isCFSserver() ) {
-	    if ( !__cfs_server ) {
-		__cfs_server = new DelayServer("CFS_DELAY");
-	    }
-	    __cfs_server->addTask( aTask );	/* link the task in */
-	}
-
-#if HAVE_LIBGSL && HAVE_LIBGSLCBLAS
-	if ( Pragma::getQuorumDelayedCalls() == Pragma::QuorumDelayedCalls::KEEP_ALL &&
-	     aTask->hasForks() && !flags.disable_expanding_quorum_tree ) {
-	    aTask->expandQuorumGraph();
-	}
-#endif
-    }
-}
-
-
-
-
-/*
- * Processor entries are created automagically once the model has been
- * completely loaded in.  Think entries are done here too.
- */
-
-void
-Model::initProcessors()
-{
-    for_each( __task.begin(), __task.end(), Exec<Task>( &Task::initProcessor ) );
-}
 
 
 /*
@@ -619,8 +622,8 @@ Model::initProcessors()
 void
 Model::configure()
 {
-    for_each( __task.begin(), __task.end(), Exec1<Entity,unsigned>( &Entity::configure, nSubmodels() ) );
-    for_each( __processor.begin(), __processor.end(), Exec1<Entity,unsigned>( &Entity::configure, nSubmodels() ) );
+    std::for_each( __task.begin(), __task.end(), Exec1<Entity,unsigned>( &Entity::configure, nSubmodels() ) );
+    std::for_each( __processor.begin(), __processor.end(), Exec1<Entity,unsigned>( &Entity::configure, nSubmodels() ) );
     if ( __think_server ) {
 	__think_server->configure( nSubmodels() );
     }
@@ -638,7 +641,7 @@ Model::configure()
  */
 
 void
-Model::initialize()
+Model::initStations()
 {
     if ( Pragma::interlock() ) {
 	for_each( __task.begin(), __task.end(), Exec<Task>( &Task::createInterlock ) );
@@ -652,11 +655,11 @@ Model::initialize()
      * reverse order (bottom up) because waits propogate upwards.
      */
 
-    for_each( _submodels.rbegin(), _submodels.rend(), Exec1<Submodel,const Model&>( &Submodel::initServers, *this ) );
+    std::for_each( _submodels.rbegin(), _submodels.rend(), Exec1<Submodel,const Model&>( &Submodel::initServers, *this ) );
 
     /* Initialize waiting times and populations for the reference tasks. */
 
-    initClients();
+    std::for_each( __task.begin(), __task.end(), Exec1<Entity,const Vector<Submodel *>&>( &Entity::initClient, getSubmodels() ) );
 
     /* Initialize Interlocking */
 
@@ -679,8 +682,8 @@ Model::initialize()
  * here.
  */
 
-Model&
-Model::reinitialize()
+void
+Model::reinitStations()
 {
     /*
      * Reset all counters before a run.  In particular, iterations
@@ -710,7 +713,7 @@ Model::reinitialize()
 
     /* Initialize waiting times and populations for the reference tasks. */
 
-    reinitClients();
+    std::for_each ( __task.begin(), __task.end(), Exec1<Entity,const Vector<Submodel *>&>( &Entity::reinitClient, getSubmodels() ) );
 
     /* Reinitialize Interlocking */
 
@@ -721,34 +724,6 @@ Model::reinitialize()
     /* Rebuild stations and customers as needed. */
 
     std::for_each( _submodels.begin(), _submodels.end(), Exec<Submodel>( &Submodel::rebuild ) );
-
-    return *this;
-}
-
-
-
-/*
- * Go through and initialize all the reference tasks as they are not
- * caught the first time round.
- */
-
-void
-Model::initClients()
-{
-    std::for_each ( __task.begin(), __task.end(), Exec1<Entity,const Vector<Submodel *>&>( &Entity::initClient, getSubmodels() ) );
-}
-
-
-
-/*
- * Go through and initialize all the reference tasks as they are not
- * caught the first time round.
- */
-
-void
-Model::reinitClients()
-{
-    std::for_each ( __task.begin(), __task.end(), Exec1<Entity,const Vector<Submodel *>&>( &Entity::reinitClient, getSubmodels() ) );
 }
 
 
@@ -767,8 +742,9 @@ Model::solve()
 	return true;
     }
 
+    if ( flags.verbose ) std::cerr << "Solve..." << std::endl;
+
     report.start();
-    reinitialize();
 
     _converged = false;
     const double delta = run();
@@ -1011,19 +987,6 @@ Model::insertDOMResults() const
 
 
 /*
- * Print out layers.
- */
-
-std::ostream&
-Model::printLayers( std::ostream& output ) const
-{
-    std::for_each( _submodels.begin(), _submodels.end(), ConstPrint<Submodel>( &Submodel::print, output ) );
-    return output;
-}
-
-
-
-/*
  * Intermediate result printer.
  */
 
@@ -1089,10 +1052,7 @@ Model::printSubmodelWait( std::ostream& output ) const
     }
     output << std::endl;
 
-    for ( std::set<Task *>::const_iterator nextTask = __task.begin(); nextTask != __task.end(); ++nextTask ) {
-	const Task * aTask = *nextTask;
-	aTask->printSubmodelWait( output );
-    }
+    std::for_each( __task.begin(), __task.end(), ConstPrint<Task>( &Task::printSubmodelWait, output ) );
 
     output.setf( flags );
     output.precision( precision );
@@ -1145,7 +1105,7 @@ Model::createDirectory() const
     }
 
     if ( _document->getResultInvocationNumber() > 0 ) {
-	if ( directoryName.size() == 0 ) {
+	if ( directoryName.empty() ) {
 	    /* We need to create a directory to store output. */
 	    LQIO::Filename filename( hasOutputFileName() ? _output_file_name : _input_file_name, "d" );		/* Get the base file name */
 	    directoryName = filename();

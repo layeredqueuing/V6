@@ -11,7 +11,7 @@
  * May, 2009
  *
  * ------------------------------------------------------------------------
- * $Id: processor.h 14571 2021-03-20 22:32:44Z greg $
+ * $Id: processor.h 14677 2021-05-22 11:34:31Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -46,10 +46,15 @@ public:
 
 protected:
     Processor( LQIO::DOM::Processor* );
+    Processor( const Processor& processor, unsigned int replica ) : Entity( processor, replica ) {}
 
 public:
     virtual ~Processor();
 
+protected:
+    virtual Processor * clone( unsigned int replica ) { return new Processor( *this, replica ); }
+    
+public:
     /* Initialization */
 
     virtual bool check() const;
@@ -78,6 +83,8 @@ public:
 
     /* Model Building. */
 
+    Processor& expand();
+    
     Server * makeServer( const unsigned nChains );
     virtual Entity& saveServerResults( const MVASubmodel&, double );
 
@@ -87,7 +94,7 @@ public:
     virtual std::ostream& print( std::ostream& ) const;
 
 public:
-    static Processor * find( const std::string& name );
+    static Processor * find( const std::string&, unsigned int=1 );
 
 private:
     SRVNManip print_processor_type() const { return SRVNManip( output_processor_type, *this ); }
@@ -145,6 +152,7 @@ class DelayServer : public Processor
 {
 public:
     DelayServer( const std::string& name ) : Processor( nullptr ), _name(name) {}		/* No Dom */
+    virtual Processor * clone() { throw std::runtime_error( "DelayServer::clone()" ); return nullptr; }
     virtual bool check() const { return true; }
 
     virtual double rate() const { return 1.0; }

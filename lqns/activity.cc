@@ -11,7 +11,7 @@
  * July 2007
  *
  * ------------------------------------------------------------------------
- * $Id: activity.cc 14627 2021-05-10 16:22:27Z greg $
+ * $Id: activity.cc 14704 2021-05-27 12:20:22Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -135,9 +135,9 @@ Activity::isNotReachable() const
 
 
 ProcessorCall *
-Activity::newProcessorCall( Entry * procEntry )
+Activity::newProcessorCall( Entry * procEntry ) const
 {
-    return new ActProcCall( this, procEntry );
+    return new ActivityProcessorCall( this, procEntry );
 }
 
 
@@ -895,6 +895,8 @@ Activity::setMaxCustomers(Entry * anEntry, const Activity::Collect& ) const
 const Activity&
 Activity::insertDOMResults() const
 {
+    if ( getReplicaNumber() != 1 ) return *this;		/* NOP */
+
     Phase::insertDOMResults();
     LQIO::DOM::Activity* domActivity = getDOM();
 

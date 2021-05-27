@@ -11,7 +11,7 @@
  * July 2007
  *
  * ------------------------------------------------------------------------
- * $Id: activity.h 14627 2021-05-10 16:22:27Z greg $
+ * $Id: activity.h 14681 2021-05-23 18:35:56Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -285,7 +285,7 @@ public:
     const Activity& insertDOMResults() const;
 	
 protected:
-    virtual ProcessorCall * newProcessorCall( Entry * procEntry );
+    virtual ProcessorCall * newProcessorCall( Entry * procEntry ) const;
 
 private:
     ActivityList * act_join_item( LQIO::DOM::ActivityList * dom_activitylist );

@@ -10,7 +10,7 @@
  * February 1997
  *
  * ------------------------------------------------------------------------
- * $Id: actlist.cc 14627 2021-05-10 16:22:27Z greg $
+ * $Id: actlist.cc 14704 2021-05-27 12:20:22Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -1412,6 +1412,8 @@ AndForkActivityList::concurrentThreads( unsigned n ) const
 const AndForkActivityList&
 AndForkActivityList::insertDOMResults(void) const
 {
+//    if ( getReplicaNumber() != 1 ) return *this;		/* NOP */
+
     if ( joinList() == nullptr ) return *this;
     LQIO::DOM::AndJoinActivityList * dom = const_cast<LQIO::DOM::AndJoinActivityList *>(dynamic_cast<const LQIO::DOM::AndJoinActivityList *>(joinList()->getDOM()));
     if ( dom == nullptr ) return *this;

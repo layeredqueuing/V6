@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: entry.h 14627 2021-05-10 16:22:27Z greg $
+ * $Id: entry.h 14704 2021-05-27 12:20:22Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -48,8 +48,6 @@ class MVASubmodel;
 class Task;
 typedef Vector<unsigned> ChainVector;
 
-/* */
-
 /*
  * Interface to parser.
  */
@@ -87,7 +85,7 @@ class CallInfo {
 	const Entry * _dstEntry;
     };
 public:
-    CallInfo( const Entry& anEntry, const unsigned );
+    CallInfo( const Entry& anEntry, Call::Type );
     CallInfo( const CallInfo& ) { abort(); }					/* Copying is verbotten */
     CallInfo& operator=( const CallInfo& ) { abort(); return *this; }		/* Copying is verbotten */
 	
@@ -193,6 +191,22 @@ public:
     };
     /*- interlock -*/
 
+
+    /*
+     * Compare two entries by their name and replica number.  The
+     * default replica is one, and will only not be one if replicated
+     * entries are expanded to individual entries.
+     */
+    
+    struct equals {
+	equals( const std::string& name, unsigned int replica=1 ) : _name(name), _replica(replica) {}
+	bool operator()( const Entry * entry ) const;
+    private:
+	const std::string _name;
+	const unsigned int _replica;
+    };
+    
+
 protected:
     struct clear_wait {
 	clear_wait( unsigned int submodel ) : _submodel(submodel) {}
@@ -231,29 +245,31 @@ public:
     static bool deterministicPhases;
     static unsigned totalOpenArrivals;
     static unsigned max_phases;		/* maximum phase encountered.	*/
-    static const char * phaseTypeFlagStr [];
 	
     int operator==( const Entry& anEntry ) const;
     static void reset();
-    static Entry * find( const std::string& entry_name );
+    static Entry * find( const std::string&, unsigned int=1 );
     static Entry * create( LQIO::DOM::Entry* domEntry, unsigned int );
     static bool max_phase( const Entry * e1, const Entry * e2 ) { return e1->maxPhase() < e2->maxPhase(); }
 	
 protected:
     /* Instance creation */
 
-    Entry( LQIO::DOM::Entry* aDomEntry, const unsigned, const unsigned );
+    Entry( LQIO::DOM::Entry *, unsigned int, bool=true );
+    Entry( const Entry&, unsigned int replica );
+
+private:
+    Entry& operator=( const Entry& ) = delete;
 
 public:
     virtual ~Entry();
-
-private:
-    Entry( const Entry& );
-    Entry& operator=( const Entry& );
+    virtual Entry * clone( unsigned int ) = 0;
 
 public:
     bool check() const;
     virtual Entry& configure( const unsigned );
+    Entry& expand();
+    Entry& expandCalls();
     unsigned findChildren( Call::stack&, const bool ) const;
     virtual Entry& initProcessor() = 0;
     virtual Entry& initWait() = 0;
@@ -270,6 +286,7 @@ public:
 
     unsigned int index() const { return _index; }
     unsigned int entryId() const { return _entryId; }
+    const Phase& getPhase( unsigned int p ) const { return _phase[p]; }
     LQIO::DOM::Phase::Type phaseTypeFlag( const unsigned p ) const { return _phase[p].phaseTypeFlag(); }
     double openArrivalRate() const;
     double computeCV_sqr() const;
@@ -302,6 +319,7 @@ public:
 #if PAN_REPLICATION
     Entry& resetReplication();
 #endif
+    unsigned getReplicaNumber() const { return _replica_number; }
 	
     void addDstCall( Call * aCall ) { _callerList.insert(aCall); }
     void removeDstCall( Call *aCall ) { _callerList.erase(aCall); }
@@ -363,7 +381,7 @@ public:
 
     /* Computation */
 
-    void add_call( const unsigned p, const LQIO::DOM::Call* call );
+    void add_call( unsigned p, const LQIO::DOM::Call * dom );
     void sliceTime( const Entry& dst, Slice_Info phase_info[], double y_xj[] ) const;
     virtual Entry& computeVariance() { return *this; }
     virtual Entry& updateWait( const Submodel&, const double ) = 0;
@@ -419,9 +437,6 @@ public:
     void setMaxCustomers(double nCusts) { _maxCusts = nCusts; }
     const Entry& setMaxCustomersForChain( unsigned int ) const;
     double getMaxCustomers() const { return _maxCusts;}
-
-    unsigned getPhaseNum(const Phase * aPhase) const;
-
     double setInterlock( const MVASubmodel&, const Task * client, unsigned k ) const;
 
     /* Sanity checks */
@@ -471,6 +486,7 @@ private:
     std::set<Call *> _callerList;		/* Who calls me.		*/
 
     Vector<InterlockInfo> _interlock;		/* Interlock table.		*/
+    const unsigned int _replica_number;		/* > 1 if a replica		*/
 };
 
 /* --------------------------- Task Entries --------------------------- */
@@ -479,7 +495,13 @@ private:
 class TaskEntry : public Entry 
 {
 public:
-    TaskEntry( LQIO::DOM::Entry* domEntry, const unsigned id, const unsigned int index ) : Entry(domEntry,id,index), _task(0), _openWait(0.), _nextOpenWait(0.) {}
+    TaskEntry( LQIO::DOM::Entry* domEntry, unsigned int index, bool global=true );
+
+protected:
+    TaskEntry( const TaskEntry& src, unsigned int replica );
+    
+public:
+    Entry * clone( unsigned int replica ) { return new TaskEntry( *this, replica ); }
 
     virtual TaskEntry& initProcessor();
     virtual TaskEntry& initWait();
@@ -512,15 +534,21 @@ private:
 class DeviceEntry : public Entry 
 {
 public:
-    DeviceEntry( LQIO::DOM::Entry* domEntry, const unsigned, Processor * );
+    DeviceEntry( LQIO::DOM::Entry* domEntry, Processor * );
+
+protected:
+    DeviceEntry( const DeviceEntry& src, unsigned int replica );
+
+public:
     virtual ~DeviceEntry();
+    Entry * clone( unsigned int replica ) { return new DeviceEntry( *this, replica ); }
 
     virtual DeviceEntry& initProcessor();
     virtual DeviceEntry& initWait();
     DeviceEntry& initVariance();
 
-    virtual DeviceEntry& owner( const Entity * aProcessor );
-    virtual const Entity * owner() const { return myProcessor; }
+    virtual DeviceEntry& owner( const Entity * );
+    virtual const Entity * owner() const { return _processor; }
 
     DeviceEntry& setServiceTime( const double );
     DeviceEntry& setPriority( const int );
@@ -539,7 +567,7 @@ public:
 #endif
 
 private:
-    const Entity * myProcessor;
+    const Entity * _processor;
 };
 
 /* ------------------------- Virtual Entries -------------------------- */
@@ -548,7 +576,13 @@ class VirtualEntry : public TaskEntry
 {
 public:
     VirtualEntry( const Activity * anActivity );
+
+protected:
+    VirtualEntry( const VirtualEntry& src, unsigned int replica ) : TaskEntry( src, replica ) {}
+
+public:
     ~VirtualEntry();
+    Entry * clone( unsigned int replica ) { return new VirtualEntry( *this, replica ); }
 
     virtual bool isVirtualEntry() const { return true; }
     virtual Entry& setStartActivity( Activity * );

@@ -10,7 +10,7 @@
  * November, 1994
  * March, 2004
  *
- * $Id: call.h 14645 2021-05-14 15:09:50Z greg $
+ * $Id: call.h 14704 2021-05-27 12:20:22Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -24,7 +24,7 @@
 #include <deque>
 #include "interlock.h"
 
-
+class Activity;
 class Call;
 class Entity;
 class Entry;
@@ -77,7 +77,6 @@ public:
     class stack : public std::deque<const Call *>
     {
     public:
-
 	stack() : std::deque<const Call *>() {}
 	unsigned depth() const;
 
@@ -91,8 +90,8 @@ public:
 	virtual ~call_cycle() throw() {}
     };
 
-    static double add_rendezvous( double sum, const Call * call ) { return sum + call->rendezvous() * call->fanOut(); }
-    static double add_rendezvous_no_fwd( double sum, const Call * call ) { return !call->isForwardedCall() ? sum + call->rendezvous() * call->fanOut() : sum; }
+    static double add_rendezvous( double sum, const Call * call );
+    static double add_rendezvous_no_fwd( double sum, const Call * call );
     static double add_forwarding( double sum, const Call * call ) { return sum + call->forward(); }		/* BUG_304 BUG_299 */
     static double add_IL_queue_length( double sum, const Call * call ) { return call->isAlongILPath() ? sum + call->getQueueLength() : sum; }
     static std::set<Task *>& add_client( std::set<Task *>&, const Call * );
@@ -164,9 +163,10 @@ public:
     };
 
     struct add_interlock_pr {
-	add_interlock_pr( const Entity * server ) : _server(server) {}
+	add_interlock_pr( const Entry * entry, const Entity * server ) : _entry(entry), _server(server) {}
 	double operator()( double sum, const Call * call ) const;
     private:
+	const Entry * _entry;
 	const Entity * _server;
     };
 
@@ -187,14 +187,19 @@ public:
 	const unsigned _k;
     };
 
-    typedef enum { RENDEZVOUS_CALL=0x01, SEND_NO_REPLY_CALL=0x02, FORWARDED_CALL=0x04, OVERTAKING_CALL=0x08 } call_type;
+    enum class Type { RENDEZVOUS, SEND_NO_REPLY, FORWARDED };
 
+public:
     Call( const Phase * fromPhase, const Entry * toEntry );
+
+protected:
+    Call( const Call&, unsigned int );
+
+public:
     virtual ~Call();
 
 private:
-    Call( const Call& ) { abort(); }		/* Copying is verbotten */
-    Call& operator=( const Call& ) { abort(); return *this; }
+    Call& operator=( const Call& ) = delete;
 
 public:
     int operator==( const Call& item ) const;
@@ -206,22 +211,29 @@ public:
     /* Instance variable access */
 
     const LQIO::DOM::Call* getDOM() const { return _dom; }
-    virtual double rendezvous() const;
+    const Phase * getSource() const { return _source; }
+    const Entry * dstEntry() const { return _destination; }
+    
+    virtual double rendezvous() const { return hasRendezvous() ? getDOMValue() : 0.0; }
     virtual Call& rendezvous( const LQIO::DOM::Call* dom ) { _dom = dom; return *this; }
-    Call& accumulateRendezvous( const double value )  { abort(); /*myRendezvous += value;*/ return *this; }
-    double sendNoReply() const;
+    double sendNoReply() const { return hasSendNoReply() ? getDOMValue() : 0.0; }
     Call& sendNoReply( const LQIO::DOM::Call* dom ) { _dom = dom; return *this; }
-    Call& accumulateSendNoReply( const double value ) { abort(); /*mySendNoReply += value;*/ return *this; }
-    double forward() const;
+    double forward() const { return hasForwarding() ? getDOMValue() : 0.0; }
     Call& forward( const LQIO::DOM::Call* dom ) { _dom = dom; return *this; }
-    unsigned fanOut() const;
-    double sumOfCalls() const { return getDOM() ? getDOM()->getCallMeanValue() : 0.0; }
-    unsigned getPhaseNum() const;
 
+    unsigned fanIn() const;
+    unsigned fanOut() const;
+    double wait() const { return _wait; }
+    void setWait( double wait ) { _wait = wait; }
+
+protected:
+    Call& setSource( const Phase * source ) { _source = source; return *this; }
+    Call& setDestination( const Entry * destination ) { _destination = destination; return *this; }
+
+public:
     /* Queries */
 
     virtual bool isForwardedCall() const { return false; }
-    virtual bool isActivityCall() const { return false; }
     virtual bool isProcessorCall() const { return false; }
     bool hasRendezvous() const { return getDOM() ? (getDOM()->getCallType() == LQIO::DOM::Call::Type::RENDEZVOUS || getDOM()->getCallType() == LQIO::DOM::Call::Type::QUASI_RENDEZVOUS) && getDOM()->getCallMeanValue() > 0: false; }
     bool hasSendNoReply() const { return getDOM() ? getDOM()->getCallType() == LQIO::DOM::Call::Type::SEND_NO_REPLY && getDOM()->getCallMeanValue() > 0 : false; }
@@ -232,27 +244,25 @@ public:
     bool hasSendNoReplyOrNone() const { return !hasRendezvous() && !hasForwarding(); }
     bool hasForwardingOrNone() const { return !hasRendezvous() && !hasSendNoReply(); }
     bool hasNoForwarding() const { return dstEntry() == nullptr || hasRendezvous() || hasSendNoReply(); }		/* Special case for topological sort */
+    virtual bool isCalledBy( const Entry * ) const { return false; }
 
-    virtual const Entry * srcEntry() const;
     virtual const std::string& srcName() const;
-    const Phase * getSource() const { return _source; }
-    virtual const Task * srcTask() const;
+    const Task * srcTask() const;
 
     const std::string& dstName() const;
-    const Entry * dstEntry() const { return _destination; }
     unsigned submodel() const;	/* Proxy */
 
     double rendezvousDelay() const;
 #if PAN_REPLICATION
     double rendezvousDelay( const unsigned k );
 #endif
-    double wait() const { return _wait; }
     double elapsedTime() const;
     double queueingTime() const;
     virtual const Call& insertDOMResults() const;
 #if PAN_REPLICATION
     double nrFactor( const Submodel& aSubmodel, const unsigned k ) const;
 #endif
+    virtual Call& expand() = 0;
 
     /* Computation */
 
@@ -273,7 +283,7 @@ public:
     void saveOpen( const unsigned k, const unsigned p, const double );
 
     /*  Interlocked flow */
-    virtual double getMaxCustomers() const;
+    double getMaxCustomers() const;
     double setRealCustomers( const MVASubmodel&, const Entity * aServer, unsigned int k ) const;
 
     void saveILWait( const unsigned k, const unsigned p, const double );
@@ -303,47 +313,66 @@ private:
     /* Interlock */
     bool isRealCustomer( const MVASubmodel&, const Entity *, unsigned ) const;
     double getInterlockedFlow() const { return std::max( _interlockedFlow, 0.0 ); }
-    double interlockPr() const;
+    double interlockPr( const Entry * ) const;
 
 protected:
-    const Phase* _source;		/* Calling entry.		*/
+    double getDOMValue() const;
+    virtual void parameter_error( const std::string& ) const = 0;
+
+private:
+    const LQIO::DOM::Call* _dom;	/* Input */
+    const Phase* _source;		/* Calling Phase/activity.	*/
+    const Entry* _destination;		/* to whom I am referring to	*/
+
+    unsigned _chainNumber;
+    const unsigned int _replica_number;	/* > 1 if a replica		*/
+
     double _wait;			/* Waiting time.		*/
     double _interlockedFlow;   		/* >0.0: interlocked flow 	*/
     					/* =0.0: is along the Path of an interlocked flow. */
 					/* <0.0: is an non interlocked flow ; */
     double _callWeight;
     double _queueWeight;		/* the ratio of queueing time from its own chain */
-
-private:
-    const Entry* _destination;		/* to whom I am referring to	*/
-
-    /* Input */
-    const LQIO::DOM::Call* _dom;
-
-    unsigned _chainNumber;
 };
-
-
+
 /* -------------------------------------------------------------------- */
 
 class NullCall : public Call {
 public:
     NullCall() : Call(nullptr,nullptr) {}
 
+    virtual const std::string& srcName() const { static const std::string null("NULL"); return null; }
     virtual NullCall& initWait() { return *this; }
+    virtual void parameter_error( const std::string& ) const;
+    virtual Call& expand() { abort(); return *this; }
 };
-
+
 /* -------------------------------------------------------------------- */
 
-class TaskCall : public Call {
+class FromEntry : virtual protected Call {
 public:
-    TaskCall( const Phase *, const Entry * toEntry );
+    FromEntry( const Entry * entry ) : _entry(entry) {}
+    const Entry * srcEntry() const { return _entry; }
+    virtual void parameter_error( const std::string& ) const;
 
-    virtual TaskCall& initWait();
+private:
+    const Entry * _entry;
+};
+    
+class PhaseCall : virtual public Call, protected FromEntry  {
+public:
+    PhaseCall( const Phase *, const Entry * toEntry );
+    PhaseCall( const PhaseCall&, unsigned replica );
+
+    virtual bool isCalledBy( const Entry * ) const;
+
+    virtual Call& initWait();
+    virtual Call& expand();
+    virtual PhaseCall * clone( unsigned int replica ) { return new PhaseCall( *this, replica ); }
 };
 
 
-class ForwardedCall : public TaskCall {
+class ForwardedCall : public PhaseCall {
 public:
     ForwardedCall( const Phase *, const Entry * toEntry, const Call * fwdCall );
 
@@ -356,46 +385,55 @@ public:
 private:
     const Call * _fwdCall;		// Original forwarded call
 };
+
+/* -------------------------------------------------------------------- */
 
-class ProcessorCall : public Call {
+class FromActivity : virtual protected Call {
 public:
-    ProcessorCall( const Phase *, const Entry * toEntry );
-
-    virtual double getMaxCustomers() const;
-    virtual bool isProcessorCall() const { return true; }
-    virtual ProcessorCall& initWait();
-    virtual void setWait(double newWait);
+    FromActivity() {}
+    virtual void parameter_error( const std::string& ) const;
 };
 
-
-class ActivityCall : public TaskCall {
+class ActivityCall : virtual public Call, protected FromActivity {
 public:
-    ActivityCall( const Phase * fromActivity, const Entry * toEntry );
+    ActivityCall( const Activity * fromActivity, const Entry * toEntry );
+    ActivityCall( const ActivityCall&, unsigned replica );
 
-    virtual bool isActivityCall() const { return true; }
-    virtual double getMaxCustomers()const ;
-    virtual const Entry * srcEntry() const;
-    virtual const std::string& srcName() const;
-    virtual const Task * srcTask() const;
+    virtual bool isCalledBy( const Entry * ) const;
+
+    virtual Call& initWait();
+    virtual Call& expand();
+    virtual ActivityCall * clone( unsigned int replica ) { return new ActivityCall( *this, replica ); }
 };
 
 
 class ActivityForwardedCall : public ActivityCall {
 public:
-    ActivityForwardedCall( const Phase *, const Entry * toEntry );
+    ActivityForwardedCall( const Activity *, const Entry * toEntry );
 
     virtual bool isForwardedCall() const { return true; }
 };
+
+/* -------------------------------------------------------------------- */
 
-
-class ActProcCall : public ProcessorCall {
+class ProcessorCall : virtual public Call {
 public:
-    ActProcCall( const Phase *, const Entry * toEntry );
+    ProcessorCall( const Phase *, const Entry * toEntry );
 
-    virtual bool isActivityCall() const { return true; }
-    virtual const Entry * srcEntry() const;
-    virtual const std::string& srcName() const;
-    virtual const Task * srcTask() const;
-    virtual double getMaxCustomers() const;
+    virtual Call& initWait();
+
+    virtual bool isProcessorCall() const { return true; }
+    virtual Call& expand() { abort(); return *this; }
+};
+
+
+class PhaseProcessorCall : public ProcessorCall, protected FromEntry {
+public:
+    PhaseProcessorCall( const Phase * fromPhase, const Entry * toEntry );
+};
+
+class ActivityProcessorCall : public ProcessorCall, protected FromActivity {
+public:
+    ActivityProcessorCall( const Activity * fromActivity, const Entry * toEntry );
 };
 #endif

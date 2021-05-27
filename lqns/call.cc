@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: call.cc 14647 2021-05-15 11:46:18Z greg $
+ * $Id: call.cc 14704 2021-05-27 12:20:22Z greg $
  *
  * Everything you wanted to know about a call to an entry, but were afraid to ask.
  *
@@ -21,9 +21,9 @@
 #include <mva/fpgoop.h>
 #include "call.h"
 #include "entry.h"
+#include "pragma.h"
 #include "task.h"
 #include "submodel.h"
-#include "phase.h"
 #include "activity.h"
 #include "errmsg.h"
 #include "lqns.h"
@@ -54,6 +54,38 @@ std::set<Entity *>& Call::add_server( std::set<Entity *>& servers, const Call * 
 }
 
 /*----------------------------------------------------------------------*/
+/*                            Static methods                            */
+/*----------------------------------------------------------------------*/
+
+/*
+ * Ignore replicas because it's handled by fanOut.
+ */
+
+/* static */ double
+Call::add_rendezvous( double sum, const Call * call )
+{
+    if ( Pragma::replication() == Pragma::Replication::PAN ) {
+	return sum + call->rendezvous() * call->fanOut();
+    } else {
+	return sum + call->rendezvous();
+    }
+}
+
+/*
+ * Ignore replicas because it's handled by fanOut.
+ */
+
+/* static */ double
+Call::add_rendezvous_no_fwd( double sum, const Call * call )
+{
+    if ( call->isForwardedCall() ) {
+	return sum;
+    } else {
+	return Call::add_rendezvous( sum, call );
+    }
+}
+
+/*----------------------------------------------------------------------*/
 /*                            Generic  Calls                            */
 /*----------------------------------------------------------------------*/
 
@@ -63,14 +95,15 @@ std::set<Entity *>& Call::add_server( std::set<Entity *>& servers, const Call * 
  */
 
 Call::Call( const Phase * fromPhase, const Entry * toEntry )
-    : _source(fromPhase),
+    : _dom(nullptr),
+      _source(fromPhase),
+      _destination(toEntry), 
+      _chainNumber(0),
+      _replica_number(1),
       _wait(0.0),
       _interlockedFlow(-1.0),
       _callWeight(0.0),
-      _queueWeight(1.0),
-      _destination(toEntry), 
-      _dom(nullptr),
-      _chainNumber(0)
+      _queueWeight(1.0)
 {
     if ( toEntry != nullptr ) {
 	const_cast<Entry *>(_destination)->addDstCall( this );	/* Set reverse link	*/
@@ -78,14 +111,26 @@ Call::Call( const Phase * fromPhase, const Entry * toEntry )
 }
 
 
+Call::Call( const Call& src, unsigned int replica )
+    : _dom(src._dom),
+      _source(nullptr),
+      _destination(nullptr),
+      _chainNumber(src._chainNumber),
+      _replica_number(replica),
+      _wait(0.0),
+      _interlockedFlow(-1.0),
+      _callWeight(0.0),
+      _queueWeight(1.0)
+{
+}
+
+	   
 /*
  * Clean up the mess.
  */
 
 Call::~Call()
 {
-    _source = nullptr;			/* Calling entry.		*/
-    _destination = nullptr;		/* to whom I am referring to	*/
 }
 
 
@@ -125,70 +170,23 @@ Call::check() const
 
 
 double
-Call::rendezvous() const
+Call::getDOMValue() const
 {
-    if ( hasRendezvous() ) {
-	try {
-	    const double value = getDOM()->getCallMeanValue();
-	    if ( getSource()->phaseTypeFlag() == LQIO::DOM::Phase::Type::DETERMINISTIC && value != std::floor( value ) ) throw std::domain_error( "invalid integer" );
-	    return value;
-	}
-	catch ( const std::domain_error &e ) {
-	    if ( isActivityCall() ) {
-		LQIO::solution_error( LQIO::ERR_INVALID_CALL_PARAMETER, "task", srcTask()->name().c_str(), getSource()->getDOM()->getTypeName(),
-				      getSource()->getDOM()->getName().c_str(), dstName().c_str(), e.what() );
-	    } else {
-		LQIO::solution_error( LQIO::ERR_INVALID_CALL_PARAMETER, "entry", srcEntry()->name().c_str(), getSource()->getDOM()->getTypeName(),
-				      getSource()->getDOM()->getName().c_str(), dstName().c_str(), e.what() );
-	    }
-	    throw_bad_parameter();
-	}
+    const double value = getDOM()->getCallMeanValue();
+    if ( (getDOM()->getCallType() != LQIO::DOM::Call::Type::FORWARD && getSource()->phaseTypeFlag() == LQIO::DOM::Phase::Type::DETERMINISTIC && value != std::floor( value ))
+	 || getDOM()->getCallType() == LQIO::DOM::Call::Type::FORWARD && value > 1.0 ) {
+	std::stringstream ss;
+	ss << value << " < " << value;
+	throw std::domain_error( ss.str() );
     }
-    return 0.0;
+    return value;
 }
 
-double
-Call::sendNoReply() const
-{
-    if ( hasSendNoReply() ) {
-	try {
-	    const double value = getDOM()->getCallMeanValue();
-	    if ( getSource()->phaseTypeFlag() == LQIO::DOM::Phase::Type::DETERMINISTIC && value != std::floor( value ) ) throw std::domain_error( "invalid integer" );
-	    return value;
-	}
-	catch ( const std::domain_error &e ) {
-	    if ( isActivityCall() ) {
-		LQIO::solution_error( LQIO::ERR_INVALID_CALL_PARAMETER, "task", srcTask()->name().c_str(), getSource()->getDOM()->getTypeName(), 
-				      getSource()->getDOM()->getName().c_str(), dstName().c_str(), e.what() );
-	    } else {
-		LQIO::solution_error( LQIO::ERR_INVALID_CALL_PARAMETER, "entry", srcEntry()->name().c_str(), getSource()->getDOM()->getTypeName(), 
-				      getSource()->getDOM()->getName().c_str(), dstName().c_str(), e.what() );
-	    }
-	    throw_bad_parameter();
-	}
-    }
-    return 0.0;
-}
 
-double
-Call::forward() const
+unsigned
+Call::fanIn() const
 {
-    if ( getDOM() != NULL && getDOM()->getCallType() == LQIO::DOM::Call::Type::FORWARD ) {
-	try {
-	    const double value = getDOM()->getCallMeanValue();
-	    if ( value > 1.0 ) {
-		std::stringstream ss;
-		ss << value << " > " << 1;
-		throw std::domain_error( ss.str() );
-	    }
-	    return value;
-	}
-	catch ( const std::domain_error &e ) {
-	    LQIO::solution_error( LQIO::ERR_INVALID_FWDING_PARAMETER, srcEntry()->name().c_str(), dstName().c_str(), e.what() );
-	    throw_bad_parameter();
-	}
-    }
-    return 0.0;
+    return dstTask()->fanIn( srcTask() );
 }
 
 
@@ -197,31 +195,6 @@ Call::fanOut() const
 {
     return srcTask()->fanOut( dstTask() );
 }
-
-
-
-/*
- * Return entry for this call.
- */
-
-const Entry *
-Call::srcEntry() const
-{
-    return _source->entry();
-}
-
-
-
-/*
- * Return the name of the source entry.
- */
-
-const std::string&
-Call::srcName() const
-{
-    return srcEntry()->name();
-}
-
 
 
 /*
@@ -274,10 +247,12 @@ Call::hasOvertaking() const
 double
 Call::rendezvousDelay() const
 {
-    if ( hasRendezvous() ) {
+    if ( !hasRendezvous() ) {
+	return 0.0;
+    } else if ( Pragma::replication() == Pragma::Replication::PAN ) {
 	return rendezvous() * wait() * fanOut();
     } else {
-	return 0.0;
+	return rendezvous() * wait();
     }
 }
 
@@ -299,6 +274,16 @@ Call::rendezvousDelay( const unsigned k )
 #endif
 
 
+/*
+ * Return the name of the source of this call.  Sources are always tasks.
+ */
+
+const std::string&
+Call::srcName() const
+{
+    return getSource()->name();
+}
+
 
 /*
  * Return the source task of this call.  Sources are always tasks.
@@ -309,6 +294,8 @@ Call::srcTask() const
 {
     return dynamic_cast<const Task *>(getSource()->owner());
 }
+
+
 double
 Call::elapsedTime() const
 {
@@ -353,6 +340,8 @@ Call::queueingTime() const
 const Call&
 Call::insertDOMResults() const
 {
+    if ( getSource()->getReplicaNumber() != 1 ) return *this;		/* NOP */
+
     const_cast<LQIO::DOM::Call *>(getDOM())->setResultWaitingTime(queueingTime());
     return *this;
 }
@@ -558,20 +547,11 @@ Call::getQueueLength( ) const
 
 
 
-unsigned
-Call::getPhaseNum() const
-{
-    if ( isActivityCall() ) return -1;
-    return srcEntry()->getPhaseNum(getSource());
-}
-
-
-
 double
 Call::setRealCustomers( const MVASubmodel& submodel, const Entity * server, unsigned int k ) const
 {
     if ( !isRealCustomer( submodel, server, k ) ) return 0.;
-	 
+
     const Task * client = srcTask();
     double customers = 0.;
     if ( client->isReferenceTask() ) {
@@ -591,10 +571,11 @@ Call::setRealCustomers( const MVASubmodel& submodel, const Entity * server, unsi
 double
 Call::computeWeight( const MVASubmodel& submodel )
 {
+    const double n_calls = getDOM() ? getDOM()->getCallMeanValue() : 0.0;
     if ( srcTask()->isReferenceTask() ) {
-	_callWeight = srcTask()->population() * sumOfCalls();
+	_callWeight = srcTask()->population() * n_calls;
     } else {
-	_callWeight = srcTask()->throughput() * sumOfCalls();
+	_callWeight = srcTask()->throughput() * n_calls;
     }
     return _callWeight;
 }
@@ -655,7 +636,7 @@ Call::saveQueueWeight( const unsigned k, const unsigned p, const double )
     
 	if ( flags.trace_interlock ) {
 	    std::cout << "Call::saveQueueWeight(): Call from " 
-		 << srcEntry()->name() << " to " << dstEntry()->name() << ": queue lenth is: " 
+		 << srcName() << " to " << dstEntry()->name() << ": queue lenth is: " 
 		 << _queueWeight << std::endl;
 	}
     }
@@ -696,7 +677,7 @@ Call::saveILWait( const unsigned k, const unsigned p, const double )
 
     if ( isInterlocked () ) {
 	if ( flags.trace_interlock ) {
-	    std::cout << "Call::saveILWait(): Call( " << srcEntry()->name() << " , " << dstEntry()->name()<<")";
+	    std::cout << "Call::saveILWait(): Call( " << srcName() << " , " << dstEntry()->name()<<")";
 	    std::cout << "has interlocked wait "<<diff << std::endl;
 	    std::cout << "aStation->nILRate[e][k]="<<aStation->nILRate[e][k]
 		<<", CallMeanValue="<<getDOM()->getCallMeanValue()<< std::endl;
@@ -720,7 +701,7 @@ Call::saveILWait( const unsigned k, const unsigned p, const double )
 
 
 double
-Call::interlockPr() const
+Call::interlockPr( const Entry * entry ) const
 {
     if ( flags.trace_quorum ) {
 	std::cout <<"\nCall::elapsedTime(): call " << this->srcName() << " to " << dstEntry()->name() << std::endl;
@@ -756,7 +737,7 @@ Call::interlockPr() const
 	if ( flags.trace_interlock ) {
 	    std::cout <<"queueingTime()="<<queueingTime()<<", et="<<elapsedTime()<<";getqueueWeight()="<<getqueueWeight()<<",t="<<t<< std::endl;
 	}
-	const double ql = srcEntry()->getILQueueLength();
+	const double ql = entry->getILQueueLength();		// sourcing entry.
 	if ( ql > 0.0 && t < ql ) {
 	    t /= ql;
 	}
@@ -778,14 +759,14 @@ Call::add_interlock_pr::operator()( double sum, const Call * call ) const
 	if ( srcTask->population() <= dstTask->population() ) {
 	    sum += 1.0 / square(srcTask->population());
 	} else {
-	    sum += call->interlockPr();
+	    sum += call->interlockPr( _entry );
 	}
     } else if ( dynamic_cast<const Task *>(dstTask) ) { //how about multiple source??????
 	sum = _server->prInterlock( *dynamic_cast<const Task*>(dstTask) );
     }
 #if 1
     if ( flags.trace_interlock ) {	// will need submodel number for X
-	std::cout << "getInterlockPr::in submodel " << "X" << ", Call( " << call->srcEntry()->name() << " , " << call->dstEntry()->name()
+	std::cout << "getInterlockPr::in submodel " << "X" << ", Call( " << call->srcName() << " , " << call->dstEntry()->name()
 	     << ") has interlock prob "<< sum <<" to client Entry "<< call->dstEntry()->name() << std::endl;
     }
 #endif
@@ -805,17 +786,95 @@ Call::add_wait_to::operator()( double sum, const Call * call ) const
 
 
 /*----------------------------------------------------------------------*/
-/*                              Task Calls                              */
+/*                              Phase Calls                             */
+/*----------------------------------------------------------------------*/
+
+void
+NullCall::parameter_error( const std::string& s ) const
+{
+    abort();
+}
+
+void
+FromEntry::parameter_error( const std::string& s ) const
+{
+    LQIO::solution_error( LQIO::ERR_INVALID_CALL_PARAMETER, "entry", srcName().c_str(), getSource()->getDOM()->getTypeName(),
+			  getSource()->getDOM()->getName().c_str(), dstName().c_str(), s.c_str() );
+    throw std::domain_error( s );
+}
+
+void
+FromActivity::parameter_error( const std::string& s ) const
+{
+    LQIO::solution_error( LQIO::ERR_INVALID_CALL_PARAMETER, "task", srcTask()->name().c_str(), getSource()->getDOM()->getTypeName(),
+			  getSource()->getDOM()->getName().c_str(), dstName().c_str(), s.c_str() );
+    throw std::domain_error( s );
+}
+
+/*----------------------------------------------------------------------*/
+/*                              Phase Calls                             */
 /*----------------------------------------------------------------------*/
 
 /*
- * call to task entry.
+ * Call from a phase to a task.
  */
 
-TaskCall::TaskCall( const Phase * fromPhase, const Entry * toEntry )
-    : Call( fromPhase, toEntry )
+PhaseCall::PhaseCall( const Phase * fromPhase, const Entry * toEntry )
+    : Call( fromPhase, toEntry ),
+      FromEntry( fromPhase->entry() )
 {
     const_cast<Phase *>(getSource())->addSrcCall( this );
+}
+
+
+/*
+ * Deep copy.  Set FromEntry to the replica.
+ */
+
+PhaseCall::PhaseCall( const PhaseCall& src, unsigned int replica )
+    : Call( src, replica ),
+      FromEntry( Entry::find( src.srcEntry()->name(), src.srcEntry()->getReplicaNumber() ) )
+{
+    /* Link to source replica */
+    const Phase& src_phase = src.srcEntry()->getPhase(src.getSource()->getPhaseNumber());
+    setSource( &src_phase );    /* Swap _source to the replica !!! */
+    const_cast<Phase&>(src_phase).addSrcCall( this );
+
+    /* Link to destination replica */
+    if ( src.dstEntry() != nullptr ) {
+	Entry * dst = Entry::find( src.dstEntry()->name(), static_cast<unsigned>(std::ceil( static_cast<double>(replica) / static_cast<double>(src.fanIn())) ) );
+	setDestination( dst );
+	dst->addDstCall( this );	/* Set reverse link */
+    }
+#if 0
+    std::cerr << "PhaseCall::PhaseCall() from: " << getSource()->name() << "(" << srcEntry()->getReplicaNumber() << ")"
+	      << " to: " << dstEntry()->name() << "(" << dstEntry()->getReplicaNumber() << ")" << std::endl;
+#endif
+}
+
+
+bool
+PhaseCall::isCalledBy( const Entry * entry ) const
+{
+    return srcEntry() == entry;
+}
+
+
+
+/*
+ * Expand replicas (Not PAN_REPLICATION).  I need to find the phase in
+ * the replica entry.  Note that the destination is affected by fan-out too.
+ */
+
+Call&
+PhaseCall::expand()
+{
+    const unsigned int replicas = fanOut();
+    for ( unsigned int replica = 2; replica <= replicas; ++replica ) {
+	PhaseCall * call = clone( replica );
+	const_cast<Entity *>(call->dstTask())->addTask( call->srcTask() );
+    }
+    return *this;
 }
 
 
@@ -824,10 +883,10 @@ TaskCall::TaskCall( const Phase * fromPhase, const Entry * toEntry )
  * Initialize waiting time.
  */
 
-TaskCall&
-TaskCall::initWait()
+Call&
+PhaseCall::initWait()
 {
-    _wait = elapsedTime();			/* Initialize arc wait. 	*/
+    setWait( elapsedTime() );			/* Initialize arc wait. 	*/
     return *this;
 }
 
@@ -840,7 +899,7 @@ TaskCall::initWait()
  */
 
 ForwardedCall::ForwardedCall( const Phase * fromPhase, const Entry * toEntry, const Call * fwdCall )
-    : TaskCall( fromPhase, toEntry ), _fwdCall(fwdCall)
+    : Call( fromPhase, toEntry ), PhaseCall( fromPhase, toEntry ), _fwdCall( fwdCall )
 {
 }
 
@@ -875,6 +934,8 @@ ForwardedCall::srcName() const
 const ForwardedCall&
 ForwardedCall::insertDOMResults() const
 {
+    if ( getSource()->getReplicaNumber() != 1 ) return *this;		/* NOP */
+
     LQIO::DOM::Call* fwdDOM = const_cast<LQIO::DOM::Call *>(_fwdCall->getDOM());		/* Proxy */
     fwdDOM->setResultWaitingTime(queueingTime());
     return *this;
@@ -899,25 +960,11 @@ ProcessorCall::ProcessorCall( const Phase * fromPhase, const Entry * toEntry )
  * Set up waiting time to processors.
  */
 
-ProcessorCall&
+Call&
 ProcessorCall::initWait()
 {
-    _wait = dstEntry()->serviceTimeForPhase(1);		/* Initialize arc wait. 	*/
+    setWait( dstEntry()->serviceTimeForPhase(1) );		/* Initialize arc wait. 	*/
     return *this;
-}
-
-
-void
-ProcessorCall::setWait(double newWait)
-{
-    _wait = newWait;
-}
-
-
-double
-ProcessorCall::getMaxCustomers() const
-{
-    return getSource()->getMaxCustomers();
 }
 
 /*----------------------------------------------------------------------*/
@@ -928,50 +975,54 @@ ProcessorCall::getMaxCustomers() const
  * Call added for activities.
  */
 
-ActivityCall::ActivityCall( const Phase * fromActivity, const Entry * toEntry )
-    : TaskCall( fromActivity, toEntry )
+ActivityCall::ActivityCall( const Activity * fromActivity, const Entry * toEntry )
+    : Call( fromActivity, toEntry ), FromActivity()
 {
+    const_cast<Phase *>(getSource())->addSrcCall( this );
 }
+
+
+ActivityCall::ActivityCall( const ActivityCall& src, unsigned int replica )
+    : Call( src, replica ), FromActivity()
+{
+//  _destination = Entry::find( src._destination, replica adjusted for fanin/fanout, like task */	
+}
+
+
+bool
+ActivityCall::isCalledBy( const Entry * entry ) const
+{
+    return entry->hasStartActivity() && srcTask() == entry->owner();
+}
+
+/*
+ * Expand replicas (Not PAN_REPLICATION).  I need to find the activity
+ * in the replica task.
+ */
+
+Call&
+ActivityCall::expand()
+{
+    const unsigned int replicas = srcTask()->replicas();	/* Replicas of source */
+    for ( unsigned int replica = 2; replica <= replicas; ++replica ) {
+//	Task * task = Task::find( srcTask()->name(), replica );
+//      Activity * activity = task->findActivity(...);
+//	activity->add_call( clone( replica ) );
+    }
+    return *this;
+}
+
 
 
 /*
- * Return entry for this call.
+ * Initialize waiting time.
  */
 
-const Entry *
-ActivityCall::srcEntry() const
+Call&
+ActivityCall::initWait()
 {
-    throw should_not_implement( "ActivityCall::srcEntry", __FILE__, __LINE__ );
-    return 0;
-}
-
-
-/*
- * Return the name of the source activity.
- */
-
-const std::string&
-ActivityCall::srcName() const
-{
-    return getSource()->name();
-}
-
-
-/*
- * Return entry for this call.
- */
-
-const Task *
-ActivityCall::srcTask() const
-{
-    return dynamic_cast<const Task *>(getSource()->owner());
-}
-
-double
-ActivityCall::getMaxCustomers()const
-{
-    return (dynamic_cast <const Activity *>(getSource())->getMaxCustomers());
-    //return (getSource()->getMaxCustomers());
+    setWait( elapsedTime() );			/* Initialize arc wait. 	*/
+    return *this;
 }
 
 /*----------------------------------------------------------------------*/
@@ -982,65 +1033,27 @@ ActivityCall::getMaxCustomers()const
  * call added to transform forwarding to standard model.
  */
 
-ActivityForwardedCall::ActivityForwardedCall( const Phase * fromPhase, const Entry * toEntry )
-    : ActivityCall( fromPhase, toEntry )
+ActivityForwardedCall::ActivityForwardedCall( const Activity * fromActivity, const Entry * toEntry )
+    : Call( fromActivity, toEntry ), ActivityCall( fromActivity, toEntry )
 {
 }
 
 /*----------------------------------------------------------------------*/
-/*                       Activity Processor Calls                       */
+/*                        Phase Processor Calls                         */
 /*----------------------------------------------------------------------*/
 
-/*
- * Call to processor entry.
- */
-
-ActProcCall::ActProcCall( const Phase * fromPhase, const Entry * toEntry )
-    : ProcessorCall( fromPhase, toEntry )
+PhaseProcessorCall::PhaseProcessorCall( const Phase * fromPhase, const Entry * toEntry ) 
+    : Call( fromPhase, toEntry ), ProcessorCall( fromPhase, toEntry ), FromEntry( fromPhase->entry() )
 {
 }
+
+/*----------------------------------------------------------------------*/
+/*                      Activity Processor Calls                        */
+/*----------------------------------------------------------------------*/
 
-
-
-/*
- * Return entry for this call.
- */
-
-const Entry *
-ActProcCall::srcEntry() const
+ActivityProcessorCall::ActivityProcessorCall( const Activity * fromActivity, const Entry * toEntry )
+    : Call( fromActivity, toEntry ), ProcessorCall( fromActivity, toEntry ), FromActivity()
 {
-    std::cout<<"ActProcCall:"<<srcName()<<std::endl;
-    throw should_not_implement( "ActProcCall::srcEntry", __FILE__, __LINE__ );
-    return nullptr;
-}
-
-
-/*
- * Return the name of the source activity.
- */
-
-const std::string&
-ActProcCall::srcName() const
-{
-    return getSource()->name();
-}
-
-
-/*
- * Return entry for this call.
- */
-
-const Task *
-ActProcCall::srcTask() const
-{
-    return dynamic_cast<const Task *>(getSource()->owner());
-}
-
-double
-ActProcCall::getMaxCustomers()const
-{
-    return (dynamic_cast <const Activity *>(getSource())->getMaxCustomers());
-    //return (getSource()->getMaxCustomers());
 }
 
 /*----------------------------------------------------------------------*/

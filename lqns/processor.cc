@@ -10,7 +10,7 @@
  * November, 1994
  *
  * ------------------------------------------------------------------------
- * $Id: processor.cc 14612 2021-04-19 21:44:17Z greg $
+ * $Id: processor.cc 14704 2021-05-27 12:20:22Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -276,6 +276,24 @@ Processor::validScheduling() const
 }
 
 
+
+/*
+ * Expand replicas (Not PAN_REPLICATION).
+ * Clone the processor.  Use orignal dom.  Mark as replica (through the copy constructor)
+ */
+
+Processor&
+Processor::expand()
+{
+    const unsigned int replicas = this->replicas();
+    for ( unsigned int replica = 2; replica <= replicas; ++replica ) {
+	Model::__processor.insert( clone( replica ) );
+    }
+    return *this;
+}
+
+
+
 /*
  * Create (or recreate) a server.  If we're called a a second+ time,
  * and the station type changes, then we change the underlying
@@ -474,6 +492,8 @@ Processor::saveServerResults( const MVASubmodel& submodel, double relax )
 const Processor&
 Processor::insertDOMResults(void) const
 {
+    if ( getReplicaNumber() != 1 ) return *this;		/* NOP */
+
     double sumOfProcUtil = 0.0;
     for ( std::set<const Task *>::const_iterator task = tasks().begin(); task != tasks().end(); ++task ) {
 
@@ -555,9 +575,9 @@ Processor::create( const std::pair<std::string,LQIO::DOM::Processor*>& p )
  */
 
 Processor *
-Processor::find( const std::string& name )
+Processor::find( const std::string& name, unsigned int replica )
 {
-    std::set<Processor *>::const_iterator processor = find_if( Model::__processor.begin(), Model::__processor.end(), EQStr<Entity>( name ) );
+    std::set<Processor *>::const_iterator processor = std::find_if( Model::__processor.begin(), Model::__processor.end(), EqualsReplica<Processor>( name, replica ) );
     return ( processor != Model::__processor.end() ) ? *processor : nullptr;
 }
 
@@ -671,7 +691,7 @@ CFS_Processor::saveServerResults( const MVASubmodel& submodel, double relax )
 	(*client)->setGroupUtilization( utilization );
 
 	if ( flags.trace_cfs ) {
-	    const Group * group = (*client)->group();
+	    const Group * group = (*client)->getGroup();
 	    std::cout << "Processor: " << name()
 		      << ", Group: " << group->name()
 		      << ", Task: " << (*client)->name()

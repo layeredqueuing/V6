@@ -10,7 +10,7 @@
  * November, 1994
  * December, 2020
  *
- * $Id: pragma.h 14652 2021-05-17 14:16:16Z greg $
+ * $Id: pragma.h 14697 2021-05-26 13:36:54Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -86,6 +86,8 @@ public:
 	    return __cache->_interlock;
 	}
 
+    static const std::string& getLayeringStr();
+    
     static Layering layering()
 	{
 	    assert( __cache != nullptr );
@@ -332,5 +334,6 @@ private:
 
     static Pragma * __cache;
     static const std::map<const std::string,const Pragma::fptr> __set_pragma;
+    static const std::map<const std::string,const Pragma::Layering> __layering_pragma;
 };
 #endif
