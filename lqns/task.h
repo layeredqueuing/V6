@@ -10,7 +10,7 @@
  * November, 1994
  * May 2009.
  *
- * $Id: task.h 14704 2021-05-27 12:20:22Z greg $
+ * $Id: task.h 14753 2021-06-02 14:10:59Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -113,14 +113,17 @@ protected:
     Task( const Task&, unsigned int );
     virtual Task * clone( unsigned int ) = 0;
 
+private:
+    void cloneActivities( const Task& src, unsigned int replica );
+    
 public:
     virtual ~Task();
     
 public:
     /* Initialization */
 
+    Task& linkForkToJoin();
     virtual bool check() const;
-    bool checkReachability() const;
     virtual Task& configure( const unsigned );
     virtual unsigned findChildren( Call::stack&, const bool ) const;
     Task& initProcessor();
@@ -165,8 +168,9 @@ public:
 
     virtual bool hasActivities() const { return _activities.size() != 0 ? true : false; }
     bool hasThinkTime() const;
-    bool hasForks() const;
-    bool hasSyncs() const;
+    bool hasForks() const { return _has_forks; }
+    bool hasSyncs() const { return _has_syncs; }
+    bool hasQuorum() const { return _has_quorum; }
     double  processorUtilization() const;
 
     virtual unsigned hasClientChain( const unsigned submodel, const unsigned k ) const;
@@ -186,6 +190,7 @@ public:
     virtual root_level_t rootLevel() const;
 
     Task& expand();
+    Task& expandCalls();
 
     Server * makeClient( const unsigned, const unsigned  );
     Task& initClientStation( Submodel& );
@@ -266,12 +271,8 @@ public:
 
 private:
     SRVNManip print_activities() const { return SRVNManip( output_activities, *this ); }
-    SRVNManip print_entries() const { return SRVNManip( output_entries, *this ); }
-    SRVNManip print_task_type() const { return SRVNManip( output_task_type, *this ); }
 
     static std::ostream& output_activities( std::ostream& output, const Task& );
-    static std::ostream& output_entries( std::ostream& output, const Task& );
-    static std::ostream& output_task_type( std::ostream& output, const Task& );
     static std::ostream& output_client_chains( std::ostream& output, const Task& aClient, const unsigned aSubmodel ) { aClient.printClientChains( output, aSubmodel ); return output; }
 
 protected:
@@ -296,15 +297,14 @@ private:
 private:
     const Processor * _processor;	/* proc. allocated to task. 	*/
     const Group * _group;		/* Group allocated to task.	*/
-    unsigned _maxThreads;		/* Max concurrent threads.	*/
-    double _group_utilization;
-    double _group_share;                /* share within a group         */
-
     std::vector<Activity *> _activities;	/* Activities for this task.	*/
     std::vector<ActivityList *> _precedences;	/* Items I own for deletion.	*/
-    bool _isViaTask;
 
+    unsigned _maxThreads;		/* Max concurrent threads.	*/
     double _overlapFactor;		/* Aggregate input o.f.		*/
+
+    double _group_utilization;
+    double _group_share;                /* share within a group         */
 
     /* MVA interface */
 
@@ -312,9 +312,10 @@ private:
     Vector<ChainVector> _clientChains;	/* Client chains by submodel	*/
     Vector<Server *> _clientStation;	/* Clients by submodel.		*/
 
-    mutable bool _has_fork;		/* Cached			*/
-    mutable bool _has_sync;
-    mutable bool _no_syncs;
+    bool _isViaTask;
+    bool _has_forks;
+    bool _has_syncs;
+    bool _has_quorum;
 };
 
 /* ------------------------- Reference Tasks -------------------------- */
@@ -331,6 +332,7 @@ private:
     
 public:
     ReferenceTask( LQIO::DOM::Task* dom, const Processor * aProc, const Group * aGroup, const std::vector<Entry *>& entries );
+    virtual ~ReferenceTask() = default;
 
 protected:
     ReferenceTask( const ReferenceTask& task, unsigned int replica ) : Task( task, replica ) {}
@@ -367,7 +369,8 @@ protected:
 class ServerTask : public Task {
 public:
     ServerTask(LQIO::DOM::Task* dom, const Processor * aProc, const Group * aGroup, const std::vector<Entry *>& entries)
-	: Task(dom,aProc,aGroup,entries) /*myQueueLength(queue_length)*/ {}
+	: Task(dom,aProc,aGroup,entries) {}
+    virtual ~ServerTask() = default;
 
 protected:
     ServerTask( const ServerTask& task, unsigned int replica ) : Task( task, replica ) {}
@@ -393,7 +396,8 @@ protected:
 
 class SemaphoreTask : public Task {
     SemaphoreTask(LQIO::DOM::Task* dom, const Processor * aProc, const Group * aGroup, const std::vector<Entry *>& entries)
-	: Task(dom,aProc,aGroup,entries) /*myQueueLength(queue_length)*/ {}
+	: Task(dom,aProc,aGroup,entries) {}
+    virtual ~SemaphoreTask() = default;
 
 protected:
     SemaphoreTask( const SemaphoreTask& task, unsigned int replica ) : Task( task, replica ) {}

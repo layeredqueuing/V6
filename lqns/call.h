@@ -10,7 +10,7 @@
  * November, 1994
  * March, 2004
  *
- * $Id: call.h 14704 2021-05-27 12:20:22Z greg $
+ * $Id: call.h 14753 2021-06-02 14:10:59Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -194,6 +194,7 @@ public:
 
 protected:
     Call( const Call&, unsigned int );
+    virtual Call * clone( unsigned int src_replica, unsigned int dst_replica ) = 0;
 
 public:
     virtual ~Call();
@@ -262,10 +263,10 @@ public:
 #if PAN_REPLICATION
     double nrFactor( const Submodel& aSubmodel, const unsigned k ) const;
 #endif
-    virtual Call& expand() = 0;
 
     /* Computation */
 
+    Call& expand();
     double variance() const;
     double CV_sqr() const;
     const Call& followInterlock( Interlock::CollectTable& ) const;
@@ -340,11 +341,11 @@ private:
 class NullCall : public Call {
 public:
     NullCall() : Call(nullptr,nullptr) {}
+    virtual NullCall * clone( unsigned int, unsigned int ) { abort(); return nullptr; }
 
     virtual const std::string& srcName() const { static const std::string null("NULL"); return null; }
     virtual NullCall& initWait() { return *this; }
     virtual void parameter_error( const std::string& ) const;
-    virtual Call& expand() { abort(); return *this; }
 };
 
 /* -------------------------------------------------------------------- */
@@ -362,13 +363,12 @@ private:
 class PhaseCall : virtual public Call, protected FromEntry  {
 public:
     PhaseCall( const Phase *, const Entry * toEntry );
-    PhaseCall( const PhaseCall&, unsigned replica );
+    PhaseCall( const PhaseCall&, unsigned int src_replica, unsigned int dst_replica );
 
     virtual bool isCalledBy( const Entry * ) const;
 
     virtual Call& initWait();
-    virtual Call& expand();
-    virtual PhaseCall * clone( unsigned int replica ) { return new PhaseCall( *this, replica ); }
+    virtual PhaseCall * clone( unsigned int src_replica, unsigned int dst_replica ) { return new PhaseCall( *this, src_replica, dst_replica ); }
 };
 
 
@@ -397,13 +397,12 @@ public:
 class ActivityCall : virtual public Call, protected FromActivity {
 public:
     ActivityCall( const Activity * fromActivity, const Entry * toEntry );
-    ActivityCall( const ActivityCall&, unsigned replica );
+    ActivityCall( const ActivityCall&, unsigned int src_replica, unsigned int dst_replica );
 
     virtual bool isCalledBy( const Entry * ) const;
 
     virtual Call& initWait();
-    virtual Call& expand();
-    virtual ActivityCall * clone( unsigned int replica ) { return new ActivityCall( *this, replica ); }
+    virtual ActivityCall * clone( unsigned int src_replica, unsigned int dst_replica ) { return new ActivityCall( *this, src_replica, dst_replica ); }
 };
 
 
@@ -423,7 +422,7 @@ public:
     virtual Call& initWait();
 
     virtual bool isProcessorCall() const { return true; }
-    virtual Call& expand() { abort(); return *this; }
+    virtual ProcessorCall * clone( unsigned int, unsigned int ) { abort(); return nullptr; }
 };
 
 

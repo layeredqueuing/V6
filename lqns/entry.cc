@@ -12,7 +12,7 @@
  * July 2007.
  *
  * ------------------------------------------------------------------------
- * $Id: entry.cc 14704 2021-05-27 12:20:22Z greg $
+ * $Id: entry.cc 14753 2021-06-02 14:10:59Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -179,9 +179,23 @@ int Entry::priority() const
 bool
 Entry::check() const
 {
+    const double precision = 100000.0;		/* round to nearest 1/precision */
     if ( isStandardEntry() ) {
 	std::for_each( _phase.begin(), _phase.end(), Predicate<Phase>( &Phase::check ) );
-    } else if ( !isActivityEntry() ) {
+    } else if ( isActivityEntry() ) {
+	if ( !isVirtualEntry() && isCalledUsing( RequestType::RENDEZVOUS ) ) {
+	    std::deque<const Activity *> activityStack;
+	    Activity::Count_If data( this, &Activity::checkReplies );
+	    const double replies = std::floor( getStartActivity()->count_if( activityStack, data ).sum() * precision ) / precision;
+	    //tomari: disable to allow a quorum use the default reply which is after all threads completes exection.
+	    //(replies == 1 || (replies == 0 && owner->hasQuorum()))
+	    //Only tasks have activity entries. 
+	    if ( replies != 1.0 && (replies != 0.0 || !dynamic_cast<const Task *>(owner())->hasQuorum()) ) {
+		LQIO::solution_error( LQIO::ERR_NON_UNITY_REPLIES, replies, name().c_str() );
+	    }
+	    assert( activityStack.size() == 0 );
+	}
+    } else {
 	LQIO::solution_error( LQIO::ERR_ENTRY_NOT_SPECIFIED, name().c_str() );
     }
 
@@ -222,23 +236,6 @@ Entry::configure( const unsigned nSubmodels )
 	_interlock.resize( n_e );
     }
 
-    if ( isActivityEntry() && !isVirtualEntry() ) {
-
-	/* Check reply type and set max phase. */
-	std::deque<const Activity *> activityStack; // (dynamic_cast<const Task *>(owner())->activities().size());
-	Activity::Count_If data( this, &Activity::checkReplies );
-	const double replies = _startActivity->count_if( activityStack, data ).sum();
-	if ( isCalledUsing( RequestType::RENDEZVOUS ) ) {
-	    if ( replies == 0.0 ) {
-		//tomari: disable to allow a quorum use the default reply which
-		//is after all threads completes exection.
-		//LQIO::solution_error( ERR_REPLY_NOT_GENERATED, name().c_str() );	/* BUG 238 */
-	    } else if ( replies < 1.0 - EPSILON || 1.0 + EPSILON < replies ) {
-		LQIO::solution_error( LQIO::ERR_NON_UNITY_REPLIES, replies, name().c_str() );
-	    }
-	}
-	assert( activityStack.size() == 0 );
-    }
     initServiceTime();
     return *this;
 }
@@ -290,11 +287,9 @@ Entry::findChildren( Call::stack& callStack, const bool directPath ) const
 
     if ( isActivityEntry() ) {
 	max_depth = std::max( max_depth, _phase[1].findChildren( callStack, directPath ) );    /* Always check because we may have forwarding */
-	std::deque<const AndOrForkActivityList *> forkStack; 	// For matching forks/joins.
-	std::deque<const Activity *> activityStack;		// For checking for cycles.
 	try {
-	    Activity::Children path( callStack, directPath );
-	    max_depth = std::max( max_depth, _startActivity->findChildren( path ) );
+	    Activity::Children path( callStack, directPath, true );
+	    max_depth = std::max( max_depth, getStartActivity()->findChildren( path ) );
 	}
 	catch ( const activity_cycle& error ) {
 	    LQIO::solution_error( LQIO::ERR_CYCLE_IN_ACTIVITY_GRAPH, owner()->name().c_str(), error.what() );
@@ -343,7 +338,7 @@ Entry::initServiceTime()
 	std::deque<Entry *> entryStack;
 	entryStack.push_back( this );
 	Activity::Collect collect( 0, &Activity::collectServiceTime );
-	_startActivity->collect( activityStack, entryStack, collect );
+	getStartActivity()->collect( activityStack, entryStack, collect );
 	entryStack.pop_back();
     }
 
@@ -433,6 +428,8 @@ Entry::setEntryInformation( LQIO::DOM::Entry * entryInfo )
     return *this;
 }
 
+
+
 Entry&
 Entry::setDOM( unsigned p, LQIO::DOM::Phase* phaseInfo )
 {
@@ -441,6 +438,7 @@ Entry::setDOM( unsigned p, LQIO::DOM::Phase* phaseInfo )
     _phase[p].setDOM(phaseInfo);
     return *this;
 }
+
 
 
 /*
@@ -577,7 +575,7 @@ Entry::concurrentThreads() const
 {
     if ( !isActivityEntry() ) return 1;
 
-    return _startActivity->concurrentThreads( 1 );
+    return getStartActivity()->concurrentThreads( 1 );
 }
 
 
@@ -621,7 +619,7 @@ Entry::saveThroughput( const double value )
 	std::deque<Entry *> entryStack;
 	entryStack.push_back( this );
 	Activity::Collect collect( 0, &Activity::setThroughput );
-	_startActivity->collect( activityStack, entryStack, collect );
+	getStartActivity()->collect( activityStack, entryStack, collect );
 	entryStack.pop_back();
     }
     return *this;
@@ -735,9 +733,6 @@ Entry::forward( Entry * toEntry, const LQIO::DOM::Call* call  )
 
 
 
-
-
-
 /*
  * Set starting activity for this entry.
  */
@@ -746,7 +741,6 @@ Entry&
 Entry::setStartActivity( Activity * anActivity )
 {
     _startActivity = anActivity;
-    anActivity->setEntry( this );
     return *this;
 }
 
@@ -826,6 +820,7 @@ Entry::waitExcept( const unsigned submodel, const unsigned k, const unsigned p )
 }
 
 
+
 #if PAN_REPLICATION
 /*
  * Return waiting time.  Normally, we exclude all of chain k, but with
@@ -900,6 +895,7 @@ Entry::sliceTime( const Entry& dst, Slice_Info slice[], double y_xj[] ) const
     }
 }
 
+
 /*
  * After we have finished recalculating we need to make sure once again that any of the dynamic
  * parameters/late-bound parameters are still sane. The ones that could have changed are
@@ -951,7 +947,6 @@ Entry::aggregate( const unsigned submodel, const unsigned p, const Exponential& 
 
     return *this;
 }
-
 
 
 #if PAN_REPLICATION
@@ -1080,7 +1075,22 @@ Entry::insertDOMResults(double *phaseUtils) const
  */
 
 std::ostream&
-Entry::printSubmodelWait( std::ostream& output, unsigned offset ) const
+Entry::printCalls( std::ostream& output, unsigned int submodel ) const
+{
+    CallInfo calls( *this, Call::Type::RENDEZVOUS );
+
+    for ( std::vector<CallInfoItem>::const_iterator y = calls.begin(); y != calls.end(); ++y ) {
+	const Entry& src = *y->srcEntry();
+	const Entry& dst = *y->dstEntry();
+	if ( submodel != 0 && dst.owner()->submodel() != submodel ) continue;
+	output << std::setw(2) << " " << src.name() << "." << src.getReplicaNumber()
+	       << " -> " << dst.name() << "." << dst.getReplicaNumber() << std::endl;
+    }
+    return output;
+}
+
+std::ostream&
+Entry::printSubmodelWait( std::ostream& output, unsigned int offset ) const
 {
     for ( unsigned p = 1; p <= maxPhase(); ++p ) {
 	if ( offset ) {
@@ -1672,7 +1682,7 @@ TaskEntry::computeVariance()
 	std::deque<Entry *> entryStack; //( dynamic_cast<const Task *>(owner())->activities().size() );
 	entryStack.push_back( this );
 	Activity::Collect collect( 0, &Activity::collectWait );
-	_startActivity->collect( activityStack, entryStack, collect );
+	getStartActivity()->collect( activityStack, entryStack, collect );
 	entryStack.pop_back();
 	_total._variance += std::accumulate( _phase.begin(), _phase.end(), 0., add_using<Phase>( &Phase::variance ) );
     } else {
@@ -1760,7 +1770,7 @@ TaskEntry::updateWait( const Submodel& submodel, const double relax )
 	std::deque<Entry *> entryStack;
 	entryStack.push_back( this );
 	Activity::Collect collect( n, &Activity::collectWait );
-	_startActivity->collect( activityStack, entryStack, collect );
+	getStartActivity()->collect( activityStack, entryStack, collect );
 	entryStack.pop_back();
 
 	if ( flags.trace_delta_wait || flags.trace_activities ) {
@@ -1803,7 +1813,7 @@ TaskEntry::updateWaitReplication( const Submodel& submodel, unsigned & n_delta )
 	std::deque<Entry *> entryStack;
 	entryStack.push_back( this );
 	Activity::Collect collect( submodel.number(), &Activity::collectReplication );
-	_startActivity->collect( activityStack, entryStack, collect );
+	getStartActivity()->collect( activityStack, entryStack, collect );
 	entryStack.pop_back();
 
     } else {
@@ -1950,6 +1960,7 @@ DeviceEntry::updateWait( const Submodel&, const double )
 }
 
 
+
 #if PAN_REPLICATION
 /*
  * Return the waiting time for group `g' phase `p'.
@@ -1962,6 +1973,7 @@ DeviceEntry::updateWaitReplication( const Submodel&, unsigned&  )
     return 0.0;
 }
 #endif
+
 
 
 /*
@@ -2012,19 +2024,6 @@ VirtualEntry::VirtualEntry( const Activity * anActivity )
 
 VirtualEntry::~VirtualEntry()
 {
-    delete _dom;
-}
-
-
-/*
- * Set starting activity for this entry.
- */
-
-Entry&
-VirtualEntry::setStartActivity( Activity * anActivity )
-{
-    _startActivity = anActivity;
-    return *this;
 }
 
 static bool
@@ -2238,14 +2237,14 @@ Entry::setForwardingInformation( Entry* toEntry, LQIO::DOM::Call * call )
 
 
 void
-set_start_activity (Task* newTask, LQIO::DOM::Entry* theDOMEntry)
+set_start_activity (Task* task, LQIO::DOM::Entry* entry_DOM)
 {
-    Activity* activity = newTask->findActivity(theDOMEntry->getStartActivity()->getName());
-    Entry* realEntry = nullptr;
+    Activity* activity = task->findActivity(entry_DOM->getStartActivity()->getName());
+    Entry* entry = nullptr;
 
-    map_entry_name( theDOMEntry->getName(), realEntry, false, LQIO::DOM::Entry::Type::ACTIVITY );
-    realEntry->setStartActivity(activity);
-    activity->setEntry(realEntry);
+    map_entry_name( entry_DOM->getName(), entry, false, LQIO::DOM::Entry::Type::ACTIVITY );
+    entry->setStartActivity(activity);
+    activity->setEntry(entry);
 }
 
 /* ---------------------------------------------------------------------- */

@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: interlock.cc 14704 2021-05-27 12:20:22Z greg $
+ * $Id: interlock.cc 14715 2021-05-28 15:34:49Z greg $
  *
  * Call-chain/interlock finder.
  *
@@ -67,9 +67,6 @@ Interlock::Interlock( const Entity& aServer )
 
 Interlock::~Interlock()
 {
-    _commonEntries.clear();
-    _allSourceTasks.clear();
-    _ph2SourceTasks.clear();
 }
 
 

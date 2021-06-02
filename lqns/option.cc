@@ -1,6 +1,6 @@
 /* option.cc -- Greg Franks Wed Oct 12 2005
  *
- * $Id: option.cc 14334 2021-01-05 03:03:03Z greg $
+ * $Id: option.cc 14715 2021-05-28 15:34:49Z greg $
  */
 
 #include <config.h>
@@ -20,11 +20,14 @@
 #include "generate.h"
 #include "pragma.h"
 
-std::map<const char *, Options::Debug, lt_str> Options::Debug::__table =
+const std::map<const std::string, const Options::Debug> Options::Debug::__table
 {
-    { "all", 	    Debug( &Debug::all,         &Help::debugAll ) },
+    { "all",        Debug( &Debug::all,         &Help::debugAll ) },
+//    { "activities", Debug( &Debug::activities,  &Help::debugActivities ) },
+//    { "calls",      Debug( &Debug::calls,       &Help::debugCalls ) },
     { "forks",      Debug( &Debug::forks,       &Help::debugForks ) },
     { "interlock",  Debug( &Debug::interlock,   &Help::debugInterlock ) },
+//    { "joins",      Debug( &Debug::joins,       &Help::debugJoins ) },
     { "layers",     Debug( &Debug::layers,      &Help::debugLayers ) },
 #if DEBUG_MVA
     { "mva",	    Debug( &Debug::mva,		&Help::debugMVA ) },
@@ -35,31 +38,23 @@ std::map<const char *, Options::Debug, lt_str> Options::Debug::__table =
     { "quorum",     Debug( &Debug::quorum,      &Help::debugQuorum ) },
 #endif
     { "xml",        Debug( &Debug::xml,         &Help::debugXML ) },
-    { "lqx",        Debug( &Debug::lqx,         &Help::debugLQX ) }
+    { "lqx",        Debug( &Debug::lqx,         &Help::debugLQX ) },
 };
-
 
 const char ** Options::Debug::__options = NULL;
 
-bool Options::Debug::_forks	= false;
-bool Options::Debug::_interlock	= false;
-bool Options::Debug::_layers	= false;
-bool Options::Debug::_variance  = false;
-#if HAVE_LIBGSL
-bool Options::Debug::_quorum	= false;
-#endif
-
+std::vector<bool> Options::Debug::_bits(Options::Debug::QUORUM+1);
 
 void
 Options::Debug::all( const char * )
 {
-//    _calls      = true;
-    _forks      = true;
-    _interlock  = true;
-//    _joins      = true;
-    _layers     = true;
+//    _bits[CALLS]      = true;
+    _bits[FORKS]      = true;
+    _bits[INTERLOCK]  = true;
+//    _bits[JOINS]      = true;
+    _bits[LAYERS]     = true;
 #if HAVE_LIBGSL
-    _quorum	= true;
+    _bits[QUORUM]     = true;
 #endif
 }
 
@@ -100,12 +95,11 @@ Options::Debug::lqx( const char * )
 Options::Debug::initialize()
 {
     if ( __options != nullptr ) return;
-
     __options = new const char * [__table.size()+1];
 
-    unsigned int i = 0;
-    for ( std::map<const char *, Options::Debug>::const_iterator j = __table.begin(); j != __table.end(); ++i, ++j ) {
-	__options[i] = j->first;
+    size_t i = 0;
+    for ( std::map<const std::string, const Options::Debug>::const_iterator next_opt = __table.begin(); next_opt != __table.end(); ++next_opt ) {
+	__options[i++] = next_opt->first.c_str();
     }
     __options[i] = nullptr;
 }
@@ -114,7 +108,7 @@ void
 Options::Debug::exec( const int ix, const char * arg )
 {
     if ( ix >= 0 ) {
-	(*__table[__options[ix]].func())( arg );
+	(*__table.at(std::string(__options[ix])).func())( arg );
     } else {
 	usage( 'd', optarg );
     }

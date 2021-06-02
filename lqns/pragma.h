@@ -10,7 +10,7 @@
  * November, 1994
  * December, 2020
  *
- * $Id: pragma.h 14697 2021-05-26 13:36:54Z greg $
+ * $Id: pragma.h 14715 2021-05-28 15:34:49Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -169,6 +169,8 @@ public:
 	    assert( __cache != nullptr );
 	    return __cache->_replication;
 	}
+
+    static bool pan_replication() { return replication() == Replication::PAN; }
     
 #if RESCHEDULE
     static bool getRescheduleOnAsyncSend()

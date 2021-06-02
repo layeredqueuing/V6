@@ -1,6 +1,6 @@
 /* open.cc	-- Greg Franks Tue Feb 18 2003
  *
- * $Id: open.cc 14498 2021-02-27 23:08:51Z greg $
+ * $Id: open.cc 14728 2021-05-29 16:55:00Z greg $
  */
 
 #include "lqn2ps.h"
@@ -41,9 +41,7 @@ OpenArrivalSource::OpenArrivalSource( Entry * source )
 
 OpenArrivalSource::~OpenArrivalSource()
 {
-    for ( std::vector<OpenArrival *>::iterator call = _calls.begin(); call != _calls.end(); ++call ) {
-	delete *call;
-    }
+    std::for_each( _calls.begin(), _calls.end(), Delete<OpenArrival *> );
 }
 
 /* ------------------------ Instance Methods -------------------------- */

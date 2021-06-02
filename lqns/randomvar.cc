@@ -11,13 +11,14 @@
  *
  * January 2005.
  *
- * $Id: randomvar.cc 14334 2021-01-05 03:03:03Z greg $
+ * $Id: randomvar.cc 14715 2021-05-28 15:34:49Z greg $
  * ------------------------------------------------------------------------
  */
 
 
 #include "dim.h"
 #include <cmath>
+#include <algorithm>
 #include <cstdlib>
 #include <mva/fpgoop.h>
 #include "randomvar.h"
@@ -1639,9 +1640,6 @@ DiscreteCDFs::addCDF( DiscretePoints& aCDF)
 
 DiscreteCDFs::~DiscreteCDFs()
 {
-    for ( Vector<DiscretePoints *>::const_iterator cdf = myCDFsCltn.begin(); cdf != myCDFsCltn.begin(); ++cdf ) {
-	delete *cdf;
-    }
-    myCDFsCltn.clear();
+    std::for_each( myCDFsCltn.begin(), myCDFsCltn.end(), Delete<DiscretePoints *> );
 }
 

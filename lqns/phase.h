@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: phase.h 14704 2021-05-27 12:20:22Z greg $
+ * $Id: phase.h 14753 2021-06-02 14:10:59Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -52,20 +52,14 @@ class NullPhase {
     friend class AndForkActivityList;	/* For access to myVariance */
 
 public:
-    NullPhase( const std::string& name )
-	: _name(name),
-	  _phase_number(0),
-	  _dom(nullptr),
-	  _serviceTime(0.0),
-	  _variance(0.0),
-	  _wait(),
-	  _interlockedWait()
-	{}
-
-    virtual ~NullPhase() {}
-
+    NullPhase( const std::string& name );
+    virtual ~NullPhase() = default;
     int operator==( const NullPhase& aPhase ) const { return &aPhase == this; }
 
+protected:
+    NullPhase( const NullPhase& );
+
+public:
     /* Initialialization */
 	
     /* Instance variable access */
@@ -98,16 +92,14 @@ public:
     void addILWait (unsigned int submodel, double il_wait);
     double getILWait (unsigned submodel) const;
 
-    virtual std::ostream& print( std::ostream& output ) const { return output; }
-	
     virtual NullPhase& recalculateDynamicValues() { return *this; }
 
     static void insertDOMHistogram( LQIO::DOM::Histogram * histogram, const double m, const double v );
 
 private:
+    LQIO::DOM::Phase* _dom;
     std::string _name;			/* Name -- computed dynamically		*/
     unsigned int _phase_number;		/* phase of entry (if phase)		*/
-    LQIO::DOM::Phase* _dom;
 
 protected:
     /* Computed in class Phase */
@@ -241,6 +233,7 @@ public:
     
 public:
     Phase( const std::string& = "" );
+    Phase( const Phase&, unsigned int );
     virtual ~Phase();
 
     /* Initialialization */
@@ -263,7 +256,7 @@ public:
     void setInterlockedCall(const unsigned submodel);
     void addSrcCall( Call * aCall ) { _callList.insert(aCall); }
     void removeSrcCall( Call *aCall ) { _callList.erase(aCall); }
-    unsigned int getReplicaNumber() const;
+    virtual unsigned int getReplicaNumber() const;
 
     /* Instance Variable access */
 	
@@ -386,6 +379,4 @@ private:
     double _cfs_delay_upperbound;
     double _cfs_delay_lowerbound;
 };
-
-inline std::ostream& operator<<( std::ostream& output, const Phase& self ) { self.print( output ); return output; }
 #endif

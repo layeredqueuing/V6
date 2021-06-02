@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: phase.cc 14704 2021-05-27 12:20:22Z greg $
+ * $Id: phase.cc 14753 2021-06-02 14:10:59Z greg $
  *
  * Everything you wanted to know about an phase, but were afraid to ask.
  *
@@ -40,10 +40,34 @@
 #include "submodel.h"
 #include "task.h"
 #include "variance.h"
-
-
-
+
 /* ---------------------- Overloaded Operators ------------------------ */
+
+/*----------------------------------------------------------------------*/
+/*                              Null Phase                              */
+/*----------------------------------------------------------------------*/
+
+NullPhase::NullPhase( const std::string& name )
+    : _dom(nullptr),
+      _name(name),
+      _phase_number(0),
+      _serviceTime(0.0),
+      _variance(0.0),
+      _wait()
+{
+}
+
+
+NullPhase::NullPhase( const NullPhase& src )
+    : _dom(src._dom),
+      _name(src._name),
+      _phase_number(src._phase_number),
+      _serviceTime(0.0),
+      _variance(0.0),
+      _wait()
+{
+}
+
 
 /*
  * Allocate array space for submodels
@@ -260,19 +284,25 @@ Phase::Phase( const std::string& name )
 
 
 
+Phase::Phase( const Phase& src, unsigned int replica )
+    : NullPhase(src),
+      _entry(src._entry != nullptr ? Entry::find( src._entry->name(), replica ) : nullptr ),	/* Only phases have entries */
+      _callList(),		// Done after all entries created
+      _devices(),
+      _prOvertaking(0.)
+{
+}
+
+
+
 /*
- * Free up resources.
+ * Free up resources and forward links.
  */
 
 Phase::~Phase()
 {
-    for ( std::vector<DeviceInfo *>::const_iterator device = _devices.begin(); device != _devices.end(); ++device ) {
-	delete *device;
-    }
-    /* Release forward links */
-    for ( std::set<Call *>::const_iterator call = callList().begin(); call != callList().end(); ++call ) {
-	delete *call;
-    }
+    std::for_each( _devices.begin(), _devices.end(), Delete<DeviceInfo *> );
+    std::for_each( callList().begin(), callList().end(), Delete<Call *> );
 }
 
 
@@ -800,7 +830,13 @@ Phase::processorEntry() const
 double
 Phase::processorCalls() const
 {
-    return processorCall() ? processorCall()->rendezvous() * processorCall()->fanOut() : 0.0;
+    if ( !processorCall() ) {
+	return 0.0;
+    } else if ( Pragma::pan_replication() ) {
+	return processorCall()->rendezvous() * processorCall()->fanOut();
+    } else {
+	return processorCall()->rendezvous();
+    }
 }
 
 
@@ -846,11 +882,12 @@ Phase::processorVariance() const
 double
 Phase::processorUtilization() const
 {
-    if ( processorCall() ) {
-	const Processor * aProc = dynamic_cast<const Processor *>(processorCall()->dstTask());
-	return throughput() * serviceTime()  / (processorCall()->fanOut() * aProc->rate() );
-    } else {
+    if ( !processorCall() ) {
 	return 0.0;		/* No processor == no utilization */
+    } else {
+	const double fan_out = Pragma::pan_replication() ? static_cast<double>(processorCall()->fanOut()) : 1.0;
+	const double rate = dynamic_cast<const Processor *>(processorCall()->dstTask())->rate();
+	return (throughput() * serviceTime())  / (fan_out * rate);
     }
 }
 
@@ -1572,8 +1609,8 @@ Phase::stochastic_phase() const
 
 	/* then add up; the sum accounts for no of calls and fanout  */
 	//accumulate mean sum
-	const unsigned int fan_out = (*call)->fanOut();
-	double calls_var = (*call)->rendezvous() * fan_out * ((*call)->rendezvous() * fan_out + 1 );  //var of no of calls if geometric
+	const double fan_out = Pragma::pan_replication() ? static_cast<double>(processorCall()->fanOut()) : 1.0;
+	const double calls_var = (*call)->rendezvous() * fan_out * ((*call)->rendezvous() * fan_out + 1 );  //var of no of calls if geometric
 	sumOfVariance += (*call)->rendezvous() * fan_out * (blocking_var + proc_var)
 	    + calls_var * square(proc_wait + blocking_mean ); //accumulate variance sum
     }
@@ -1623,7 +1660,8 @@ Phase::mol_phase() const
 
 
 	Probability prVisit = (*call)->rendezvous() / sumOfRNV;
-	for ( unsigned i = 1; i <= (*call)->fanOut(); ++i ) {
+	const unsigned int fan_out = Pragma::pan_replication() ? (*call)->fanOut() : 1;
+	for ( unsigned i = 1; i <= fan_out; ++i ) {
 #ifdef NOTDEF
 	    SP_Model.addStage( prVisit, (*call)->wait(), Positive( (*call)->CV_sqr() ) );
 #else
@@ -1667,7 +1705,8 @@ Phase::deterministic_phase() const
     for ( std::set<Call *>::const_iterator call = callList().begin(); call != callList().end(); ++call ) {
 	const double var = (*call)->variance();
 	if ( std::isfinite( var ) ) {
-	    variance += (*call)->fanOut() * (*call)->rendezvous() * var;
+	    const double fan_out = Pragma::pan_replication() ? static_cast<double>(processorCall()->fanOut()) : 1.0;
+	    variance += (*call)->rendezvous() * fan_out * var;
 	}
     }
 
@@ -1700,10 +1739,11 @@ Phase::random_phase() const
     for ( std::set<Call *>::const_iterator call = callList().begin(); call != callList().end(); ++call ) {
 	if ( !(*call)->hasRendezvous() ) continue;
 
+	const double fan_out = Pragma::pan_replication() ? static_cast<double>(processorCall()->fanOut()) : 1.0;
 #ifdef NOTDEF
-	var_x += (*call)->fanOut() * (*call)->rendezvous() * ((*call)->dstEntry()->computeCV_sqr(1) * square((*call)->wait()));
-#else
-	var_x += (*call)->fanOut() * (*call)->rendezvous() * (*call)->variance();
+	var_x += (*call)->rendezvous() * fan_out * ((*call)->dstEntry()->computeCV_sqr(1) * square((*call)->wait()));
+#else					           
+	var_x += (*call)->rendezvous() * fan_out * (*call)->variance();
 #endif
 	sum_x += (*call)->rendezvousDelay();
     }
@@ -1752,8 +1792,9 @@ Phase::initProcessor()
      */
 	
     if ( getDOM()->hasServiceTime() ) {
-	const std::string entry_name = owner()->name() + ':' + name();
-	_devices.push_back( new DeviceInfo( *this, entry_name, DeviceInfo::Type::HOST ) );
+	std::ostringstream entry_name;
+	entry_name << owner()->name() << "." << owner()->getReplicaNumber() << ':' << name();
+	_devices.push_back( new DeviceInfo( *this, entry_name.str(), DeviceInfo::Type::HOST ) );
 	if ( owner()->getProcessor()->isCFSserver() ) {
 	    initCFSProcessor();
 	}
@@ -1813,6 +1854,7 @@ Phase::DeviceInfo::DeviceInfo( const Phase& phase, const std::string& name, Type
     }
 
     Model::__entry.insert( _entry );
+    assert( Model::__entry.insert( _entry ).second == true );
 		
     /* 
      * We may have to change this at some point.  However, we can't do

@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: model.cc 14704 2021-05-27 12:20:22Z greg $
+ * $Id: model.cc 14753 2021-06-02 14:10:59Z greg $
  *
  * Layer-ization of model.  The basic concept is from the reference
  * below.  However, model partioning is more complex than task vs device.
@@ -14,13 +14,15 @@
  *
  * Users create and solve models in three steps:
  * 1) Call the appropriate constructor.
- * 2) Call generate().  Generate calls 
- *    a) topologicalSort() to sort to visit all nodes and sort into layers.  Activitly
- *       lists checked and are set up during the sorting process.
-      b) addToSubmodel() to add server stations to the basic model.
- *    c) configure to dimension arrays.
- *    d) initialize() to set up the station parameters.
- * 3) Call solve().
+ * 2) Call initialize (after lqx starts executing)
+ *    a) Call extend (add replicas, think server...)
+ *    b) Call generate().  (adds entities to submodels.)
+ *       i)  topologicalSort() to sort to visit all nodes and sort into layers.  
+ *           Activitly lists checked and are set up during the sorting process.
+ *       ii) addToSubmodel() to add server stations to the basic model.
+ *    c) Call configure (dimension arrays)
+ *    d) Call initStations (initialize service times, etc...)
+ * 3) Call solve()
  *
  * Copyright the Real-Time and Distributed Systems Group,
  * Department of Systems and Computer Engineering,
@@ -252,8 +254,10 @@ Model::prepare(const LQIO::DOM::Document* document)
 
     /* Use the generated connections list to finish up */
     DEBUG("[5]: Adding connections." << std::endl);
-    complete_activity_connections ();
+    Activity::completeConnections();
 
+    std::for_each( __task.begin(), __task.end(), Exec<Task>( &Task::linkForkToJoin ) );	/* Link forks to joins		*/
+    
     /* Tell the user that we have finished */
     DEBUG("[0]: Finished loading the model" << std::endl << std::endl);
 
@@ -289,8 +293,7 @@ Model::create( const LQIO::DOM::Document * document, const std::string& inputFil
 {
     Model *model = nullptr;
 
-    Activity::actConnections.clear();
-    Activity::domToNative.clear();
+    Activity::clearConnectionMaps();
     MVA::__bounds_limit = Pragma::tau();
     MVA::__enable_interlock = Pragma::interlock();
 
@@ -402,19 +405,12 @@ Model::Model( const LQIO::DOM::Document * document, const std::string& inputFile
 
 Model::~Model()
 {
-    for ( Vector<Submodel *>::const_iterator submodel = _submodels.begin(); submodel != _submodels.end(); ++submodel ) {
-	delete *submodel;
-    }
-    _submodels.clear();
+    std::for_each( _submodels.begin(), _submodels.end(), Delete<Submodel *> );
 
-    for ( std::set<Processor *>::const_iterator processor = __processor.begin(); processor != __processor.end(); ++processor ) {
-	delete *processor;
-    }
-    __processor.clear();
+    std::for_each( __processor.begin(), __processor.end(), Delete<Processor *> );
+    __processor.clear();		/* Global, so get rid of them */
 
-    for ( std::set<Group *>::const_iterator group = Model::__group.begin(); group != Model::__group.end(); ++group ) {
-	delete *group;
-    }
+    std::for_each( __group.begin(), __group.end(), Delete<Group *> );
     __group.clear();
 
     if ( __think_server ) {
@@ -426,21 +422,19 @@ Model::~Model()
 	__cfs_server = nullptr;
     }
 
-    for ( std::set<Task *>::const_iterator task = __task.begin(); task != __task.end(); ++task ) {
-	delete *task;
-    }
+    std::for_each( __task.begin(), __task.end(), Delete<Task *> );
     __task.clear();
 
-    for ( std::set<Entry *>::const_iterator entry = __entry.begin(); entry != __entry.end(); ++entry ) {
-	delete *entry;
-    }
+    std::for_each( __entry.begin(), __entry.end(), Delete<Entry *> );
     __entry.clear();
 }
 
 
 
 /*
- * Step 4: Called AFTER lqx has run to initialize variables.
+ * Step 4: Perform all actions normally done in createModel() that
+ * need to be delayed until after LQX programs begin execution to
+ * avoid problems with unset variables.
  */
 
 bool
@@ -448,23 +442,25 @@ Model::initialize()
 {
     if ( flags.verbose ) std::cerr << "Initialize..." << std::endl;
 
-    /* perform all actions normally done in createModel() that need to be delayed until after */
-    /* LQX programs begin execution to avoid problems with unset variables */
-
      _runDPS = false;
     if ( !_model_initialized ) {
+	/* Expand replicas and add think server. */
 	extend();			/* Do this before Task::initProcessor() */
-	check();
+
 	for_each( __task.begin(), __task.end(), Exec<Task>( &Task::initProcessor ) );	/* Set Processor Service times.	*/
 
 	if ( flags.verbose ) std::cerr << "Generate... " << std::endl;
-	if ( generate() ) {
+	if ( generate( assignSubmodel() ) ) {
 	    _model_initialized = true;
 	    configure();		/* Dimension arrays and threads	*/
 	    initStations();		/* Init MVA values (pop&waits). */		/* -- Step 2 -- */
 	}
+
+	if ( Options::Debug::layers() ) {	/* Print out layers... 		*/
+	    std::for_each( _submodels.begin(), _submodels.end(), ConstPrint<Submodel>( &Submodel::print, std::cout ) );
+	}
+
     } else {
-	check();
 	reinitStations();
     }
 
@@ -493,8 +489,9 @@ Model::extend()
 	std::for_each( entries.begin(), entries.end(), Exec<Entry>( &Entry::expand ) );
 	std::for_each( tasks.begin(), tasks.end(), Exec<Task>( &Task::expand ) );
 
-	/* Calls are done after all entries have been created */
+	/* Calls are done after all entries have been created and linked to tasks */
 	std::for_each( entries.begin(), entries.end(), Exec<Entry>( &Entry::expandCalls ) );
+	std::for_each( tasks.begin(), tasks.end(), Exec<Task>( &Task::expandCalls ) );
     }
     
     /* Think times. */
@@ -539,15 +536,8 @@ Model::check()
     rc = std::all_of( __processor.begin(), __processor.end(), Predicate<Processor>( &Processor::check ) ) && rc;
     rc = std::all_of( __task.begin(), __task.end(), Predicate<Task>( &Task::check ) ) && rc;
 
-#if !PAN_REPLICATION && !BUG_299
-    if ( std::any_of( __task.begin(), __task.end(), Predicate<Task>( &Task::isReplicated ) )
-	 || std::any_of( __processor.begin(), __processor.end(), Predicate<Processor>( &Processor::isReplicated ) ) ) {
-	rc = false;
-	LQIO::solution_error( ERR_REPLICATION_NOT_SUPPORTED );
-    }
-#endif
-
     if ( std::none_of( __task.begin(), __task.end(), Predicate<Task>( &Task::isReferenceTask ) ) && Entry::totalOpenArrivals == 0 ) {
+	rc = false;
 	LQIO::solution_error( LQIO::ERR_NO_REFERENCE_TASKS );
     }
 
@@ -570,11 +560,9 @@ Model::check()
  */
 
 bool
-Model::generate()
+Model::generate( unsigned max_depth )
 {
-    unsigned int max_depth = assignSubmodel();
-
-    _submodels.resize(max_depth);
+    _submodels.resize( max_depth );
 
     std::vector<bool> cfs_layer(max_depth+1,false);
     for ( std::set<Processor *>::const_iterator processor = __processor.begin(); processor != __processor.end(); ++processor ) {
@@ -592,22 +580,17 @@ Model::generate()
     /* Add submodel for join delay calculation */
 
     if ( std::any_of( __task.begin(), __task.end(), Predicate<Task>( &Task::hasForks ) ) ) {
-	max_depth += 1;
-	__sync_submodel = max_depth;
+	__sync_submodel = nSubmodels() + 1;	/* Set global here, used in addToSubmodel */
 	_submodels.push_back(new SynchSubmodel(__sync_submodel));
     }
 
     /* Build model. */
 
-    _MVAStats.resize(max_depth);	/* MVA statistics by level.	*/
-//    prune();				/* Delete unused stuff. 	*/
     addToSubmodel();			/* Add tasks to layers.		*/
 
-    if ( Options::Debug::layers() ) {	/* Print out layers... 		*/
-	std::for_each( _submodels.begin(), _submodels.end(), ConstPrint<Submodel>( &Submodel::print, std::cout ) );
-    }
+    /* split/prune submodels -- this will have to be done by subclass */
 
-    return  !LQIO::io_vars.anError();
+    return !LQIO::io_vars.anError();
 }
 
 
@@ -622,6 +605,7 @@ Model::generate()
 void
 Model::configure()
 {
+    _MVAStats.resize( nSubmodels() );	/* MVA statistics by level.	*/
     std::for_each( __task.begin(), __task.end(), Exec1<Entity,unsigned>( &Entity::configure, nSubmodels() ) );
     std::for_each( __processor.begin(), __processor.end(), Exec1<Entity,unsigned>( &Entity::configure, nSubmodels() ) );
     if ( __think_server ) {
@@ -713,7 +697,7 @@ Model::reinitStations()
 
     /* Initialize waiting times and populations for the reference tasks. */
 
-    std::for_each ( __task.begin(), __task.end(), Exec1<Entity,const Vector<Submodel *>&>( &Entity::reinitClient, getSubmodels() ) );
+    std::for_each( __task.begin(), __task.end(), Exec1<Entity,const Vector<Submodel *>&>( &Entity::reinitClient, getSubmodels() ) );
 
     /* Reinitialize Interlocking */
 
@@ -1160,10 +1144,6 @@ Model::topologicalSort()
 	}
     }
 
-    /* Check activities for reachability */
-
-    std::for_each( __task.begin(), __task.end(), Predicate<Task>( &Task::checkReachability ) );
-
     /* Stop the process here and now on any error. */
 
     if ( LQIO::io_vars.anError() ) {
@@ -1187,7 +1167,7 @@ unsigned
 MOL_Model::assignSubmodel( )
 {
     unsigned max_layers = topologicalSort();
-    HWSubmodel = max_layers;
+    _HWSubmodel = max_layers;
     return max_layers;
 }
 
@@ -1205,30 +1185,30 @@ MOL_Model::addToSubmodel()
 
     for ( std::set<Task *>::const_iterator task = __task.begin(); task != __task.end(); ++task ) {
 	if ( !(*task)->isReferenceTask() ) {
-	    _submodels[(*task)->submodel()]->addServer( (*task) );
+	    _submodels[(*task)->submodel()]->addServer( *task );
 	}
 	if ( (*task)->hasForks() ) {
-	    _submodels[__sync_submodel]->addClient( (*task) );
+	    _submodels[__sync_submodel]->addClient( *task );
 	}
 	if ( (*task)->hasSyncs() ) {
-	    _submodels[__sync_submodel]->addServer( (*task) );
+	    _submodels[__sync_submodel]->addServer( *task );
 	}
     }
 
     /* Processors and other devices go in submodel n */
 
     for ( std::set<Processor *>::const_iterator processor = __processor.begin(); processor != __processor.end(); ++processor ) {
-	(*processor)->setSubmodel( HWSubmodel );		// Force all devices to this level
-	_submodels[HWSubmodel]->addServer( (*processor) );
+	(*processor)->setSubmodel( _HWSubmodel );		// Force all devices to this level
+	_submodels[_HWSubmodel]->addServer( *processor );
     }
 
     if ( __think_server ) {
-	__think_server->setSubmodel( HWSubmodel );		// Force all devices to this level
-	_submodels[HWSubmodel]->addServer(__think_server);
+	__think_server->setSubmodel( _HWSubmodel );		// Force all devices to this level
+	_submodels[_HWSubmodel]->addServer(__think_server);
     }
     if ( __cfs_server ) {
-	__cfs_server->setSubmodel( HWSubmodel );		// Force all devices to this level
-	_submodels[HWSubmodel]->addServer(__cfs_server);
+	__cfs_server->setSubmodel( _HWSubmodel );		// Force all devices to this level
+	_submodels[_HWSubmodel]->addServer(__cfs_server);
     }
 }
 
@@ -1251,7 +1231,7 @@ MOL_Model::run()
 	    _iterations += 1;
 	    if ( verbose ) std::cerr << "Iteration: " << _iterations << " ";
 
-	    std::for_each( _submodels.begin(), &_submodels[HWSubmodel], solveSubmodel );
+	    std::for_each( _submodels.begin(), &_submodels[_HWSubmodel], solveSubmodel );
 
 	    delta = std::for_each ( __task.begin(), __task.end(), ExecSumSquare<Task,double>( &Task::deltaUtilization ) ).sum();
 	    delta = sqrt( delta / __task.size() );		/* RMS */
@@ -1273,7 +1253,7 @@ MOL_Model::run()
 
 	/* Solve hardware model. */
 
-	solveSubmodel( _submodels[HWSubmodel] );		/* -- Step 6 -- */
+	solveSubmodel( _submodels[_HWSubmodel] );		/* -- Step 6 -- */
 
 	if ( flags.trace_wait ) {
 	    printSubmodelWait();
@@ -1338,20 +1318,20 @@ Batch_Model::addToSubmodel()
     for ( std::set<Task *>::const_iterator task = __task.begin(); task != __task.end(); ++task ) {
 	const int i = (*task)->submodel();
 	if ( !(*task)->isReferenceTask() ) {
-	    _submodels[i]->addServer( (*task) );
+	    _submodels[i]->addServer( *task );
 	}
 	if ( (*task)->hasForks() ) {
-	    _submodels[__sync_submodel]->addClient( (*task) );
+	    _submodels[__sync_submodel]->addClient( *task );
 	}
 	if ( (*task)->hasSyncs() ) { // Answer is always NO for now.
-	    _submodels[__sync_submodel]->addServer( (*task) );
+	    _submodels[__sync_submodel]->addServer( *task );
 	}
     }
 
     for ( std::set<Processor *>::const_iterator processor = __processor.begin(); processor != __processor.end(); ++processor ) {
 	const int i = (*processor)->submodel();
 	if ( i <= 0 ) continue;		// Device not used.
-	_submodels[i]->addServer( (*processor) );
+	_submodels[i]->addServer( *processor );
     }
 
     if ( __think_server ) {
@@ -1456,11 +1436,11 @@ SRVN_Model::assignSubmodel()
     std::multiset<Entity *> servers;
     for ( std::set<Task *>::const_iterator task = __task.begin(); task != __task.end(); ++task ) {
 	if ( (*task)->isReferenceTask() || (*task)->submodel() <= 0 ) continue;
-	servers.insert( (*task) );
+	servers.insert( *task );
     }
     for ( std::set<Processor *>::const_iterator processor = __processor.begin(); processor != __processor.end(); ++processor ) {
 	if ( (*processor)->submodel() <= 0 ) continue;
-	servers.insert( (*processor) );
+	servers.insert( *processor );
     }
     if ( __think_server && __think_server->submodel() > 0 ) {
         servers.insert( __think_server );
@@ -1469,12 +1449,9 @@ SRVN_Model::assignSubmodel()
         servers.insert( __cfs_server );
     }
 
-    unsigned int submodel = 1;
-    for ( std::multiset<Entity *>::const_iterator server = servers.begin(); server != servers.end(); ++server, ++submodel ) {
-	(*server)->setSubmodel( submodel );
-    }
+    std::for_each( servers.begin(), servers.end(), Exec1<Entity,unsigned int>( &Entity::setSubmodel, 1 ) );
 
-    return submodel - 1;		/* Initial submodel is one, so fix this. */ 
+    return 0;
 }
 
 /*----------------------------------------------------------------------*/

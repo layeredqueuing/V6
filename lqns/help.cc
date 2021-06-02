@@ -1,6 +1,6 @@
 /* help.cc	-- Greg Franks Wed Oct 12 2005
  *
- * $Id: help.cc 14704 2021-05-27 12:20:22Z greg $
+ * $Id: help.cc 14715 2021-05-28 15:34:49Z greg $
  */
 
 #include <config.h>
@@ -538,9 +538,9 @@ Help::flagDebug( std::ostream& output, bool verbose ) const
 	   << emph( *this, "Arg" ) << " can be one of:" << std::endl;
     increase_indent( output );
     dl_begin( output );
-    std::map<const char *, Options::Debug>::const_iterator opt;
+    std::map<const std::string, const Options::Debug>::const_iterator opt;
     for ( opt = Options::Debug::__table.begin(); opt != Options::Debug::__table.end(); ++opt ) {
-	print_option( output, opt->first, opt->second );
+	print_option( output, opt->first.c_str(), opt->second );
     }
     dl_end( output );
     decrease_indent( output );
@@ -1947,7 +1947,7 @@ HelpTroff::preamble( std::ostream& output ) const
     output << __comment << " t -*- nroff -*-" << std::endl
 	   << ".TH lqns 1 \"" << date << "\" \"" << VERSION << "\"" << std::endl;
 
-    output << __comment << " $Id: help.cc 14704 2021-05-27 12:20:22Z greg $" << std::endl
+    output << __comment << " $Id: help.cc 14715 2021-05-28 15:34:49Z greg $" << std::endl
 	   << __comment << std::endl
 	   << __comment << " --------------------------------" << std::endl;
 
@@ -2244,7 +2244,7 @@ HelpLaTeX::preamble( std::ostream& output ) const
 	   << __comment << " Created:             " << date << std::endl
 	   << __comment << "" << std::endl
 	   << __comment << " ----------------------------------------------------------------------" << std::endl
-	   << __comment << " $Id: help.cc 14704 2021-05-27 12:20:22Z greg $" << std::endl
+	   << __comment << " $Id: help.cc 14715 2021-05-28 15:34:49Z greg $" << std::endl
 	   << __comment << " ----------------------------------------------------------------------" << std::endl << std::endl;
 
     output << "\\chapter{Invoking the Analytic Solver ``lqns''}" << std::endl
@@ -2599,7 +2599,7 @@ HelpPlain::print_debug( std::ostream& output )
     Options::Debug::initialize();
     HelpPlain self;
     output << "Valid arguments for --debug" << std::endl;
-    for ( std::map<const char *, Options::Debug, lt_str>::const_iterator tp = Options::Debug::__table.begin(); tp != Options::Debug::__table.end(); ++tp ) {
-	self.print_option( output, tp->first, tp->second );
+    for ( std::map<const std::string, const Options::Debug, lt_str>::const_iterator tp = Options::Debug::__table.begin(); tp != Options::Debug::__table.end(); ++tp ) {
+	self.print_option( output, tp->first.c_str(), tp->second );
     }
 }

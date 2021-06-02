@@ -11,7 +11,7 @@
  * May, 2009
  *
  * ------------------------------------------------------------------------
- * $Id: processor.h 14677 2021-05-22 11:34:31Z greg $
+ * $Id: processor.h 14753 2021-06-02 14:10:59Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -46,7 +46,7 @@ public:
 
 protected:
     Processor( LQIO::DOM::Processor* );
-    Processor( const Processor& processor, unsigned int replica ) : Entity( processor, replica ) {}
+    Processor( const Processor& processor, unsigned int replica );
 
 public:
     virtual ~Processor();
@@ -100,12 +100,10 @@ private:
     SRVNManip print_processor_type() const { return SRVNManip( output_processor_type, *this ); }
     static std::ostream& output_processor_type( std::ostream& output, const Processor& aProcessor );
 
-public:
-    double _utilization;			/* Processor Utilization	*/
-    static bool __prune;
-
 private:
     std::set<Task *> _tasks;			/* List of processor's tasks	*/
+    double _utilization;			/* Processor Utilization	*/
+    static bool __prune;
 };
 
 
@@ -152,6 +150,13 @@ class DelayServer : public Processor
 {
 public:
     DelayServer( const std::string& name ) : Processor( nullptr ), _name(name) {}		/* No Dom */
+    virtual ~DelayServer() = default;
+
+private:
+    DelayServer( const DelayServer& ) = delete;
+    DelayServer& operator=( const DelayServer& ) = delete;
+
+public:
     virtual Processor * clone() { throw std::runtime_error( "DelayServer::clone()" ); return nullptr; }
     virtual bool check() const { return true; }
 

@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: processor.cc 14645 2021-05-14 15:09:50Z greg $
+ * $Id: processor.cc 14728 2021-05-29 16:55:00Z greg $
  *
  * Everything you wanted to know about a task, but were afraid to ask.
  *
@@ -91,7 +91,6 @@ Processor::Processor( const LQIO::DOM::Processor* dom )
 
 Processor::~Processor()
 {
-    _tasks.clear();
 }
 
 

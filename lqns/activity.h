@@ -11,7 +11,7 @@
  * July 2007
  *
  * ------------------------------------------------------------------------
- * $Id: activity.h 14681 2021-05-23 18:35:56Z greg $
+ * $Id: activity.h 14753 2021-06-02 14:10:59Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -138,14 +138,15 @@ public:
 
     class Children {
     public:
-	Children( Call::stack& callStack, bool directPath ) : _callStack(callStack), _directPath(directPath), _activityStack(), _forkStack(), _rate(1.) {}
-	Children( const Children& src, double rate ) : _callStack(src._callStack), _directPath(src._directPath), _activityStack(src._activityStack), _forkStack(src._forkStack), _rate(src._rate * rate) {}
-	Children( const Children& src, std::deque<const AndOrForkActivityList *>& forkStack, double rate ) : _callStack(src._callStack), _directPath(src._directPath), _activityStack(src._activityStack), _forkStack(forkStack), _rate(src._rate * rate) {}
+	Children( Call::stack& callStack, bool directPath, bool followCalls );
+	Children( const Children& src, double rate );
+	Children( const Children& src, std::deque<const AndOrForkActivityList *>& forkStack, double rate );
 
 	Call::stack& getCallStack() { return _callStack; }
 	unsigned depth() const { return _callStack.depth(); }
 	
 	bool isDirectPath() const { return _directPath; }
+	bool followCalls() const { return _follow_calls; }
 	const std::deque<const Activity *>& getActivityStack() const { return _activityStack; }
 	std::deque<const AndOrForkActivityList *>& getForkStack() { return _forkStack; }
 
@@ -161,19 +162,22 @@ public:
 
     private:
 	Call::stack& _callStack;
-	bool _directPath;
+	const bool _directPath;
+	const bool _follow_calls;
 	std::deque<const Activity *> _activityStack;		// For checking for cycles.
 	std::deque<const AndOrForkActivityList *> _forkStack; 	// For matching forks/joins.
 	double _rate;
     };
     
 public:
-    Activity( const Task * aTask, const std::string& aName );
-    virtual ~Activity();
+    Activity( const Task *, const std::string& );
+    Activity( const Activity&, const Task *, unsigned int replica );
+    virtual ~Activity() = default;
+
+    Activity * clone( const Task* task, unsigned int replica ) { return new Activity( *this, task, replica ); }
 
 private:
-    Activity( const Activity& ) { abort(); }		/* Copying is verbotten */
-    Activity& operator=( const Activity& ) { abort(); return *this; }
+    Activity& operator=( const Activity& ) = delete;
 
 public:
     virtual Activity& configure( const unsigned );
@@ -198,13 +202,16 @@ public:
     Activity& add_activity_lists();
 
     const std::set<const Entry *>& replyList() const { return _replyList; }
+    virtual unsigned int getReplicaNumber() const { return _replica_number; }
 
     virtual Call * findOrAddCall( const Entry *, const queryFunc = 0 );
     virtual Call * findOrAddFwdCall( const Entry * anEntry );
 
+#if HAVE_LIBGSL
     /*Quorum tomari*/
-    bool localQuorumDelay() { return myLocalQuorumDelay;}
-    void localQuorumDelay(bool localQuorumDelay ) { myLocalQuorumDelay= localQuorumDelay;}
+    bool localQuorumDelay() const { return _local_quorum_delay; }
+    void localQuorumDelay( bool local_quorum_delay ) { _local_quorum_delay = localQuorumDelay; }
+#endif
 
     /* Queries */
 
@@ -217,7 +224,7 @@ public:
     bool isNotReachable() const;
     Activity& isSpecified( const bool yesOrNo ) { _specified = yesOrNo; return *this; }
     bool isSpecified() const { return _specified; }
-    bool isStartActivity() const { return entry() != 0; }
+    bool isStartActivity() const { return entry() != nullptr; }
 
     /* Computation */
 
@@ -297,13 +304,12 @@ private:
     ActivityList * act_loop_list( ActivityList * activity_list, LQIO::DOM::ActivityList * dom_activitylist );
 
 public:
-    static std::map<LQIO::DOM::ActivityList*, LQIO::DOM::ActivityList*> actConnections;
-    static std::map<LQIO::DOM::ActivityList*, ActivityList *> domToNative;
+    static void completeConnections();
+    static void clearConnectionMaps();
 
-    //tomari, make it public for now.
-#if HAVE_LIBGSL
-    DiscretePoints remoteQuorumDelay;   	//tomari quorum
-#endif
+private:
+    static std::map<LQIO::DOM::ActivityList*, LQIO::DOM::ActivityList*> __actConnections;
+    static std::map<LQIO::DOM::ActivityList*, ActivityList *> __domToNative;
 
 private:
     const Entity * _task;			/*				*/
@@ -313,10 +319,18 @@ private:
     std::set<const Entry *> _replyList;		/* Who I generate replies to.	*/
     bool _specified;				/* Set if defined		*/
     mutable bool _reachable;			/* Set if activity is reachable	*/
-
-    double _throughput;				/* My throughput.		*/
-    bool myLocalQuorumDelay;
     double _maxCusts;
+    const unsigned int _replica_number;		/*				*/
+    
+#if HAVE_LIBGSL
+public:
+    DiscretePoints _remote_quorum_delay;   	//tomari quorum
+private:
+    bool _local_quorum_delay;
+#endif
+
+private:
+    double _throughput;				/* My throughput.		*/
 };
 
 

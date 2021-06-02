@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: call.cc 14704 2021-05-27 12:20:22Z greg $
+ * $Id: call.cc 14753 2021-06-02 14:10:59Z greg $
  *
  * Everything you wanted to know about a call to an entry, but were afraid to ask.
  *
@@ -64,7 +64,7 @@ std::set<Entity *>& Call::add_server( std::set<Entity *>& servers, const Call * 
 /* static */ double
 Call::add_rendezvous( double sum, const Call * call )
 {
-    if ( Pragma::replication() == Pragma::Replication::PAN ) {
+    if ( Pragma::pan_replication() ) {
 	return sum + call->rendezvous() * call->fanOut();
     } else {
 	return sum + call->rendezvous();
@@ -148,6 +148,30 @@ Call::operator!=( const Call& item ) const
 }
 
 
+/*
+ * Expand replicas (Not PAN_REPLICATION) from Call(src,dst) to
+ * Call(src(src_replica),dst(dst_replica)).  There is no need to copy
+ * src_replica=1 to dst_replica=1.  The real guts are in the copy
+ * constructors.
+ */
+
+Call&
+Call::expand()
+{
+    const unsigned int src_replicas = srcTask()->replicas();
+    for ( unsigned int src_replica = 1; src_replica <= src_replicas; ++src_replica ) {
+	const unsigned int dst_replicas = fanOut();
+	for ( unsigned int dst_replica = 1; dst_replica <= dst_replicas; ++dst_replica ) {
+	    if ( src_replica == 1 && dst_replica == 1 ) continue;	/* This exists already */
+	    Call * call = clone( src_replica, dst_replica );
+	    const_cast<Entity *>(call->dstTask())->addTask( call->srcTask() );
+	}
+    }
+    return *this;
+}
+
+
+
 bool
 Call::check() const
 {
@@ -175,7 +199,7 @@ Call::getDOMValue() const
     const double value = getDOM()->getCallMeanValue();
     if ( (getDOM()->getCallType() != LQIO::DOM::Call::Type::FORWARD && getSource()->phaseTypeFlag() == LQIO::DOM::Phase::Type::DETERMINISTIC && value != std::floor( value ))
 	 || getDOM()->getCallType() == LQIO::DOM::Call::Type::FORWARD && value > 1.0 ) {
-	std::stringstream ss;
+	std::ostringstream ss;
 	ss << value << " < " << value;
 	throw std::domain_error( ss.str() );
     }
@@ -249,7 +273,7 @@ Call::rendezvousDelay() const
 {
     if ( !hasRendezvous() ) {
 	return 0.0;
-    } else if ( Pragma::replication() == Pragma::Replication::PAN ) {
+    } else if ( Pragma::pan_replication() ) {
 	return rendezvous() * wait() * fanOut();
     } else {
 	return rendezvous() * wait();
@@ -422,11 +446,7 @@ Call::setVisits( const unsigned k, const unsigned p, const double rate )
     if ( aServer->hasServerChain( k ) && hasRendezvous() && !srcTask()->hasInfinitePopulation() ) {
 	Server * aStation = aServer->serverStation();
 	const unsigned e = dstEntry()->index();
-#if BUG_299
-	aStation->addVisits( e, k, p, rendezvous() / fanOut() * rate );
-#else
 	aStation->addVisits( e, k, p, rendezvous() * rate );
-#endif
     }
 }
 
@@ -831,18 +851,18 @@ PhaseCall::PhaseCall( const Phase * fromPhase, const Entry * toEntry )
  * Deep copy.  Set FromEntry to the replica.
  */
 
-PhaseCall::PhaseCall( const PhaseCall& src, unsigned int replica )
-    : Call( src, replica ),
-      FromEntry( Entry::find( src.srcEntry()->name(), src.srcEntry()->getReplicaNumber() ) )
+PhaseCall::PhaseCall( const PhaseCall& src, unsigned int src_replica, unsigned int dst_replica )
+    : Call( src, dst_replica ),		/* link to DOM.	*/
+      FromEntry( Entry::find( src.srcEntry()->name(), src_replica ) )
 {
     /* Link to source replica */
-    const Phase& src_phase = src.srcEntry()->getPhase(src.getSource()->getPhaseNumber());
+    const Phase& src_phase = srcEntry()->getPhase(src.getSource()->getPhaseNumber());
     setSource( &src_phase );    /* Swap _source to the replica !!! */
     const_cast<Phase&>(src_phase).addSrcCall( this );
 
     /* Link to destination replica */
     if ( src.dstEntry() != nullptr ) {
-	Entry * dst = Entry::find( src.dstEntry()->name(), static_cast<unsigned>(std::ceil( static_cast<double>(replica) / static_cast<double>(src.fanIn())) ) );
+	Entry * dst = Entry::find( src.dstEntry()->name(), static_cast<unsigned>(std::ceil( static_cast<double>(dst_replica) / static_cast<double>(src.fanIn())) ) );
 	setDestination( dst );
 	dst->addDstCall( this );	/* Set reverse link */
     }
@@ -857,24 +877,6 @@ bool
 PhaseCall::isCalledBy( const Entry * entry ) const
 {
     return srcEntry() == entry;
-}
-
-
-
-/*
- * Expand replicas (Not PAN_REPLICATION).  I need to find the phase in
- * the replica entry.  Note that the destination is affected by fan-out too.
- */
-
-Call&
-PhaseCall::expand()
-{
-    const unsigned int replicas = fanOut();
-    for ( unsigned int replica = 2; replica <= replicas; ++replica ) {
-	PhaseCall * call = clone( replica );
-	const_cast<Entity *>(call->dstTask())->addTask( call->srcTask() );
-    }
-    return *this;
 }
 
 
@@ -982,10 +984,24 @@ ActivityCall::ActivityCall( const Activity * fromActivity, const Entry * toEntry
 }
 
 
-ActivityCall::ActivityCall( const ActivityCall& src, unsigned int replica )
-    : Call( src, replica ), FromActivity()
+ActivityCall::ActivityCall( const ActivityCall& src, unsigned int src_replica, unsigned int dst_replica )
+    : Call( src, dst_replica ), FromActivity()
 {
-//  _destination = Entry::find( src._destination, replica adjusted for fanin/fanout, like task */	
+    const Task * task = Task::find( src.srcTask()->name(), src_replica );
+    const Activity * src_activity = task->findActivity( src.getSource()->name() );
+    setSource( src_activity );
+    const_cast<Activity*>(src_activity)->addSrcCall( this );
+    
+    /* Link to destination replica */
+    if ( src.dstEntry() != nullptr ) {
+	Entry * dst = Entry::find( src.dstEntry()->name(), static_cast<unsigned>(std::ceil( static_cast<double>(dst_replica) / static_cast<double>(src.fanIn())) ) );
+	setDestination( dst );
+	dst->addDstCall( this );	/* Set reverse link */
+    }
+#if 0
+    std::cerr << "ActivityCall::ActivityCall() from: " << getSource()->name() << "(" << srcEntry()->getReplicaNumber() << ")"
+	      << " to: " << dstEntry()->name() << "(" << dstEntry()->getReplicaNumber() << ")" << std::endl;
+#endif
 }
 
 
@@ -994,25 +1010,6 @@ ActivityCall::isCalledBy( const Entry * entry ) const
 {
     return entry->hasStartActivity() && srcTask() == entry->owner();
 }
-
-/*
- * Expand replicas (Not PAN_REPLICATION).  I need to find the activity
- * in the replica task.
- */
-
-Call&
-ActivityCall::expand()
-{
-    const unsigned int replicas = srcTask()->replicas();	/* Replicas of source */
-    for ( unsigned int replica = 2; replica <= replicas; ++replica ) {
-//	Task * task = Task::find( srcTask()->name(), replica );
-//      Activity * activity = task->findActivity(...);
-//	activity->add_call( clone( replica ) );
-    }
-    return *this;
-}
-
-
 
 /*
  * Initialize waiting time.

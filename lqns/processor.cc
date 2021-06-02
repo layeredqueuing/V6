@@ -10,15 +10,16 @@
  * November, 1994
  *
  * ------------------------------------------------------------------------
- * $Id: processor.cc 14704 2021-05-27 12:20:22Z greg $
+ * $Id: processor.cc 14753 2021-06-02 14:10:59Z greg $
  * ------------------------------------------------------------------------
  */
 
 #include "dim.h"
-#include <string>
-#include <cmath>
 #include <algorithm>
+#include <cmath>
 #include <numeric>
+#include <sstream>
+#include <string>
 #include <lqio/input.h>
 #include <lqio/labels.h>
 #include <lqio/error.h>
@@ -40,14 +41,25 @@
 #include "submodel.h"
 #include "task.h"
 
-bool Processor::__prune;
+bool Processor::__prune = false;
 
 /* ------------------------ Constructors etc. ------------------------- */
 
 Processor::Processor( LQIO::DOM::Processor* dom )
-    : Entity( dom, std::vector<Entry *>() ), _utilization(0.), _tasks()
+    : Entity( dom, std::vector<Entry *>() ),
+      _tasks(),
+      _utilization(0.0)
 {
 }
+
+
+Processor::Processor( const Processor& processor, unsigned int replica )
+    : Entity( processor, replica ),
+      _tasks(),
+      _utilization(0.0)
+{
+}
+
 
 
 /*
@@ -512,27 +524,8 @@ Processor::insertDOMResults(void) const
     }
     return *this;
 }
-
-
-/*
- * Print out info for this processor.
- */
-
-std::ostream&
-Processor::print( std::ostream& output ) const
-{
-    const std::ios_base::fmtflags oldFlags = output.setf( std::ios::left, std::ios::adjustfield );
-    output << std::setw(8) << name()
-	   << " " << std::setw(9) << print_processor_type()
-	   << " " << std::setw(5) << replicas()
-	   << " " << std::setw(12) << scheduling_label[scheduling()].str
-	   << "  "
-	   << print_info( *this );	    /* Bonus information about stations -- derived by solver */
-    output.flags(oldFlags);
-    return output;
-}
 
-/* ----------------------- External functions. ------------------------ */
+/* -------------------------- Static methods -------------------------- */
 
 /*
  * Add a processor to the model.
@@ -580,24 +573,28 @@ Processor::find( const std::string& name, unsigned int replica )
     std::set<Processor *>::const_iterator processor = std::find_if( Model::__processor.begin(), Model::__processor.end(), EqualsReplica<Processor>( name, replica ) );
     return ( processor != Model::__processor.end() ) ? *processor : nullptr;
 }
+
+/*----------------------------------------------------------------------*/
+/*                               Printing                               */
+/*----------------------------------------------------------------------*/
 
+/*
+ * Print out info for this processor.
+ */
 
-/* static */ std::ostream&
-Processor::output_processor_type( std::ostream& output, const Processor& aProcessor )
+std::ostream&
+Processor::print( std::ostream& output ) const
 {
-    char buf[12];
-    const unsigned n = aProcessor.copies();
-
-    if ( aProcessor.scheduling() == SCHEDULE_CUSTOMER ) {
-	sprintf( buf, "ref(%d)", n );
-    } else if ( aProcessor.isInfinite() ) {
-	sprintf( buf, "inf" );
-    } else if ( n > 1 ) {
-	sprintf( buf, "mult(%d)", n );
-    } else {
-	sprintf( buf, "serv" );
-    }
-    output << buf;
+    const std::ios_base::fmtflags oldFlags = output.setf( std::ios::left, std::ios::adjustfield );
+    std::ostringstream ss;
+    ss << name() << "." << getReplicaNumber();
+    output << std::setw(10) << ss.str()
+	   << " " << std::setw(15) << print_info()
+	   << " " << std::setw(9)  << print_type(); 
+    output << " " << std::setw(10) << "--"
+	   << " " << std::setw(3)  << "--";
+    output << " " << print_entries();
+    output.flags(oldFlags);
     return output;
 }
 

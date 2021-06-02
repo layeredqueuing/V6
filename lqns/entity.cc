@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: entity.cc 14677 2021-05-22 11:34:31Z greg $
+ * $Id: entity.cc 14753 2021-06-02 14:10:59Z greg $
  *
  * Everything you wanted to know about a task or processor, but were
  * afraid to ask.
@@ -1019,17 +1019,54 @@ Entity::saveServerResults( const MVASubmodel& submodel, double relax )
  */
 
 /* static */ std::ostream&
-Entity::output_server_chains( std::ostream& output, const Entity& aServer )
+Entity::output_server_chains( std::ostream& output, const Entity& entity ) 
 {
-    output << "Chains:" << aServer.serverChains() << std::endl;
+    output << "Chains:" << entity.serverChains() << std::endl;
     return output;
 }
 
-/* static */  std::ostream&
-Entity::output_entity_info( std::ostream& output, const Entity& aServer )
+/* static */ std::ostream&
+Entity::output_entries( std::ostream& output, const Entity& entity )
 {
-    if ( aServer.serverStation() ) {
-	output << "(" << aServer.serverStation()->typeStr() << ")";
+    const std::vector<Entry *>& entries = entity.entries();
+    for ( std::vector<Entry *>::const_iterator entry = entries.begin(); entry != entries.end(); ++entry ) {
+	if ( entry != entries.begin() ) {
+	    output << ", ";
+	}
+	output << (*entry)->name() << "." << (*entry)->getReplicaNumber();
     }
+    return output;
+}
+
+
+
+/* static */  std::ostream&
+Entity::output_info( std::ostream& output, const Entity& entity )
+{
+    if ( entity.serverStation() ) {
+	output << entity.serverStation()->typeStr();
+    } else {
+	output << "--";
+    }
+    return output;
+}
+
+
+/* static */ std::ostream&
+Entity::output_type( std::ostream& output, const Entity& entity )
+{
+    char buf[12];
+    const unsigned n = entity.copies();
+
+    if ( entity.scheduling() == SCHEDULE_CUSTOMER ) {
+	sprintf( buf, "ref(%d)", n );
+    } else if ( entity.isInfinite() ) {
+	sprintf( buf, "inf" );
+    } else if ( n > 1 ) {
+	sprintf( buf, "mult(%d)", n );
+    } else {
+	sprintf( buf, "serv" );
+    }
+    output << buf;
     return output;
 }

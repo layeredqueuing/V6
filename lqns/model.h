@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: model.h 14697 2021-05-26 13:36:54Z greg $
+ * $Id: model.h 14753 2021-06-02 14:10:59Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -72,7 +72,7 @@ public:
     void setRunDPS( double );
 
     unsigned nSubmodels() const { return _submodels.size(); }
-    unsigned syncModelNumber() const { return __sync_submodel; }
+    static unsigned syncSubmodel() { return __sync_submodel; }
     const Vector<Submodel *>& getSubmodels() const { return _submodels; }
 
     bool solve();
@@ -102,7 +102,7 @@ protected:
 	
 private:
     static bool check();
-    bool generate();	/* Create layers.	*/
+    bool generate( unsigned );	/* Create layers.	*/
     static void extend();
     void configure();
 
@@ -123,6 +123,8 @@ public:
     static std::set<Entry *,lt_replica<Entry>> __entry;
     static Processor * __think_server;	/* Delay server for think times	*/
     static Processor * __cfs_server;	/* Delay server for CFS Procs.	*/
+
+protected:
     static unsigned __sync_submodel;	/* Level of special sync model. */
 
 protected:
@@ -136,8 +138,8 @@ private:
     unsigned long _step_count;		/* Number of solveLayers	*/
     bool _model_initialized;
     const LQIO::DOM::Document * _document;
-    std::string _input_file_name;
-    std::string _output_file_name;
+    const std::string _input_file_name;
+    const std::string _output_file_name;
 };
 
 
@@ -147,15 +149,15 @@ class MOL_Model : public Model {
     friend class Model;		/* Allows use of constructor within class Model */
 
 protected:
-    MOL_Model( const LQIO::DOM::Document * document, const std::string& inputFileName, const std::string& outputFileName ) : Model( document, inputFileName, outputFileName ), HWSubmodel(0) {}
+    MOL_Model( const LQIO::DOM::Document * document, const std::string& inputFileName, const std::string& outputFileName ) : Model( document, inputFileName, outputFileName ), _HWSubmodel(0) {}
 
     virtual unsigned assignSubmodel();
     virtual void addToSubmodel();
 
     virtual double run();
 
-protected:
-    unsigned HWSubmodel;
+private:
+    unsigned _HWSubmodel;
 };
 
 
