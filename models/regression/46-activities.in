@@ -1,5 +1,5 @@
 # SRVN Model Description File
-# $HeadURL: http://rads-svn.sce.carleton.ca/svn/lqn/trunk/models/regression/46-activities.in $
+# $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/models/regression/46-activities.in $
 # 
 # Test case "table1, set1" from 
 # @Article{perf:heidelberger-83,
@@ -13,7 +13,7 @@
 #   month =	 jan,
 #
 # ------------------------------------------------------------------------
-# $Id: 46-activities.in 13117 2017-07-20 15:46:53Z greg $
+# $Id: 46-activities.in 14778 2021-06-07 23:32:41Z greg $
 # ------------------------------------------------------------------------
 
 G "Table 1, Set 5" 1e-06 50 5 0.9 -1

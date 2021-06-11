@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: entity.cc 14753 2021-06-02 14:10:59Z greg $
+ * $Id: entity.cc 14792 2021-06-11 01:08:38Z greg $
  *
  * Everything you wanted to know about a task or processor, but were
  * afraid to ask.
@@ -35,6 +35,7 @@
 #include "errmsg.h"
 #include "lqns.h"
 #include "pragma.h"
+#include "processor.h"
 #include "submodel.h"
 #include "task.h"
 #include "task.h"
@@ -87,7 +88,8 @@ Entity::Entity( LQIO::DOM::Entity* dom, const std::vector<Entry *>& entries )
       _utilization(0),
       _lastUtilization(-1.0),		/* Force update 		*/
       _weight(0.0),
-      _replica_number(1)		/* This object is not a replica	*/
+      _replica_number(1),		/* This object is not a replica	*/
+      _pruned(false)
 {
     attributes.initialized      = 0;		/* entity was initialized.	*/
     attributes.closed_model	= 0;		/* Stn in in closed model.     	*/
@@ -116,7 +118,8 @@ Entity::Entity( const Entity& src, unsigned int replica )
       _utilization(0),
       _lastUtilization(-1.0),		/* Force update 		*/
       _weight(0.0),
-      _replica_number(replica)		/* This object is a replica	*/
+      _replica_number(replica),		/* This object is a replica	*/
+      _pruned(false)
 {
     attributes.initialized      = src.attributes.initialized;
     attributes.closed_model	= src.attributes.closed_model;
@@ -168,6 +171,9 @@ Entity::findChildren( Call::stack& callStack, const bool ) const
 {
     unsigned max_depth = std::max( submodel(), callStack.depth() );
 
+#if 0
+    std::cerr << "Entity::findChildren: " << name() << "." << getReplicaNumber() << "->setSubmodel(" << max_depth << ")" << std::endl;
+#endif
     const_cast<Entity *>(this)->setSubmodel( max_depth );
     return max_depth;
 }
@@ -896,8 +902,23 @@ Entity::initServerStation( MVASubmodel& submodel )
 	computeVariance();
     }
 
+    /* If this entity has been pruned, remap to the base replica */
+#if BUG_299_PRUNE
+    const Entity * entity = nullptr;
+    if ( !isPruned() ) {
+	entity = this;
+    } else if ( isProcessor() ) {
+	entity = Processor::find( name() );
+    } else {
+	entity = Task::find( name() );
+    }
+    const std::vector<Entry *>& entries = entity->entries();
+#else
+    const std::vector<Entry *>& entries = this->entries();
+#endif
+
     const ChainVector& aChain = serverChains();
-    for ( std::vector<Entry *>::const_iterator entry = entries().begin(); entry != entries().end(); ++entry ) {
+    for ( std::vector<Entry *>::const_iterator entry = entries.begin(); entry != entries.end(); ++entry ) {
 	const unsigned e = (*entry)->index();
 	const double openArrivalRate = (*entry)->openArrivalRate();
 
@@ -906,7 +927,6 @@ Entity::initServerStation( MVASubmodel& submodel )
 	}
 
 	/* -- Set service time for entries with visits only. -- */
-
 	for ( unsigned ix = 1; ix <= aChain.size(); ++ix ) {
 	    setServiceTime( (*entry), aChain[ix] );
 	}
@@ -926,7 +946,7 @@ Entity::initServerStation( MVASubmodel& submodel )
     const std::set<Task *>& clients = submodel.getClients();
     if ( markovOvertaking() ) {
 	for_each( clients.begin(), clients.end(), Exec1<Task,Entity*>( &Task::computeOvertaking, this ) );
-	for ( std::vector<Entry *>::const_iterator entry = entries().begin(); entry != entries().end(); ++entry ) {
+	for ( std::vector<Entry *>::const_iterator entry = entries.begin(); entry != entries.end(); ++entry ) {
 	    if ( (*entry)->hasOvertaking() ) {
 		const unsigned e = (*entry)->index();
 		for ( unsigned p = 2; p <= (*entry)->maxPhase(); p++ ) {
@@ -964,7 +984,6 @@ Entity::setServiceTime( const Entry * entry, unsigned k ) const
 
     for ( unsigned p = 1; p <= entry->maxPhase(); ++p ) {
 	station->setService( e, k, p, entry->elapsedTimeForPhase(p) );
-
 	if ( hasVariance() ) {
 	    station->setVariance( e, k, p, entry->varianceForPhase(p) );
 	}

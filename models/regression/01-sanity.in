@@ -1,8 +1,8 @@
 # SRVN Model Description File
-# $HeadURL: http://rads-svn.sce.carleton.ca/svn/lqn/trunk/models/regression/01-sanity.in $
+# $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/models/regression/01-sanity.in $
 # 
 # ------------------------------------------------------------------------
-# $Id: 01-sanity.in 13117 2017-07-20 15:46:53Z greg $
+# $Id: 01-sanity.in 14778 2021-06-07 23:32:41Z greg $
 # ------------------------------------------------------------------------
 
 G "Simplest model - rendezvous." 	# Model comment 

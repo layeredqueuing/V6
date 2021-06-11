@@ -7,7 +7,7 @@
  *
  * June 2007
  *
- * $Id: submodel.h 14692 2021-05-25 17:49:24Z greg $
+ * $Id: submodel.h 14783 2021-06-08 19:00:20Z greg $
  */
 
 #ifndef _SUBMODEL_H
@@ -24,7 +24,6 @@
 
 class Call;
 class Processor;
-class Entry;
 class Model;
 class MVA;
 class MVACount;
@@ -36,6 +35,10 @@ class Group;
 /* ------- Submodel Abstract Superclass.  Subclassed as needed. ------- */
 	 
 class Submodel {
+protected:
+    typedef std::pair< std::set<Task *>, std::set<Entity*> > submodel_group_t;
+    
+private:
     class SubmodelManip {
     public:
 	SubmodelManip( std::ostream& (*ff)(std::ostream&, const Submodel&, const unsigned long ),
@@ -47,6 +50,18 @@ class Submodel {
 	const unsigned long arg;
 
 	friend std::ostream& operator<<(std::ostream & os, const SubmodelManip& m ) { return m.f(os,m.submodel,m.arg); }
+    };
+
+    /*
+     * Remove all tasks/entites 'y' from either _clients/_servers 'x'.  Mark 'y'
+     * as pruned.
+     */
+    
+    template <class Type> struct erase_from {
+	erase_from<Type>( std::set<Type>& x ) : _x(x) {}
+	void operator()( Type y ) { _x.erase(y); y->setPruned(true); }
+    private:
+	std::set<Type>& _x;
     };
 
 public:
@@ -66,7 +81,7 @@ public:
 
     virtual const char * const submodelType() const = 0;
     unsigned number() const { return _submodel_number; }
-    Submodel& number( const unsigned );
+    Submodel& setSubmodelNumber( const unsigned );
 
     virtual VectorMath<double> * getOverlapFactor() const { return nullptr; } 
     unsigned nChains() const { return _n_chains; }
@@ -75,11 +90,15 @@ public:
     void setThinkTime( unsigned int i, double thinkTime ) { _thinkTime[i] = thinkTime; }
     unsigned priority( const unsigned i ) const { return _priority[i]; }
 
-    virtual Submodel& initServers( const Model& );
+
+    Submodel& addClients();
+    virtual Submodel& initServers( const Model& ) { return *this; }
     virtual Submodel& reinitServers( const Model& ) { return *this; }
     virtual Submodel& initInterlock() { return *this; }
     virtual Submodel& build() { return *this; }
     virtual Submodel& rebuild() { return *this; }
+    virtual Submodel& optimize();
+
 
 #if PAN_REPLICATION
     virtual double nrFactor( const Server *, const unsigned, const unsigned ) const { return 0; }
@@ -99,6 +118,9 @@ protected:
     SubmodelManip print_submodel_header( const Submodel& aSubModel, const unsigned long iterations  ) { return SubmodelManip( &Submodel::submodel_header_str, aSubModel, iterations ); }
 
 private:
+    void addToGroup( Task *, submodel_group_t& group ) const;
+    bool replicaGroups( const std::set<Task *>&, const std::set<Task *>& ) const;
+		     
     static std::ostream& submodel_header_str( std::ostream& output, const Submodel& aSubmodel, const unsigned long iterations );
 
 protected:
@@ -129,8 +151,6 @@ class MVASubmodel : public Submodel {
     friend class Processor;		/* closedModel */
     friend class CFS_Processor;
 
-    enum class cached { SET_FALSE, SET_TRUE, NOT_SET };
-
 public:
     MVASubmodel( const unsigned );
     virtual ~MVASubmodel();
@@ -157,11 +177,12 @@ public:
     virtual std::ostream& print( std::ostream& ) const;
 
 private:
-#if PAN_REPLICATION
-    bool hasPanReplication() const;
-#endif
     bool hasThreads() const { return _hasThreads; }
     bool hasSynchs() const { return _hasSynchs; }
+    bool hasReplicas() const { return _hasReplicas; }
+#if PAN_REPLICATION
+    bool usePanReplication() const;
+#endif
 
 protected:
     unsigned makeChains();
@@ -174,9 +195,7 @@ protected:
 private:
     bool _hasThreads;			/* True if client has forks.	*/
     bool _hasSynchs;			/* True if server has joins.	*/
-#if PAN_REPLICATION
-    mutable cached _hasPanReplication;
-#endif
+    bool _hasReplicas;			/* True is submodel has replica	*/
 
     /* MVA Stuff */
 	

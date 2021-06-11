@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: model.h 14753 2021-06-02 14:10:59Z greg $
+ * $Id: model.h 14796 2021-06-11 14:48:04Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -37,8 +37,13 @@ class Group;
 /* ----------------------- Abstract Superclass. ----------------------- */
 
 class Model {
+private:
+    template <class Type> struct lt_replica
+    {
+	bool operator()(const Type * a, const Type * b) const { return a->name() < b->name() || a->getReplicaNumber() < b->getReplicaNumber(); }
+    };
+    
 protected:
-
     class SolveSubmodel {
     public:
 	SolveSubmodel( Model& model, bool verbose ) : _model(model), _verbose(verbose) {}
@@ -63,9 +68,10 @@ public:
     static bool prepare( const LQIO::DOM::Document* document );
     static void recalculateDynamicValues( const LQIO::DOM::Document* document );
     static void setModelParameters( const LQIO::DOM::Document* doc );
-    static Model * create( const LQIO::DOM::Document *, const std::string&, const std::string&, bool check_model = true );
+    static Model * create( const LQIO::DOM::Document *, const std::string&, const std::string& );
 
 public:
+    bool check();
     bool initialize();
 
     bool runDPS() const { return _runDPS; }
@@ -90,6 +96,7 @@ protected:
     virtual unsigned assignSubmodel() = 0;
     static unsigned topologicalSort();
     virtual void addToSubmodel() = 0;
+    virtual void optimize() {}
     void initStations();
     void reinitStations();
 
@@ -101,7 +108,6 @@ protected:
     void printIntermediate( const double ) const;
 	
 private:
-    static bool check();
     bool generate( unsigned );	/* Create layers.	*/
     static void extend();
     void configure();
@@ -116,7 +122,7 @@ public:
     static unsigned iteration_limit;
     static double underrelaxation;
     static unsigned print_interval;
-    static LQIO::DOM::Document::input_format input_format;
+    static LQIO::DOM::Document::InputFormat input_format;
     static std::set<Processor *,lt_replica<Processor>> __processor;
     static std::set<Group *,lt_replica<Group>> __group;
     static std::set<Task *,lt_replica<Task>> __task;
@@ -183,6 +189,7 @@ protected:
 
     virtual unsigned assignSubmodel();
     virtual void addToSubmodel();
+    virtual void optimize();
     virtual double run();
 };
 

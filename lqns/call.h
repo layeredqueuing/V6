@@ -10,7 +10,7 @@
  * November, 1994
  * March, 2004
  *
- * $Id: call.h 14753 2021-06-02 14:10:59Z greg $
+ * $Id: call.h 14769 2021-06-04 16:18:43Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -187,8 +187,6 @@ public:
 	const unsigned _k;
     };
 
-    enum class Type { RENDEZVOUS, SEND_NO_REPLY, FORWARDED };
-
 public:
     Call( const Phase * fromPhase, const Entry * toEntry );
 
@@ -236,7 +234,7 @@ public:
 
     virtual bool isForwardedCall() const { return false; }
     virtual bool isProcessorCall() const { return false; }
-    bool hasRendezvous() const { return getDOM() ? (getDOM()->getCallType() == LQIO::DOM::Call::Type::RENDEZVOUS || getDOM()->getCallType() == LQIO::DOM::Call::Type::QUASI_RENDEZVOUS) && getDOM()->getCallMeanValue() > 0: false; }
+    bool hasRendezvous() const { return getDOM() ?  getDOM()->getCallType() == LQIO::DOM::Call::Type::RENDEZVOUS && getDOM()->getCallMeanValue() > 0: false; }
     bool hasSendNoReply() const { return getDOM() ? getDOM()->getCallType() == LQIO::DOM::Call::Type::SEND_NO_REPLY && getDOM()->getCallMeanValue() > 0 : false; }
     bool hasForwarding() const { return  getDOM() ? getDOM()->getCallType() == LQIO::DOM::Call::Type::FORWARD && getDOM()->getCallMeanValue() > 0 : false; }
     bool hasOvertaking() const;

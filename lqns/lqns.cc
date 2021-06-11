@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: lqns.cc 14753 2021-06-02 14:10:59Z greg $
+ * $Id: lqns.cc 14796 2021-06-11 14:48:04Z greg $
  *
  * Command line processing.
  *
@@ -295,9 +295,9 @@ int main (int argc, char *argv[])
 
         case 'I':
             if ( strcasecmp( optarg, "xml" ) == 0 ) {
-                Model::input_format = LQIO::DOM::Document::XML_INPUT;
+                Model::input_format = LQIO::DOM::Document::InputFormat::XML;
             } else if ( strcasecmp( optarg, "lqn" ) == 0 ) {
-                Model::input_format = LQIO::DOM::Document::LQN_INPUT;
+                Model::input_format = LQIO::DOM::Document::InputFormat::LQN;
             } else {
                 std::cerr << LQIO::io_vars.lq_toolname << ": invalid argument to -I -- " << optarg << std::endl;
             }
@@ -539,104 +539,106 @@ process( const std::string& inputFileName, const std::string& outputFileName )
     document->mergePragmas( pragmas.getList() );       /* Save pragmas -- prepare will process */
     if ( Model::prepare(document) == false ) return INVALID_INPUT;
         
-    if ( document->getInputFormat() != LQIO::DOM::Document::LQN_INPUT && LQIO::Spex::__no_header ) {
+    if ( document->getInputFormat() != LQIO::DOM::Document::InputFormat::LQN && LQIO::Spex::__no_header ) {
         std::cerr << LQIO::io_vars.lq_toolname << ": --no-header is ignored for " << inputFileName << "." << std::endl;
     }
 
     /* declare Model * at this scope but don't instantiate due to problems with LQX programs and registering external symbols*/
-    Model * aModel = nullptr;
+    Model * model = nullptr;
     int rc = 0;
 
     /* We can simply run if there's no control program */
     LQX::Program * program = document->getLQXProgram();
     FILE * output = nullptr;
-    try {
-	if ( !program ) {
+    if ( !program ) {
 
-	    /* There is no control flow program, check for $-variables */
-	    if (document->getSymbolExternalVariableCount() != 0) {
-		LQIO::solution_error( LQIO::ERR_LQX_VARIABLE_RESOLUTION, inputFileName.c_str() );
-		rc = INVALID_INPUT;
-	    } else {
-		/* Make sure values are up to date */
-		Model::recalculateDynamicValues( document );
-
-		/* create Model just before it is needed */
-
-		aModel = Model::create( document, inputFileName, outputFileName );
-		/* Simply invoke the solver for the current DOM state */
-
-		if ( aModel->initialize() ) {
-		    aModel->solve();
-		}
-	    }
+	/* There is no control flow program, check for $-variables */
+	if (document->getSymbolExternalVariableCount() != 0) {
+	    LQIO::solution_error( LQIO::ERR_LQX_VARIABLE_RESOLUTION, inputFileName.c_str() );
+	    rc = INVALID_INPUT;
 	} else {
+	    /* Make sure values are up to date */
+	    Model::recalculateDynamicValues( document );
 
-	    if ( flags.verbose ) {
-		std::cerr << "Compile LQX..." << std::endl;
-	    }
+	    /* Simply invoke the solver for the current DOM state */
 
-	    /* Attempt to run the program */
-	    document->registerExternalSymbolsWithProgram( program );
+	    try {
+		model = Model::create( document, inputFileName, outputFileName );
 
-	    if ( print_lqx ) {
-		program->print( std::cout );
-	    }
-	
-	    /* create Model after registering external symbols above, disabling checking at this stage */
-	    aModel = Model::create( document, inputFileName, outputFileName, false );
-		
-	    LQX::Environment * environment = program->getEnvironment();
-	    if ( flags.restart ) {
-		environment->getMethodTable()->registerMethod(new SolverInterface::Solve(document, &Model::restart, aModel));
-	    } else if ( flags.reload_only ) {
-		environment->getMethodTable()->registerMethod(new SolverInterface::Solve(document, &Model::reload, aModel));
-	    } else {
-		environment->getMethodTable()->registerMethod(new SolverInterface::Solve(document, &Model::solve, aModel));
-	    }
-	    LQIO::RegisterBindings(environment, document);
-
-	    if ( outputFileName.size() > 0 && outputFileName != "-" && LQIO::Filename::isRegularFile(outputFileName.c_str()) ) {
-		output = fopen( outputFileName.c_str(), "w" );
-		if ( !output ) {
-		    solution_error( LQIO::ERR_CANT_OPEN_FILE, outputFileName.c_str(), strerror( errno ) );
-		    rc = FILEIO_ERROR;
+		if ( model->check() && model->initialize() ) {
+		    model->solve();
 		} else {
-		    environment->setDefaultOutput( output );      /* Default is stdout */
+		    rc = INVALID_INPUT;
 		}
 	    }
+	    catch ( const std::domain_error& e ) {
+		rc = INVALID_INPUT;
+	    }
+	    catch ( const std::range_error& e ) {
+		std::cerr << LQIO::io_vars.lq_toolname << ": range error - " << e.what() << std::endl;
+		rc = INVALID_OUTPUT;
+	    }
+	    catch ( const floating_point_error& e ) {
+		std::cerr << LQIO::io_vars.lq_toolname << ": floating point error - " << e.what() << std::endl;
+		rc = INVALID_OUTPUT;
+	    }
+	    catch ( const std::runtime_error& e ) {
+		std::cerr << LQIO::io_vars.lq_toolname << ": run time error - " << e.what() << std::endl;
+		rc = INVALID_INPUT;
+	    }
+	}
 
-	    if ( rc == 0 ) {
-		/* Invoke the LQX program itself */
-		if ( !program->invoke() ) {
-		    LQIO::solution_error( LQIO::ERR_LQX_EXECUTION, inputFileName.c_str() );
-		    rc = INVALID_INPUT;
-		} else if ( !SolverInterface::Solve::solveCallViaLQX ) {
-		    /* There was no call to solve the LQX */
-		    LQIO::solution_error( LQIO::ADV_LQX_IMPLICIT_SOLVE, inputFileName.c_str() );
-		    std::vector<LQX::SymbolAutoRef> args;
-		    environment->invokeGlobalMethod("solve", &args);
-		}
+    } else {
+
+	if ( flags.verbose ) {
+	    std::cerr << "Compile LQX..." << std::endl;
+	}
+
+	/* Attempt to run the program */
+	document->registerExternalSymbolsWithProgram( program );
+
+	if ( print_lqx ) {
+	    program->print( std::cout );
+	}
+	
+	model = Model::create( document, inputFileName, outputFileName );
+		
+	LQX::Environment * environment = program->getEnvironment();
+	if ( flags.restart ) {
+	    environment->getMethodTable()->registerMethod(new SolverInterface::Solve(document, &Model::restart, model));
+	} else if ( flags.reload_only ) {
+	    environment->getMethodTable()->registerMethod(new SolverInterface::Solve(document, &Model::reload, model));
+	} else {
+	    environment->getMethodTable()->registerMethod(new SolverInterface::Solve(document, &Model::solve, model));
+	}
+	LQIO::RegisterBindings(environment, document);
+
+	if ( outputFileName.size() > 0 && outputFileName != "-" && LQIO::Filename::isRegularFile(outputFileName.c_str()) ) {
+	    output = fopen( outputFileName.c_str(), "w" );
+	    if ( !output ) {
+		solution_error( LQIO::ERR_CANT_OPEN_FILE, outputFileName.c_str(), strerror( errno ) );
+		rc = FILEIO_ERROR;
+	    } else {
+		environment->setDefaultOutput( output );      /* Default is stdout */
+	    }
+	}
+
+	if ( rc == 0 ) {
+	    /* Invoke the LQX program itself */
+	    if ( !program->invoke() ) {
+		LQIO::solution_error( LQIO::ERR_LQX_EXECUTION, inputFileName.c_str() );
+		rc = INVALID_INPUT;
+	    } else if ( !SolverInterface::Solve::solveCallViaLQX ) {
+		/* There was no call to solve the LQX */
+		LQIO::solution_error( LQIO::ADV_LQX_IMPLICIT_SOLVE, inputFileName.c_str() );
+		std::vector<LQX::SymbolAutoRef> args;
+		environment->invokeGlobalMethod("solve", &args);
 	    }
 	}
     }
-    catch ( const std::domain_error& e ) {
-	rc = INVALID_INPUT;
-    }
-    catch ( const std::range_error& e ) {
-	std::cerr << LQIO::io_vars.lq_toolname << ": range error - " << e.what() << std::endl;
-	rc = INVALID_OUTPUT;
-    }
-    catch ( const floating_point_error& e ) {
-	std::cerr << LQIO::io_vars.lq_toolname << ": floating point error - " << e.what() << std::endl;
-	rc = INVALID_OUTPUT;
-    }
-    catch ( const std::runtime_error& e ) {
-	rc = INVALID_INPUT;
-    }
 
     /* Clean things up */
-    if ( aModel ) delete aModel;
+    if ( model ) delete model;
     if ( output ) fclose( output );
     if ( program ) delete program;
     delete document;

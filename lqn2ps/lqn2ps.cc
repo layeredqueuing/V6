@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: lqn2ps.cc 14639 2021-05-13 21:25:02Z greg $
+ * $Id: lqn2ps.cc 14796 2021-06-11 14:48:04Z greg $
  *
  * Command line processing.
  *
@@ -194,7 +194,7 @@ lqn2ps( int argc, char *argv[] )
     int arg;
     std::string output_file_name = "";
 
-    sscanf( "$Date: 2021-05-13 17:25:02 -0400 (Thu, 13 May 2021) $", "%*s %s %*s", copyrightDate );
+    sscanf( "$Date: 2021-06-11 10:48:04 -0400 (Fri, 11 Jun 2021) $", "%*s %s %*s", copyrightDate );
 
     static std::string opts = "";
 #if HAVE_GETOPT_H
@@ -930,17 +930,17 @@ process( const std::string& input_file_name, const std::string& output_file_name
     ::Call::reset();
     ::Activity::reset();
 
-    LQIO::DOM::Document::input_format input_format = LQIO::DOM::Document::AUTOMATIC_INPUT;
+    LQIO::DOM::Document::InputFormat input_format = LQIO::DOM::Document::InputFormat::AUTOMATIC;
     switch ( Flags::print[INPUT_FILE_FORMAT].value.i ) {
     case FORMAT_LQX:
     case FORMAT_XML:
-	input_format = LQIO::DOM::Document::XML_INPUT;
+	input_format = LQIO::DOM::Document::InputFormat::XML;
 	break;
     case FORMAT_JSON:
-	input_format = LQIO::DOM::Document::JSON_INPUT;
+	input_format = LQIO::DOM::Document::InputFormat::JSON;
 	break;
     case FORMAT_SRVN:
-	input_format = LQIO::DOM::Document::LQN_INPUT;
+	input_format = LQIO::DOM::Document::InputFormat::LQN;
 	break;
     }
 

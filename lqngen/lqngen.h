@@ -1,7 +1,7 @@
 /* -*- c++ -*-
  * lqn2ps.h	-- Greg Franks
  *
- * $Id: lqngen.h 14028 2020-10-28 15:08:52Z greg $
+ * $Id: lqngen.h 14796 2021-06-11 14:48:04Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -59,7 +59,7 @@ struct Flags
     static bool spex_output;
     static bool lqx_output;		/* Output as LQX */
     static bool reset_pragmas;
-    static LQIO::DOM::Document::input_format output_format; 	/* We output input files.  Confusing? */
+    static LQIO::DOM::Document::InputFormat output_format; 	/* We output input files.  Confusing? */
     static std::vector<bool> observe;
     static std::vector<bool> convert;
     static std::vector<bool> override;

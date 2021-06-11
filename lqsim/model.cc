@@ -9,7 +9,7 @@
 /*
  * Input processing.
  *
- * $Id: model.cc 14498 2021-02-27 23:08:51Z greg $
+ * $Id: model.cc 14796 2021-06-11 14:48:04Z greg $
  */
 
 /* Debug Messages for Loading */
@@ -71,7 +71,7 @@ int Model::__genesis_task_id = 0;
 Model * Model::__model = nullptr;
 double Model::max_service = 0.0;
 const double Model::simulation_parameters::DEFAULT_TIME = 1e5;
-LQIO::DOM::Document::input_format Model::input_format = LQIO::DOM::Document::AUTOMATIC_INPUT;
+LQIO::DOM::Document::InputFormat Model::input_format = LQIO::DOM::Document::InputFormat::AUTOMATIC;
 bool deferred_exception = false;	/* domain error detected during run.. throw after parasol stops. */
 
 /*----------------------------------------------------------------------*/
@@ -358,7 +358,7 @@ Model::print()
 
     if ( override || ((!hasOutputFileName() || directory_name.size() > 0 ) && _input_file_name != "-" ) ) {
 
-	if ( _document->getInputFormat() == LQIO::DOM::Document::XML_INPUT || global_xml_flag ) {	/* No parseable/json output, so create XML */
+	if ( _document->getInputFormat() == LQIO::DOM::Document::InputFormat::XML || global_xml_flag ) {	/* No parseable/json output, so create XML */
 	    std::ofstream output;
 	    LQIO::Filename filename( _input_file_name, "lqxo", directory_name, suffix );
 	    filename.backup();
@@ -366,33 +366,33 @@ Model::print()
 	    if ( !output ) {
 		solution_error( LQIO::ERR_CANT_OPEN_FILE, filename().c_str(), strerror( errno ) );
 	    } else {
-		_document->print( output, LQIO::DOM::Document::XML_OUTPUT );		// don't save LQX
+		_document->print( output, LQIO::DOM::Document::OutputFormat::XML );		// don't save LQX
 		output.close();
 	    }
 	}
     
-	if ( _document->getInputFormat() == LQIO::DOM::Document::JSON_INPUT || global_json_flag ) {
+	if ( _document->getInputFormat() == LQIO::DOM::Document::InputFormat::JSON || global_json_flag ) {
 	    std::ofstream output;
 	    LQIO::Filename filename( _input_file_name, "lqjo", directory_name, suffix );
 	    output.open( filename().c_str(), std::ios::out );
 	    if ( !output ) {
 		solution_error( LQIO::ERR_CANT_OPEN_FILE, filename().c_str(), strerror( errno ) );
 	    } else {
-		_document->print( output, LQIO::DOM::Document::JSON_OUTPUT );		// don't save LQX
+		_document->print( output, LQIO::DOM::Document::OutputFormat::JSON );		// don't save LQX
 		output.close();
 	    }
 	}
 
 	/* Parseable output. */
 
-	if ( ( _document->getInputFormat() == LQIO::DOM::Document::LQN_INPUT && lqx_output && !global_xml_flag ) || global_parse_flag ) {
+	if ( ( _document->getInputFormat() == LQIO::DOM::Document::InputFormat::LQN && lqx_output && !global_xml_flag ) || global_parse_flag ) {
 	    std::ofstream output;
 	    LQIO::Filename filename( _input_file_name.c_str(), "p", directory_name.c_str(), suffix.c_str() );
 	    output.open( filename().c_str(), std::ios::out );
 	    if ( !output ) {
 		solution_error( LQIO::ERR_CANT_OPEN_FILE, filename().c_str(), strerror( errno ) );
 	    } else {
-		_document->print( output, LQIO::DOM::Document::PARSEABLE_OUTPUT );
+		_document->print( output, LQIO::DOM::Document::OutputFormat::PARSEABLE );
 		output.close();
 	    }
 	}
@@ -405,16 +405,16 @@ Model::print()
 	if ( !output ) {
 	    solution_error( LQIO::ERR_CANT_OPEN_FILE, filename().c_str(), strerror( errno ) );
 	} else {
-	    _document->print( output, global_rtf_flag ? LQIO::DOM::Document::RTF_OUTPUT : LQIO::DOM::Document::LQN_OUTPUT );
+	    _document->print( output, global_rtf_flag ? LQIO::DOM::Document::OutputFormat::RTF : LQIO::DOM::Document::OutputFormat::LQN );
 	    output.close();
 	}
 
     } else if ( _output_file_name == "-" || _input_file_name == "-" ) {
 
 	if ( global_parse_flag ) {
-	    _document->print( std::cout, LQIO::DOM::Document::PARSEABLE_OUTPUT );
+	    _document->print( std::cout, LQIO::DOM::Document::OutputFormat::PARSEABLE );
 	} else {
-	    _document->print( std::cout, global_rtf_flag ? LQIO::DOM::Document::RTF_OUTPUT : LQIO::DOM::Document::LQN_OUTPUT );
+	    _document->print( std::cout, global_rtf_flag ? LQIO::DOM::Document::OutputFormat::RTF : LQIO::DOM::Document::OutputFormat::LQN );
 	}
 
     } else {
@@ -428,13 +428,13 @@ Model::print()
 	if ( !output ) {
 	    solution_error( LQIO::ERR_CANT_OPEN_FILE, _output_file_name.c_str(), strerror( errno ) );
 	} else if ( global_xml_flag ) {
-	    _document->print( output, LQIO::DOM::Document::XML_OUTPUT );
+	    _document->print( output, LQIO::DOM::Document::OutputFormat::XML );
 	} else if ( global_json_flag ) {
-	    _document->print( output, LQIO::DOM::Document::JSON_OUTPUT );
+	    _document->print( output, LQIO::DOM::Document::OutputFormat::JSON );
 	} else if ( global_parse_flag ) {
-	    _document->print( output, LQIO::DOM::Document::PARSEABLE_OUTPUT );
+	    _document->print( output, LQIO::DOM::Document::OutputFormat::PARSEABLE );
 	} else if ( global_rtf_flag ) {
-	    _document->print( output, LQIO::DOM::Document::RTF_OUTPUT );
+	    _document->print( output, LQIO::DOM::Document::OutputFormat::RTF );
 	} else {
 	    _document->print( output );
 	}
@@ -482,11 +482,11 @@ Model::print_intermediate()
     if ( !output ) {
 	return;			/* Ignore errors */
     } else if ( global_xml_flag ) {
-	_document->print( output, LQIO::DOM::Document::XML_OUTPUT );
+	_document->print( output, LQIO::DOM::Document::OutputFormat::XML );
     } else if ( global_json_flag ) {
-	_document->print( output, LQIO::DOM::Document::JSON_OUTPUT );
+	_document->print( output, LQIO::DOM::Document::OutputFormat::JSON );
     } else if ( global_parse_flag ) {
-	_document->print( output, LQIO::DOM::Document::PARSEABLE_OUTPUT );
+	_document->print( output, LQIO::DOM::Document::OutputFormat::PARSEABLE );
     } else {
 	_document->print( output );
     }

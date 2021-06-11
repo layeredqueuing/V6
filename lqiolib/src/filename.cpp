@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: filename.cpp 13127 2017-08-28 18:13:09Z greg $
+ * $Id: filename.cpp 14792 2021-06-11 01:08:38Z greg $
  *
  * File name generation.
  *
@@ -218,13 +218,9 @@ namespace LQIO {
 	struct stat src;
 
 	if ( stat( filename.c_str(), &dst ) < 0 ) {
-	    std::string err = "Cannot stat: ";
-	    err += filename;
-	    throw std::invalid_argument( err.c_str() );
+	    throw std::invalid_argument( "Cannot stat: " + filename );
 	} else if ( stat( (*this)().c_str(), &src ) < 0 ) {
-	    std::string err = "Cannot stat: ";
-	    err += filename;
-	    throw std::invalid_argument( err.c_str() );
+	    throw std::invalid_argument( "Cannot stat: " + (*this)() );
 	} else {
 	    return src.st_mtime - dst.st_mtime;
 	}

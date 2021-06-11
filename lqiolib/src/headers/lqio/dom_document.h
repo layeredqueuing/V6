@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- *  $Id: dom_document.h 14534 2021-03-09 23:58:14Z greg $
+ *  $Id: dom_document.h 14796 2021-06-11 14:48:04Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -32,8 +32,8 @@ namespace LQIO {
 	class Document {
 
 	public:
-	    typedef enum { DEFAULT_OUTPUT, LQN_OUTPUT, XML_OUTPUT, JSON_OUTPUT, RTF_OUTPUT, PARSEABLE_OUTPUT } output_format;
-	    typedef enum { AUTOMATIC_INPUT, LQN_INPUT, XML_INPUT, JSON_INPUT, JMVA_INPUT } input_format;
+	    enum class OutputFormat { DEFAULT, LQN, XML, JSON, RTF, PARSEABLE };
+	    enum class InputFormat  { AUTOMATIC, LQN, XML, JSON, JMVA } ;
 
 	private:
 	    enum class cached { SET_FALSE, SET_TRUE, NOT_SET };
@@ -45,10 +45,10 @@ namespace LQIO {
 	    /* Constructors and Destructors */
 
 	public:
-	    Document( input_format );
+	    Document( InputFormat );
 	    virtual ~Document();
 
-	    input_format getInputFormat() const { return _format; }
+	    InputFormat getInputFormat() const { return _format; }
 
 	    /* STORE: Model Parameter Information */
 	    void setModelParameters(const std::string& comment, ExternalVariable* conv_val, ExternalVariable* it_limit, ExternalVariable* print_int, ExternalVariable* underrelax_coeff, const void * arg );
@@ -200,10 +200,10 @@ namespace LQIO {
 
 
 	    /* I/O */
-	    static input_format getInputFormatFromFilename( const std::string&, const input_format=AUTOMATIC_INPUT );
-	    static Document* load(const std::string&, input_format format, unsigned& errorCode, bool load_results );
+	    static InputFormat getInputFormatFromFilename( const std::string&, const InputFormat=InputFormat::AUTOMATIC );
+	    static Document* load(const std::string&, InputFormat format, unsigned& errorCode, bool load_results );
 	    virtual bool loadResults( const std::string&, const std::string&, const std::string&, unsigned& errorCode );
-	    std::ostream& print( std::ostream& ouptut, const output_format format=LQN_OUTPUT ) const;
+	    std::ostream& print( std::ostream& ouptut, const OutputFormat format=OutputFormat::LQN ) const;
 	    std::ostream& printExternalVariables( std::ostream& ouptut ) const;
 
 	    /* Semi-private */
@@ -257,7 +257,7 @@ namespace LQIO {
 	    static std::map<const char *, double> __initialValues;
 
 	    unsigned _nextEntityId;                           	/* for sorting, see _entities 	*/
-	    const input_format _format;				/* input format 		*/
+	    const InputFormat _format;				/* input format 		*/
 
 	    /* The stored LQX program, if any */
 	    std::string _lqxProgram;

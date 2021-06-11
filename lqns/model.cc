@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: model.cc 14753 2021-06-02 14:10:59Z greg $
+ * $Id: model.cc 14796 2021-06-11 14:48:04Z greg $
  *
  * Layer-ization of model.  The basic concept is from the reference
  * below.  However, model partioning is more complex than task vs device.
@@ -90,12 +90,12 @@ unsigned Model::print_interval = 1;
 Processor * Model::__think_server = nullptr;
 Processor * Model::__cfs_server = nullptr;
 unsigned Model::__sync_submodel = 0;
-LQIO::DOM::Document::input_format Model::input_format = LQIO::DOM::Document::AUTOMATIC_INPUT;
+LQIO::DOM::Document::InputFormat Model::input_format = LQIO::DOM::Document::InputFormat::AUTOMATIC;
 
-std::set<Processor *,lt_replica<Processor>> Model::__processor;
-std::set<Group *,lt_replica<Group>> Model::__group;
-std::set<Task *,lt_replica<Task>> Model::__task;
-std::set<Entry *,lt_replica<Entry>> Model::__entry;
+std::set<Processor *,Model::lt_replica<Processor>> Model::__processor;
+std::set<Group *,Model::lt_replica<Group>> Model::__group;
+std::set<Task *,Model::lt_replica<Task>> Model::__task;
+std::set<Entry *,Model::lt_replica<Entry>> Model::__entry;
 
 /*----------------------------------------------------------------------*/
 /*                           Factory Methods                            */
@@ -289,7 +289,7 @@ Model::recalculateDynamicValues( const LQIO::DOM::Document* document )
  */
 
 Model *
-Model::create( const LQIO::DOM::Document * document, const std::string& inputFileName, const std::string& outputFileName, bool check_model )
+Model::create( const LQIO::DOM::Document * document, const std::string& inputFileName, const std::string& outputFileName )
 {
     Model *model = nullptr;
 
@@ -302,39 +302,37 @@ Model::create( const LQIO::DOM::Document * document, const std::string& inputFil
      * disable model checking and expansion at this stage with LQX programs
      */
 
-    if ( LQIO::io_vars.anError() == false && (check_model != true || check()) ) {
 
-	if ( flags.verbose ) std::cerr << "Create: " << Pragma::getLayeringStr() << " layers..." << std::endl;
+    if ( flags.verbose ) std::cerr << "Create: " << Pragma::getLayeringStr() << " layers..." << std::endl;
 	
-	switch ( Pragma::layering() ) {
-	case Pragma::Layering::BATCHED: 
-	    model = new Batch_Model( document, inputFileName, outputFileName );
-	    break;
+    switch ( Pragma::layering() ) {
+    case Pragma::Layering::BATCHED: 
+	model = new Batch_Model( document, inputFileName, outputFileName );
+	break;
 
-	case Pragma::Layering::BACKPROPOGATE_BATCHED:
-	    model = new BackPropogate_Batch_Model( document, inputFileName, outputFileName );
-	    break;
+    case Pragma::Layering::BACKPROPOGATE_BATCHED:
+	model = new BackPropogate_Batch_Model( document, inputFileName, outputFileName );
+	break;
 
-	case Pragma::Layering::METHOD_OF_LAYERS:
-	    model = new MOL_Model( document, inputFileName, outputFileName );
-	    break;
+    case Pragma::Layering::METHOD_OF_LAYERS:
+	model = new MOL_Model( document, inputFileName, outputFileName );
+	break;
 
-	case Pragma::Layering::BACKPROPOGATE_METHOD_OF_LAYERS:
-	    model = new BackPropogate_MOL_Model( document, inputFileName, outputFileName );
-	    break;
+    case Pragma::Layering::BACKPROPOGATE_METHOD_OF_LAYERS:
+	model = new BackPropogate_MOL_Model( document, inputFileName, outputFileName );
+	break;
 
-	case Pragma::Layering::SRVN:
-	    model = new SRVN_Model( document, inputFileName, outputFileName );
-	    break;
+    case Pragma::Layering::SRVN:
+	model = new SRVN_Model( document, inputFileName, outputFileName );
+	break;
 
-	case Pragma::Layering::SQUASHED:
-	    model = new Squashed_Model( document, inputFileName, outputFileName );
-	    break;
+    case Pragma::Layering::SQUASHED:
+	model = new Squashed_Model( document, inputFileName, outputFileName );
+	break;
 
-	case Pragma::Layering::HWSW:
-	    model = new HwSw_Model( document, inputFileName, outputFileName );
-	    break;
-	}
+    case Pragma::Layering::HWSW:
+	model = new HwSw_Model( document, inputFileName, outputFileName );
+	break;
     }
 
     if ( !model ) throw std::runtime_error( "could not create model" );
@@ -452,6 +450,7 @@ Model::initialize()
 	if ( flags.verbose ) std::cerr << "Generate... " << std::endl;
 	if ( generate( assignSubmodel() ) ) {
 	    _model_initialized = true;
+	    optimize();
 	    configure();		/* Dimension arrays and threads	*/
 	    initStations();		/* Init MVA values (pop&waits). */		/* -- Step 2 -- */
 	}
@@ -477,7 +476,7 @@ Model::extend()
 {
     /* Replicas. Create extra objects as needed.  */
 
-    if ( Pragma::replication() == Pragma::Replication::EXPAND ) {
+    if ( Pragma::replication() == Pragma::Replication::EXPAND || Pragma::replication() == Pragma::Replication::PRUNE ) {
 	/* Copy over original sets because we are going to insert the new objects directly */
 	const std::set<Processor *,lt_replica<Processor>> processors(Model::__processor);
 //	const std::set<Group *,lt_replica<Group>> Model::__group;
@@ -532,6 +531,10 @@ Model::extend()
 bool
 Model::check()
 {
+    if ( flags.verbose ) std::cerr << "Check..." << std::endl;
+    
+    if ( LQIO::io_vars.anError() ) return false;	/* Don't bother */
+    
     bool rc = true;
     rc = std::all_of( __processor.begin(), __processor.end(), Predicate<Processor>( &Processor::check ) ) && rc;
     rc = std::all_of( __task.begin(), __task.end(), Predicate<Task>( &Task::check ) ) && rc;
@@ -587,6 +590,7 @@ Model::generate( unsigned max_depth )
     /* Build model. */
 
     addToSubmodel();			/* Add tasks to layers.		*/
+    std::for_each( _submodels.begin(), _submodels.end(), Exec<Submodel>( &Submodel::addClients ) );
 
     /* split/prune submodels -- this will have to be done by subclass */
 
@@ -766,7 +770,7 @@ Model::solve()
     }
 
     if ( override || ((!hasOutputFileName() || directoryName.size() > 0 ) && _input_file_name != "-" )) {
-	if ( _document->getInputFormat() == LQIO::DOM::Document::XML_INPUT || flags.xml_output ) {	/* No parseable/json output, so create XML */
+	if ( _document->getInputFormat() == LQIO::DOM::Document::InputFormat::XML || flags.xml_output ) {	/* No parseable/json output, so create XML */
 	    LQIO::Filename filename( _input_file_name, "lqxo", directoryName, suffix );
 	    std::ofstream output;
 	    filename.backup();
@@ -774,33 +778,33 @@ Model::solve()
 	    if ( !output ) {
 		solution_error( LQIO::ERR_CANT_OPEN_FILE, filename().c_str(), strerror( errno ) );
 	    } else {
-		_document->print( output, LQIO::DOM::Document::XML_OUTPUT );
+		_document->print( output, LQIO::DOM::Document::OutputFormat::XML );
 		output.close();
 	    }
 	}
 
-	if ( _document->getInputFormat() == LQIO::DOM::Document::JSON_INPUT || flags.json_output ) {
+	if ( _document->getInputFormat() == LQIO::DOM::Document::InputFormat::JSON || flags.json_output ) {
 	    LQIO::Filename filename( _input_file_name, "lqjo", directoryName, suffix );
 	    std::ofstream output;
 	    output.open( filename().c_str(), std::ios::out );
 	    if ( !output ) {
 		solution_error( LQIO::ERR_CANT_OPEN_FILE, filename().c_str(), strerror( errno ) );
 	    } else {
-		_document->print( output, LQIO::DOM::Document::JSON_OUTPUT );
+		_document->print( output, LQIO::DOM::Document::OutputFormat::JSON );
 		output.close();
 	    }
 	}
 
 	/* Parseable output. */
 
-	if ( ( _document->getInputFormat() == LQIO::DOM::Document::LQN_INPUT && lqx_output && !flags.xml_output ) || flags.parseable_output ) {
+	if ( ( _document->getInputFormat() == LQIO::DOM::Document::InputFormat::LQN && lqx_output && !flags.xml_output ) || flags.parseable_output ) {
 	    LQIO::Filename filename( _input_file_name, "p", directoryName, suffix );
 	    std::ofstream output;
 	    output.open( filename().c_str(), std::ios::out );
 	    if ( !output ) {
 		solution_error( LQIO::ERR_CANT_OPEN_FILE, filename().c_str(), strerror( errno ) );
 	    } else {
-		_document->print( output, LQIO::DOM::Document::PARSEABLE_OUTPUT );
+		_document->print( output, LQIO::DOM::Document::OutputFormat::PARSEABLE );
 		output.close();
 	    }
 	}
@@ -814,7 +818,7 @@ Model::solve()
 	if ( !output ) {
 	    solution_error( LQIO::ERR_CANT_OPEN_FILE, filename().c_str(), strerror( errno ) );
 	} else if ( flags.rtf_output ) {
-	    _document->print( output, LQIO::DOM::Document::RTF_OUTPUT );
+	    _document->print( output, LQIO::DOM::Document::OutputFormat::RTF );
 	} else {
 	    _document->print( output );
 	    if ( flags.print_overtaking ) {
@@ -826,9 +830,9 @@ Model::solve()
     } else if ( _output_file_name == "-" || _input_file_name == "-" ) {
 
 	if ( flags.parseable_output ) {
-	    _document->print( std::cout, LQIO::DOM::Document::PARSEABLE_OUTPUT );
+	    _document->print( std::cout, LQIO::DOM::Document::OutputFormat::PARSEABLE );
 	} else if ( flags.rtf_output ) {
-	    _document->print( std::cout, LQIO::DOM::Document::RTF_OUTPUT );
+	    _document->print( std::cout, LQIO::DOM::Document::OutputFormat::RTF );
 	} else {
 	    _document->print( std::cout );
 	    if ( flags.print_overtaking ) {
@@ -847,13 +851,13 @@ Model::solve()
 	if ( !output ) {
 	    solution_error( LQIO::ERR_CANT_OPEN_FILE, _output_file_name.c_str(), strerror( errno ) );
 	} else if ( flags.xml_output ) {
-	    _document->print( output, LQIO::DOM::Document::XML_OUTPUT );
+	    _document->print( output, LQIO::DOM::Document::OutputFormat::XML );
 	} else if ( flags.json_output ) {
-	    _document->print( output, LQIO::DOM::Document::JSON_OUTPUT );
+	    _document->print( output, LQIO::DOM::Document::OutputFormat::JSON );
 	} else if ( flags.parseable_output ) {
-	    _document->print( output, LQIO::DOM::Document::PARSEABLE_OUTPUT );
+	    _document->print( output, LQIO::DOM::Document::OutputFormat::PARSEABLE );
 	} else if ( flags.rtf_output ) {
-	    _document->print( output, LQIO::DOM::Document::RTF_OUTPUT );
+	    _document->print( output, LQIO::DOM::Document::OutputFormat::RTF );
 	} else {
 	    _document->print( output );
 	    if ( flags.print_overtaking ) {
@@ -1011,11 +1015,11 @@ Model::printIntermediate( const double convergence ) const
     if ( !output ) return;			/* Ignore errors */
 
     if ( flags.xml_output ) {
-	_document->print( output, LQIO::DOM::Document::XML_OUTPUT );
+	_document->print( output, LQIO::DOM::Document::OutputFormat::XML );
     } else if ( flags.json_output ) {
-	_document->print( output, LQIO::DOM::Document::JSON_OUTPUT );
+	_document->print( output, LQIO::DOM::Document::OutputFormat::JSON );
     } else if ( flags.parseable_output ) {
-	_document->print( output, LQIO::DOM::Document::PARSEABLE_OUTPUT );
+	_document->print( output, LQIO::DOM::Document::OutputFormat::PARSEABLE );
     } else {
 	_document->print( output );
     }
@@ -1316,8 +1320,12 @@ void
 Batch_Model::addToSubmodel()
 {
     for ( std::set<Task *>::const_iterator task = __task.begin(); task != __task.end(); ++task ) {
-	const int i = (*task)->submodel();
+	const unsigned int i = (*task)->submodel();
 	if ( !(*task)->isReferenceTask() ) {
+	    if ( i == 0 ) {
+		const Task& client = **task;
+		throw std::runtime_error( "Batch_Model::addToSubmodel: bad submodel for task " + client.name() );
+	    }
 	    _submodels[i]->addServer( *task );
 	}
 	if ( (*task)->hasForks() ) {
@@ -1329,13 +1337,13 @@ Batch_Model::addToSubmodel()
     }
 
     for ( std::set<Processor *>::const_iterator processor = __processor.begin(); processor != __processor.end(); ++processor ) {
-	const int i = (*processor)->submodel();
+	const unsigned int i = (*processor)->submodel();
 	if ( i <= 0 ) continue;		// Device not used.
 	_submodels[i]->addServer( *processor );
     }
 
     if ( __think_server ) {
-	const int i = __think_server->submodel();
+	const unsigned int i = __think_server->submodel();
 	if ( i > 0 ) {
 	    _submodels[i]->addServer( __think_server );
 	}
@@ -1346,6 +1354,20 @@ Batch_Model::addToSubmodel()
 	    _submodels[i]->addServer( __cfs_server );
 	}
     }
+}
+
+
+
+/*
+ * For each submodel, look for disjoint chains.  If found delete. This
+ * may be extended to the general case and may result in adding
+ * submodels.
+ */
+
+void
+Batch_Model::optimize()
+{
+    std::for_each( _submodels.begin(), _submodels.end(), Exec<Submodel>( &Submodel::optimize ) );
 }
 
 

@@ -2,7 +2,7 @@
  *
  * $URL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/runlqx.h $
  * ------------------------------------------------------------------------
- * $Id: runlqx.h 14498 2021-02-27 23:08:51Z greg $
+ * $Id: runlqx.h 14792 2021-06-11 01:08:38Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -23,8 +23,9 @@ namespace SolverInterface {
 	typedef bool (Model::*solve_fptr)();
 		
 	/* Parameters necessary to call runSolverOnCurrentDOM() */
-	Solve(LQIO::DOM::Document* document, solve_fptr solve, Model* aModel) :
-	    _aModel(aModel), _solve(solve), _document(document) {}
+	Solve(LQIO::DOM::Document* document, solve_fptr solve, Model* model) :
+
+	_document(document), _solve(solve), _model(model) {}
 	virtual ~Solve() {}
 		
 	/* All of the glue code to make sure LQX can call solve() */
@@ -40,12 +41,11 @@ namespace SolverInterface {
 	static std::string fold( const std::string& s1, const std::string& s2 );
 	
     private:
-	Model * _aModel;
-	solve_fptr _solve;
 	LQIO::DOM::Document* _document;
+	solve_fptr _solve;
+	Model * _model;
 
 	static unsigned int invocationCount;
     };
-	
 }
 #endif 

@@ -2,7 +2,7 @@
  * Model file generator.
  * This is actually part of lqn2ps, but if lqn2ps is invoked as lqngen, then this magically runs.
  *
- * $Id: lqngen.cc 14534 2021-03-09 23:58:14Z greg $
+ * $Id: lqngen.cc 14796 2021-06-11 14:48:04Z greg $
  */
 
 #include "lqngen.h"
@@ -137,7 +137,7 @@ bool queueing_model = false;
 
 bool Flags::verbose = false;
 bool Flags::annotate_input = true;
-LQIO::DOM::Document::input_format Flags::output_format = LQIO::DOM::Document::AUTOMATIC_INPUT;
+LQIO::DOM::Document::InputFormat Flags::output_format = LQIO::DOM::Document::InputFormat::AUTOMATIC;
 bool Flags::spex_output = false;
 bool Flags::lqx_output = false;
 bool Flags::lqn2lqx = false;
@@ -160,7 +160,12 @@ static RV::RandomVariable * number_of_tasks;
 static RV::RandomVariable * total_customers;
 
 static bool some_randomness = false;
-static const char * const output_suffix[] = { "xlqn", "xlqn", "lqnx", "json", 0, 0 };
+static const std::map<LQIO::DOM::Document::InputFormat,const std::string> output_suffix = {
+    { LQIO::DOM::Document::InputFormat::AUTOMATIC,  "xlqn" },
+    { LQIO::DOM::Document::InputFormat::LQN,	    "xlqn" },
+    { LQIO::DOM::Document::InputFormat::XML,	    "lqnx" },
+    { LQIO::DOM::Document::InputFormat::JSON,	    "lqnj" }
+};
 static std::string output_file_name;
 
 
@@ -447,7 +452,7 @@ main( int argc, char *argv[] )
 		break;
 
 	    case 0x100+'j':
-		Flags::output_format = LQIO::DOM::Document::JSON_INPUT; 
+		Flags::output_format = LQIO::DOM::Document::InputFormat::JSON; 
 		break;
 
 	    case 'L':
@@ -509,18 +514,18 @@ main( int argc, char *argv[] )
 		int arg = getsubopt( &optarg, const_cast<char * const *>(strings), &endptr );
 		switch ( arg ) {
 		case 0:
-		    Flags::output_format = LQIO::DOM::Document::LQN_INPUT;
+		    Flags::output_format = LQIO::DOM::Document::InputFormat::LQN;
 		    break;
 		case 1:
-		    Flags::output_format = LQIO::DOM::Document::XML_INPUT;
+		    Flags::output_format = LQIO::DOM::Document::InputFormat::XML;
 		    Flags::spex_output = true;
 		    Flags::lqx_output  = true;
 		    break;
 		case 2:
-		    Flags::output_format = LQIO::DOM::Document::XML_INPUT;
+		    Flags::output_format = LQIO::DOM::Document::InputFormat::XML;
 		    break;
 		case 3:
-		    Flags::output_format = LQIO::DOM::Document::JSON_INPUT;
+		    Flags::output_format = LQIO::DOM::Document::InputFormat::JSON;
 		    break;
 		default:
 		    ::invalid_argument( c, old_optarg );
@@ -733,11 +738,11 @@ main( int argc, char *argv[] )
 		break;
 
 	    case 0x100+'x':
-		Flags::output_format = LQIO::DOM::Document::XML_INPUT;
+		Flags::output_format = LQIO::DOM::Document::InputFormat::XML;
 		break;
 
 	    case 0x100+'X':
-		Flags::output_format = LQIO::DOM::Document::XML_INPUT;
+		Flags::output_format = LQIO::DOM::Document::InputFormat::XML;
 		Flags::spex_output = true;
 		Flags::lqx_output  = true;
 		break;
@@ -885,8 +890,8 @@ lqngen( int argc, char *argv[0] )
 		std::cerr << LQIO::io_vars.lq_toolname << ": Cannot open output file " << output_file_name << " - " << strerror( errno ) << std::endl;
 		exit ( 1 );
 	    }
-	    if ( Flags::output_format == LQIO::DOM::Document::AUTOMATIC_INPUT ) {
-		Flags::output_format = LQIO::DOM::Document::getInputFormatFromFilename( output_file_name, LQIO::DOM::Document::LQN_INPUT );
+	    if ( Flags::output_format == LQIO::DOM::Document::InputFormat::AUTOMATIC ) {
+		Flags::output_format = LQIO::DOM::Document::getInputFormatFromFilename( output_file_name, LQIO::DOM::Document::InputFormat::LQN );
 	    }
 
 	    execute( output_file, output_file_name );
@@ -918,7 +923,7 @@ lqn2lqx( int argc, char **argv )
     }
 
     if ( optind == argc ) {
-	LQIO::DOM::Document* document = LQIO::DOM::Document::load( "-", LQIO::DOM::Document::AUTOMATIC_INPUT, errorCode, false );
+	LQIO::DOM::Document* document = LQIO::DOM::Document::load( "-", LQIO::DOM::Document::InputFormat::AUTOMATIC, errorCode, false );
 	if ( document ) {
 	    Generate aModel( document, Flags::output_format, Flags::number_of_runs, (*total_customers)() );
 	    aModel.groupize().reparameterize();
@@ -943,7 +948,7 @@ lqn2lqx( int argc, char **argv )
 	exit( 1 );
     } else {
 	for ( ;optind < argc; ++optind ) {
-	    LQIO::DOM::Document* document = LQIO::DOM::Document::load( argv[optind], LQIO::DOM::Document::AUTOMATIC_INPUT, errorCode, false );
+	    LQIO::DOM::Document* document = LQIO::DOM::Document::load( argv[optind], LQIO::DOM::Document::InputFormat::AUTOMATIC, errorCode, false );
 	    if ( !document ) {
 		continue;
 	    }
@@ -958,7 +963,7 @@ lqn2lqx( int argc, char **argv )
 		if ( output_file_name.size() ) {
 		    filename = output_file_name;
 		} else {
-		    filename.generate( argv[optind], output_suffix[Flags::output_format] );
+		    filename.generate( argv[optind], output_suffix.at(Flags::output_format) );
 		}
 		filename.backup();		/* Overwriting input file. -- back up */
 
@@ -1007,7 +1012,7 @@ multi( const std::string& dir )
 
     for ( unsigned i = 1; i <= Flags::number_of_models; ++i ) {
 	std::ostringstream file_name;
-	file_name << dir << "/case-" << std::setw( w ) << std::setfill( '0' ) << i << "." << output_suffix[Flags::output_format];
+	file_name << dir << "/case-" << std::setw( w ) << std::setfill( '0' ) << i << "." << output_suffix.at(Flags::output_format);
 	std::ofstream output_file;
 	output_file.open( file_name.str().c_str(), std::ios::out );
 

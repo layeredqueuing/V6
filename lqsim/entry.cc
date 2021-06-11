@@ -12,7 +12,7 @@
  *
  * $URL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqsim/entry.cc $
  *
- * $Id: entry.cc 14131 2020-11-25 02:17:53Z greg $
+ * $Id: entry.cc 14769 2021-06-04 16:18:43Z greg $
  */
 
 #include <parasol.h>
@@ -670,8 +670,7 @@ Entry::add_call( const unsigned int p, LQIO::DOM::Call* domCall )
 
     /* Make sure this is one of the supported call types */
     if (domCall->getCallType() != LQIO::DOM::Call::Type::SEND_NO_REPLY && 
-	domCall->getCallType() != LQIO::DOM::Call::Type::RENDEZVOUS &&
-	domCall->getCallType() != LQIO::DOM::Call::Type::QUASI_SEND_NO_REPLY) {
+	domCall->getCallType() != LQIO::DOM::Call::Type::RENDEZVOUS ) {
 	abort();
     }
 	
@@ -681,7 +680,7 @@ Entry::add_call( const unsigned int p, LQIO::DOM::Call* domCall )
     if ( !to_entry ) return;
     if ( !test_and_set( LQIO::DOM::Entry::Type::STANDARD ) ) return;
     if ( domCall->getCallType() == LQIO::DOM::Call::Type::RENDEZVOUS && !to_entry->test_and_set_recv( Entry::Type::RENDEZVOUS ) ) return;
-    if ( (domCall->getCallType() == LQIO::DOM::Call::Type::SEND_NO_REPLY || domCall->getCallType() == LQIO::DOM::Call::Type::QUASI_SEND_NO_REPLY) && !to_entry->test_and_set_recv( Entry::Type::SEND_NO_REPLY ) ) return;
+    if ( domCall->getCallType() == LQIO::DOM::Call::Type::SEND_NO_REPLY && !to_entry->test_and_set_recv( Entry::Type::SEND_NO_REPLY ) ) return;
 
     _phase.at(p-1)._calls.store_target_info( to_entry, domCall );
 }

@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: dim.h 14753 2021-06-02 14:10:59Z greg $
+ * $Id: dim.h 14783 2021-06-08 19:00:20Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -33,6 +33,7 @@
 #define MAX_PHASES      3                       /* Number of Phases.            */
 #define N_SEMAPHORE_ENTRIES     2               /* Number of semaphore entries  */
 #define PAN_REPLICATION	1			/* Use Amy Pan's replication	*/
+#define BUG_299_PRUNE	1			/* Enable replica prune code	*/
 
 /*
  * Return square.  C++ doesn't even have an exponentiation operator, let
@@ -62,11 +63,6 @@ static inline void throw_bad_parameter() { throw std::domain_error( "invalid par
 struct lt_str
 {
     bool operator()(const char* s1, const char* s2) const { return strcmp(s1, s2) < 0; }
-};
-
-template <class Type> struct lt_replica
-{
-    bool operator()(const Type * a, const Type * b) const { return a->name() < b->name() || a->getReplicaNumber() < b->getReplicaNumber(); }
 };
 
 template <class Type> struct Exec

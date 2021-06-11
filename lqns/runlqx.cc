@@ -2,7 +2,7 @@
  *
  * $URL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/runlqx.cc $
  * ------------------------------------------------------------------------
- * $Id: runlqx.cc 14704 2021-05-27 12:20:22Z greg $
+ * $Id: runlqx.cc 14792 2021-06-11 01:08:38Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -75,10 +75,10 @@ namespace SolverInterface
 	    Model::recalculateDynamicValues( _document );
 
 	    /* Run the solver and return its success as a boolean value */
-	    assert( _aModel );
-	    if ( LQIO::io_vars.anError() == false && _aModel->initialize() ) {
+	    assert( _model );
+	    if ( _model->check() && _model->initialize() ) {
 		_document->setResultInvocationNumber( invocationCount );
-		ok = (_aModel->*_solve)();
+		ok = (_model->*_solve)();
 	    } else {
 		ok = false;
 	    }

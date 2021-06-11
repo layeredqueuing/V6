@@ -11,7 +11,7 @@
  * July 2007
  *
  * ------------------------------------------------------------------------
- * $Id: activity.cc 14753 2021-06-02 14:10:59Z greg $
+ * $Id: activity.cc 14757 2021-06-02 15:50:16Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -214,7 +214,7 @@ Activity::prevFork( ActivityList * aList )
 {
     if ( _prevFork ) {
 	LQIO::input_error2( LQIO::ERR_DUPLICATE_ACTIVITY_RVALUE, owner()->name().c_str(), name().c_str() );
-    } else if ( isStartActivity() ) {
+    } else if ( isStartActivity() && !entry()->isVirtualEntry() ) {
 	LQIO::input_error2( LQIO::ERR_IS_START_ACTIVITY, owner()->name().c_str(), name().c_str() );
     } else {
 	_prevFork = aList;

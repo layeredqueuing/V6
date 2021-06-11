@@ -10,7 +10,7 @@
  * November, 1994
  * December, 2020
  *
- * $Id: pragma.h 14715 2021-05-28 15:34:49Z greg $
+ * $Id: pragma.h 14783 2021-06-08 19:00:20Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -42,7 +42,7 @@ public:
     enum class QuorumDelayedCalls { DEFAULT, KEEP_ALL, ABORT_ALL, ABORT_LOCAL_ONLY, ABORT_REMOTE_ONLY };
     enum class QuorumIdleTime { DEFAULT, JOINDELAY, ROOTENTRY };
 #endif
-    enum class Replication { EXPAND, PAN };		/* Possibly new */
+    enum class Replication { EXPAND, PRUNE, PAN };
     enum class Threads { MAK_LUNDSTROM, HYPER, NONE };
     enum class Variance { DEFAULT, NONE, STOCHASTIC, MOL };
 

@@ -10,7 +10,7 @@
  * February 1997
  *
  * ------------------------------------------------------------------------
- * $Id: actlist.cc 14753 2021-06-02 14:10:59Z greg $
+ * $Id: actlist.cc 14761 2021-06-03 14:17:34Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -261,9 +261,7 @@ ForkActivityList::getInterlockedTasks( Interlock::CollectTasks& path ) const
 void
 ForkActivityList::callsPerform( const Phase::CallExec& exec ) const
 {
-    if ( getActivity() ) {
-        getActivity()->callsPerform( exec );
-    }
+    if ( getActivity() ) getActivity()->callsPerform( exec );
 }
 
 
@@ -275,11 +273,7 @@ ForkActivityList::callsPerform( const Phase::CallExec& exec ) const
 unsigned
 ForkActivityList::concurrentThreads( unsigned n ) const
 {
-    if ( getActivity() ) {
-        return getActivity()->concurrentThreads( n );
-    } else {
-        return n;
-    }
+    return getActivity() ? getActivity()->concurrentThreads( n ) : n;
 }
 
 /* -------------------------------------------------------------------- */
@@ -310,11 +304,7 @@ JoinActivityList::JoinActivityList( const JoinActivityList& src, const Task* tas
 unsigned
 JoinActivityList::findChildren( Activity::Children& path ) const
 {
-    if ( next() ) {
-        return next()->findChildren( path );
-    } else {
-        return path.depth();
-    }
+    return  next() != nullptr ? next()->findChildren( path ) : path.depth();
 }
 
 
@@ -326,7 +316,7 @@ JoinActivityList::findChildren( Activity::Children& path ) const
 void
 JoinActivityList::followInterlock( Interlock::CollectTable& path ) const
 {
-    if ( next() ) return next()->followInterlock( path );
+    if ( next() != nullptr ) return next()->followInterlock( path );
 }
 
 
@@ -355,9 +345,7 @@ JoinActivityList::getInterlockedTasks( Interlock::CollectTasks& path ) const
 void
 JoinActivityList::callsPerform( const Phase::CallExec& exec ) const
 {
-    if ( next() ) {
-        next()->callsPerform( exec );
-    }
+    if ( next() != nullptr ) next()->callsPerform( exec );
 }
 
 
@@ -369,11 +357,7 @@ JoinActivityList::callsPerform( const Phase::CallExec& exec ) const
 unsigned
 JoinActivityList::concurrentThreads( unsigned n ) const
 {
-    if ( next() ) {
-        return next()->concurrentThreads( n );
-    } else {
-        return n;
-    }
+    return next() != nullptr ? next()->concurrentThreads( n ) : n;
 }
 
 
@@ -386,11 +370,7 @@ JoinActivityList::concurrentThreads( unsigned n ) const
 Activity::Collect&
 JoinActivityList::collect( std::deque<const Activity *>& activityStack, std::deque<Entry *>& entryStack, Activity::Collect& data )
 {
-    if ( next() ) {
-        return next()->collect( activityStack, entryStack, data );
-    } else {
-	return data;
-    }
+    return next() != nullptr ? next()->collect( activityStack, entryStack, data ) : data;
 }
 
 
@@ -401,11 +381,7 @@ JoinActivityList::collect( std::deque<const Activity *>& activityStack, std::deq
 const Activity::Count_If&
 JoinActivityList::count_if( std::deque<const Activity *>& stack, Activity::Count_If& data ) const
 {
-    if ( next() ) {
-        return next()->count_if( stack, data );
-    } else {
-        return data;
-    }
+    return next() != nullptr ? next()->count_if( stack, data ) : data;
 }
 
 /*----------------------------------------------------------------------*/
@@ -891,11 +867,7 @@ unsigned
 OrForkActivityList::concurrentThreads( unsigned n ) const
 {
     n = std::accumulate( activityList().begin(), activityList().end(), n, max_using_arg<Activity,const unsigned int>( &Activity::concurrentThreads, n ) );
-
-    if ( hasNextFork() ) {
-        return getNextFork()->concurrentThreads( n );
-    }
-    return n;
+    return hasNextFork() ? getNextFork()->concurrentThreads( n ) : n;
 }
 
 /* -------------------------------------------------------------------- */
@@ -1501,9 +1473,7 @@ AndForkActivityList::count_if( std::deque<const Activity *>& stack, Activity::Co
 void
 AndForkActivityList::callsPerform( const Phase::CallExec& exec ) const
 {
-    if ( hasNextFork() ) {
-        getNextFork()->callsPerform( exec );
-    }
+    if ( hasNextFork() ) getNextFork()->callsPerform( exec );
 }
 
 
@@ -1515,14 +1485,10 @@ AndForkActivityList::callsPerform( const Phase::CallExec& exec ) const
 unsigned
 AndForkActivityList::concurrentThreads( unsigned n ) const
 {
-    unsigned m = std::accumulate( activityList().begin(), activityList().end(), 0, unsigned_add_using_arg<Activity,unsigned>( &Activity::concurrentThreads, 1 ) );
+    const unsigned m = std::accumulate( activityList().begin(), activityList().end(), 0, unsigned_add_using_arg<Activity,unsigned>( &Activity::concurrentThreads, 1 ) );
     n = std::max( n, m - 1 );
 
-    if ( hasNextFork() ) {
-        return getNextFork()->concurrentThreads( n );
-    } else {
-        return n;
-    }
+    return hasNextFork() ? getNextFork()->concurrentThreads( n ) : n;
 }
 
 
@@ -1779,9 +1745,7 @@ AndJoinActivityList::getInterlockedTasks( Interlock::CollectTasks& path ) const
 void
 AndJoinActivityList::callsPerform( const Phase::CallExec& exec ) const
 {
-    if ( isSync() && next() ) {
-        next()->callsPerform( exec );
-    }
+    if ( isSync() && next() ) next()->callsPerform( exec );
 }
 
 
@@ -1794,11 +1758,7 @@ AndJoinActivityList::callsPerform( const Phase::CallExec& exec ) const
 Activity::Collect&
 AndJoinActivityList::collect( std::deque<const Activity *>& activityStack, std::deque<Entry *>& entryStack, Activity::Collect& data )
 {
-    if ( isSync() && next() ) {
-        return next()->collect( activityStack, entryStack, data );
-    } else {
-	return data;
-    }
+    return ( isSync() && next() ) ? next()->collect( activityStack, entryStack, data ) : data;
 }
 
 
@@ -1811,11 +1771,7 @@ AndJoinActivityList::collect( std::deque<const Activity *>& activityStack, std::
 const Activity::Count_If&
 AndJoinActivityList::count_if( std::deque<const Activity *>& stack, Activity::Count_If& data ) const
 {
-    if ( isSync() && next() ) {
-        return next()->count_if( stack, data );
-    } else {
-        return data;
-    }
+    return ( isSync() && next() ) ? next()->count_if( stack, data ) : data;
 }
 
 
@@ -1827,11 +1783,7 @@ AndJoinActivityList::count_if( std::deque<const Activity *>& stack, Activity::Co
 unsigned
 AndJoinActivityList::concurrentThreads( unsigned n ) const
 {
-    if ( isSync() ) {
-        return next()->concurrentThreads( n );
-    } else {
-        return n;
-    }
+    return isSync() ? next()->concurrentThreads( n ) : n;
 }
 
 /*----------------------------------------------------------------------*/
@@ -1847,18 +1799,22 @@ RepeatActivityList::RepeatActivityList( Task * owner, LQIO::DOM::ActivityList * 
 }
 
 
+/*
+ * Clone the repeat list.  _activityList contains the repeat items
+ * (done here).  The super class will handle the end of list.
+ */
 
-RepeatActivityList::RepeatActivityList( const RepeatActivityList& src, const Task* task, unsigned int replica )
-    : ForkActivityList( src, task, replica ),
+RepeatActivityList::RepeatActivityList( const RepeatActivityList& src, const Task* owner, unsigned int replica )
+    : ForkActivityList( src, owner, replica ),
       _prev(nullptr),
       _activityList(),
       _entryList()
 {
     for ( std::vector<const Activity *>::const_iterator activity = src._activityList.begin(); activity != src._activityList.end(); ++activity ) {
-	_activityList.push_back( task->findActivity( (*activity)->name() ) );
+	_activityList.push_back( owner->findActivity( (*activity)->name() ) );
     }
     for ( std::vector<VirtualEntry *>::const_iterator entry = src._entryList.begin(); entry != src._entryList.end(); ++entry ) {
-	_entryList.push_back( dynamic_cast<VirtualEntry *>((*entry)->clone( replica )) );
+	_entryList.push_back( cloneVirtualEntry( *entry, owner, replica ) );
     }
 }
 
@@ -1873,6 +1829,49 @@ RepeatActivityList::~RepeatActivityList()
 
 
 /*
+ * Clone the virtual entries.
+ */
+
+VirtualEntry *
+RepeatActivityList::cloneVirtualEntry( const Entry * src, const Task * owner, unsigned int replica ) const
+{
+    VirtualEntry * dst = dynamic_cast<VirtualEntry *>(src->clone( replica, nullptr ));
+    dst->owner( owner );
+    if ( src->hasStartActivity() ) {
+	Activity * activity = owner->findActivity( src->getStartActivity()->name() );
+	dst->setStartActivity( activity );
+	activity->setEntry( dst );
+    }
+    return dst;
+}
+
+
+
+/*
+ * Add a sublist.
+ */
+
+RepeatActivityList&
+RepeatActivityList::add( Activity * activity )
+{
+    const LQIO::DOM::ExternalVariable * arg = getDOM()->getParameter(const_cast<LQIO::DOM::Activity *>(activity->getDOM()));
+    if ( arg ) {
+        _activityList.push_back( activity );
+
+	VirtualEntry * entry = new VirtualEntry( activity );
+	_entryList.push_back( entry );
+        assert( entry->entryTypeOk(LQIO::DOM::Entry::Type::ACTIVITY) );
+        entry->setStartActivity( activity );
+	activity->setEntry( entry );
+    } else {
+        /* End of list */
+        ForkActivityList::add( activity );
+    }
+    return *this;
+}
+
+
+/*
  * Configure descendents
  */
 
@@ -1883,34 +1882,6 @@ RepeatActivityList::configure( const unsigned n )
     return *this;
 }
 
-
-
-/*
- * Add a sublist.
- */
-
-RepeatActivityList&
-RepeatActivityList::add( Activity * anActivity )
-{
-    const LQIO::DOM::ExternalVariable * arg = const_cast<LQIO::DOM::ActivityList *>(getDOM())->getParameter(const_cast<LQIO::DOM::Activity *>(anActivity->getDOM()));
-    if ( arg ) {
-
-        _activityList.push_back(anActivity);
-
-	VirtualEntry * anEntry = new VirtualEntry( anActivity );
-	_entryList.push_back(anEntry);
-        assert( anEntry->entryTypeOk(LQIO::DOM::Entry::Type::ACTIVITY) );
-        anEntry->setStartActivity( anActivity );
-
-    } else {
-
-        /* End of list */
-        ForkActivityList::add( anActivity );
-
-    }
-
-    return *this;
-}
 
 
 double
@@ -2078,8 +2049,7 @@ RepeatActivityList::count_if( std::deque<const Activity *>& stack, Activity::Cou
 unsigned
 RepeatActivityList::concurrentThreads( unsigned n ) const
 {
-    n = std::accumulate( activityList().begin(), activityList().end(), n, max_using_arg<Activity,const unsigned int>( &Activity::concurrentThreads, n ) );
-    return ForkActivityList::concurrentThreads( n );
+    return ForkActivityList::concurrentThreads( std::accumulate( activityList().begin(), activityList().end(), n, max_using_arg<Activity,const unsigned int>( &Activity::concurrentThreads, n ) ) );
 }
 
 

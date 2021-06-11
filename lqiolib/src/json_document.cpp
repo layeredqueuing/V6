@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: json_document.cpp 14614 2021-04-20 16:16:03Z greg $
+ * $Id: json_document.cpp 14796 2021-06-11 14:48:04Z greg $
  *
  * Read in JSON input files.
  *
@@ -620,7 +620,7 @@ namespace LQIO {
 			} else if ( entry->getEntryType() == Entry::Type::NOT_DEFINED ) {
 			    connectEntry( entry, dynamic_cast<Task *>(parent), entry_name );
 			} else {
-			    throw duplicate_symbol( entry_name.c_str() );
+			    throw duplicate_symbol( entry_name );
 			}
 
 			/* If I have a start activity, then set it.  Do this first for properly handling the remaining attributes. */
@@ -1354,9 +1354,9 @@ namespace LQIO {
 		catch ( const should_implement& arg ) {
 		    LQIO::solution_error( LQIO::ERR_UNEXPECTED_ATTRIBUTE, Xmax_service_time, arg.what() );
 		}
-	    } 
+	    }
 	}
-	
+
 	/* Find the results for an element and handle them.  (used when reloading the model). */
 
 	void
@@ -1423,7 +1423,7 @@ namespace LQIO {
 		    return static_cast<long>(value);
 		}
 	    }
-	    XML::invalid_argument( name, attr->second.to_str().c_str() );		// throws.
+	    XML::invalid_argument( name, attr->second.to_str() );		// throws.
 	    return 0;
 	}
 
@@ -1443,12 +1443,12 @@ namespace LQIO {
 		    return value;
 		}
 	    }
-	    XML::invalid_argument( name, attr->second.to_str().c_str() );		// throws.
+	    XML::invalid_argument( name, attr->second.to_str() );		// throws.
 	    return 0.;
 	}
 
 	/* static */ const picojson::value&
-	Json_Document::get_value_attribute( const char * name, const std::map<std::string, picojson::value>& obj ) 
+	Json_Document::get_value_attribute( const char * name, const std::map<std::string, picojson::value>& obj )
 	{
 	    const std::map<std::string, picojson::value>::const_iterator attr = obj.find( name );
 	    if ( attr != obj.end() ) {
@@ -2161,7 +2161,7 @@ namespace LQIO {
 		if ( Document::__debugJSON ) std::cerr << indent(0) << value.get<std::string>() << std::endl;
 		activity = task->getActivity( value.get<std::string>() );
 		if ( !activity ) {
-		    throw undefined_symbol( value.get<std::string>().c_str() );
+		    throw undefined_symbol( value.get<std::string>() );
 		}
 		list.add( activity );
 	    } else if ( value.is<picojson::object>() ) {
@@ -2172,7 +2172,7 @@ namespace LQIO {
 		    const std::string& name = i->first;
 		    activity = task->getActivity( name );
 		    if ( !activity ) {
-			throw undefined_symbol( value.get<std::string>().c_str() );
+			throw undefined_symbol( value.get<std::string>() );
 		    }
 		    const picojson::value& value = i->second;
 		    if ( value.is<std::string>() ) {
@@ -2690,7 +2690,7 @@ namespace LQIO {
 		if ( task.isMultiserver() ) {
 		    _output << next_attribute( Xmultiplicity, *task.getCopies() );
 		}
-	    } 
+	    }
 	    if ( task.hasReplicas() ) {
 		_output << next_attribute( Xreplication, *task.getReplicas() );
 	    }
@@ -3025,7 +3025,7 @@ namespace LQIO {
 	    output << end_array( !conf_95.is_set() );
 	    return output;
 	}
-	
+
 	void
 	Json_Document::ExportPhase::print( unsigned int p, const Phase& phase ) const
 	{
@@ -3360,7 +3360,7 @@ namespace LQIO {
 		    output << value;			/* Should be a string :-) */
 		}
 		output << "\"";
-	    } else if ( value.getType() == ExternalVariable::VAR_STRING ) {
+	    } else if ( value.getType() == ExternalVariable::Type::STRING ) {
 		output << "\"" << value << "\"";	/* Should be a string or a variable name */
 	    } else {
 		output << value;			/* Should be a number :-) */
@@ -3775,7 +3775,7 @@ namespace LQIO {
 	    { Xuser_cpu_time,	ImportGeneralObservation( KEY_USER_TIME ) },
 	    { Xelapsed_time,	ImportGeneralObservation( KEY_ELAPSED_TIME ) }
 	};
-  
+
 	const std::map<const char*,const Json_Document::ImportGeneralResult,Json_Document::ImportGeneralResult> Json_Document::general_result_table =
 	{
 	    { Xconv_val_result, ImportGeneralResult( &Document::setResultConvergenceValue ) },
@@ -3810,7 +3810,7 @@ namespace LQIO {
 	    { Xmax,		ImportHistogram() },
 	    { Xhistogram_bin,	ImportHistogram() }
 	};
-	
+
 	const std::map<const char*,const Json_Document::ImportModel,Json_Document::ImportModel>	 Json_Document::model_table =
 	{
 	    { Xcomment,		ImportModel() },	// Nop. Discard
@@ -3837,7 +3837,7 @@ namespace LQIO {
 	    { Xprob_exceed_max,		ImportObservation( KEY_EXCEEDED_TIME ) },
 	    { Xphase,			ImportObservation() }
 	};
-	
+
 	const std::map<const char*,const Json_Document::ImportPrecedence,Json_Document::ImportPrecedence> Json_Document::precedence_table =
 	{
 	    { Xpre,		ImportPrecedence(ActivityList::Type::JOIN) },
@@ -3851,7 +3851,7 @@ namespace LQIO {
 	    { Xresults,		ImportPrecedence() },
 	    { Xhistogram,	ImportPrecedence() }
 	};
-	
+
 	const std::map<const char*,const Json_Document::ImportPhase,Json_Document::ImportPhase> Json_Document::phase_table =
 	{
 	    { Xphase,		ImportPhase() },
@@ -3884,7 +3884,7 @@ namespace LQIO {
 	    { Xgroup,		ImportProcessor( &Json_Document::handleGroup ) },
 	    { "#",		ImportProcessor( &DocumentObject::setComment ) }
 	};
-		
+
 	const std::map<const char*,const Json_Document::ImportTask,Json_Document::ImportTask>  Json_Document::task_table =
 	{
 	    { Xname,		ImportTask() },			// Nop.	 Handled specially
@@ -3963,14 +3963,12 @@ namespace LQIO {
 	    { ActivityList::Type::REPEAT,	Xloop }
 	};
 
-	const std::map<const Call::Type,const std::string> Json_Document::call_type_table = 
+	const std::map<const Call::Type,const std::string> Json_Document::call_type_table =
 	{
 	    { Call::Type::NULL_CALL,		"Null" },
 	    { Call::Type::SEND_NO_REPLY,	Json_Document::Xasynch_call },
 	    { Call::Type::RENDEZVOUS,		Json_Document::Xsynch_call },
-	    { Call::Type::FORWARD,		Json_Document::Xforwarding }, 
-	    { Call::Type::QUASI_SEND_NO_REPLY,	Json_Document::Xasynch_call },	// Special (lqsim/petrisrvn)
-	    { Call::Type::QUASI_RENDEZVOUS,	Json_Document::Xsynch_call }  // Special (lqns)
+	    { Call::Type::FORWARD,		Json_Document::Xforwarding }
 	};
     }
 }

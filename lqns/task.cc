@@ -10,7 +10,7 @@
  * November, 1994
  *
  * ------------------------------------------------------------------------
- * $Id: task.cc 14753 2021-06-02 14:10:59Z greg $
+ * $Id: task.cc 14792 2021-06-11 01:08:38Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -140,12 +140,14 @@ Task::cloneActivities( const Task& src, unsigned int replica )
     for ( std::vector<Activity *>::const_iterator activity = src._activities.begin(); activity != src._activities.end(); ++activity ) {
 	Activity * new_activity = (*activity)->clone( this, replica );
 	_activities.push_back( new_activity );
-	if ( (*activity)->isStartActivity() ) {
-	    Entry * entry = Entry::find( (*activity)->entry()->name(), replica );
+
+	/* Copy start activities (note: virtual entries are done in the fork/repeat activity list code */
+	if ( !(*activity)->isStartActivity() ) continue;
+	Entry * entry = Entry::find( (*activity)->entry()->name(), replica );
+	if ( entry != nullptr && !entry->isVirtualEntry() ) {
 	    entry->setStartActivity( new_activity );
 	    new_activity->setEntry( entry );
 	}
-	    
     }
 
     /* Do the pre(join)-lists from the list retained by the task, the post(fork)-lists will be done after the corresponding pre-list is completed. */
@@ -219,20 +221,20 @@ Task::check() const
     /* Check replication */
 
     const int srcReplicas = replicas();
-    if ( srcReplicas > 1 ) {
+    const std::map<const std::string,const LQIO::DOM::ExternalVariable *>& fanOuts = getDOM()->getFanOuts();
+    const std::map<const std::string,const LQIO::DOM::ExternalVariable *>& fanIns = getDOM()->getFanIns();
+    if ( srcReplicas > 1 || !fanOuts.empty() || !fanIns.empty() ) {
 	const int dstReplicas = getProcessor()->replicas();
 	const double temp = static_cast<double>(srcReplicas) / static_cast<double>(dstReplicas);
 	if ( trunc( temp ) != temp  ) {			/* Integer multiple */
 	    LQIO::solution_error( ERR_REPLICATION_PROCESSOR, srcReplicas, name().c_str(), dstReplicas, getProcessor()->name().c_str() );
 	}
 	const LQIO::DOM::Document* document = getDOM()->getDocument();
-	const std::map<const std::string,const LQIO::DOM::ExternalVariable *>& fanOuts = getDOM()->getFanOuts();
 	for ( const auto& dst : fanOuts ) {
 	    if ( document->getTaskByName( dst.first ) == nullptr ) {
 		LQIO::solution_error( ERR_INVALID_FANINOUT_PARAMETER, "fan out", name().c_str(), dst.first.c_str(), "Destination task not defined" );
 	    }
 	}
-	const std::map<const std::string,const LQIO::DOM::ExternalVariable *>& fanIns = getDOM()->getFanIns();
 	for ( const auto& src : fanIns ) {
 	    if ( document->getTaskByName( src.first ) == nullptr ) {
 		LQIO::solution_error( ERR_INVALID_FANINOUT_PARAMETER, "fan in", name().c_str(), src.first.c_str(), "Source task not defined" );
@@ -336,8 +338,12 @@ Task::linkForkToJoin()
     Call::stack callStack;
     Activity::Children path( callStack, true, false );
     for ( std::vector<Activity *>::const_iterator activity = activities().begin(); activity != activities().end(); ++activity ) {
-	if ( (*activity)->isStartActivity() ) {
+	if ( !(*activity)->isStartActivity() ) continue;
+	try {
 	    (*activity)->findChildren( path );
+	}
+	catch ( const activity_cycle& error ) {
+	    LQIO::solution_error( LQIO::ERR_CYCLE_IN_ACTIVITY_GRAPH, name().c_str(), error.what() );
 	}
     }
     return *this;
@@ -904,7 +910,7 @@ Task::makeClient( const unsigned n_chains, const unsigned submodel )
 
 
 /*
- * Called from submodel to initialize client
+ * Called from submodel to initialize client.  
  */
 
 Task&
@@ -914,15 +920,22 @@ Task::initClientStation( Submodel& submodel )
     const ChainVector& chains = clientChains( n );
     Server * station = clientStation( n );
 
+    /* If the task has been pruned, use replica 1 */
+#if BUG_299_PRUNE
+    const Task * task = isPruned() ? Task::find( name() ) : this;	/* find base task if pruned */
+    const std::vector<Entry *>& entries = task->entries();
+#else
+    const std::vector<Entry *>& entries = this->entries();
+#endif
+
     for ( unsigned ix = 1; ix <= chains.size(); ++ix ) {
 	const unsigned k = chains[ix];
 
-	for ( std::vector<Entry *>::const_iterator entry = entries().begin(); entry != entries().end(); ++entry ) {
+	for ( std::vector<Entry *>::const_iterator entry = entries.begin(); entry != entries.end(); ++entry ) {
 	    const unsigned e = (*entry)->index();
 
 	    for ( unsigned p = 1; p <= (*entry)->maxPhase(); ++p ) {
-		const double s = (*entry)->waitExcept( n, k, p );
-		station->setService( e, k, p, s );
+		station->setService( e, k, p, (*entry)->waitExcept( n, k, p ) );
 	    }
 	    station->setVisits( e, k, 1, (*entry)->prVisit() );	// As client, called-by phase does not matter.
 
@@ -1029,7 +1042,7 @@ Task::saveClientResults( const MVASubmodel& submodel )
 		double lambda = 0;
 
 #if PAN_REPLICATION
-		if ( submodel.hasPanReplication() ) {
+		if ( submodel.usePanReplication() ) {
 
 		    /*
 		     * Get throughput PER CUSTOMER because replication

@@ -1,6 +1,6 @@
 /* -*- c++ -*-
  * submodel.C	-- Greg Franks Wed Dec 11 1996
- * $Id: submodel.cc 14715 2021-05-28 15:34:49Z greg $
+ * $Id: submodel.cc 14792 2021-06-11 01:08:38Z greg $
  *
  * MVA submodel creation and solution.  This class is the interface
  * between the input model consisting of processors, tasks, and entries,
@@ -88,7 +88,7 @@
  */
 
 Submodel&
-Submodel::number( const unsigned n )
+Submodel::setSubmodelNumber( const unsigned n )
 {
     _submodel_number = n;
     for_each( _servers.begin(), _servers.end(), Exec1<Entity,const unsigned>( &Entity::setSubmodel, n ) );
@@ -103,7 +103,7 @@ Submodel::number( const unsigned n )
  */
 
 Submodel&
-Submodel::initServers( const Model& )
+Submodel::addClients()
 {
     _clients = std::accumulate( _servers.begin(), _servers.end(), _clients, Entity::add_clients );
     return *this;
@@ -170,9 +170,7 @@ MVASubmodel::MVASubmodel( const unsigned n )
     : Submodel(n),
       _hasThreads(false),
       _hasSynchs(false),
-#if PAN_REPLICATION
-      _hasPanReplication(cached::NOT_SET),
-#endif
+      _hasReplicas(false),
       closedStation(),
       openStation(),
       closedModel(nullptr),
@@ -214,7 +212,6 @@ MVASubmodel&
 MVASubmodel::initServers( const Model& model )
 {
     for_each ( _servers.begin(), _servers.end(), Exec1<Entity,const Vector<Submodel *>&>( &Entity::initServer, model.getSubmodels() ) );
-    Submodel::initServers( model );
     return *this;
 }
 
@@ -251,21 +248,15 @@ MVASubmodel::initInterlock()
  */
 
 bool
-MVASubmodel::hasPanReplication() const
+MVASubmodel::usePanReplication() const
 {
-    if ( _hasPanReplication == cached::NOT_SET ) {
-	_hasPanReplication = (Pragma::pan_replication() &&
-	    (std::any_of( _clients.begin(), _clients.end(), Predicate<Task>( &Task::isReplicated ) ) 	 
-	     || std::any_of( _servers.begin(), _servers.end(), Predicate<Entity>( &Entity::isReplicated ) ))) ? cached::SET_TRUE : cached::SET_FALSE;
-	
-    }
-    return _hasPanReplication == cached::SET_TRUE;
+    return Pragma::pan_replication() && hasReplicas();
 }
 #endif
 
 
 /*
- * Build a Layer.
+ * Build a submodel.
  */
 
 MVASubmodel&
@@ -279,40 +270,37 @@ MVASubmodel::build()
 	return *this;
     }
 
+    /* -------------- Initialize instance variables. ------------------ */
+
+    _hasThreads  = std::any_of( _clients.begin(), _clients.end(), Predicate<Task>( &Task::hasThreads ) );
+    _hasSynchs   = std::any_of( _servers.begin(), _servers.end(), Predicate<Entity>( &Entity::hasSynchs ) );
+    _hasReplicas = std::any_of( _clients.begin(), _clients.end(), Predicate<Task>( &Task::isReplicated ) )
+                || std::any_of( _servers.begin(), _servers.end(), Predicate<Entity>( &Entity::isReplicated ) );
+    
+    /* --------------------- Count the stations. ---------------------- */
+
     const unsigned n_stations  = _clients.size() + _servers.size();
-    unsigned closedStnNo       = 0;
-    unsigned openStnNo	       = 0;
+    closedStation.resize(_clients.size() + std::count_if( _servers.begin(), _servers.end(), Predicate<Entity>( &Entity::isInClosedModel ) ) );
+    openStation.resize( std::count_if( _servers.begin(), _servers.end(), Predicate<Entity>( &Entity::isInOpenModel ) ) );
 
-
-    /* ------------------- Count the stations. -------------------- */
-
-    _hasThreads = std::any_of( _clients.begin(), _clients.end(), Predicate<Task>( &Task::hasThreads ) );
-    _hasSynchs = std::any_of( _servers.begin(), _servers.end(), Predicate<Entity>( &Entity::hasSynchs ) );
-
-    closedStnNo = _clients.size() + std::count_if( _servers.begin(), _servers.end(), Predicate<Entity>( &Entity::isInClosedModel ) );
-    openStnNo   = std::count_if( _servers.begin(), _servers.end(), Predicate<Entity>( &Entity::isInOpenModel ) );
-
-    closedStation.resize(closedStnNo);
-    openStation.resize(openStnNo);
-
-    /* --------------------- Create Chains.  ---------------------- */
+    /* ----------------------- Create Chains.  ------------------------ */
 
     setNChains( makeChains() );
     if ( nChains() > MAX_CLASSES ) {
 	LQIO::solution_error( ADV_MANY_CLASSES, nChains(), number() );
     }
 
-    /* ------------------- Create the clients. -------------------- */
+    /* --------------------- Create the clients. ---------------------- */
 
-    closedStnNo	= 0;
+    unsigned closedStnNo = 0;
     for ( std::set<Task *>::const_iterator client = _clients.begin(); client != _clients.end(); ++client ) {
 	closedStnNo += 1;
 	closedStation[closedStnNo] = (*client)->makeClient( nChains(), number() );
     }
 
-    /* ----------------- Create servers for model. ---------------- */
+    /* ------------------- Create servers for model. ------------------ */
 
-    openStnNo   = 0;
+    unsigned openStnNo = 0;
     for ( std::set<Entity *>::const_iterator server = _servers.begin(); server != _servers.end(); ++server ) {
 	Server * aStation;
 	if ( (*server)->nEntries() == 0 ) continue;	/* Null server. */
@@ -327,7 +315,7 @@ MVASubmodel::build()
 	}
     }
 
-    /* ------- Create overlap probabilities and durations. -------- */
+    /* --------- Create overlap probabilities and durations. ---------- */
 
     if ( ( hasThreads() || hasSynchs() ) && !Pragma::threads(Pragma::Threads::NONE) ) {
 	_overlapFactor = new VectorMath<double> [nChains()+1];
@@ -336,7 +324,7 @@ MVASubmodel::build()
 	}
     }
 
-    /* ---------------------- Generate Model. --------------------- */
+    /* ------------------------ Generate Model. ----------------------- */
 
     assert ( closedStnNo <= n_stations && openStnNo <= n_stations );
 
@@ -369,7 +357,7 @@ MVASubmodel::build()
 
     std::for_each( _clients.begin(), _clients.end(), ConstExec1<Task,const MVASubmodel&>( &Task::setChain, *this ) );
 #if PAN_REPLICATION
-    if ( hasPanReplication() ) {
+    if ( usePanReplication() ) {
 	unsigned not_used = 0;
 	std::for_each( _clients.begin(), _clients.end(), ExecSum2<Task,double,const Submodel&,unsigned&>( &Task::updateWaitReplication, *this, not_used ) );
     }
@@ -405,7 +393,7 @@ MVASubmodel::rebuild()
 	const unsigned threads = (*client)->nThreads();
 
 #if PAN_REPLICATION
-	if ( !hasPanReplication() || (*client)->replicas() <= 1 ) {
+	if ( !usePanReplication() || (*client)->replicas() <= 1 ) {
 
 	    /* ---------------- Simple case --------------- */
 #endif
@@ -494,6 +482,126 @@ MVASubmodel::rebuild()
 }
 
 
+
+/*
+ * Look for disjoint chains.  This works as-is for the simple case.
+ * However, it will fail for fan-in.  So:
+ *   1) starting from the first client, form a set of tasks consisting of all the servers and clients to those servers.  
+ *   2) Repeat Using the next client not found in this set and form a second set.  Compare the two (or more) sets for
+ *      intersection.  Non-intersecting sets which match based on name (but not replica) can be pruned.  Non intersecting
+ *      sets that fail pruning can be partitioned into a new submodel.  Don't forget to ++__sync_submodel and renumber
+ *      all submodels.
+ *   3) For pruned tasks, I believe the easiest thing to do for update is to copy the waiting times across in
+ *      delta_wait. Multiplying Call::rendezvousDelay() doesn't seem to work.
+ *
+ */
+
+Submodel&
+Submodel::optimize()
+{
+    if ( _clients.size() <= 1 ) return *this;	/* No operation */
+    std::vector<submodel_group_t> groups;
+    
+    /* Collect all servers for each client */
+    for ( std::set<Task *>::const_iterator client = _clients.begin(); client != _clients.end(); ++client ) {
+	const std::set<Task *>& group = groups.back().first;
+	if ( !groups.empty() && std::find( group.begin(), group.end(), *client ) != group.end() ) continue;	/* already there */
+	groups.resize( groups.size() + 1 );
+	addToGroup( *client, groups.back() );
+    }
+
+    /* locate groups which match */
+    std::vector<submodel_group_t*> disjoint;
+    for ( std::vector<submodel_group_t>::iterator i = groups.begin(); i != groups.end(); ++i ) {
+	bool can_prune = true;
+	for ( std::vector<submodel_group_t>::const_iterator j = groups.begin(); can_prune && j != groups.end(); ++j ) {
+	    if ( i == j ) continue;
+	    std::set<Entity *> intersection;
+	    std::set_intersection( i->second.begin(), i->second.end(),
+				   j->second.begin(), j->second.end(),
+				   std::inserter( intersection, intersection.end() ) );
+	    if ( !intersection.empty() ) can_prune = false;
+	}
+	if ( can_prune ) {
+	    disjoint.push_back( &(*i) );
+	}
+    }
+    
+#if BUG_299_PRUNE
+    /* pruneble if clients are replicas of each other */
+    if ( Pragma::replication() == Pragma::Replication::PRUNE ) {
+	std::set<submodel_group_t*> purgeable;
+	for ( std::vector<submodel_group_t*>::const_iterator i = disjoint.begin(); i != disjoint.end(); ++i ) {
+	    for ( std::vector<submodel_group_t*>::const_iterator j = std::next(i); j != disjoint.end(); ++j ) {
+		/* If all the clients in j are replicas of i, then prune j */
+		if ( !replicaGroups( (*i)->first, (*j)->first ) ) continue;
+#if 0
+		std::cerr << "Submodel " << number() << ", can prune: ";
+		std::set<Task *>& clients = (*j)->first;
+		for ( std::set<Task *>::const_iterator client = clients.begin(); client != clients.end(); ++client ) {
+		    std::cerr << (*client)->name() << ":" << (*client)->getReplicaNumber();
+		}
+		std::cerr << std::endl;
+#endif
+		purgeable.insert( *j );
+	    }
+	}
+
+	for ( std::set<submodel_group_t*>::const_iterator purge = purgeable.begin(); purge != purgeable.end(); ++purge ) {
+	    std::for_each( (*purge)->first.begin(), (*purge)->first.end(), erase_from<Task *>(  _clients ) );
+	    std::for_each( (*purge)->second.begin(), (*purge)->second.end(), erase_from<Entity *>( _servers ) );
+	}
+    }
+#endif
+    
+    return *this;
+}
+
+
+
+void
+Submodel::addToGroup( Task * task, submodel_group_t& group ) const
+{
+    group.first.insert( task );
+
+    /* Find the servers of this client (in this submodel) */
+    const std::set<Entity *> servers = task->getServers( _servers );
+    group.second.insert( servers.begin(), servers.end() );
+
+    /* Now, find all of the clients of the servers just found, and repeat this for any new client in this submodel's _clients */
+
+    for ( std::set<Entity *>::const_iterator server = servers.begin(); server != servers.end(); ++server ) {
+	std::set<Task *> clients;
+	(*server)->getClients( clients );
+
+	/* If a client is in this submodel and has not been found already, recurse */
+	for ( std::set<Task *>::const_iterator client = clients.begin(); client != clients.end(); ++client ) {
+	    if ( _clients.find( *client ) == _clients.end() || group.first.find( *client ) != group.first.end() ) continue;
+	    addToGroup( *client, group );
+	}
+    }
+}
+
+
+
+/*
+ * Check b for replicas in found in a.  They must all be.
+ */
+
+bool
+Submodel::replicaGroups( const std::set<Task *>& a, const std::set<Task *>& b ) const
+{
+    std::set<Task *> dst = b;	/* Copy for erasure */
+    for ( std::set<Task *>::const_iterator src = a.begin(); src != a.end(); ++src ) {
+	std::set<Task *>::iterator item = std::find_if( dst.begin(), dst.end(), Entity::matches( (*src)->name() ) );
+	if ( item == dst.end() ) return false;
+	dst.erase( item );
+    }
+    return dst.empty();
+}
+
+
+
 /*
  * Determine the number of chains, their populations, and their think times.
  * Customers and thinkTime are dimensioned by CHAIN (k).  The array `chains'
@@ -512,7 +620,7 @@ MVASubmodel::makeChains()
 	const unsigned threads = (*client)->nThreads();
 
 #if PAN_REPLICATION
-	if ( !hasPanReplication() || (*client)->replicas() <= 1 ) {
+	if ( !usePanReplication() || (*client)->replicas() <= 1 ) {
 
 	    /* ---------------- Simple case --------------- */
 #endif
@@ -646,7 +754,7 @@ MVASubmodel::solve( long iterations, MVACount& MVAStats, const double relax )
 
 	/* ---- Adjust Client service times for replication ---- */
 
-	if ( hasPanReplication() ) {
+	if ( usePanReplication() ) {
 
 	    if ( flags.trace_mva  ) {
 		std::cout << std::endl << "Current master iteration = " << iterations << std::endl
@@ -750,7 +858,7 @@ MVASubmodel::solve( long iterations, MVACount& MVAStats, const double relax )
 	/* Update waits for replication */
 
 	deltaRep = 0.0;
-	if ( hasPanReplication() ) {
+	if ( usePanReplication() ) {
 	    unsigned n_deltaRep = 0;
 	    deltaRep = std::for_each( _clients.begin(), _clients.end(), ExecSum2<Task,double,const Submodel&,unsigned&>( &Task::updateWaitReplication, *this, n_deltaRep ) ).sum();
 	    if ( n_deltaRep ) {
@@ -779,7 +887,7 @@ MVASubmodel::solve( long iterations, MVACount& MVAStats, const double relax )
 	if ( flags.reset_mva ) closedModel->reset();
 
 #if PAN_REPLICATION
-    } while ( hasPanReplication() && deltaRep > Model::convergence_value );
+    } while ( usePanReplication() && deltaRep > Model::convergence_value );
 
     /* ----------------End of Replication Iteration --------------- */
 #endif

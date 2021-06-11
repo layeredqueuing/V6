@@ -4,7 +4,7 @@
 %%  Copyright (c) 2009 __MyCompanyName__. All rights reserved.
 %%
 %% ------------------------------------------------------------------------
-%%  $Id: lqx.tex 14000 2020-10-25 12:50:53Z greg $
+%%  $Id: lqx.tex 14792 2021-06-11 01:08:38Z greg $
 %% ------------------------------------------------------------------------
 \newcommand{\ModLang}{LQX }
 \newcommand{\lqns}{Layer Queueing Network Solver}
@@ -1138,8 +1138,25 @@ for the cross product of {\tt phase} and {\tt calls}.
   \hline
   \multicolumn{3}{|l|}{\textbf{Summary of Constructors}}\\
   \hline
-  Call & {\tt call(object phase, string destinationEntry)} & Returns the call from an entry's phase (phase) to the destination entry whose name is (dest)\\
+  Call & {\tt call(object phase, string destinationEntry)} & Returns the call from an entry's phase (phase) to the destination entry whose name is (dest).\\
   Call & {\tt call(object activity, string destinationEntry)} & Returns the call from a task's activity (activity) to the destination entry whose name is (dest)\\
+  \hline
+\end{tabular}
+
+\subsection{Pragmas}
+\begin{tabular}{|p{1.0in}|p{2.3in}||p{2.8in}|}
+  \hline
+  \multicolumn{3}{|l|}{\textbf{Summary of Attributes}}\\
+  \hline
+  string & {\tt value} & Value of pramga.\\
+  \hline
+\end{tabular}
+\\\\\ \\
+\begin{tabular}{|p{1.0in}|p{2.3in}||p{2.8in}|}
+  \hline
+  \multicolumn{3}{|l|}{\textbf{Summary of Constructors}}\\
+  \hline
+  Pragma & {\tt pragma(string pragma)} & Returns the value for the pragma supplied as an argument.\\
   \hline
 \end{tabular}
 

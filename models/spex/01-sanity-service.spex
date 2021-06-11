@@ -2,7 +2,7 @@
 # $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/models/spex/01-sanity-service.spex $
 # 
 # ------------------------------------------------------------------------
-# $Id: 01-sanity-service.spex 12968 2017-03-29 14:37:37Z greg $
+# $Id: 01-sanity-service.spex 14778 2021-06-07 23:32:41Z greg $
 # ------------------------------------------------------------------------
 
 $c = [0.2 : 2.0, 0.2]	# Client Service Time

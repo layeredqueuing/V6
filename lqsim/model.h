@@ -10,7 +10,7 @@
 /*
  * Global vars for simulation.
  *
- * $Id: model.h 14153 2020-11-30 18:03:53Z greg $
+ * $Id: model.h 14796 2021-06-11 14:48:04Z greg $
  */
 
 #ifndef LQSIM_MODEL_H
@@ -141,7 +141,7 @@ private:
 
 public:
     static double max_service;	/* Max service time found.	*/
-    static LQIO::DOM::Document::input_format input_format;
+    static LQIO::DOM::Document::InputFormat input_format;
 
     inline static double get_infinity()
     {
