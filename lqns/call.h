@@ -10,7 +10,7 @@
  * November, 1994
  * March, 2004
  *
- * $Id: call.h 14769 2021-06-04 16:18:43Z greg $
+ * $Id: call.h 14808 2021-06-14 18:49:18Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -234,6 +234,7 @@ public:
 
     virtual bool isForwardedCall() const { return false; }
     virtual bool isProcessorCall() const { return false; }
+    bool isNotProcessorCall() const { return !isProcessorCall(); }
     bool hasRendezvous() const { return getDOM() ?  getDOM()->getCallType() == LQIO::DOM::Call::Type::RENDEZVOUS && getDOM()->getCallMeanValue() > 0: false; }
     bool hasSendNoReply() const { return getDOM() ? getDOM()->getCallType() == LQIO::DOM::Call::Type::SEND_NO_REPLY && getDOM()->getCallMeanValue() > 0 : false; }
     bool hasForwarding() const { return  getDOM() ? getDOM()->getCallType() == LQIO::DOM::Call::Type::FORWARD && getDOM()->getCallMeanValue() > 0 : false; }
@@ -244,7 +245,8 @@ public:
     bool hasForwardingOrNone() const { return !hasRendezvous() && !hasSendNoReply(); }
     bool hasNoForwarding() const { return dstEntry() == nullptr || hasRendezvous() || hasSendNoReply(); }		/* Special case for topological sort */
     virtual bool isCalledBy( const Entry * ) const { return false; }
-
+    bool hasTypeForCallInfo( LQIO::DOM::Call::Type type ) const;
+    
     virtual const std::string& srcName() const;
     const Task * srcTask() const;
 

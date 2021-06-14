@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: phase.cc 14769 2021-06-04 16:18:43Z greg $
+ * $Id: phase.cc 14808 2021-06-14 18:49:18Z greg $
  *
  * Everything you wanted to know about an phase, but were afraid to ask.
  *
@@ -40,8 +40,6 @@
 #include "submodel.h"
 #include "task.h"
 #include "variance.h"
-
-/* ---------------------- Overloaded Operators ------------------------ */
 
 /*----------------------------------------------------------------------*/
 /*                              Null Phase                              */
@@ -1853,7 +1851,6 @@ Phase::DeviceInfo::DeviceInfo( const Phase& phase, const std::string& name, Type
 	break;
     }
 
-    Model::__entry.insert( _entry );
     assert( Model::__entry.insert( _entry ).second == true );
 		
     /* 

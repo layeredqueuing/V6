@@ -11,7 +11,7 @@
  * July 2007
  *
  * ------------------------------------------------------------------------
- * $Id: activity.cc 14757 2021-06-02 15:50:16Z greg $
+ * $Id: activity.cc 14812 2021-06-14 19:46:05Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -387,6 +387,26 @@ Activity::count_if( std::deque<const Activity *>& activityStack, Activity::Count
     if ( _nextJoin ) {
 	activityStack.push_back( this );
 	_nextJoin->count_if( activityStack, data );
+	activityStack.pop_back();
+    }
+    return data;
+}
+
+
+
+CallInfo::Item::collect_calls&
+Activity::collect_calls( std::deque<const Activity *>& activityStack, CallInfo::Item::collect_calls& data ) const
+{
+    if ( std::find( activityStack.begin(), activityStack.end(), this ) != activityStack.end() ) {
+	return data;
+    }
+    if ( repliesTo( &data.source() ) ) {
+	data.setPhase(2);
+    }
+    data( *this );
+    if ( _nextJoin ) {
+	activityStack.push_back( this );
+	_nextJoin->collect_calls( activityStack, data );
 	activityStack.pop_back();
     }
     return data;

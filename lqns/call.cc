@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: call.cc 14792 2021-06-11 01:08:38Z greg $
+ * $Id: call.cc 14808 2021-06-14 18:49:18Z greg $
  *
  * Everything you wanted to know about a call to an entry, but were afraid to ask.
  *
@@ -257,6 +257,23 @@ Call::getMaxCustomers()const
     }
 }
 
+
+/*
+ * Return if this call matches type (for Entry::CallInfo)
+ */
+
+bool
+Call::hasTypeForCallInfo( LQIO::DOM::Call::Type type ) const
+{
+    switch ( type ) {
+    case LQIO::DOM::Call::Type::SEND_NO_REPLY: return hasSendNoReply();
+    case LQIO::DOM::Call::Type::FORWARD: return isForwardedCall();
+    case LQIO::DOM::Call::Type::RENDEZVOUS: return hasRendezvous() && !isForwardedCall();
+    default: abort();
+    }
+    return false;
+}
+		
 
 bool
 Call::hasOvertaking() const
