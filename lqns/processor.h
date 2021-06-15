@@ -11,17 +11,15 @@
  * May, 2009
  *
  * ------------------------------------------------------------------------
- * $Id: processor.h 14753 2021-06-02 14:10:59Z greg $
+ * $Id: processor.h 14819 2021-06-15 17:27:22Z greg $
  * ------------------------------------------------------------------------
  */
 
 #if	!defined(PROCESSOR_H)
 #define PROCESSOR_H
 
-#include "dim.h"
 #include <lqio/dom_processor.h>
 #include <set>
-#include <string>
 #include "entity.h"
 
 class Task;

@@ -10,7 +10,7 @@
  * November, 1994
  * May 2009.
  *
- * $Id: task.h 14753 2021-06-02 14:10:59Z greg $
+ * $Id: task.h 14819 2021-06-15 17:27:22Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -18,7 +18,6 @@
 #define TASK_H
 
 #include <lqio/dom_task.h>
-#include "dim.h"
 #include "entity.h"
 #include "call.h"
 

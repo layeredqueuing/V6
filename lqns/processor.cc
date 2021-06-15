@@ -10,16 +10,14 @@
  * November, 1994
  *
  * ------------------------------------------------------------------------
- * $Id: processor.cc 14753 2021-06-02 14:10:59Z greg $
+ * $Id: processor.cc 14824 2021-06-15 19:03:12Z greg $
  * ------------------------------------------------------------------------
  */
 
-#include "dim.h"
-#include <algorithm>
+#include "lqns.h"
 #include <cmath>
 #include <numeric>
 #include <sstream>
-#include <string>
 #include <lqio/input.h>
 #include <lqio/labels.h>
 #include <lqio/error.h>
@@ -30,11 +28,10 @@
 #include <mva/server.h>
 #include "activity.h"
 #include "call.h"
-#include "entity.h"
 #include "entry.h"
 #include "errmsg.h"
 #include "group.h"
-#include "lqns.h"
+#include "flags.h"
 #include "model.h"
 #include "pragma.h"
 #include "processor.h"

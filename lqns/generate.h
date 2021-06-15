@@ -9,13 +9,10 @@ double  * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/gene
  *
  * November, 1994
  *
- * $Id: generate.h 14334 2021-01-05 03:03:03Z greg $
+ * $Id: generate.h 14819 2021-06-15 17:27:22Z greg $
  *
  * ------------------------------------------------------------------------
  */
-
-#include "dim.h"
-#include <string>
 
 class Entity;
 class Task;

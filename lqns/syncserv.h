@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: syncserv.h 14334 2021-01-05 03:03:03Z greg $
+ * $Id: syncserv.h 14819 2021-06-15 17:27:22Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -17,9 +17,7 @@
 #if	!defined(SYNCH_SERVER_H)
 #define	SYNCH_SERVER_H
 
-#include "dim.h"
 #include "server.h"
-#include "ph2serv.h"
 
 /* -------------------------------------------------------------------- */
 /* 		       Simple (Reiser Product Form)			*/

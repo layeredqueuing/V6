@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: model.h 14796 2021-06-11 14:48:04Z greg $
+ * $Id: model.h 14819 2021-06-15 17:27:22Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -17,7 +17,6 @@
 #if	!defined(LQNS_MODEL_H)
 #define	LQNS_MODEL_H
 
-#include "dim.h"
 #include <set>
 #include <lqio/dom_document.h>
 #include <mva/vector.h>

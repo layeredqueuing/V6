@@ -11,16 +11,13 @@
  * July 2007
  *
  * ------------------------------------------------------------------------
- * $Id: activity.h 14812 2021-06-14 19:46:05Z greg $
+ * $Id: activity.h 14819 2021-06-15 17:27:22Z greg $
  * ------------------------------------------------------------------------
  */
 
 #ifndef _ACTIVITY_H
 #define _ACTIVITY_H
 
-#include <config.h>
-#include "dim.h"
-#include <string>
 #include <set>
 #include <map>
 #include <deque>

@@ -2,10 +2,11 @@
  *
  * $URL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/runlqx.cc $
  * ------------------------------------------------------------------------
- * $Id: runlqx.cc 14792 2021-06-11 01:08:38Z greg $
+ * $Id: runlqx.cc 14824 2021-06-15 19:03:12Z greg $
  * ------------------------------------------------------------------------
  */
 
+#include "lqns.h"
 #include <iomanip>
 #include <sstream>
 #include <numeric>
@@ -16,7 +17,7 @@
 #include <mva/fpgoop.h>
 #include "runlqx.h"
 #include "model.h"
-#include "lqns.h"
+#include "flags.h"
 
 namespace SolverInterface
 {

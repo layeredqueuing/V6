@@ -10,7 +10,7 @@
  * November, 1994
  * December, 2020
  *
- * $Id: pragma.h 14783 2021-06-08 19:00:20Z greg $
+ * $Id: pragma.h 14819 2021-06-15 17:27:22Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -18,7 +18,6 @@
 #if	!defined(PRAGMA_H)
 #define	PRAGMA_H
 
-#include <string>
 #include <map>
 #include <lqio/input.h>
 #include <lqio/dom_pragma.h>

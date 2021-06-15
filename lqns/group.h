@@ -9,7 +9,7 @@
  *
  * November, 2008
  *
- * $Id: group.h 14704 2021-05-27 12:20:22Z greg $
+ * $Id: group.h 14819 2021-06-15 17:27:22Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -17,7 +17,6 @@
 #if	!defined(GROUP_H)
 #define GROUP_H
 
-#include "dim.h"
 #include <set>
 #include <map>
 #include <lqio/dom_group.h>

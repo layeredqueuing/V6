@@ -1,5 +1,5 @@
 # 
-# $Id: Makefile.am 14498 2021-02-27 23:08:51Z greg $
+# $Id: Makefile.am 14824 2021-06-15 19:03:12Z greg $
 #
 #----------------------------------------------------------------------
 
@@ -9,16 +9,14 @@ AM_CPPFLAGS	= -I.. -I../lqiolib/src/headers -I../lqx/libsrc/headers -I../libmva/
 bin_PROGRAMS 	= lqns
 lqns_SOURCES	= activity.cc actlist.cc call.cc entity.cc entry.cc \
 		  entrythread.cc errmsg.cc gamma.cc generate.cc group.cc help.cc interlock.cc \
-		  model.cc option.cc overtake.cc  \
+		  lqns.cc model.cc option.cc overtake.cc  \
 		  phase.cc pragma.cc processor.cc randomvar.cc report.cc runlqx.cc \
-		  slice.cc lqns.cc submodel.cc  \
-		  synmodel.cc task.cc variance.cc
-
-noinst_HEADERS	= activity.h actlist.h call.h dim.h entity.h entry.h entrythread.h \
-		  errmsg.h gamma.h generate.h group.h help.h interlock.h model.h \
-		  option.h overtake.h phase.h pragma.h \
-		  processor.h randomvar.h report.h slice.h lqns.h runlqx.h \
-		  submodel.h  synmodel.h task.h variance.h 
+		  slice.cc submodel.cc synmodel.cc task.cc variance.cc
+noinst_HEADERS	= activity.h actlist.h call.h entity.h entry.h \
+		  entrythread.h errmsg.h gamma.h generate.h group.h help.h interlock.h \
+		  lqns.h model.h option.h overtake.h
+		  phase.h pragma.h processor.h randomvar.h report.h runlqx.h \
+		  slice.h submodel.h synmodel.h task.h variance.h 
 
 EXTRA_DIST	= lqns.1 
 

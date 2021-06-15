@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: actlist.h 14808 2021-06-14 18:49:18Z greg $
+ * $Id: actlist.h 14834 2021-06-15 23:44:45Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -17,9 +17,6 @@
 #ifndef _ACTLIST_H
 #define _ACTLIST_H
 
-#include "dim.h"
-#include <lqio/dom_activity.h>
-#include <string>
 #include "activity.h"
 
 class AndOrJoinActivityList;
@@ -31,6 +28,12 @@ class ForkJoinActivityList;
 class Task;
 class VirtualEntry;
 struct InterlockInfo;
+
+namespace LQIO {
+    namespace DOM {
+	class ActivityList;
+    }
+}
 
 class bad_internal_join : public std::runtime_error
 {

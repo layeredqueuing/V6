@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: pragma.cc 14783 2021-06-08 19:00:20Z greg $ *
+ * $Id: pragma.cc 14824 2021-06-15 19:03:12Z greg $ *
  * Pragma processing and definitions.
  *
  * Copyright the Real-Time and Distributed Systems Group,
@@ -11,14 +11,12 @@
  * ------------------------------------------------------------------------
  */
 
-#include <cstdio>
+#include "lqns.h"
 #include <cstdlib>
-#include <cstring>
-#include <algorithm>
 #include <iostream>
 #include <iomanip>
+#include <lqio/glblerr.h>
 #include "pragma.h"
-#include "lqio/glblerr.h"
 
 Pragma * Pragma::__cache = nullptr;
 const std::map<const std::string,const Pragma::fptr> Pragma::__set_pragma =

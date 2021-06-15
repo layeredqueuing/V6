@@ -10,7 +10,7 @@
  *
  * November, 1994
  *
- * $Id: slice.h 14334 2021-01-05 03:03:03Z greg $
+ * $Id: slice.h 14819 2021-06-15 17:27:22Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -18,7 +18,6 @@
 #if	!defined(SLICE_H)
 #define	SLICE_H
 
-#include "dim.h"
 #include <set>
 #include <mva/prob.h>
 

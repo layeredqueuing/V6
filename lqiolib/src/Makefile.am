@@ -1,4 +1,4 @@
-# $Id: Makefile.am 14639 2021-05-13 21:25:02Z greg $
+# $Id: Makefile.am 14834 2021-06-15 23:44:45Z greg $
 # -------------------------------------------------------------------- [Libtool libsrvnio2]
 
 # This project uses Libtool to generate a product
@@ -74,6 +74,7 @@ srvn_result_scan.c: srvn_result_scan.l srvn_result_gram.h
 srvn_result_gram.c srvn_result_gram.h: srvn_result_gram.y
 	$(YACC) -dtv -p result -o srvn_result_gram.c srvn_result_gram.y
 
+json_document.cpp: srvn_gram.h
 srvn_spex.cpp: srvn_gram.h
 json_document.cpp: srvn_gram.h
 srvn_input.cpp: srvn_gram.h

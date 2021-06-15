@@ -1,15 +1,15 @@
 /* thread.cc	-- Greg Franks Fri May  2 2003
- * $Id: entrythread.cc 14753 2021-06-02 14:10:59Z greg $
+ * $Id: entrythread.cc 14824 2021-06-15 19:03:12Z greg $
  *
  */
 
 
-#include "dim.h"
+#include "lqns.h"
 #include <mva/fpgoop.h>
 #include "actlist.h"
 #include "entity.h"
 #include "entrythread.h"
-#include "lqns.h"
+#include "flags.h"
 #include "pragma.h"
 #include "task.h"
 

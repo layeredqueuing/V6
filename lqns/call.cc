@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: call.cc 14808 2021-06-14 18:49:18Z greg $
+ * $Id: call.cc 14824 2021-06-15 19:03:12Z greg $
  *
  * Everything you wanted to know about a call to an entry, but were afraid to ask.
  *
@@ -13,20 +13,20 @@
  */
 
 
-#include "dim.h"
+#include "lqns.h"
 #include <algorithm>
 #include <cmath>
 #include <sstream>
 #include <mva/server.h>
 #include <mva/fpgoop.h>
+#include "activity.h"
 #include "call.h"
 #include "entry.h"
-#include "pragma.h"
-#include "task.h"
-#include "submodel.h"
-#include "activity.h"
 #include "errmsg.h"
-#include "lqns.h"
+#include "flags.h"
+#include "pragma.h"
+#include "submodel.h"
+#include "task.h"
 
 /*----------------------------------------------------------------------*/
 /*      Input processing.  Called from model.cc::prepareModel()         */

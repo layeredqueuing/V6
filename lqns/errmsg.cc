@@ -12,17 +12,15 @@
  * November, 1994
  *
  * ----------------------------------------------------------------------
- * $Id: errmsg.cc 14627 2021-05-10 16:22:27Z greg $
+ * $Id: errmsg.cc 14824 2021-06-15 19:03:12Z greg $
  * ----------------------------------------------------------------------
  */
 
 
-#include "dim.h"
-#include <stdexcept>
-#include <cstdlib>
+#include "lqns.h"
 #include <lqio/input.h>
 #include <lqio/error.h>
-#include "lqns.h"
+#include "flags.h"
 #include "errmsg.h"
 
 /*

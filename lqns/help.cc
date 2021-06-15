@@ -1,20 +1,26 @@
 /* help.cc	-- Greg Franks Wed Oct 12 2005
  *
- * $Id: help.cc 14715 2021-05-28 15:34:49Z greg $
+ * $Id: help.cc 14834 2021-06-15 23:44:45Z greg $
  */
 
-#include <config.h>
+#include "lqns.h"
 #include <iostream>
 #include <iomanip>
-#include "dim.h"
 #include <ctype.h>
 #include <cstdlib>
+#if HAVE_GETOPT_H
+#include <getopt.h>
+#endif
 #include <lqio/error.h>
 #include <lqio/dom_document.h>
-#include "lqns.h"
+#if HAVE_GETOPT_H
+#include <getopt.h>
+#endif
+#include "flags.h"
 #include "help.h"
 #include "option.h"
 #include "pragma.h"
+
 
 class HelpManip {
 public:
@@ -53,7 +59,6 @@ Help::parameter_map_t  Help::__quorum_distribution_args;
 Help::parameter_map_t  Help::__quorum_delayed_calls_args;
 Help::parameter_map_t  Help::__idle_time_args;
 #endif
-
 
 /* -------------------------------------------------------------------- */
 /* Help/Usage info.							*/
@@ -109,7 +114,7 @@ usage ( const char * optarg )
 	}
 #else
 	for ( const char * o = opts; *o && *p; ++o, ++p ) {
-	    string s;
+	    std::string s;
 	    s = "-";
 	    s += *o;
 	    if ( *(o+1) == ':' ) {
@@ -124,8 +129,8 @@ usage ( const char * optarg )
 		}
 		++o;	/* Skip ':' */
 	    }
-	    cerr.setf( ios::left, ios::adjustfield );
-	    std::cerr << setw(14) << s << *p << std::endl;
+	    std::cerr.setf( std::ios::left, std::ios::adjustfield );
+	    std::cerr << std::setw(14) << s << *p << std::endl;
 	}
 #endif
     } else {
@@ -1947,7 +1952,7 @@ HelpTroff::preamble( std::ostream& output ) const
     output << __comment << " t -*- nroff -*-" << std::endl
 	   << ".TH lqns 1 \"" << date << "\" \"" << VERSION << "\"" << std::endl;
 
-    output << __comment << " $Id: help.cc 14715 2021-05-28 15:34:49Z greg $" << std::endl
+    output << __comment << " $Id: help.cc 14834 2021-06-15 23:44:45Z greg $" << std::endl
 	   << __comment << std::endl
 	   << __comment << " --------------------------------" << std::endl;
 
@@ -2244,7 +2249,7 @@ HelpLaTeX::preamble( std::ostream& output ) const
 	   << __comment << " Created:             " << date << std::endl
 	   << __comment << "" << std::endl
 	   << __comment << " ----------------------------------------------------------------------" << std::endl
-	   << __comment << " $Id: help.cc 14715 2021-05-28 15:34:49Z greg $" << std::endl
+	   << __comment << " $Id: help.cc 14834 2021-06-15 23:44:45Z greg $" << std::endl
 	   << __comment << " ----------------------------------------------------------------------" << std::endl << std::endl;
 
     output << "\\chapter{Invoking the Analytic Solver ``lqns''}" << std::endl

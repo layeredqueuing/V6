@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: phase.h 14808 2021-06-14 18:49:18Z greg $
+ * $Id: phase.h 14819 2021-06-15 17:27:22Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -17,7 +17,6 @@
 #if	!defined(PHASE_H)
 #define PHASE_H
 
-#include <string>
 #include <set>
 #include <lqio/input.h>
 #include <mva/vector.h>
@@ -84,6 +83,7 @@ public:
     double thinkTime() const;
     double CV_sqr() const;
 
+    NullPhase& setVariance( double variance ) { _variance = variance; return *this; }
     virtual double variance() const { return _variance; } 		/* Computed variance.		*/
     double computeCV_sqr() const;
 
@@ -93,6 +93,8 @@ public:
     void setILWait (unsigned int submodel, double il_wait);
     void addILWait (unsigned int submodel, double il_wait);
     double getILWait (unsigned submodel) const;
+    NullPhase& setWaitingTime( unsigned int submodel, double value ) { _wait[submodel] = value; return *this; }
+    double waitingTime( unsigned int submodel ) const { return _wait[submodel];}
 
     virtual NullPhase& recalculateDynamicValues() { return *this; }
 
