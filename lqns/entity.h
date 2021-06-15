@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: entity.h 14808 2021-06-14 18:49:18Z greg $
+ * $Id: entity.h 14816 2021-06-15 15:39:56Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -245,8 +245,6 @@ public:
     Server * serverStation() const { return _station; }
 
     bool markovOvertaking() const;
-    double openArrivalRate() const;
-
     /* Interlock */
 	
     Entity& initWeights( MVASubmodel& submodel );

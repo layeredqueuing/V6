@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: entity.cc 14808 2021-06-14 18:49:18Z greg $
+ * $Id: entity.cc 14816 2021-06-15 15:39:56Z greg $
  *
  * Everything you wanted to know about a task or processor, but were
  * afraid to ask.
@@ -312,20 +312,8 @@ Entity::addEntry( Entry * anEntry )
 
 double
 Entity::throughput() const
-{		
-    return std::accumulate( entries().begin(), entries().end(), 0., add_using<Entry>( &Entry::throughput ) );
-}
-
-
-
-/*
- * Return the total open arrival rate to this server.
- */
-
-double
-Entity::openArrivalRate() const
 {
-    return std::accumulate( entries().begin(), entries().end(), 0., add_using<Entry>( &Entry::openArrivalRate ) );
+    return std::accumulate( entries().begin(), entries().end(), 0., add_using<Entry>( &Entry::throughput ) );
 }
 
 
@@ -336,7 +324,7 @@ Entity::openArrivalRate() const
 
 double
 Entity::utilization() const
-{		
+{
     const_cast<Entity *>(this)->_utilization = std::accumulate( entries().begin(), entries().end(), 0., add_using<Entry>( &Entry::utilization ) );
     if ( Pragma::stopOnBogusUtilization() > 0. && !isInfinite() && _utilization / copies() > Pragma::stopOnBogusUtilization() ) {
 	std::ostringstream err;
@@ -821,7 +809,6 @@ Entity::setInterlockRelation( Server * station, const Entry * server_entry_1, co
  * threads specified than can possibly be active.
  */
 
-
 void
 Entity::setIdleTime( const double relax )
 {
@@ -868,9 +855,10 @@ Entity::openModelInfinity() const
 {
     bool rc = false;
     const Server * station = serverStation();
-    for ( unsigned int e = 1; e <= nEntries(); ++e ) {
+    for ( std::vector<Entry *>::const_iterator entry = entries().begin(); entry != entries().end(); ++entry ) {
+	const unsigned e = (*entry)->index();
 	if ( !std::isfinite( station->R(e,0) ) && station->V(e,0) != 0 && station->S(e,0) != 0 ) {
-	    LQIO::solution_error( ERR_ARRIVAL_RATE, station->V(e,0), entryAt(e-1)->name().c_str(), station->mu()/station->S(e,0) );
+	    LQIO::solution_error( ERR_ARRIVAL_RATE, station->V(e,0), (*entry)->name().c_str(), station->mu()/station->S(e,0) );
 	    rc = true;
 	}
     }
@@ -1047,11 +1035,12 @@ Entity::fold( const std::string& s1, const Entity* e2 )
  */
 
 /* static */ std::ostream&
-Entity::output_server_chains( std::ostream& output, const Entity& entity ) 
+Entity::output_server_chains( std::ostream& output, const Entity& entity )
 {
     output << "Chains:" << entity.serverChains() << std::endl;
     return output;
 }
+
 
 /* static */ std::ostream&
 Entity::output_entries( std::ostream& output, const Entity& entity )
