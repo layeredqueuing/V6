@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!-- Invoked as: lqn2xml 01-sanity.in -->
 <!-- Thu Apr  2 19:24:01 2009 -->
-<lqn-model name="01-sanity" description="$Id: 01S-sanity.lqnx 14769 2021-06-04 16:18:43Z greg $" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="/usr/local/share/lqns/lqn.xsd">
+<lqn-model name="01-sanity" description="$Id: 01S-sanity.lqnx 14839 2021-06-16 15:13:19Z greg $" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="/usr/local/share/lqns/lqn.xsd">
    <parameters>
 $c = [0.2 : 2.0, 0.2]	# Client Service Time
 $s = 3.0 - $c		# Server service times - depends on client time.

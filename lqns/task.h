@@ -236,6 +236,7 @@ public:
 
     /* Threads */
 
+    const Vector<Thread *>& threads() const { return _threads; }	 	/* My Threads.			*/
     unsigned threadIndex( const unsigned submodel, const unsigned k ) const;
     void forkOverlapFactor( const Submodel& ) const;
     double waitExcept( const unsigned, const unsigned, const unsigned ) const;	/* For client service times */

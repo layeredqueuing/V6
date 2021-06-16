@@ -1,6 +1,6 @@
 # petrisrvn 5.17
 # petrisrvn --parseable --output=77-semaphore.out 77-semaphore.in
-# $Id: 77-semaphore.p 14000 2020-10-25 12:50:53Z greg $
+# $Id: 77-semaphore.p 14839 2021-06-16 15:13:19Z greg $
 V y
 C 1.90242e-06
 I 0

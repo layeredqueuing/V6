@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: entity.cc 14824 2021-06-15 19:03:12Z greg $
+ * $Id: entity.cc 14839 2021-06-16 15:13:19Z greg $
  *
  * Everything you wanted to know about a task or processor, but were
  * afraid to ask.
@@ -1043,12 +1043,7 @@ Entity::output_server_chains( std::ostream& output, const Entity& entity )
 Entity::output_entries( std::ostream& output, const Entity& entity )
 {
     const std::vector<Entry *>& entries = entity.entries();
-    for ( std::vector<Entry *>::const_iterator entry = entries.begin(); entry != entries.end(); ++entry ) {
-	if ( entry != entries.begin() ) {
-	    output << ", ";
-	}
-	output << (*entry)->name() << "." << (*entry)->getReplicaNumber();
-    }
+    output << std::accumulate( std::next(entries.begin()), entries.end(), entries.front()->name(), &Entry::fold );
     return output;
 }
 

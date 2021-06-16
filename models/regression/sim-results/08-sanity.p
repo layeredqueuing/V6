@@ -1,6 +1,6 @@
 # lqsim 5.17
 # lqsim --confidence=1.0,1000 --seed=1049217653 --parseable --output=08-sanity.p 08-sanity.in
-# $Id: 08-sanity.p 14000 2020-10-25 12:50:53Z greg $
+# $Id: 08-sanity.p 14839 2021-06-16 15:13:19Z greg $
 V y
 C 0.907417
 I 3

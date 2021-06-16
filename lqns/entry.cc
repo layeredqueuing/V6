@@ -12,7 +12,7 @@
  * July 2007.
  *
  * ------------------------------------------------------------------------
- * $Id: entry.cc 14824 2021-06-15 19:03:12Z greg $
+ * $Id: entry.cc 14839 2021-06-16 15:13:19Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -22,6 +22,7 @@
 #include <numeric>
 #include <iostream>
 #include <iomanip>
+#include <sstream>
 #include <lqio/error.h>
 #include <mva/fpgoop.h>
 #include <mva/prob.h>
@@ -1123,6 +1124,15 @@ Entry::printSubmodelWait( std::ostream& output, unsigned int offset ) const
     }
     return output;
 }
+
+
+std::string
+Entry::fold( const std::string& s1, const Entry * e2 )
+{
+    std::ostringstream s2;
+    s2 << e2->name() << "." << e2->getReplicaNumber();
+    return s1 + "," + s2.str();
+}
 
 /* --------------------------- Dynamic LQX  --------------------------- */
 
@@ -1839,6 +1849,8 @@ TaskEntry::updateWaitReplication( const Submodel& submodel, unsigned & n_delta )
 DeviceEntry::DeviceEntry( LQIO::DOM::Entry* dom, Processor * processor )
     : Entry( dom, processor->nEntries() ), _processor(processor)
 {
+    entryTypeOk( LQIO::DOM::Entry::Type::STANDARD );
+    isCalledUsing( RequestType::RENDEZVOUS );
     processor->addEntry( this );
 }
 

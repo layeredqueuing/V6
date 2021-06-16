@@ -278,10 +278,6 @@ public:
     virtual double updateWaitReplication( const Submodel&, unsigned& ) { return 0.0; }	/* NOP */
     virtual double deltaUtilization() const;
 
-    /* Dynamic Updates / Late Finalization */
-    /* In order to integrate LQX's support for model changes we need to have a way  */
-    /* of re-calculating what used to be static for all dynamically editable values */
-	
     /* Sanity Check */
 
     virtual const Entity& sanityCheck() const;
@@ -327,8 +323,10 @@ protected:
 private:
     void setServiceTime( const Entry * anEntry, unsigned k ) const;
 
-protected:
+private:
     LQIO::DOM::Entity* _dom;		/* The DOM Representation	*/
+
+protected:
     std::vector<Entry *> _entries;	/* Entries for this entity.	*/
     std::set<const Task *> _tasks;	/* Clients of this entity	*/
     

@@ -1,5 +1,5 @@
 # SRVN Model Description File, for file: 10-interlock.in
-# $Id: 13-interlock.in 14778 2021-06-07 23:32:41Z greg $
+# $Id: 13-interlock.in 14839 2021-06-16 15:13:19Z greg $
 # ------------------------------------------------------------------------
 
 G "Send interlock with 2-phases and 2 clients." 1e-05 50 10 0.9 -1

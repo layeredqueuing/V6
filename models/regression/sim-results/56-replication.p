@@ -1,6 +1,6 @@
 # lqn2ps 5.16
 # lqn2ps -Oparseable -o56-replication.p -merge-replicas -parse-file=56-replication-flat.p 56-replication-flat.in
-# $Id: 56-replication.p 14000 2020-10-25 12:50:53Z greg $
+# $Id: 56-replication.p 14839 2021-06-16 15:13:19Z greg $
 V y
 C 0.242585
 I 3

@@ -1,6 +1,6 @@
 # lqsim 5.16
 # lqsim --confidence=1.0,1000 --seed=1049217653 --parseable --output=90-B07.p 90-B07.in
-# $Id: 90-B07.p 14000 2020-10-25 12:50:53Z greg $
+# $Id: 90-B07.p 14839 2021-06-16 15:13:19Z greg $
 V y
 C 0.657282
 I 3

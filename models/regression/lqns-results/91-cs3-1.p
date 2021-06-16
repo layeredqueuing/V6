@@ -1,6 +1,6 @@
 # lqns 5.15
 # lqns --pragma=variance=mol,threads=mak --parseable 91-cs3-1.in
-# $Id: 91-cs3-1.p 14000 2020-10-25 12:50:53Z greg $
+# $Id: 91-cs3-1.p 14839 2021-06-16 15:13:19Z greg $
 V y
 C 8.62923e-07
 I 4
