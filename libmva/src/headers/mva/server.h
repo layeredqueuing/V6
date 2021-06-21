@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: server.h 14612 2021-04-19 21:44:17Z greg $
+ * $Id: server.h 14854 2021-06-21 13:58:52Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -81,13 +81,12 @@ public:
     virtual void setNonILRate( const MVA& solver, const unsigned k, const Population & N ) const{}
     virtual void setQueueWeight( const MVA& solver, const unsigned k, const Population & N ) const{}
     void setNonILRate( const unsigned k,  double ilwait) const;
-    void setNonILRate(  const unsigned k, const unsigned e, double ilwait) const;
-    void setMaxCustomers(  const unsigned e, const unsigned k, double nCusts);
-    double getMaxCustomers(  const unsigned e, const unsigned k ) const {return _maxCusts[e][k]; }
+    void setNonILRate( const unsigned k, const unsigned e, double ilwait ) const;
+    void setMaxCustomers( const unsigned e, const unsigned k, double nCusts );
+    double getMaxCustomers( const unsigned e, const unsigned k ) const { return _maxCusts[e][k]; }
     double getMaxCustomers() const { return _maxCusts[0][0]; }
-    void setRealCustomer(  const unsigned e,const unsigned k, double realCusts){ _realCusts[e][k]= realCusts; }
-    double getRealCustomer(  const unsigned e, const unsigned k  ) const {return _realCusts[e][k]; }
-    void addRealCustomer(  const unsigned e, const unsigned k, double nCusts);
+    void setRealCustomers( const unsigned e,const unsigned k, double realCusts );
+    double getRealCustomers( const unsigned e, const unsigned k  ) const { return _realCusts[e][k]; }
     bool isLessCustomer( const unsigned e, const unsigned k, const unsigned nk) const{ return _maxCusts[e][k]<=(nk-1) && (nk>1); }
 
     double chainILRate( const unsigned e, const unsigned k) const { return _chain_IL_Rate[e][k]; }

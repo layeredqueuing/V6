@@ -2,7 +2,7 @@
 # Copyright (C) 2005 Greg Franks <greg@sce.carleton.ca>
 #
 # ------------------------------------------------------------------------
-# $Id: Makefile.am 14617 2021-04-21 13:26:44Z greg $
+# $Id: Makefile.am 14854 2021-06-21 13:58:52Z greg $
 # ------------------------------------------------------------------------
 
 SRVN=	../lqns
@@ -87,7 +87,7 @@ SUFFIXES = .diff .d .svg .lqxo .lqnx
 
 .lqnx.lqxo:
 	-@$(SRVN) $(OPTS) $<
-	-@srvndiff $(DIFFOPTS) $@ ../../models/regression/lqns-results/$*.p > /dev/null; if test $$? -ne 0; then echo $< failed; fi
+	-@srvndiff $(DIFFOPTS) $@ ../../models/regression/lqns-results/$*.p > /dev/null; j=$$?; if test $$? -ge 128; then echo $< faulted; elif test $$j -ne 0; then echo $< failed; fi
 
 
 .lqnx.d:

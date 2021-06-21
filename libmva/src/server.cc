@@ -1,5 +1,5 @@
 /*  -*- C++ -*-
- * $Id: server.cc 14310 2020-12-31 17:16:57Z greg $
+ * $Id: server.cc 14854 2021-06-21 13:58:52Z greg $
  *
  * Copyright the Real-Time and Distributed Systems Group,
  * Department of Systems and Computer Engineering,
@@ -464,6 +464,7 @@ Server::setNonILRate( const unsigned k, const unsigned e, double ilwait) const
 void
 Server::setMaxCustomers( const unsigned e, const unsigned k, double nCusts )
 {
+    assert( e <= E && k <= K );
     _maxCusts[e][k] = nCusts;
     _maxCusts[0][0] = 0;
     for ( unsigned int x = 1; x <= E; ++x ) {
@@ -473,6 +474,14 @@ Server::setMaxCustomers( const unsigned e, const unsigned k, double nCusts )
 	}
 	_maxCusts[0][0] += _maxCusts[x][0];		// BUG 191: used in Markov_Phased_Conway_Multi_Server::meanMinimumOvertaking
     }
+}
+
+
+void
+Server::setRealCustomers( const unsigned e, const unsigned k, double realCusts )
+{
+    assert( e <= E && k <= K );
+    _realCusts[e][k]= realCusts;
 }
 
 
@@ -500,16 +509,6 @@ Server::setChainILRate( const unsigned k, double rate)
     }
 }
 
-
-void
-Server::addRealCustomer( const unsigned e, const unsigned k, double nCusts)
-{
-    if ( e > 0 && (nCusts + _realCusts[e][k]) > _maxCusts[e][k] ) {
-	_realCusts[e][k] = _maxCusts[e][k];
-    } else {
-	_realCusts[e][k] += nCusts;
-    }
-}
 
 /*
  * Mean service time.
@@ -1622,7 +1621,7 @@ HVFCFS_Server::r( const unsigned e, const unsigned k, const unsigned p ) const
 	return service;
 
     } else if (getMaxCustomers(e, k) == 1.){
-	return ( service );
+	return service;
 
     } else {
 	return ( service + myVariance[e][k][p] / service ) / 2.0;

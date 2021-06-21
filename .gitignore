@@ -4,6 +4,7 @@
 *.blg
 *.cache
 *.deps
+*.diff
 *.dvi
 *.eps
 *.exe

@@ -12,7 +12,7 @@
  * July 2007.
  *
  * ------------------------------------------------------------------------
- * $Id: entry.cc 14839 2021-06-16 15:13:19Z greg $
+ * $Id: entry.cc 14854 2021-06-21 13:58:52Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -1456,18 +1456,14 @@ Entry::set_real_customers::operator()( const Entry * entry ) const
 
     for ( Vector<Phase>::const_iterator phase = entry->_phase.begin(); phase != entry->_phase.end(); ++phase ) {
 	const std::set<Call *>& calls = phase->callList();
-	double rcustomers = std::accumulate( calls.begin(), calls.end(), 0.0, Call::set_real_customers( _submodel, _server, _k ) );
+	double rcustomers = std::accumulate( calls.begin(), calls.end(), 0.0, Call::add_real_customers( _submodel, _server, _k ) );
 	const Call * call = phase->processorCall();
 	if ( call ) {
-	    rcustomers += call->setRealCustomers( _submodel, _server, _k );
+	    rcustomers += call->getRealCustomers( _submodel, _server, _k );
 	}
 
 	if ( rcustomers > 0. ) {
-	    if ((rcustomers + station->getRealCustomer(0, _k )) > entry->getMaxCustomers()) {
-		station->setRealCustomer(0, _k, entry->getMaxCustomers() );
-	    } else {
-		station->addRealCustomer(0, _k, rcustomers );
-	    }
+	    station->setRealCustomers( 0, _k, std::min(rcustomers , entry->getMaxCustomers()) );
 	}
     }
 }

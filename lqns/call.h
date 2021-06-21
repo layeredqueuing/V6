@@ -10,7 +10,7 @@
  * November, 1994
  * March, 2004
  *
- * $Id: call.h 14819 2021-06-15 17:27:22Z greg $
+ * $Id: call.h 14852 2021-06-20 02:54:33Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -177,9 +177,9 @@ public:
 	const double _total;
     };
 
-    struct set_real_customers {
-	set_real_customers( const MVASubmodel& submodel, const Entity * server, unsigned k ) : _submodel(submodel), _server(server), _k(k) {}
-	double operator()( double sum, Call * call ) { return sum + call->setRealCustomers( _submodel, _server, _k ); }
+    struct add_real_customers {
+	add_real_customers( const MVASubmodel& submodel, const Entity * server, unsigned k ) : _submodel(submodel), _server(server), _k(k) {}
+	double operator()( double sum, Call * call ) { return sum + call->getRealCustomers( _submodel, _server, _k ); }
     private:
 	const MVASubmodel& _submodel;
 	const Entity * _server;
@@ -243,7 +243,7 @@ public:
     bool hasSendNoReplyOrNone() const { return !hasRendezvous() && !hasForwarding(); }
     bool hasForwardingOrNone() const { return !hasRendezvous() && !hasSendNoReply(); }
     bool hasNoForwarding() const { return dstEntry() == nullptr || hasRendezvous() || hasSendNoReply(); }		/* Special case for topological sort */
-    virtual bool isCalledBy( const Entry * ) const { return false; }
+    virtual bool isCalledBy( const Entry * ) const = 0;
     bool hasTypeForCallInfo( LQIO::DOM::Call::Type type ) const;
     
     virtual const std::string& srcName() const;
@@ -284,7 +284,7 @@ public:
 
     /*  Interlocked flow */
     double getMaxCustomers() const;
-    double setRealCustomers( const MVASubmodel&, const Entity * aServer, unsigned int k ) const;
+    double getRealCustomers( const MVASubmodel&, const Entity * aServer, unsigned int k ) const;
 
     void saveILWait( const unsigned k, const unsigned p, const double );
     void clearILWait( const unsigned k, const unsigned p, const double );
@@ -344,6 +344,7 @@ public:
 
     virtual const std::string& srcName() const { static const std::string null("NULL"); return null; }
     virtual NullCall& initWait() { return *this; }
+    virtual bool isCalledBy( const Entry * ) const { return false; }
     virtual void parameter_error( const std::string& ) const;
 };
 
@@ -428,10 +429,12 @@ public:
 class PhaseProcessorCall : public ProcessorCall, protected FromEntry {
 public:
     PhaseProcessorCall( const Phase * fromPhase, const Entry * toEntry );
+    virtual bool isCalledBy( const Entry * ) const;
 };
 
 class ActivityProcessorCall : public ProcessorCall, protected FromActivity {
 public:
     ActivityProcessorCall( const Activity * fromActivity, const Entry * toEntry );
+    virtual bool isCalledBy( const Entry * ) const;
 };
 #endif

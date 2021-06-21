@@ -10,7 +10,7 @@
  * November, 1994
  *
  * ------------------------------------------------------------------------
- * $Id: task.cc 14839 2021-06-16 15:13:19Z greg $
+ * $Id: task.cc 14854 2021-06-21 13:58:52Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -938,9 +938,9 @@ Task::initClientStation( Submodel& submodel )
 	    station->setVisits( e, k, 1, (*entry)->prVisit() );	// As client, called-by phase does not matter.
 
 	    if ( isReferenceTask() ) {
-		station->setRealCustomer( e, k, population() );
+		station->setRealCustomers( e, k, population() );
 	    } else {
-		station->setRealCustomer( e, k, (*entry)->utilization() );
+		station->setRealCustomers( e, k, (*entry)->utilization() );
 	    }
 	}
 
@@ -1351,16 +1351,10 @@ Task::set_real_customers::operator()( Task * client ) const
 {
     if ( client->throughput() == 0.0 ) return;
 
-    Server * station = _server->serverStation();
-    
     const ChainVector& chain = client->clientChains( _submodel.number() );
     for ( unsigned ix = 1; ix <= chain.size(); ++ix ) {
 	const unsigned k = chain[ix];
 	if ( !_server->hasServerChain(k) ) continue;
-
-	for ( unsigned e = 0; e <= _server->nEntries(); e++ ) {
-	    station->setRealCustomer(e,k,0.0);
-	}
 	std::for_each( client->entries().begin(), client->entries().end(), Entry::set_real_customers( _submodel, _server, k ) );
     }
 }

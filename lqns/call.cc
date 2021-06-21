@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: call.cc 14824 2021-06-15 19:03:12Z greg $
+ * $Id: call.cc 14851 2021-06-20 02:41:42Z greg $
  *
  * Everything you wanted to know about a call to an entry, but were afraid to ask.
  *
@@ -593,7 +593,7 @@ Call::getQueueLength( ) const
 
 
 double
-Call::setRealCustomers( const MVASubmodel& submodel, const Entity * server, unsigned int k ) const
+Call::getRealCustomers( const MVASubmodel& submodel, const Entity * server, unsigned int k ) const
 {
     if ( !isRealCustomer( submodel, server, k ) ) return 0.;
 
@@ -606,8 +606,6 @@ Call::setRealCustomers( const MVASubmodel& submodel, const Entity * server, unsi
     }
     customers *= server->fanIn(client);		/* Replication */
 
-    Server * station = server->serverStation();
-    station->addRealCustomer( dstEntry()->index(), k, customers );
     return customers;
 }
 
@@ -1074,6 +1072,13 @@ PhaseProcessorCall::PhaseProcessorCall( const Phase * fromPhase, const Entry * t
     : Call( fromPhase, toEntry ), ProcessorCall( fromPhase, toEntry ), FromEntry( fromPhase->entry() )
 {
 }
+
+
+bool
+PhaseProcessorCall::isCalledBy( const Entry * entry ) const
+{
+    return srcEntry() == entry;
+}
 
 /*----------------------------------------------------------------------*/
 /*                      Activity Processor Calls                        */
@@ -1082,6 +1087,14 @@ PhaseProcessorCall::PhaseProcessorCall( const Phase * fromPhase, const Entry * t
 ActivityProcessorCall::ActivityProcessorCall( const Activity * fromActivity, const Entry * toEntry )
     : Call( fromActivity, toEntry ), ProcessorCall( fromActivity, toEntry ), FromActivity()
 {
+}
+
+
+
+bool
+ActivityProcessorCall::isCalledBy( const Entry * entry ) const
+{
+    return entry->hasStartActivity() && srcTask() == entry->owner();
 }
 
 /*----------------------------------------------------------------------*/

@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: entity.h 14834 2021-06-15 23:44:45Z greg $
+ * $Id: entity.h 14843 2021-06-17 23:21:46Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -263,7 +263,6 @@ public:
     bool hasSingleSource() const { return _interlock.hasSingleSource(); }
 
 private:
-    const Entity& setRealCustomers( const MVASubmodel& ) const;
     void setInterlockRelation( Server * station, const Entry * server_entry_1, const Entry * server_entry_2, const Task * client_1, const Task * client_2, unsigned k1, unsigned k2 ) const;
 
     /* Computation */

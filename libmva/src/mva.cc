@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: mva.cc 14496 2021-02-27 02:36:12Z greg $
+ * $Id: mva.cc 14854 2021-06-21 13:58:52Z greg $
  *
  * MVA solvers: Exact, Bard-Schweitzer, Linearizer and Linearizer2.
  * Abstract superclass does no operation by itself.
@@ -407,7 +407,7 @@ MVA::initialize()
 	const unsigned E   = Q[m]->nEntries();			/* ++ BUG 190 ++ */
 	for ( unsigned k = 1; k <= K; ++k ) {
 	    for ( unsigned e = 0; e <= E; ++e ) {		/* Note: start from 0! */
-		Q[m]->setRealCustomer( e, k, NCust[k] );
+		Q[m]->setRealCustomers( e, k, NCust[k] );
 		Q[m]->setMaxCustomers( e, k, NCust[k] );
 	    }
 	}							/* -- BUG 190 -- */
@@ -917,7 +917,7 @@ MVA::sumOf_SL_m( const Server& station, const Population &N, const unsigned je, 
 		    if ( !std::isfinite(s) ) return s;
 		    if (je==e) continue;
 
-		    double rc=station.getRealCustomer(e,k);
+		    double rc=station.getRealCustomers(e,k);
 		    double Lnmek=L[n][m][e][k];
 
 		    double le;
@@ -2560,7 +2560,7 @@ SchweitzerCommon::initialize()
 			L[n][m][e][k] = Q[m]->S(e,k);
 			Lk[m] = L[n][m][e][k];
 		    } else {
-			L[n][m][e][k] = Q[m]->S(e,k) * Q[m]->V(e,k) * Q[m]->getRealCustomer(0,k) / Dm[k];	/* Conway init adjust by fraction	*/
+			L[n][m][e][k] = Q[m]->S(e,k) * Q[m]->V(e,k) * Q[m]->getRealCustomers(0,k) / Dm[k];	/* Conway init adjust by fraction	*/
 			Lk[m] += L[n][m][e][k];
 		    }
 		} else {

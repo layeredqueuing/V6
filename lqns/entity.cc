@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: entity.cc 14839 2021-06-16 15:13:19Z greg $
+ * $Id: entity.cc 14843 2021-06-17 23:21:46Z greg $
  *
  * Everything you wanted to know about a task or processor, but were
  * afraid to ask.
@@ -626,20 +626,6 @@ Entity::setMaxCustomers( const MVASubmodel& submodel ) const
 
 
 
-/*
- * Initialize the service and visit parameters for a server.  Also set
- * myChains to all chains that visit this server.
- */
-
-const Entity&
-Entity::setRealCustomers( const MVASubmodel& submodel ) const
-{
-    const std::set<Task *>& clients = submodel.getClients();
-    std::for_each( clients.begin(), clients.end(), Task::set_real_customers( submodel, this ) );
-    return *this;
-}
-
-
 const Entity&
 Entity::setInterlock( const MVASubmodel& submodel ) const
 {
@@ -947,6 +933,8 @@ Entity::initServerStation( MVASubmodel& submodel )
 	initWeights( submodel );
 	this->setInterlock( submodel );
     }
+
+    std::for_each( clients.begin(), clients.end(), Task::set_real_customers( submodel, this ) );
 
     if ( hasSynchs() && !Pragma::threads(Pragma::Threads::NONE) ) {
 	joinOverlapFactor( submodel );
