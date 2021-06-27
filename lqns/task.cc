@@ -10,7 +10,7 @@
  * November, 1994
  *
  * ------------------------------------------------------------------------
- * $Id: task.cc 14854 2021-06-21 13:58:52Z greg $
+ * $Id: task.cc 14864 2021-06-26 01:45:54Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -186,10 +186,10 @@ Task::hasThinkTime() const
 }
 
 
-unsigned
+bool
 Task::hasClientChain( const unsigned submodel, const unsigned k ) const
 {
-    return _clientChains[submodel].find(k);
+    return _clientChains[submodel].find(k) != _clientChains[submodel].end();
 }
 
 
@@ -915,7 +915,6 @@ Task&
 Task::initClientStation( Submodel& submodel )
 {
     const unsigned int n = submodel.number();
-    const ChainVector& chains = clientChains( n );
     Server * station = clientStation( n );
 
     /* If the task has been pruned, use replica 1 */
@@ -926,26 +925,25 @@ Task::initClientStation( Submodel& submodel )
     const std::vector<Entry *>& entries = this->entries();
 #endif
 
-    for ( unsigned ix = 1; ix <= chains.size(); ++ix ) {
-	const unsigned k = chains[ix];
-
+    const ChainVector& chains = clientChains( n );
+    for ( ChainVector::const_iterator k = chains.begin(); k != chains.end(); ++k ) {
 	for ( std::vector<Entry *>::const_iterator entry = entries.begin(); entry != entries.end(); ++entry ) {
 	    const unsigned e = (*entry)->index();
 
 	    for ( unsigned p = 1; p <= (*entry)->maxPhase(); ++p ) {
-		station->setService( e, k, p, (*entry)->waitExcept( n, k, p ) );
+		station->setService( e, *k, p, (*entry)->waitExcept( n, *k, p ) );
 	    }
-	    station->setVisits( e, k, 1, (*entry)->prVisit() );	// As client, called-by phase does not matter.
+	    station->setVisits( e, *k, 1, (*entry)->prVisit() );	// As client, called-by phase does not matter.
 
 	    if ( isReferenceTask() ) {
-		station->setRealCustomers( e, k, population() );
+		station->setRealCustomers( e, *k, population() );
 	    } else {
-		station->setRealCustomers( e, k, (*entry)->utilization() );
+		station->setRealCustomers( e, *k, (*entry)->utilization() );
 	    }
 	}
 
 	/* Set idle times for stations. */
-	submodel.setThinkTime( k, thinkTime( n, k ) );
+	submodel.setThinkTime( *k, thinkTime( n, *k ) );
     }
 
     if ( hasThreads() && !Pragma::threads(Pragma::Threads::NONE) ) {
@@ -965,16 +963,11 @@ Task::initClientStation( Submodel& submodel )
 
 
 const Task&
-Task::setChain( const MVASubmodel& submodel ) const
+Task::setChains( MVASubmodel& submodel ) const
 {
     callsPerform(&Call::setChain, submodel.number());
     if ( nThreads() > 1 ) {
-	const ChainVector& chain = clientChains( submodel.number() );
-	const unsigned k1 = chain[1];
-	for ( unsigned ix = 2; ix <= chain.size(); ++ix ) {
-	    const unsigned k = chain[ix];
-	    submodel.closedModel->setThreadChain(k, k1);
-	}
+	submodel.setChains( clientChains( submodel.number() ) );
     }
     return *this;
 }
@@ -998,15 +991,14 @@ Task::modifyClientServiceTime( const MVASubmodel& submodel )
 {
     const unsigned int n = submodel.number();
     Server * station = clientStation( n );
-    const ChainVector& chain = clientChains( n );
+    const ChainVector& chains = clientChains( n );
 
     for ( std::vector<Entry *>::const_iterator entry = entries().begin(); entry != entries().end(); ++entry ) {
 	const unsigned e = (*entry)->index();
 
-	for ( unsigned ix = 1; ix <= chain.size(); ++ix ) {
-	    const unsigned k = chain[ix];
+	for ( ChainVector::const_iterator k = chains.begin(); k != chains.end(); ++k ) {
 	    for ( unsigned p = 1; p <= (*entry)->maxPhase(); ++p ) {
-		station->setService( e, k, p, (*entry)->waitExceptChain( n, k, p ) );
+		station->setService( e, *k, p, (*entry)->waitExceptChain( n, *k, p ) );
 	    }
 	}
     }
@@ -1032,31 +1024,8 @@ Task::saveClientResults( const MVASubmodel& submodel )
     /* Other results (only useful for references tasks. */
 
     if ( isReferenceTask() && !isCalled() ) {
-	if ( submodel.closedModel ) {
-	    const Server * station = clientStation( n );
-	    const ChainVector& chains = clientChains(n);
-
-	    for ( std::vector<Entry *>::const_iterator entry = entries().begin(); entry != entries().end(); ++entry ) {
-		double lambda = 0;
-
-#if PAN_REPLICATION
-		if ( submodel.usePanReplication() ) {
-
-		    /*
-		     * Get throughput PER CUSTOMER because replication
-		     * monkeys with the population levels.  Fix for
-		     * multiservers.
-		     */
-
-		    lambda = submodel.closedModel->normalizedThroughput( *station, (*entry)->index(), chains[1] ) * population();
-		} else {
-#endif
-		    lambda = submodel.closedModel->throughput( *station, (*entry)->index(), chains[1] );
-#if PAN_REPLICATION
-		}
-#endif
-		(*entry)->saveThroughput( lambda );
-	    }
+	if ( submodel.hasClosedModel() ) {
+	    std::for_each( entries().begin(), entries().end(), Exec3<Entry,const MVASubmodel&, const Server&,unsigned>( &Entry::saveClientResults, submodel, *clientStation( n ), clientChains( n )[1] ) );
 	}
     }
     return *this;
@@ -1424,11 +1393,12 @@ Task::threadIndex( const unsigned submodel, const unsigned k ) const
     } else if ( nThreads() == 1 ) {
 	return 1;
     } else {
-	unsigned ix = _clientChains[submodel].find( k );
+	/* Note: Chain vector starts at one, not zero. */
+	const size_t ix = _clientChains[submodel].find( k ) - _clientChains[submodel].begin();
 	if ( replicas() > 1 ) {
-	    return (ix - 1) % nThreads() + 1;
+	    return ix % nThreads() + 1;
 	} else {
-	    return ix;
+	    return ix + 1;
 	}
     }
 }
@@ -1477,7 +1447,7 @@ Task::waitExceptChain( const unsigned ix, const unsigned submodel, const unsigne
 void
 Task::forkOverlapFactor( const Submodel& submodel ) const
 {
-    VectorMath<double>* of = submodel.getOverlapFactor();
+    Vector<double>* of = submodel.getOverlapFactor();
     const ChainVector& chain( _clientChains[submodel.number()] );
     const unsigned n = chain.size();
 
@@ -1834,7 +1804,7 @@ Task::printClientChains( std::ostream& output, const unsigned submodel ) const
  */
 
 std::ostream&
-Task::printOverlapTable( std::ostream& output, const ChainVector& chain, const VectorMath<double>* of ) const
+Task::printOverlapTable( std::ostream& output, const ChainVector& chain, const Vector<double>* of ) const
 {
 
     //To handle the case of a main thread of control with no fork join.

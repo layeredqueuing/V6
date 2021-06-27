@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: entry.h 14839 2021-06-16 15:13:19Z greg $
+ * $Id: entry.h 14856 2021-06-25 13:11:32Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -39,9 +39,11 @@ class Call;
 class Entity;
 class Entry;
 class Exponential;
+class MVASubmodel;
+class Model;
+class Model;
 class Processor;
 class Submodel;
-class MVASubmodel;
 class Task;
 typedef Vector<unsigned> ChainVector;
 
@@ -331,6 +333,7 @@ public:
 #if PAN_REPLICATION
     virtual double updateWaitReplication( const Submodel&, unsigned& ) = 0;
 #endif
+    Entry& saveClientResults( const MVASubmodel& submodel, const Server& station, unsigned int k );
     virtual Entry& saveOpenWait( const double aWait ) = 0;
     Entry& saveThroughput( double );
     Entry& setPrOvertaking( const unsigned p, const Probability& pr ) { _phase[p].setPrOvertaking(pr); return *this; }

@@ -9,7 +9,7 @@
  * November, 1994
  * August, 2005
  *
- * $Id: mva.h 14496 2021-02-27 02:36:12Z greg $
+ * $Id: mva.h 14864 2021-06-26 01:45:54Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -63,10 +63,14 @@ protected:
 //Shorthand for [N][m][e][k]
     typedef std::vector<double ***> N_m_e_k;
 
+protected:
+    MVA( Vector<Server *>&, const Population &, const Vector<double>&, const Vector<unsigned>&, const Vector<double>* );
+
+private:
+    MVA( const MVA& ) = delete;
+    MVA& operator=( const MVA& ) = delete;
 
 public:
-    MVA();
-    MVA( Vector<Server *>&, const Population &, const VectorMath<double>&, const Vector<unsigned>&, const VectorMath<double>* );
     virtual ~MVA();
 
     virtual void reset();
@@ -81,7 +85,7 @@ public:
     virtual double getRealCustomer(const unsigned k ) const { return  (double)NCust[k];}
     virtual double getRealCustomer(const unsigned k, const unsigned e) const { return  (double)NCust[k];}
     virtual bool isFractionalMVA() const {return false;}
-    virtual bool isExactMVA() const {return false;}
+    virtual bool isExactMVA() const { return false; }
 
     virtual double sumOf_L_m( const Server& station, const Population &N, const unsigned j ) const;
     double sumOf_L_m( const Server& station, const Population &N, const unsigned e , const unsigned j ) const;
@@ -208,11 +212,13 @@ protected:
     const unsigned M;			/* Number of stations.		*/
     const unsigned K;			/* Number of classes.		*/
     Vector<Server *>& Q;		/* Queue type.  SS/delay.	*/
-    const VectorMath<double>& Z;	/* Think time per class.	*/
+
+private:
+    const Vector<double>& Z;		/* Think time per class.	*/
 
 protected:
     const Vector<unsigned>& priority; 	/* Priority by chain.		*/
-    const VectorMath<double>* overlapFactor;/* Overlap factor (usually 1.)	*/
+    const Vector<double>* overlapFactor;/* Overlap factor (usually 1.)	*/
     N_m_e_k  L;				/* Queue length.		*/
     N_m_e_k  LL;			/* undeducted Queue length.	*/
     N_m_e_k  U;				/* Station utilization.		*/
@@ -222,12 +228,12 @@ protected:
 
     unsigned long faultCount;		/* Number of times sc. fails	*/
     Vector<size_t> maxP;		/* Dimension of P[][][J]	*/
-    unsigned long waitCount;		/* Number of calls to wait	 private)*/
-    Vector<unsigned> sortedPrio;	/* sorted and uniq priorities	(private) */
-    unsigned nPrio;			/* Number of unique priorities	(private)*/
-    unsigned long stepCount;		/* Number of iterations of step	(private)*/
 
 private:
+    unsigned long waitCount;		/* Number of calls to wait	*/
+    Vector<unsigned> sortedPrio;	/* sorted and uniq priorities	*/
+    unsigned nPrio;			/* Number of unique priorities	*/
+    unsigned long stepCount;		/* Number of iterations of step	*/
     Vector<unsigned> _isThread;
     unsigned maxOffset;			/* For L, U, X and P dimensions	*/
 };
@@ -236,8 +242,8 @@ private:
 
 class ExactMVA : public MVA {
 public:
-    ExactMVA( Vector<Server *>&, const Population&, const VectorMath<double>&,
-	      const Vector<unsigned>&, const VectorMath<double>* of = 0 );
+    ExactMVA( Vector<Server *>&, const Population&, const Vector<double>&,
+	      const Vector<unsigned>&, const Vector<double>* of = 0 );
 
     virtual bool solve();
     virtual const char * getTypeName() const { return __typeName; }
@@ -260,8 +266,8 @@ private:
 
 class SchweitzerCommon : public MVA {
 public:
-    SchweitzerCommon( Vector<Server *>&, const Population&, const VectorMath<double>&,
-		const Vector<unsigned>&, const VectorMath<double>* of = 0 );
+    SchweitzerCommon( Vector<Server *>&, const Population&, const Vector<double>&,
+		const Vector<unsigned>&, const Vector<double>* of = 0 );
     virtual ~SchweitzerCommon();
 
     virtual Probability priorityInflation( const Server& station, const Population &N, const unsigned k ) const;
@@ -296,8 +302,8 @@ protected:
 
 class Schweitzer : public SchweitzerCommon {
 public:
-    Schweitzer( Vector<Server *>&, const Population&, const VectorMath<double>&,
-		const Vector<unsigned>&, const VectorMath<double>* of = 0 );
+    Schweitzer( Vector<Server *>&, const Population&, const Vector<double>&,
+		const Vector<unsigned>&, const Vector<double>* of = 0 );
     virtual ~Schweitzer();
 
     virtual bool solve();
@@ -317,8 +323,8 @@ protected:
 
 class OneStepMVA: public Schweitzer {
 public:
-    OneStepMVA( Vector<Server *>&, const Population&, const VectorMath<double>&,
-		const Vector<unsigned>&, const VectorMath<double>* of = 0 );
+    OneStepMVA( Vector<Server *>&, const Population&, const Vector<double>&,
+		const Vector<unsigned>&, const Vector<double>* of = 0 );
     virtual bool solve();
     virtual const char * getTypeName() const { return __typeName; }
 private:
@@ -329,8 +335,8 @@ private:
 
 class Linearizer: public SchweitzerCommon {
 public:
-    Linearizer( Vector<Server *>&, const Population&, const VectorMath<double>&,
-		const Vector<unsigned>&, const VectorMath<double>* of = 0 );
+    Linearizer( Vector<Server *>&, const Population&, const Vector<double>&,
+		const Vector<unsigned>&, const Vector<double>* of = 0 );
     virtual ~Linearizer();
 
     virtual void reset();
@@ -366,8 +372,8 @@ private:
 
 class OneStepLinearizer: public Linearizer {
 public:
-    OneStepLinearizer( Vector<Server *>&, const Population&, const VectorMath<double>&,
-		       const Vector<unsigned>&, const VectorMath<double>* of = 0 );
+    OneStepLinearizer( Vector<Server *>&, const Population&, const Vector<double>&,
+		       const Vector<unsigned>&, const Vector<double>* of = 0 );
     virtual bool solve();
     virtual const char * getTypeName() const { return __typeName; }
 private:
@@ -378,14 +384,14 @@ private:
 
 class Linearizer2: public Linearizer {
 public:
-    Linearizer2( Vector<Server *>&, const Population&,
-		 const VectorMath<double>&, const Vector<unsigned>&, const VectorMath<double>* of = 0 );
+    Linearizer2( Vector<Server *>&, const Population&, const Vector<double>&,
+		 const Vector<unsigned>&, const Vector<double>* of = 0 );
     virtual ~Linearizer2();
     virtual const char * getTypeName() const { return __typeName; }
 
     virtual double sumOf_L_m( const Server& station, const Population &N, const unsigned j ) const;
     virtual double sumOf_SL_m( const Server& station, const Population &N, const unsigned j) const;
-    virtual double sumOf_SQL_m( const Server& station, const Population &N, const unsigned j) const{ return sumOf_SL_m( station, N, j ); }
+    virtual double sumOf_SQL_m( const Server& station, const Population &N, const unsigned j) const { return sumOf_SL_m( station, N, j ); }
 protected:
     virtual void update_Delta( const Population & );
     void estimate_L( const Population & );

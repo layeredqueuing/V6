@@ -10,7 +10,7 @@
  * November, 1994
  *
  * ------------------------------------------------------------------------
- * $Id: processor.cc 14824 2021-06-15 19:03:12Z greg $
+ * $Id: processor.cc 14862 2021-06-25 21:30:05Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -479,19 +479,15 @@ Processor::saveServerResults( const MVASubmodel& submodel, double relax )
 
     _utilization = 0.0;
     for ( std::set<Task *>::const_iterator client = clients.begin(); client != clients.end(); ++client ) {
-	const ChainVector& chain = (*client)->clientChains( n );
-
-	if ( submodel.closedModel != nullptr ) {
-	    for ( unsigned ix = 1; ix <= chain.size(); ++ix ) {
-		const unsigned k = chain[ix];
-		if ( hasServerChain(k) ) {
-		    _utilization += submodel.closedModel->utilization( *station, k );
+	if ( submodel.hasClosedModel() ) {
+	    const ChainVector& chains = (*client)->clientChains( n );
+	    for ( ChainVector::const_iterator k = chains.begin(); k != chains.end(); ++k ) {
+		if ( hasServerChain( *k ) ) {
+		    _utilization += submodel.closedModelUtilization( *station, *k );
 		}
 	    }
 	}
-	if ( submodel.openModel ) {
-	    _utilization += submodel.openModel->utilization( *station );
-	}
+	_utilization += submodel.openModelUtilization( *station );
     }
     
     return *this;
@@ -678,7 +674,7 @@ CFS_Processor::saveServerResults( const MVASubmodel& submodel, double relax )
 	for ( unsigned ix = 1; ix <= chain.size(); ++ix ) {
 	    const unsigned k = chain[ix];
 	    if ( hasServerChain(k) ) {
-		utilization += submodel.closedModel->utilization( *station, k );
+		utilization += submodel.closedModelUtilization( *station, k );
 	    }
 	}
 

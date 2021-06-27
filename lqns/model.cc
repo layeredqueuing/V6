@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: model.cc 14824 2021-06-15 19:03:12Z greg $
+ * $Id: model.cc 14858 2021-06-25 13:47:33Z greg $
  *
  * Layer-ization of model.  The basic concept is from the reference
  * below.  However, model partioning is more complex than task vs device.
@@ -444,7 +444,7 @@ Model::initialize()
 	/* Expand replicas and add think server. */
 	extend();			/* Do this before Task::initProcessor() */
 
-	for_each( __task.begin(), __task.end(), Exec<Task>( &Task::initProcessor ) );	/* Set Processor Service times.	*/
+	std::for_each( __task.begin(), __task.end(), Exec<Task>( &Task::initProcessor ) );	/* Set Processor Service times.	*/
 
 	if ( flags.verbose ) std::cerr << "Generate... " << std::endl;
 	if ( generate( assignSubmodel() ) ) {
@@ -631,7 +631,7 @@ void
 Model::initStations()
 {
     if ( Pragma::interlock() ) {
-	for_each( __task.begin(), __task.end(), Exec<Task>( &Task::createInterlock ) );
+	std::for_each( __task.begin(), __task.end(), Exec<Task>( &Task::createInterlock ) );
 	if ( Options::Debug::interlock() ) {
 	    Interlock::printPathTable( std::cout );
 	}
@@ -1236,7 +1236,7 @@ MOL_Model::run()
 
 	    std::for_each( _submodels.begin(), &_submodels[_HWSubmodel], solveSubmodel );
 
-	    delta = std::for_each ( __task.begin(), __task.end(), ExecSumSquare<Task,double>( &Task::deltaUtilization ) ).sum();
+	    delta = std::for_each( __task.begin(), __task.end(), ExecSumSquare<Task,double>( &Task::deltaUtilization ) ).sum();
 	    delta = sqrt( delta / __task.size() );		/* RMS */
 
 	    if ( delta > convergence_value ) {
@@ -1262,7 +1262,7 @@ MOL_Model::run()
 	    printSubmodelWait();
 	}
 
-	delta = std::for_each ( __processor.begin(), __processor.end(), ExecSumSquare<Processor,double>( &Processor::deltaUtilization ) ).sum();
+	delta = std::for_each( __processor.begin(), __processor.end(), ExecSumSquare<Processor,double>( &Processor::deltaUtilization ) ).sum();
 	delta = sqrt( delta / __processor.size() );		/* RMS */
 
 	setRunDPS( delta );	/* Let the model converge preliminarily then run DPS. */
@@ -1289,7 +1289,7 @@ BackPropogate_MOL_Model::backPropogate()
 {
     if ( nSubmodels() < 4 ) return;
     const bool verbose = flags.trace_convergence || flags.verbose;
-    std::for_each ( _submodels.rbegin() + 2, _submodels.rend() - 1, SolveSubmodel( *this, verbose ) );
+    std::for_each( _submodels.rbegin() + 2, _submodels.rend() - 1, SolveSubmodel( *this, verbose ) );
 }
 
 /*----------------------------------------------------------------------*/
@@ -1387,7 +1387,7 @@ Batch_Model::run()
 	_iterations += 1;
 	if ( verbose ) std::cerr << "Iteration: " << _iterations << " ";
 
-	std::for_each ( _submodels.begin(), _submodels.end(), SolveSubmodel( *this, verbose ) );
+	std::for_each( _submodels.begin(), _submodels.end(), SolveSubmodel( *this, verbose ) );
 
 	/* compute convergence for next pass. */
 
@@ -1433,7 +1433,7 @@ BackPropogate_Batch_Model::backPropogate()
 {
     if ( nSubmodels() < 3 ) return;
     const bool verbose = (flags.trace_convergence || flags.verbose) && !(flags.trace_mva || flags.trace_wait);
-    std::for_each ( _submodels.rbegin() + 1, _submodels.rend() - 1, SolveSubmodel( *this, verbose ) );
+    std::for_each( _submodels.rbegin() + 1, _submodels.rend() - 1, SolveSubmodel( *this, verbose ) );
 }
 
 /*----------------------------------------------------------------------*/

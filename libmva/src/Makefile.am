@@ -1,4 +1,4 @@
-# $Id: Makefile.am 14310 2020-12-31 17:16:57Z greg $
+# $Id: Makefile.am 14864 2021-06-26 01:45:54Z greg $
 # -------------------------------------------------------------------- [Libtool libsrvnio2]
 
 SUBDIRS = headers/mva
@@ -13,5 +13,5 @@ libmva_la_SOURCES = fpgoop.cc \
 	server.cc 
 
 libmva_la_CPPFLAGS = -I headers/mva
-libmva_la_CXXFLAGS = -Wall -Wno-unknown-pragmas
+libmva_la_CXXFLAGS = -std=c++11 -Wall -Wno-unknown-pragmas
 libmva_la_LDFLAGS =  -no-undefined -version-info 0:1:0
