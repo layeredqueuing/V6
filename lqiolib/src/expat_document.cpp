@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- * $Id: expat_document.cpp 14728 2021-05-29 16:55:00Z greg $
+ * $Id: expat_document.cpp 14866 2021-06-28 10:02:32Z greg $
  *
  * Read in XML input files.
  *
@@ -2484,6 +2484,12 @@ namespace LQIO {
 	    const std::vector<Spex::ObservationInfo> doc_vars = Spex::document_variables();
 	    const bool complex_element = hasResults() || _document.hasPragmas() || doc_vars.size() > 0;
 
+	    if ( _document.getSymbolExternalVariableCount() > 0 ) {
+		std::ostringstream ss;
+		ss << "Variables: ";
+		_document.printExternalVariables( ss );
+		output << XML::comment( ss.str() );
+	    }
             output << XML::start_element( Xsolver_parameters, complex_element )
                    << XML::attribute( Xcomment, *_document.getModelComment() )
                    << XML::attribute( Xconv_val, *_document.getModelConvergence() )
@@ -2492,14 +2498,6 @@ namespace LQIO {
                    << XML::attribute( Xprint_int, *_document.getModelPrintInterval() );
             if ( complex_element ) {
                 output << ">" << std::endl;
-	    }
-	    if ( _document.getSymbolExternalVariableCount() > 0 ) {
-		std::ostringstream ss;
-		ss << "Variables: ";
-		_document.printExternalVariables( ss );
-		output << XML::comment( ss.str() );
-	    }
-            if ( complex_element ) {
                 if ( _document.hasPragmas() ) {
                     const std::map<std::string,std::string>& pragmas = _document.getPragmaList();
                     for ( std::map<std::string,std::string>::const_iterator next_pragma = pragmas.begin(); next_pragma != pragmas.end(); ++next_pragma ) {
