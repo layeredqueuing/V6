@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: open.cc 14496 2021-02-27 02:36:12Z greg $
+ * $Id: open.cc 14872 2021-07-03 03:25:32Z greg $
  *
  * Open Network solver.
  *
@@ -7,7 +7,7 @@
  * Department of Systems and Computer Engineering,
  * Carleton University, Ottawa, Ontario, Canada. K1S 5B6
  *
- * $Date: 2021-02-26 21:36:12 -0500 (Fri, 26 Feb 2021) $
+ * $Date: 2021-07-02 23:25:32 -0400 (Fri, 02 Jul 2021) $
  * ----------------------------------------------------------------------
  * Conventions:
  *    E - (scalar) number of entries for a given station.
@@ -54,9 +54,9 @@
 #endif
 #include "fpgoop.h"
 #include "open.h"
-#include "vector.h"
-#include "server.h"
 #include "prob.h"
+#include "server.h"
+#include "vector.h"
 
 
 

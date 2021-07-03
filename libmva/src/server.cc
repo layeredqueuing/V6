@@ -1,5 +1,5 @@
 /*  -*- C++ -*-
- * $Id: server.cc 14854 2021-06-21 13:58:52Z greg $
+ * $Id: server.cc 14872 2021-07-03 03:25:32Z greg $
  *
  * Copyright the Real-Time and Distributed Systems Group,
  * Department of Systems and Computer Engineering,
@@ -37,17 +37,13 @@
  * ------------------------------------------------------------------------
  */
 
-#include <iostream>
-#include <iomanip>
-#include <stdarg.h>
 #include <cstdlib>
 #include <cmath>
-#include "vector.h"
-#include "server.h"
 #include "mva.h"
 #include "open.h"
-#include "fpgoop.h"
 #include "prob.h"
+#include "server.h"
+#include "vector.h"
 
 //#define		DEBUG
 /* ----------------------- Helper Functions --------------------------- */
