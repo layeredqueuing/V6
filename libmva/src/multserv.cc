@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- * $Id: multserv.cc 14310 2020-12-31 17:16:57Z greg $
+ * $Id: multserv.cc 14872 2021-07-03 03:25:32Z greg $
  *
  * Server definitions for Multiserver MVA.
  * From
@@ -47,19 +47,15 @@
  */
 
 #include <cmath>
-#include <cstdarg>
 #include <cassert>
 #include <cstdlib>
 #if HAVE_IEEEFP_H
 #include <ieeefp.h>
 #endif
-#include "fpgoop.h"
 #include "multserv.h"
-#include "vector.h"
-#include "server.h"
-#include "ph2serv.h"
-#include "prob.h"
 #include "mva.h"
+#include "prob.h"
+#include "vector.h"
 
 #if DEBUG_MVA
 bool Conway_Multi_Server::debug_XE = false;

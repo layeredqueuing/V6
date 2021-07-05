@@ -10,7 +10,7 @@
  * February 1997
  *
  * ------------------------------------------------------------------------
- * $Id: actlist.cc 14824 2021-06-15 19:03:12Z greg $
+ * $Id: actlist.cc 14872 2021-07-03 03:25:32Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -1764,10 +1764,19 @@ AndJoinActivityList::joinType( const JoinType aType )
 }
 
 
+/*
+ * If I am a synchronization point, backtrack and abort.
+ */
+
 bool
 AndJoinActivityList::check() const
 {
-    return AndOrJoinActivityList::check();
+    bool rc = true;
+    if ( isSync() ) {
+	LQIO::solution_error( ERR_EXTERNAL_SYNC, getName().c_str(), owner()->name().c_str() );
+	rc = false;
+    }
+    return AndOrJoinActivityList::check() && rc;
 }
 
 
