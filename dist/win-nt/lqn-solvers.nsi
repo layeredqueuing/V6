@@ -3,7 +3,7 @@
 ; $HeadURL$
 
 ; HM NIS Edit Wizard helper defines
-!define PRODUCT_VERSION "6.1.1"
+!define PRODUCT_VERSION "6.1.2"
 !define PRODUCT_NAME "LQN Solvers"
 !define PRODUCT_PUBLISHER "Systems Engineering, Carleton University"
 !define PRODUCT_WEB_SITE "http://www.layeredqueues.org"
