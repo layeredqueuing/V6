@@ -11,7 +11,7 @@
  * July 2007
  *
  * ------------------------------------------------------------------------
- * $Id: activity.cc 14839 2021-06-16 15:13:19Z greg $
+ * $Id: activity.cc 14884 2021-07-07 17:12:07Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -293,7 +293,11 @@ Activity::findChildren( Children& path ) const
 const Activity&
 Activity::backtrack( Backtrack& data ) const
 {
-    if ( prevFork() != nullptr ) prevFork()->backtrack( data );
+    if ( prevFork() != nullptr ) {
+	prevFork()->backtrack( data );
+    } else {
+	data.setStartActivity( this );
+    }
     return *this;
 }
 

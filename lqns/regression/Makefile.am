@@ -2,7 +2,7 @@
 # Copyright (C) 2005 Greg Franks <greg@sce.carleton.ca>
 #
 # ------------------------------------------------------------------------
-# $Id: Makefile.am 14854 2021-06-21 13:58:52Z greg $
+# $Id: Makefile.am 14890 2021-07-07 19:26:50Z greg $
 # ------------------------------------------------------------------------
 
 SRVN=	../lqns
@@ -26,6 +26,7 @@ INTER=	10-interlock.lqxo \
 	15-split-interlock.lqxo \
 	16-split-interlock.lqxo \
 	17-external-interlock.lqxo \
+	18-interlock.lqxo \
 	19-subchain.lqxo
 MULTI=	20-multiserver.lqxo \
 	21-multiserver.lqxo \

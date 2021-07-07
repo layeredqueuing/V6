@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: expat_document.cc 14163 2020-12-04 16:08:10Z greg $
+ * $Id: expat_document.cc 14882 2021-07-07 11:09:54Z greg $
  *
  * Read in XML input files.
  *

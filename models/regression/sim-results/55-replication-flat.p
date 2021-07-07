@@ -1,6 +1,6 @@
 # lqsim 5.16
 # lqsim --confidence=1.0,1000 --seed=1049217653 --parseable 55-replication-flat.in
-# $Id: 55-replication-flat.p 14839 2021-06-16 15:13:19Z greg $
+# $Id: 55-replication-flat.p 14887 2021-07-07 18:40:53Z greg $
 V y
 C 0.277227
 I 3

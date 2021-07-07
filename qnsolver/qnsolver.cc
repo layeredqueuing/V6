@@ -1,5 +1,5 @@
 /*
- * $Id: qnsolver.cc 14583 2021-03-25 11:07:48Z greg $
+ * $Id: qnsolver.cc 14882 2021-07-07 11:09:54Z greg $
  */
 
 #include <algorithm>

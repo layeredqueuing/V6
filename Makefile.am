@@ -1,6 +1,6 @@
 # -*- Makefile -*-
 # ------------------------------------------------------------------------
-# $Id: Makefile.am 14334 2021-01-05 03:03:03Z greg $
+# $Id: Makefile.am 14882 2021-07-07 11:09:54Z greg $
 # ------------------------------------------------------------------------
 ACLOCAL_AMFLAGS=-I config
 SUBDIRS = lqx lqiolib libmva parasol lqns lqsim lqn2ps lqngen qnsolver srvndiff doc xml dist

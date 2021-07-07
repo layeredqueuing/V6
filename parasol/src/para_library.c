@@ -1,4 +1,4 @@
-/* $Id: para_library.c 14499 2021-02-27 23:24:12Z greg $ */
+/* $Id: para_library.c 14882 2021-07-07 11:09:54Z greg $ */
 
 /************************************************************************/
 /*	para_library.c - PARASOL library source file			*/

@@ -1,6 +1,6 @@
 # lqns 5.19
 # lqns --pragma=variance=mol,threads=hyper --no-warnings --parseable 03-sanity.lqnx
-# $Id: 03-sanity.p 14839 2021-06-16 15:13:19Z greg $
+# $Id: 03-sanity.p 14887 2021-07-07 18:40:53Z greg $
 V y
 C 8.4277e-06
 I 18

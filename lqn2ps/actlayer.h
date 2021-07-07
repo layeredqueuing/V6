@@ -1,7 +1,7 @@
 /* -*- c++ -*-
  * actlayer.h	-- Greg Franks
  *
- * $Id: actlayer.h 14498 2021-02-27 23:08:51Z greg $
+ * $Id: actlayer.h 14882 2021-07-07 11:09:54Z greg $
  */
 
 #ifndef _ACTLAYER_H

@@ -1,6 +1,6 @@
 # lqn2ps 5.19
 # lqn2ps -Oparseable 08-sanity.lqxo
-# $Id: 08-sanity.p 14839 2021-06-16 15:13:19Z greg $
+# $Id: 08-sanity.p 14887 2021-07-07 18:40:53Z greg $
 V y
 C 8.54151e-07
 I 7

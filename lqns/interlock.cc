@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: interlock.cc 14824 2021-06-15 19:03:12Z greg $
+ * $Id: interlock.cc 14884 2021-07-07 17:12:07Z greg $
  *
  * Call-chain/interlock finder.
  *
@@ -384,7 +384,7 @@ Interlock::interlockedFlow( const Task& viaTask ) const
 
     double sum = 0.0;
     for ( std::set<const Entry *>::const_iterator srcEntry = commonEntries().begin(); srcEntry != commonEntries().end(); ++srcEntry ) {
-	sum = std::accumulate( viaTask.entries().begin(), viaTask.entries().end(), sum, flow_src_dst( *this, *srcEntry ) );
+	sum += std::accumulate( viaTask.entries().begin(), viaTask.entries().end(), sum, flow_src_dst( *this, *srcEntry ) );
     }
 
     /*

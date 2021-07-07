@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!-- $Id: 50-replication-flat.lqnx 14839 2021-06-16 15:13:19Z greg $ -->
+<!-- $Id: 50-replication-flat.lqnx 14882 2021-07-07 11:09:54Z greg $ -->
 <!-- rep2flat -Oxml -->
 <lqn-model name="50-replication" description="rep2flat 5.14 solution for model from: 50-replication.lqnx." xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="/usr/local/share/lqns/lqn.xsd">
    <solver-params comment="Simplest model." conv_val="1e-05" it_limit="50" underrelax_coeff="0.9" print_int="10"/>

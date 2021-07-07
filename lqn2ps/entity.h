@@ -1,7 +1,7 @@
 /* -*- c++ -*-
  * entity.h	-- Greg Franks
  *
- * $Id: entity.h 14590 2021-04-04 14:13:54Z greg $
+ * $Id: entity.h 14882 2021-07-07 11:09:54Z greg $
  */
 
 #ifndef _ENTITY_H

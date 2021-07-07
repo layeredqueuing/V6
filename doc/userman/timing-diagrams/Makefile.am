@@ -1,7 +1,7 @@
 # Makefile for bookstore
 # Copyright (C) 2005 Greg Franks <rgfranks@alumni.uwaterloo.ca>
 # ------------------------------------------------------------------------
-# $Id: Makefile.am 14620 2021-04-21 14:33:55Z greg $
+# $Id: Makefile.am 14882 2021-07-07 11:09:54Z greg $
 # ------------------------------------------------------------------------
 
 SRCS=	join-time.fig \

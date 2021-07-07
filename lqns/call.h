@@ -10,7 +10,7 @@
  * November, 1994
  * March, 2004
  *
- * $Id: call.h 14852 2021-06-20 02:54:33Z greg $
+ * $Id: call.h 14884 2021-07-07 17:12:07Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -155,17 +155,15 @@ public:
 
     struct add_interlocked_wait {
 	add_interlocked_wait( unsigned int submodel ) : _submodel(submodel) {}
-	double operator()( double sum, const Call * call ) const { return call->submodel() == _submodel && call->isInterlocked()
-		? sum + call->rendezvousDelay() : sum; }
+	double operator()( double sum, const Call * call ) const { return call->submodel() == _submodel && call->isInterlocked() ? sum + call->rendezvousDelay() : sum; }
     private:
 	const unsigned int _submodel;
     };
 
     struct add_interlock_pr {
-	add_interlock_pr( const Entry * entry, const Entity * server ) : _entry(entry), _server(server) {}
+	add_interlock_pr( const Entity * server ) : _server(server) {}
 	double operator()( double sum, const Call * call ) const;
     private:
-	const Entry * _entry;
 	const Entity * _server;
     };
 
@@ -248,6 +246,7 @@ public:
     
     virtual const std::string& srcName() const;
     const Task * srcTask() const;
+    virtual const Entry * srcEntry() const = 0;
 
     const std::string& dstName() const;
     unsigned submodel() const;	/* Proxy */
@@ -313,7 +312,7 @@ private:
     /* Interlock */
     bool isRealCustomer( const MVASubmodel&, const Entity *, unsigned ) const;
     double getInterlockedFlow() const { return std::max( _interlockedFlow, 0.0 ); }
-    double interlockPr( const Entry * ) const;
+    double interlockPr() const;
 
 protected:
     double getDOMValue() const;
@@ -344,6 +343,7 @@ public:
 
     virtual const std::string& srcName() const { static const std::string null("NULL"); return null; }
     virtual NullCall& initWait() { return *this; }
+    virtual Entry * srcEntry() const { return nullptr; }
     virtual bool isCalledBy( const Entry * ) const { return false; }
     virtual void parameter_error( const std::string& ) const;
 };
@@ -392,6 +392,7 @@ class FromActivity : virtual protected Call {
 public:
     FromActivity() {}
     virtual void parameter_error( const std::string& ) const;
+    const Entry * srcEntry() const;
 };
 
 class ActivityCall : virtual public Call, protected FromActivity {

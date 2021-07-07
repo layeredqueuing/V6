@@ -11,7 +11,7 @@
  * July 2007
  *
  * ------------------------------------------------------------------------
- * $Id: activity.h 14839 2021-06-16 15:13:19Z greg $
+ * $Id: activity.h 14884 2021-07-07 17:12:07Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -72,19 +72,22 @@ public:
     {
     public:
 	Backtrack( const std::deque<const Activity *>& activityStack, const std::deque<const AndOrForkActivityList *>& forkStack, std::set<const AndOrForkActivityList *>& forkSet ) :
-	    _activityStack(activityStack), _forkStack(forkStack), _forkSet(forkSet), _joinSet() {}
+	    _activityStack(activityStack), _forkStack(forkStack), _forkSet(forkSet), _joinSet(), _startActivity(nullptr) {}
 
 	const std::deque<const Activity *>& getActivityStack() const { return _activityStack; }	// For error handling only.
 	bool find_fork( const AndOrForkActivityList * fork ) const { return std::find( _forkSet.begin(), _forkSet.end(), fork ) != _forkSet.end(); }
 	bool find_join( const AndOrJoinActivityList * join ) const { return std::find( _joinSet.begin(), _joinSet.end(), join ) != _joinSet.end(); }
 	void insert_fork( const AndOrForkActivityList * fork ) { if ( std::find( _forkStack.begin(), _forkStack.end(), fork ) != _forkStack.end() ) _forkSet.insert( fork ); }
 	void insert_join( const AndOrJoinActivityList * join ) { _joinSet.insert( join ); }
+	void setStartActivity( const Activity * activity ) { _startActivity = activity; }
+	const Activity * getStartActivity() const { return _startActivity; }
 	
     private:
 	const std::deque<const Activity *>& _activityStack;
 	const std::deque<const AndOrForkActivityList *>& _forkStack;
 	std::set<const AndOrForkActivityList *>& _forkSet;
 	std::set<const AndOrJoinActivityList *> _joinSet;
+	const Activity * _startActivity;
     };
 
     class Count_If {

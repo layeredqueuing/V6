@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: call.cc 14851 2021-06-20 02:41:42Z greg $
+ * $Id: call.cc 14884 2021-07-07 17:12:07Z greg $
  *
  * Everything you wanted to know about a call to an entry, but were afraid to ask.
  *
@@ -744,7 +744,7 @@ Call::saveILWait( const unsigned k, const unsigned p, const double )
 
 
 double
-Call::interlockPr( const Entry * entry ) const
+Call::interlockPr() const
 {
     if ( flags.trace_quorum ) {
 	std::cout <<"\nCall::elapsedTime(): call " << this->srcName() << " to " << dstEntry()->name() << std::endl;
@@ -754,7 +754,7 @@ Call::interlockPr( const Entry * entry ) const
     const double et = elapsedTime();
     if ( et <= 0. ) return 0.;
 
-#warning Bugs here?  division?  Hoist commonn expression.
+#warning Bugs here?  division?  Hoist common expression.
     // the intermediate server is a multiserver;
     if ( dstEntry()->owner()->population() > 1 ) {
 	const double r = getMaxCustomers() / (dstEntry()->owner()->population());
@@ -780,7 +780,7 @@ Call::interlockPr( const Entry * entry ) const
 	if ( flags.trace_interlock ) {
 	    std::cout <<"queueingTime()="<<queueingTime()<<", et="<<elapsedTime()<<";getqueueWeight()="<<getqueueWeight()<<",t="<<t<< std::endl;
 	}
-	const double ql = entry->getILQueueLength();		// sourcing entry.
+	const double ql = srcEntry()->getILQueueLength();		// sourcing entry.
 	if ( ql > 0.0 && t < ql ) {
 	    t /= ql;
 	}
@@ -802,7 +802,7 @@ Call::add_interlock_pr::operator()( double sum, const Call * call ) const
 	if ( srcTask->population() <= dstTask->population() ) {
 	    sum += 1.0 / square(srcTask->population());
 	} else {
-	    sum += call->interlockPr( _entry );
+	    sum += call->interlockPr();
 	}
     } else if ( dynamic_cast<const Task *>(dstTask) ) { //how about multiple source??????
 	sum = _server->prInterlock( *dynamic_cast<const Task*>(dstTask) );
@@ -996,6 +996,24 @@ ProcessorCall::initWait()
 {
     setWait( dstEntry()->serviceTimeForPhase(1) );		/* Initialize arc wait. 	*/
     return *this;
+}
+
+/*----------------------------------------------------------------------*/
+/*                            Activity Calls                            */
+/*----------------------------------------------------------------------*/
+
+/* 
+ * This is a little more complicated.
+ */
+const Entry *
+FromActivity::srcEntry() const
+{
+    std::deque<const Activity *> activityStack;
+    std::deque<const AndOrForkActivityList *> forkStack;
+    std::set<const AndOrForkActivityList *> branchSet;
+    Activity::Backtrack data( activityStack, forkStack, branchSet );
+    dynamic_cast<const Activity *>(getSource())->backtrack( data );		/* look for start activity */
+    return data.getStartActivity()->entry();	/* return the entry */
 }
 
 /*----------------------------------------------------------------------*/

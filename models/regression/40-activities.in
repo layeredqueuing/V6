@@ -1,7 +1,7 @@
 # SRVN Model Description File, for file: $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/models/regression/40-activities.in $
 # 
 # ------------------------------------------------------------------------
-# $Id: 40-activities.in 14839 2021-06-16 15:13:19Z greg $
+# $Id: 40-activities.in 14887 2021-07-07 18:40:53Z greg $
 # ------------------------------------------------------------------------
 
 G "Activities with AND fork/join." 1e-05 50 10 0.9 -1

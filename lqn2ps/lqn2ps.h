@@ -1,7 +1,7 @@
 /* -*- c++ -*-
  * lqn2ps.h	-- Greg Franks
  *
- * $Id: lqn2ps.h 14728 2021-05-29 16:55:00Z greg $
+ * $Id: lqn2ps.h 14882 2021-07-07 11:09:54Z greg $
  *
  */
 

@@ -2,7 +2,7 @@
  * Model file generator.
  * This is actually part of lqn2ps, but if lqn2ps is invoked as lqngen, then this magically runs.
  *
- * $Id: lqngen.cc 14796 2021-06-11 14:48:04Z greg $
+ * $Id: lqngen.cc 14882 2021-07-07 11:09:54Z greg $
  */
 
 #include "lqngen.h"

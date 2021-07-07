@@ -12,7 +12,7 @@
  * July 2007.
  *
  * ------------------------------------------------------------------------
- * $Id: entry.cc 14872 2021-07-03 03:25:32Z greg $
+ * $Id: entry.cc 14884 2021-07-07 17:12:07Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -1322,7 +1322,7 @@ Entry::getInterlockPr( const MVASubmodel& submodel, const Entity * server ) cons
     // if this is a sending interlock;
     double sum = 0.0;
     if ( !owner()->isReferenceTask() && !isSendingTask( submodel ) ) {
-	sum = std::accumulate( callerList().begin(), callerList().end(), 0.0, Call::add_interlock_pr( this, server ) );
+	sum = std::accumulate( callerList().begin(), callerList().end(), 0.0, Call::add_interlock_pr( server ) );
     }
     if ( sum == 0.0 ) {
 	sum = 1.0 / owner()->population();
