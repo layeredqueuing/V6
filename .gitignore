@@ -38,6 +38,7 @@ Parser_pre.h
 Parser_pre.out
 Scanner_pre.cpp
 aclocal.m4
+confdefs.h
 config
 config.cache
 config.h
