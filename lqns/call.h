@@ -10,7 +10,7 @@
  * November, 1994
  * March, 2004
  *
- * $Id: call.h 14884 2021-07-07 17:12:07Z greg $
+ * $Id: call.h 14894 2021-07-09 16:22:28Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -177,7 +177,7 @@ public:
 
     struct add_real_customers {
 	add_real_customers( const MVASubmodel& submodel, const Entity * server, unsigned k ) : _submodel(submodel), _server(server), _k(k) {}
-	double operator()( double sum, Call * call ) { return sum + call->getRealCustomers( _submodel, _server, _k ); }
+	double operator()( double sum, Call * call ) { return sum + call->addRealCustomers( _submodel, _server, _k ); }
     private:
 	const MVASubmodel& _submodel;
 	const Entity * _server;
@@ -283,7 +283,7 @@ public:
 
     /*  Interlocked flow */
     double getMaxCustomers() const;
-    double getRealCustomers( const MVASubmodel&, const Entity * aServer, unsigned int k ) const;
+    double addRealCustomers( const MVASubmodel&, const Entity * aServer, unsigned int k ) const;
 
     void saveILWait( const unsigned k, const unsigned p, const double );
     void clearILWait( const unsigned k, const unsigned p, const double );

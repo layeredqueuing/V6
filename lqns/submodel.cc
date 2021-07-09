@@ -1,6 +1,6 @@
 /* -*- c++ -*-
  * submodel.C	-- Greg Franks Wed Dec 11 1996
- * $Id: submodel.cc 14882 2021-07-07 11:09:54Z greg $
+ * $Id: submodel.cc 14894 2021-07-09 16:22:28Z greg $
  *
  * MVA submodel creation and solution.  This class is the interface
  * between the input model consisting of processors, tasks, and entries,
@@ -290,6 +290,9 @@ MVASubmodel::build()
     for ( std::set<Task *>::const_iterator client = _clients.begin(); client != _clients.end(); ++client ) {
 	closedStnNo += 1;
 	_closedStation[closedStnNo] = (*client)->makeClient( nChains(), number() );
+	if ( Pragma::interlock() ) {
+	    (*client)->setInterlockedFlow( *this );
+	}
     }
 
     /* ------------------- Create servers for model. ------------------ */

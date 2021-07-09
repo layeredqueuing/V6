@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: entity.cc 14882 2021-07-07 11:09:54Z greg $
+ * $Id: entity.cc 14894 2021-07-09 16:22:28Z greg $
  *
  * Everything you wanted to know about a task or processor, but were
  * afraid to ask.
@@ -932,7 +932,7 @@ Entity::initServerStation( MVASubmodel& submodel )
 	this->setInterlock( submodel );
     }
 
-    std::for_each( clients.begin(), clients.end(), Task::set_real_customers( submodel, this ) );
+    std::for_each( clients.begin(), clients.end(), ConstExec2<Task,const MVASubmodel&,const Entity *>( &Task::setRealCustomers, submodel, this ) );
 
     if ( hasSynchs() && !Pragma::threads(Pragma::Threads::NONE) ) {
 	joinOverlapFactor( submodel );

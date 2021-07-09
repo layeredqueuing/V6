@@ -10,7 +10,7 @@
  * November, 1994
  *
  * ------------------------------------------------------------------------
- * $Id: task.cc 14882 2021-07-07 11:09:54Z greg $
+ * $Id: task.cc 14894 2021-07-09 16:22:28Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -1234,6 +1234,25 @@ Task::setMaxCustomers( const MVASubmodel& submodel ) const
 }
 
 
+const Task&
+Task::setRealCustomers(	const MVASubmodel& submodel, const Entity * server ) const
+{
+    if ( throughput() == 0.0 ) return *this;
+
+    const ChainVector& chain = clientChains( submodel.number() );
+    Server * station = server->serverStation();
+    for ( unsigned ix = 1; ix <= chain.size(); ++ix ) {
+	const unsigned k = chain[ix];
+	if ( !server->hasServerChain(k) ) continue;
+	for ( unsigned int e = 0; e <= server->nEntries(); ++e ) {
+	    station->setRealCustomers( e, k, 0. );
+        }
+	std::for_each( entries().begin(), entries().end(), Entry::set_real_customers( submodel, server, k ) );
+    }
+    return *this;
+}
+
+
 void
 Task::setInterlockedFlow( const MVASubmodel& submodel ) const
 {
@@ -1312,20 +1331,6 @@ Task::modifyParentClientServiceTime( const MVASubmodel& submodel, const Entity *
 	}
     }
     return *this;
-}
-
-
-void
-Task::set_real_customers::operator()( Task * client ) const
-{
-    if ( client->throughput() == 0.0 ) return;
-
-    const ChainVector& chain = client->clientChains( _submodel.number() );
-    for ( unsigned ix = 1; ix <= chain.size(); ++ix ) {
-	const unsigned k = chain[ix];
-	if ( !_server->hasServerChain(k) ) continue;
-	std::for_each( client->entries().begin(), client->entries().end(), Entry::set_real_customers( _submodel, _server, k ) );
-    }
 }
 
 

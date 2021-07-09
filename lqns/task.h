@@ -10,7 +10,7 @@
  * November, 1994
  * May 2009.
  *
- * $Id: task.h 14882 2021-07-07 11:09:54Z greg $
+ * $Id: task.h 14894 2021-07-09 16:22:28Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -77,14 +77,6 @@ public:
     private:
 	const MVASubmodel& _submodel;
 	const Entry * _server_entry;
-    };
-
-    struct set_real_customers {
-	set_real_customers( const MVASubmodel& submodel, const Entity * server ) : _submodel(submodel), _server(server) {}
-	void operator()( Task * ) const;
-    private:
-	const MVASubmodel& _submodel;
-	const Entity * _server;
     };
 
     struct set_interlock {
@@ -220,6 +212,7 @@ public:
     virtual bool isSendingTaskTo( const Entry * ) const;
     const Task& modifyParentClientServiceTime( const MVASubmodel& submodel, const Entity * aServer ) const;
     const Task& setMaxCustomers( const MVASubmodel& submodel ) const;
+    const Task& setRealCustomers( const MVASubmodel& submodel, const Entity * server ) const;
     void setInterlockedFlow( const MVASubmodel& submodel ) const;
     
     /* DPS */

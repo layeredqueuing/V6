@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: call.cc 14884 2021-07-07 17:12:07Z greg $
+ * $Id: call.cc 14894 2021-07-09 16:22:28Z greg $
  *
  * Everything you wanted to know about a call to an entry, but were afraid to ask.
  *
@@ -593,7 +593,7 @@ Call::getQueueLength( ) const
 
 
 double
-Call::getRealCustomers( const MVASubmodel& submodel, const Entity * server, unsigned int k ) const
+Call::addRealCustomers( const MVASubmodel& submodel, const Entity * server, unsigned int k ) const
 {
     if ( !isRealCustomer( submodel, server, k ) ) return 0.;
 
@@ -605,6 +605,9 @@ Call::getRealCustomers( const MVASubmodel& submodel, const Entity * server, unsi
 	customers = getSource()->utilization();
     }
     customers *= server->fanIn(client);		/* Replication */
+
+    Server * station = server->serverStation();
+    station->addRealCustomers( dstEntry()->index(), k, customers );
 
     return customers;
 }
@@ -718,7 +721,7 @@ Call::saveILWait( const unsigned k, const unsigned p, const double )
 	
     diff = (diff>0.0) ? diff* getDOM()->getCallMeanValue() :0.;//?
 
-    if ( isInterlocked () ) {
+    if ( isInterlocked() ) {
 	if ( flags.trace_interlock ) {
 	    std::cout << "Call::saveILWait(): Call( " << srcName() << " , " << dstEntry()->name()<<")";
 	    std::cout << "has interlocked wait "<<diff << std::endl;
