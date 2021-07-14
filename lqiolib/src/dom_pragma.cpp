@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_pragma.cpp 14769 2021-06-04 16:18:43Z greg $
+ *  $Id: dom_pragma.cpp 14899 2021-07-14 12:25:53Z greg $
  *
  *  Created by Martin Mroz on 16/04/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -199,6 +199,7 @@ namespace LQIO {
 	const char * Pragma::_fixed_rate_ =			"fixed-rate";
 	const char * Pragma::_force_infinite_ =			"force-infinite";
 	const char * Pragma::_force_multiserver_ =		"force-multiserver";
+	const char * Pragma::_force_random_queueing_ =		"force-random-queueing";
 	const char * Pragma::_gamma_ = 				"gamma";		// Quorum
 	const char * Pragma::_geometric_ = 			"geometric";		// Quorum
 	const char * Pragma::_hwsw_ =				"hwsw";
@@ -298,6 +299,7 @@ namespace LQIO {
 	    { _cycles_,  	    	    &__true_false_arg },	    /* lqns */
 	    { _force_infinite_,		    &__force_infinite_args },	    /* */
 	    { _force_multiserver_, 	    &__force_multiserver_args },    /* lqns */
+	    { _force_random_queueing_,	    &__true_false_arg },	    /* petrisrvn */
 	    { _initial_delay_,     	    nullptr },			    /* lqsim */
 	    { _initial_loops_,     	    nullptr },			    /* lqsim */
 	    { _interlocking_,      	    &__true_false_arg },	    /* lqns */

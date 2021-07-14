@@ -9,11 +9,12 @@
 /************************************************************************/
 
 /*
- * $Id: results.cc 12978 2017-04-04 17:43:37Z greg $
+ * $Id: results.cc 14899 2021-07-14 12:25:53Z greg $
  *
  * Store the results.
  */
 
+#include <cstdarg>
 #include <cstdlib>
 #include <vector>
 #include "petrisrvn.h"

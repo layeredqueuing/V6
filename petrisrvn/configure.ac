@@ -1,6 +1,6 @@
 # Process this file with autoconf to produce a configure script.
 # ------------------------------------------------------------------------
-# $Id: configure.ac 14847 2021-06-19 10:58:28Z greg $
+# $Id: configure.ac 14899 2021-07-14 12:25:53Z greg $
 # ------------------------------------------------------------------------
 AC_INIT([petrisrvn],[6.2],[greg@sce.carleton.ca])
 AC_CONFIG_AUX_DIR([../config])
@@ -16,7 +16,6 @@ AC_PROG_CC
 AC_LANG(C++)
 AC_PROG_CXX
 # Add in libtool.
-LT_INIT
 LT_INIT
 
 if test "x$enable_shared" = "xno"; then

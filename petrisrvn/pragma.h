@@ -2,7 +2,7 @@
  *
  * $HeadURL$
  * ------------------------------------------------------------------------
- * $Id: pragma.h 14609 2021-04-18 14:09:42Z greg $
+ * $Id: pragma.h 14899 2021-07-14 12:25:53Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -39,6 +39,7 @@ public:
     static void usage( std::ostream& output );
 
 private:
+    void set_force_random_queueing( const std::string& );
     void set_processor_scheduling( const std::string& );
     void set_reschedule_on_async_send( const std::string& );
     void set_severity_level( const std::string& );
