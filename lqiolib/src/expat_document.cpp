@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- * $Id: expat_document.cpp 14882 2021-07-07 11:09:54Z greg $
+ * $Id: expat_document.cpp 14896 2021-07-13 20:52:00Z greg $
  *
  * Read in XML input files.
  *
@@ -1155,10 +1155,10 @@ namespace LQIO {
         void
         Expat_Document::startOutputResultType( DocumentObject * object, const XML_Char * element, const XML_Char ** attributes )
         {
-            if ( strcasecmp( element, Xconf_95 ) == 0 ) {
+            if ( strcasecmp( element, Xresult_conf_95 ) == 0 ) {
                 handleResults95( object, attributes );
                 _stack.push( parse_stack_t(element,&Expat_Document::startNOP,0) );
-            } else if ( strcasecmp( element, Xconf_99 ) == 0 ) {
+            } else if ( strcasecmp( element, Xresult_conf_99 ) == 0 ) {
                 _stack.push( parse_stack_t(element,&Expat_Document::startNOP,0) );
             } else {
                 throw element_error( element );
@@ -1169,10 +1169,10 @@ namespace LQIO {
         void
         Expat_Document::startJoinResultType( DocumentObject * object, const XML_Char * element, const XML_Char ** attributes )
         {
-            if ( strcasecmp( element, Xconf_95 ) == 0 ) {
+            if ( strcasecmp( element, Xresult_conf_95 ) == 0 ) {
                 handleJoinResults95( dynamic_cast<LQIO::DOM::AndJoinActivityList*>(object), attributes );
                 _stack.push( parse_stack_t(element,&Expat_Document::startNOP,0) );
-            } else if ( strcasecmp( element, Xconf_99 ) == 0 ) {
+            } else if ( strcasecmp( element, Xresult_conf_99 ) == 0 ) {
                 _stack.push( parse_stack_t(element,&Expat_Document::startNOP,0) );
             } else {
                 throw element_error( element );
@@ -1194,11 +1194,11 @@ namespace LQIO {
 	void
 	Expat_Document::startSPEXObservationType(  DocumentObject * object, const XML_Char * element, const XML_Char ** attributes )
 	{
-	    if ( strcasecmp( element, Xconf_95 ) == 0 ) {
+	    if ( strcasecmp( element, Xresult_conf_95 ) == 0 ) {
 		handleSPEXObservation( object, attributes, 95 );
                 _stack.push( parse_stack_t(element,&Expat_Document::startNOP,0) );
 
-            } else if ( strcasecmp( element, Xconf_99 ) == 0 ) {
+            } else if ( strcasecmp( element, Xresult_conf_99 ) == 0 ) {
 		handleSPEXObservation( object, attributes, 99 );
                 _stack.push( parse_stack_t(element,&Expat_Document::startNOP,0) );
 
@@ -2137,7 +2137,7 @@ namespace LQIO {
             if ( histogram && _loadResults ) {
                 const unsigned int index = histogram->getBinIndex(XML::getDoubleAttribute(attributes,Xbegin));
                 const double mean = XML::getDoubleAttribute(attributes,Xprob);
-                const double variance = invert( XML::getDoubleAttribute(attributes,Xconf_95,0.0) );
+                const double variance = invert( XML::getDoubleAttribute(attributes,Xresult_conf_95,0.0) );
                 histogram->setBinMeanVariance( index, mean, variance );
             }
         }
@@ -2598,8 +2598,8 @@ namespace LQIO {
             if ( hasResults() ) {
                 if ( _document.hasConfidenceIntervals() ) {
                     output << XML::start_element( Xresult_processor ) << XML::attribute( Xutilization, processor.getResultUtilization() ) << ">" << std::endl;
-                    output << XML::simple_element( Xconf_95 )  << XML::attribute( Xutilization, _conf_95( processor.getResultUtilizationVariance() ) ) << "/>" << std::endl;
-                    output << XML::simple_element( Xconf_99 )  << XML::attribute( Xutilization, _conf_99( processor.getResultUtilizationVariance() ) ) << "/>" << std::endl;
+                    output << XML::simple_element( Xresult_conf_95 )  << XML::attribute( Xutilization, _conf_95( processor.getResultUtilizationVariance() ) ) << "/>" << std::endl;
+                    output << XML::simple_element( Xresult_conf_99 )  << XML::attribute( Xutilization, _conf_99( processor.getResultUtilizationVariance() ) ) << "/>" << std::endl;
                     output << XML::end_element( Xresult_processor ) << std::endl;
                 } else {
                     output << XML::simple_element( Xresult_processor ) << XML::attribute( Xutilization, processor.getResultUtilization() ) << "/>" << std::endl;
@@ -2629,8 +2629,8 @@ namespace LQIO {
             if ( hasResults() ) {
                 if ( _document.hasConfidenceIntervals() ) {
                     output << XML::start_element( Xresult_group ) << XML::attribute( Xutilization, group.getResultUtilization() ) << ">" << std::endl;
-                    output << XML::simple_element( Xconf_95 )  << XML::attribute( Xutilization, _conf_95( group.getResultUtilizationVariance() ) ) << "/>" << std::endl;
-                    output << XML::simple_element( Xconf_99 )  << XML::attribute( Xutilization, _conf_99( group.getResultUtilizationVariance() ) ) << "/>" << std::endl;
+                    output << XML::simple_element( Xresult_conf_95 )  << XML::attribute( Xutilization, _conf_95( group.getResultUtilizationVariance() ) ) << "/>" << std::endl;
+                    output << XML::simple_element( Xresult_conf_99 )  << XML::attribute( Xutilization, _conf_99( group.getResultUtilizationVariance() ) ) << "/>" << std::endl;
                     output << XML::end_element( Xresult_group ) << std::endl;
                 } else {
                     output << XML::simple_element( Xresult_group ) << XML::attribute( Xutilization, group.getResultUtilization() ) << "/>" << std::endl;
@@ -2749,7 +2749,7 @@ namespace LQIO {
 
                 if ( has_confidence ) {
                     output << ">" << std::endl;
-                    output << XML::simple_element( Xconf_95 )
+                    output << XML::simple_element( Xresult_conf_95 )
                            << XML::attribute( Xthroughput, _conf_95( task.getResultThroughputVariance() ) )
                            << XML::attribute( Xutilization, _conf_95( task.getResultUtilizationVariance() ) )
                            << task_phase_results( task, XphaseP_utilization, &Task::getResultPhasePUtilizationVariance, &_conf_95 )
@@ -2774,7 +2774,7 @@ namespace LQIO {
 
                     output << "/>" << std::endl;
 
-                    output << XML::simple_element( Xconf_99 )
+                    output << XML::simple_element( Xresult_conf_99 )
                            << XML::attribute( Xthroughput, _conf_99( task.getResultThroughputVariance() ) )
                            << XML::attribute( Xutilization, _conf_99( task.getResultUtilizationVariance() ) )
                            << task_phase_results( task, XphaseP_utilization, &Task::getResultPhasePUtilizationVariance, &_conf_99 )
@@ -2966,7 +2966,7 @@ namespace LQIO {
                     if ( has_confidence ) {
                         output << ">" << std::endl;
 
-                        output << XML::simple_element( Xconf_95 )
+                        output << XML::simple_element( Xresult_conf_95 )
                                << XML::attribute( Xutilization, _conf_95( entry.getResultUtilizationVariance() ) )
                                << XML::attribute( Xthroughput, _conf_95( entry.getResultThroughputVariance() ) )
                                << XML::attribute( Xsquared_coeff_variation, _conf_95( entry.getResultSquaredCoeffVariationVariance() ) )
@@ -2984,7 +2984,7 @@ namespace LQIO {
                         }
                         output << "/>" << std::endl;
 
-                        output << XML::simple_element( Xconf_99 )
+                        output << XML::simple_element( Xresult_conf_99 )
                                << XML::attribute( Xutilization, _conf_99( entry.getResultUtilizationVariance() ) )
                                << XML::attribute( Xthroughput, _conf_99( entry.getResultThroughputVariance() ) )
                                << XML::attribute( Xsquared_coeff_variation, _conf_99( entry.getResultSquaredCoeffVariationVariance() ) )
@@ -3110,7 +3110,7 @@ namespace LQIO {
 
                     if ( has_confidence ) {
                         output << ">" << std::endl;
-                        output << XML::simple_element( Xconf_95 )
+                        output << XML::simple_element( Xresult_conf_95 )
                                << XML::attribute( Xproc_waiting, _conf_95( phase.getResultProcessorWaitingVariance() ) )
                                << XML::attribute( Xservice_time, _conf_95( phase.getResultServiceTimeVariance() ) )
                                << XML::attribute( Xutilization, _conf_95( phase.getResultUtilizationVariance() ) );
@@ -3126,7 +3126,7 @@ namespace LQIO {
                         }
                         output << "/>" << std::endl;
 
-                        output << XML::simple_element( Xconf_99 )
+                        output << XML::simple_element( Xresult_conf_99 )
                                << XML::attribute( Xproc_waiting, _conf_99( phase.getResultProcessorWaitingVariance() ) )
                                << XML::attribute( Xservice_time, _conf_99( phase.getResultServiceTimeVariance() ) )
                                << XML::attribute( Xutilization, _conf_99( phase.getResultUtilizationVariance() ) );
@@ -3196,11 +3196,11 @@ namespace LQIO {
                        << XML::attribute( Xjoin_variance, join_list->getResultVarianceJoinDelay() );
                 if ( has_confidence ) {
                     output << ">" << std::endl;
-                    output << XML::simple_element( Xconf_95 )
+                    output << XML::simple_element( Xresult_conf_95 )
                            << XML::attribute( Xjoin_waiting, _conf_95( join_list->getResultJoinDelayVariance() ) )
                            << XML::attribute( Xjoin_variance, _conf_95( join_list->getResultVarianceJoinDelayVariance() ) )
                            << "/>" << std::endl;
-                    output << XML::simple_element( Xconf_99 )
+                    output << XML::simple_element( Xresult_conf_99 )
                            << XML::attribute( Xjoin_waiting, _conf_99( join_list->getResultJoinDelayVariance() ) )
                            << XML::attribute( Xjoin_variance, _conf_99( join_list->getResultVarianceJoinDelayVariance() ) )
                            << "/>" << std::endl;
@@ -3295,7 +3295,7 @@ namespace LQIO {
 
 		    if ( has_confidence ) {
 			output << ">" << std::endl;
-			output << XML::simple_element( Xconf_95 )
+			output << XML::simple_element( Xresult_conf_95 )
 			       << XML::attribute( Xwaiting, _conf_95( call.getResultWaitingTimeVariance() ) );
 			if ( call.hasResultVarianceWaitingTime() ) {
 			    output << XML::attribute( Xwaiting_variance, _conf_95( call.getResultVarianceWaitingTimeVariance() ) );
@@ -3304,7 +3304,7 @@ namespace LQIO {
 			    output << XML::attribute( Xloss_probability, _conf_95( call.getResultDropProbabilityVariance() ) );
 			}
 			output << "/>" << std::endl;
-			output << XML::simple_element( Xconf_99 )
+			output << XML::simple_element( Xresult_conf_99 )
 			       << XML::attribute( Xwaiting, _conf_99( call.getResultWaitingTimeVariance() ) );
 			if ( call.hasResultVarianceWaitingTime() ) {
 			    output << XML::attribute( Xwaiting_variance, _conf_99( call.getResultVarianceWaitingTimeVariance() ) );
@@ -3360,8 +3360,8 @@ namespace LQIO {
 			   << XML::attribute( Xprob,  histogram.getBinMean(i) );
 		    const double variance = histogram.getBinVariance(i);
 		    if ( variance > 0 && _document.hasConfidenceIntervals() ) {
-			output << XML::attribute( Xconf_95, _conf_95( variance ) )
-			       << XML::attribute( Xconf_99, _conf_99( variance ) );
+			output << XML::attribute( Xresult_conf_95, _conf_95( variance ) )
+			       << XML::attribute( Xresult_conf_99, _conf_99( variance ) );
 		    }
 		    output << XML::end_element( bin_name, false ) << std::endl;
 		}
@@ -3384,12 +3384,12 @@ namespace LQIO {
 		if ( complex_type ) {
 		    output << ">" << std::endl;
 		    if ( has_95 ) {
-			output << XML::start_element( Xconf_95, false );
+			output << XML::start_element( Xresult_conf_95, false );
 			std::for_each( range.first, range.second, ExportObservation( output, 95 ) );
 			output << "/>" << std::endl;
 		    }
 		    if ( has_99 ) {
-			output << XML::start_element( Xconf_99, false );
+			output << XML::start_element( Xresult_conf_99, false );
 			std::for_each( range.first, range.second, ExportObservation( output, 99 ) );
 			output << "/>" << std::endl;
 		    }
@@ -3514,8 +3514,6 @@ namespace LQIO {
         const XML_Char * Expat_Document::Xcalls_mean =                          "calls-mean";
         const XML_Char * Expat_Document::Xcap =                                 "cap";
         const XML_Char * Expat_Document::Xcomment =                             "comment";
-        const XML_Char * Expat_Document::Xconf_95 =                             "conf-95";
-        const XML_Char * Expat_Document::Xconf_99 =                             "conf-99";
         const XML_Char * Expat_Document::Xconv_val =                            "conv_val";
         const XML_Char * Expat_Document::Xconv_val_result =                     "conv-val";
         const XML_Char * Expat_Document::Xcore =                                "core";
@@ -3584,15 +3582,17 @@ namespace LQIO {
         const XML_Char * Expat_Document::Xreplication =                         "replication";
         const XML_Char * Expat_Document::Xreply_activity =                      "reply-activity";
         const XML_Char * Expat_Document::Xreply_entry =                         "reply-entry";
+	const XML_Char * Expat_Document::Xresult_observation =                  "result-observe";
         const XML_Char * Expat_Document::Xresult_activity =                     "result-activity";
         const XML_Char * Expat_Document::Xresult_activity_distribution =        "result_activity_distribution";
         const XML_Char * Expat_Document::Xresult_call =                         "result-call";
+        const XML_Char * Expat_Document::Xresult_conf_95 =                      "result-conf-95";
+        const XML_Char * Expat_Document::Xresult_conf_99 =                      "result-conf-99";
         const XML_Char * Expat_Document::Xresult_entry =                        "result-entry";
         const XML_Char * Expat_Document::Xresult_forwarding =                   "result-forwarding";
         const XML_Char * Expat_Document::Xresult_general =                      "result-general";
         const XML_Char * Expat_Document::Xresult_group =                        "result-group";
         const XML_Char * Expat_Document::Xresult_join_delay =                   "result-join-delay";
-	const XML_Char * Expat_Document::Xresult_observation =                  "result-observe";
         const XML_Char * Expat_Document::Xresult_processor =                    "result-processor";
         const XML_Char * Expat_Document::Xresult_task =                         "result-task";
         const XML_Char * Expat_Document::Xrwlock =                              "rwlock";

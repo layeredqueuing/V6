@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: server.h 14882 2021-07-07 11:09:54Z greg $
+ * $Id: server.h 14895 2021-07-10 13:02:49Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -87,6 +87,7 @@ public:
     double getMaxCustomers() const { return _maxCusts[0][0]; }
     void setRealCustomers( const unsigned e,const unsigned k, double realCusts );
     double getRealCustomers( const unsigned e, const unsigned k  ) const { return _realCusts[e][k]; }
+    void addRealCustomers( const unsigned e, const unsigned k, double nCusts );
     bool isLessCustomer( const unsigned e, const unsigned k, const unsigned nk) const{ return _maxCusts[e][k]<=(nk-1) && (nk>1); }
 
     double chainILRate( const unsigned e, const unsigned k) const { return _chain_IL_Rate[e][k]; }

@@ -1,5 +1,5 @@
 /*  -*- C++ -*-
- * $Id: server.cc 14882 2021-07-07 11:09:54Z greg $
+ * $Id: server.cc 14895 2021-07-10 13:02:49Z greg $
  *
  * Copyright the Real-Time and Distributed Systems Group,
  * Department of Systems and Computer Engineering,
@@ -480,6 +480,13 @@ Server::setRealCustomers( const unsigned e, const unsigned k, double realCusts )
     _realCusts[e][k]= realCusts;
 }
 
+
+void
+Server::addRealCustomers( const unsigned e, const unsigned k, double nCusts )
+{
+    assert( e != 0 && e <= E && k <= K );
+    _realCusts[e][k] = std::min( nCusts + _realCusts[e][k], _maxCusts[e][k] );
+}
 
 void
 Server::setChainILRate( const unsigned e, const unsigned k, double rate)

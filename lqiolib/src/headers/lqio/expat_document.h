@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- *  $Id: expat_document.h 14882 2021-07-07 11:09:54Z greg $
+ *  $Id: expat_document.h 14896 2021-07-13 20:52:00Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  */
@@ -395,8 +395,6 @@ namespace LQIO {
 	    static const XML_Char *Xcalls_mean;
 	    static const XML_Char *Xcap;
 	    static const XML_Char *Xcomment;
-	    static const XML_Char *Xconf_95;
-	    static const XML_Char *Xconf_99;
 	    static const XML_Char *Xconv_val;
 	    static const XML_Char *Xconv_val_result;
 	    static const XML_Char *Xcore;
@@ -465,6 +463,8 @@ namespace LQIO {
 	    static const XML_Char *Xreply_entry;
 	    static const XML_Char *Xresult_activity;
 	    static const XML_Char *Xresult_call;
+	    static const XML_Char *Xresult_conf_95;
+	    static const XML_Char *Xresult_conf_99;
 	    static const XML_Char *Xresult_entry;
 	    static const XML_Char *Xresult_general;
 	    static const XML_Char *Xresult_group;
