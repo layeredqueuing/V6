@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- *  $Id: json_document.h 14498 2021-02-27 23:08:51Z greg $
+ *  $Id: json_document.h 14902 2021-07-14 21:52:59Z greg $
  *
  *  Created by Greg Franks.
  */
@@ -667,7 +667,7 @@ namespace LQIO {
 		};
 
 	    public:
-		Export( std::ostream& output, const LQIO::ConfidenceIntervals& conf_95 ) : _output(output), _conf_95(conf_95), _count(0) {}
+		Export( std::ostream& output, const LQIO::ConfidenceIntervals& conf_95, unsigned count = 0 ) : _output(output), _conf_95(conf_95), _count(count) {}
 
 	    public:
 		static StringBooleanManip begin_array( const std::string& name, bool inline_array=false ) { return StringBooleanManip( &printArrayBegin, name, inline_array ); }
@@ -926,7 +926,7 @@ namespace LQIO {
 	
 	    class ExportResults : public Export {
 	    public:
-		ExportResults( std::ostream& output, const LQIO::ConfidenceIntervals& conf_95 ) : Export( output, conf_95 ) {}
+		ExportResults( std::ostream& output, const LQIO::ConfidenceIntervals& conf_95, unsigned int count ) : Export( output, conf_95, count ) {}
 
 		void operator()( const Spex::var_name_and_expr& ) const;
 	    };
