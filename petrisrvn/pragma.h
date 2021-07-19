@@ -2,7 +2,7 @@
  *
  * $HeadURL$
  * ------------------------------------------------------------------------
- * $Id: pragma.h 14899 2021-07-14 12:25:53Z greg $
+ * $Id: pragma.h 14913 2021-07-16 16:35:20Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -40,6 +40,7 @@ public:
 
 private:
     void set_force_random_queueing( const std::string& );
+    void set_queue_size( const std::string& );
     void set_processor_scheduling( const std::string& );
     void set_reschedule_on_async_send( const std::string& );
     void set_severity_level( const std::string& );
