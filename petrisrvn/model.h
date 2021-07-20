@@ -10,7 +10,7 @@
 /************************************************************************/
 
 /*
- * $Id: model.h 14796 2021-06-11 14:48:04Z greg $
+ * $Id: model.h 14930 2021-07-20 12:00:33Z greg $
  *
  * Solve LQN using petrinets.
  */
@@ -19,7 +19,9 @@
 #define PETRISRVN_MODEL_H
 
 #include <string>
+#if HAVE_SYS_TIMES_H
 #include <sys/times.h>
+#endif
 #include <lqio/filename.h>
 #include <lqio/dom_document.h>
 #include <lqio/common_io.h>

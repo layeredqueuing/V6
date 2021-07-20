@@ -8,7 +8,7 @@
 /************************************************************************/
 
 /*
- * $Id: petrisrvn.cc 14913 2021-07-16 16:35:20Z greg $
+ * $Id: petrisrvn.cc 14930 2021-07-20 12:00:33Z greg $
  *
  * Generate a Petri-net from an SRVN description.
  *
@@ -164,7 +164,7 @@ static const char * opthelp[]  = {
 #endif
 
 
-regex_t * inservice_match_pattern	= 0;
+std::regex * inservice_match_pattern	= nullptr;
 
 FILE * stddbg;				/* debugging output goes here.	*/
 
@@ -274,16 +274,6 @@ main (int argc, char *argv[])
 	    output_file = optarg;
 	    break;
 
-	case 256+'o':
-	    if ( !optarg ) {
-		open_model_tokens = 3;
-	    } else if ( sscanf( optarg, "%d", &open_model_tokens ) != 1 || open_model_tokens > OPEN_MODEL_TOKENS*2 ) {
-		(void) fprintf( stderr, "%s: default-open-queue-max=%s is invalid, choose value < %d\n",
-				LQIO::io_vars.lq_toolname.c_str(), optarg ? optarg : "", OPEN_MODEL_TOKENS*2 );
-		(void) exit( INVALID_ARGUMENT );
-	    }
-	    break;
-	    
 	case 'p':
 	    parse_flag = true;
 	    break;
@@ -295,6 +285,10 @@ main (int argc, char *argv[])
 	    }
 	    break;
 
+	case 256+'p':
+	    pragmas.insert(LQIO::DOM::Pragma::_processor_scheduling_,scheduling_label[SCHEDULE_RAND].XML);
+	    break;
+	    
 	case 256+'q':
 	    pragmas.insert(LQIO::DOM::Pragma::_force_random_queueing_);
 	    break;
@@ -361,30 +355,14 @@ main (int argc, char *argv[])
 	    break;
 
 	case 256+'O':
+	    inservice_match_pattern = new std::regex( optarg );
 #if 0
-	    inservice_match_pattern = (regex_t *)malloc( sizeof( regex_t ) );
-	    errcode = regcomp( inservice_match_pattern, value ? value : ".*", REG_EXTENDED );
-	    if ( errcode ) {
-		char buf[BUFSIZ];
-		regerror( errcode, inservice_match_pattern, buf, BUFSIZ );
-		fprintf( stderr, "%s: %s\n", LQIO::io_vars.toolname(), buf );
-		exit( INVALID_ARGUMENT );
-	    }
 		case UNCONDITIONAL_PROB:
 		    uncondition_flag = true;
 		    break;
 
 #endif
 	    break;
-
-
-#if 0
-		case DISTINGUISH_JOIN:
-		    distinguish_join_customers = LQIO::DOM::Pragma::isTrue( value );
-		    break;
-#endif
-
-
 
 	default:
 	    usage();
@@ -402,7 +380,7 @@ main (int argc, char *argv[])
 
     /* Quick check.  -zin-service requires that the customers are differentiated. */
 
-    if ( ( inservice_match_pattern ) && customers_flag ) {
+    if ( ( inservice_match_pattern != nullptr ) && customers_flag ) {
 	if ( LQIO::io_vars.severity_level <= LQIO::WARNING_ONLY ) {
 	    (void) fprintf( stdout, "%s: -zin-service or -zin-queue is incompatible with multiple customer clients\n", LQIO::io_vars.toolname() );
 	    (void) fprintf( stdout, "\t-zcustomers assumed\n" );

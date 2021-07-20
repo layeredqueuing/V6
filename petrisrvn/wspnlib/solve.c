@@ -1,21 +1,26 @@
 /*
- *  $Id: solve.c 12284 2015-10-28 15:12:28Z greg $
+ *  $Id: solve.c 14930 2021-07-20 12:00:33Z greg $
  *
  * Solve the petri net "net_name".  The actual work is performed by a subprocess.
  */
 
 
+#include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/param.h>
 #include <sys/types.h>
+#if HAVE_SYS_WAIT_H
 #include <sys/wait.h>
+#endif
 #include <errno.h>
 #include <stdarg.h>
 #include <string.h>
+#if HAVE_GLOB_H
 #include <glob.h>
+#endif
 #include "global.h"
 #include "wspn.h"
 
@@ -33,6 +38,7 @@ solve( const char *net_name )
 int
 solve2( const char * net_name, int output_fd, solution_type solver, ... )
 {
+#if !defined(__WINNT__)
 	char command[256];
 	char arg1[32];
 	int status;
@@ -129,6 +135,9 @@ solve2( const char * net_name, int output_fd, solution_type solver, ... )
 
 	}
 	return 0;
+#else
+	return -1;
+#endif
 }
 
 
@@ -140,6 +149,7 @@ solve2( const char * net_name, int output_fd, solution_type solver, ... )
 int
 remove_result_files( const char * net_name )
 {
+#if !defined(__WINNT__)
     char path_name[MAXPATHLEN];
     glob_t g;
 
@@ -166,4 +176,7 @@ remove_result_files( const char * net_name )
     globfree( &g );
 
     return 1;
+#else
+    return 0;
+#endif
 }

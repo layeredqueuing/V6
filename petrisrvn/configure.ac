@@ -1,6 +1,6 @@
 # Process this file with autoconf to produce a configure script.
 # ------------------------------------------------------------------------
-# $Id: configure.ac 14899 2021-07-14 12:25:53Z greg $
+# $Id: configure.ac 14930 2021-07-20 12:00:33Z greg $
 # ------------------------------------------------------------------------
 AC_INIT([petrisrvn],[6.2],[greg@sce.carleton.ca])
 AC_CONFIG_AUX_DIR([../config])
@@ -37,7 +37,7 @@ AC_CHECK_LIB([m], [sqrt])
 
 # Checks for header files.
 AC_HEADER_SYS_WAIT
-AC_CHECK_HEADERS([errno.h fcntl.h fenv.h ieeefp.h malloc.h stdlib.h string.h unistd.h sys/param.h sys/types.h sys/times.h sys/utsname.h])
+AC_CHECK_HEADERS([errno.h fcntl.h fenv.h glob.h ieeefp.h malloc.h stdlib.h string.h unistd.h sys/errno.h sys/param.h sys/types.h sys/times.h sys/utsname.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_HEADER_STDBOOL 
@@ -49,7 +49,7 @@ AC_TYPE_SIZE_T
 AC_FUNC_FORK 
 AC_FUNC_STAT
 AC_FUNC_VPRINTF
-AC_CHECK_FUNCS([dup2 feenableexcept feclearexcept floor getcwd getopt_long mkdir putenv regcomp sqrt strchr strdup strrchr uname])
+AC_CHECK_FUNCS([dup2 feenableexcept feclearexcept floor getcwd getopt_long mkdir putenv strchr strdup strrchr uname])
 
 AC_CONFIG_FILES([Makefile wspnlib/Makefile regression/Makefile])
 AC_OUTPUT
