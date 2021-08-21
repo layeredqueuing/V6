@@ -10,7 +10,7 @@
  * November, 1994
  * December, 2020
  *
- * $Id: pragma.h 14882 2021-07-07 11:09:54Z greg $
+ * $Id: pragma.h 14946 2021-08-19 16:46:46Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -34,7 +34,7 @@ public:
     enum class ForceMultiserver { NONE, PROCESSORS, TASKS, ALL };
     enum class Layering { BACKPROPOGATE_BATCHED, BATCHED, METHOD_OF_LAYERS, BACKPROPOGATE_METHOD_OF_LAYERS, SRVN, SQUASHED, HWSW };
     enum class MVA { LINEARIZER, EXACT, SCHWEITZER, FAST, ONESTEP, ONESTEP_LINEARIZER };
-    enum class Multiserver { DEFAULT, CONWAY, REISER, REISER_PS, ROLIA, ROLIA_PS, BRUELL, SCHMIDT, SURI };
+    enum class Multiserver { DEFAULT, CONWAY, REISER, REISER_PS, ROLIA, ROLIA_PS, BRUELL, SCHMIDT, SURI, ZHOU };
     enum class Overtaking { MARKOV, ROLIA, SIMPLE, SPECIAL, NONE };
 #if HAVE_LIBGSL && HAVE_LIBGSLCBLAS
     enum class QuorumDistribution { DEFAULT, THREEPOINT, GAMMA, CLOSEDFORM_GEOMETRIC, CLOSEDFORM_DETRMINISTIC };
