@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: phase.cc 14882 2021-07-07 11:09:54Z greg $
+ * $Id: phase.cc 14957 2021-09-07 19:29:19Z greg $
  *
  * Everything you wanted to know about an phase, but were afraid to ask.
  *
@@ -15,6 +15,7 @@
 
 #include "lqns.h"
 #include <cmath>
+#include <cctype>
 #include <numeric>
 #include <cstdlib>
 #include <sstream>
@@ -451,23 +452,24 @@ Phase::check() const
 {
     if ( !isPresent() ) return true;
 
-    /* Service time for the entry? */
+    const LQIO::DOM::DocumentObject * parent = isActivity() ? dynamic_cast<LQIO::DOM::DocumentObject *>(owner()->getDOM()) : dynamic_cast<LQIO::DOM::DocumentObject *>(entry()->getDOM());
+    std::string parent_type = parent->getTypeName();
+    parent_type[0] = std::toupper( parent_type[0] );
+
+    /* Service time not zero? */
     if ( serviceTime() == 0 ) {
-	if ( isActivity() ) {
-	    LQIO::solution_error( LQIO::WRN_NO_SERVICE_TIME_FOR, "Task", owner()->name().c_str(), getDOM()->getTypeName(),  name().c_str() );
-	} else {
-	    LQIO::solution_error( LQIO::WRN_NO_SERVICE_TIME_FOR, "Entry", entry()->name().c_str(), getDOM()->getTypeName(),  name().c_str() );
-	}
+	LQIO::solution_error( LQIO::WRN_XXXX_TIME_DEFINED_BUT_ZERO, parent_type.c_str(), parent->getName().c_str(), getDOM()->getTypeName(), name().c_str(), "service" );
+    }
+
+    /* Think time present and not zero? */
+    if ( hasThinkTime() && thinkTime() == 0 ) {
+	LQIO::solution_error( LQIO::WRN_XXXX_TIME_DEFINED_BUT_ZERO, parent_type.c_str(), parent->getName().c_str(), getDOM()->getTypeName(), name().c_str(), "think" );
     }
 
     std::for_each( callList().begin(), callList().end(), Predicate<Call>( &Call::check ) );
 
     if ( phaseTypeFlag() == LQIO::DOM::Phase::STOCHASTIC && CV_sqr() != 1.0 ) {
-	if ( isActivity() ) {			/* c, phase_flag are incompatible  */
-	    LQIO::solution_error( WRN_COEFFICIENT_OF_VARIATION, "Task", owner()->name().c_str(), getDOM()->getTypeName(), name().c_str() );
-	} else {
-	    LQIO::solution_error( WRN_COEFFICIENT_OF_VARIATION, "Entry", entry()->name().c_str(), getDOM()->getTypeName(), name().c_str() );
-	}
+	LQIO::solution_error( WRN_COEFFICIENT_OF_VARIATION, parent_type.c_str(), parent->getName().c_str(), getDOM()->getTypeName(), name().c_str() );
     }
     return true;
 }
@@ -1785,7 +1787,7 @@ Phase::initProcessor()
      * that the processor is interesting 
      */
 	
-    if ( getDOM()->hasServiceTime() ) {
+    if ( hasServiceTime() ) {
 	std::ostringstream entry_name;
 	entry_name << owner()->name() << "." << owner()->getReplicaNumber() << ':' << name();
 	_devices.push_back( new DeviceInfo( *this, entry_name.str(), DeviceInfo::Type::HOST ) );

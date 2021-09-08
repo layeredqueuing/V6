@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: glblerr.h 14334 2021-01-05 03:03:03Z greg $
+ * $Id: glblerr.h 14957 2021-09-07 19:29:19Z greg $
  *
  * Copyright the Real-Time and Distributed Systems Group,
  * Department of Systems and Computer Engineering,
@@ -121,7 +121,7 @@ namespace LQIO {
 	ADV_SPEX_UNDEFINED_RESULT_VARIABLE,
 	ADV_SPEX_UNUSED_RESULT_VARIABLE,
 	ADV_TOO_MANY_GNUPLOT_VARIABLES,
-        WRN_NO_SERVICE_TIME_FOR,
+        WRN_XXXX_TIME_DEFINED_BUT_ZERO,
         WRN_NO_CALLS_FOR,
         WRN_INFINITE_MULTI_SERVER,
         WRN_NOT_USED,

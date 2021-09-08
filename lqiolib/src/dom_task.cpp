@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_task.cpp 14627 2021-05-10 16:22:27Z greg $
+ *  $Id: dom_task.cpp 14957 2021-09-07 19:29:19Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -164,7 +164,7 @@ namespace LQIO {
 
 	bool Task::hasThinkTime() const
 	{
-	    return ExternalVariable::isPresent( getThinkTime(), 0.0 );
+	    return ExternalVariable::isPresent( getThinkTime() );
 	}
 
 	void Task::setThinkTimeValue( double value )

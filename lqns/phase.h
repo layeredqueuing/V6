@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: phase.h 14882 2021-07-07 11:09:54Z greg $
+ * $Id: phase.h 14957 2021-09-07 19:29:19Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -73,7 +73,8 @@ public:
     NullPhase& setPhaseNumber( unsigned int p ) { _phase_number = p; return *this; }
 
     /* Queries */
-    virtual bool isPresent() const { return _dom != 0 && _dom->isPresent(); }
+    virtual bool isPresent() const { return _dom && _dom->isPresent(); }
+    bool hasServiceTime() const { return _dom && _dom->hasServiceTime(); }
     bool hasThinkTime() const { return _dom && _dom->hasThinkTime(); }
     virtual bool isActivity() const { return false; }
 	
