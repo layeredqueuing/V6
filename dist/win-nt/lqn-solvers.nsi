@@ -3,7 +3,7 @@
 ; $HeadURL$
 
 ; HM NIS Edit Wizard helper defines
-!define PRODUCT_VERSION "6.1.2"
+!define PRODUCT_VERSION "6.2.0"
 !define PRODUCT_NAME "LQN Solvers"
 !define PRODUCT_PUBLISHER "Systems Engineering, Carleton University"
 !define PRODUCT_WEB_SITE "http://www.layeredqueues.org"
@@ -42,7 +42,7 @@
 ; MUI end ------
 
 Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
-OutFile "lqn_nt4_6_1.exe"
+OutFile "lqn_nt4_6_2.exe"
 InstallDir "$PROGRAMFILES\LQN Solvers"
 InstallDirRegKey HKLM "${PRODUCT_DIR_REGKEY}" ""
 ShowInstDetails show
