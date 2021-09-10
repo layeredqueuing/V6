@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: phase.cc 14957 2021-09-07 19:29:19Z greg $
+ * $Id: phase.cc 14964 2021-09-10 15:27:44Z greg $
  *
  * Everything you wanted to know about an phase, but were afraid to ask.
  *
@@ -1825,6 +1825,7 @@ Phase::DeviceInfo::DeviceInfo( const Phase& phase, const std::string& name, Type
 {
     const LQIO::DOM::Document * document = _phase.getDOM()->getDocument();
     const Processor * processor = _phase.owner()->getProcessor();
+    LQIO::DOM::ConstantExternalVariable * visits = nullptr;
 
     _entry_dom = new LQIO::DOM::Entry( document, name );
     switch ( type ) {
@@ -1833,12 +1834,14 @@ Phase::DeviceInfo::DeviceInfo( const Phase& phase, const std::string& name, Type
 	_entry->setServiceTime( think_time() )
 	    .setCV_sqr( 1.0 )
 	    .initVariance();
+	visits = new LQIO::DOM::ConstantExternalVariable( 1.0 );
 	break;
     case Type::CFS_DELAY:
 	_entry = new DeviceEntry( _entry_dom, Model::__cfs_server );
 	_entry->setServiceTime( 0.00001 )
 	    .setCV_sqr( 1.0 )
 	    .initVariance();
+	visits = new LQIO::DOM::ConstantExternalVariable( 1.0 );
 	break;
     default:
 	_entry = new DeviceEntry( _entry_dom, const_cast<Processor *>( processor ) );
@@ -1846,6 +1849,7 @@ Phase::DeviceInfo::DeviceInfo( const Phase& phase, const std::string& name, Type
 	    .setCV_sqr( cv_sqr() )
 	    .initVariance()
 	    .setPriority( phase.owner()->priority() );
+	visits = new LQIO::DOM::ConstantExternalVariable( n_processor_calls() );
 	break;
     }
 
@@ -1857,12 +1861,6 @@ Phase::DeviceInfo::DeviceInfo( const Phase& phase, const std::string& name, Type
      * chain.  Note - _call_dom is NOT stored in the DOM, so we delete it.
      */	
 
-    LQIO::DOM::ConstantExternalVariable * visits;
-    if ( isProcessor() ) {
-	visits = new LQIO::DOM::ConstantExternalVariable(n_calls());
-    } else {
-	visits = new LQIO::DOM::ConstantExternalVariable(1.0);
-    }
     _call = _phase.newProcessorCall( _entry );
     _call_dom = new LQIO::DOM::Call( document, LQIO::DOM::Call::Type::RENDEZVOUS,
 				     _phase.getDOM(), _entry->getDOM(), visits );
@@ -1892,7 +1890,7 @@ Phase::DeviceInfo::recalculateDynamicValues()
 	    .initVariance()
 	    .initWait();
 
-	_call_dom->setCallMeanValue( n_calls() );
+	_call_dom->setCallMeanValue( n_processor_calls() );
 	_call->setWait( old_time > 0.0 ? _call->wait() * new_time / old_time : new_time );
 
     } else {

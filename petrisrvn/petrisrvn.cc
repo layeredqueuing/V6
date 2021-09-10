@@ -8,7 +8,7 @@
 /************************************************************************/
 
 /*
- * $Id: petrisrvn.cc 14930 2021-07-20 12:00:33Z greg $
+ * $Id: petrisrvn.cc 14964 2021-09-10 15:27:44Z greg $
  *
  * Generate a Petri-net from an SRVN description.
  *
@@ -116,6 +116,7 @@ static const struct option longopts[] =
     { "xml",                no_argument,        0, 'x' },
     { "disjoint-customers", no_argument,	0, 256+'d' },
     { "no-header",	    no_argument,	0, 256+'h' },
+    { "print-comment",	    no_argument,	0, 256+'c' },
     { "overtaking",	    optional_argument,	0, 256+'O' },
     { "queue-limit",        required_argument,	0, 256+'Q' },
     { "random-processors",  no_argument,	0, 256+'p' },
@@ -212,6 +213,10 @@ main (int argc, char *argv[])
 	command_line.append( c, optarg );
 
 	switch ( c ) {
+	case 'c'+256:
+	    LQIO::Spex::__print_comment = true;
+	    pragmas.insert(LQIO::DOM::Pragma::_spex_comment_,"true");
+	    break;
 
 	case 'd':
 	    debug_flag = true;

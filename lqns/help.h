@@ -1,7 +1,7 @@
 /* -*- C++ -*-
  * help.h	-- Greg Franks
  *
- * $Id: help.h 14957 2021-09-07 19:29:19Z greg $
+ * $Id: help.h 14964 2021-09-10 15:27:44Z greg $
  */
 
 #ifndef _HELP_H
@@ -242,6 +242,7 @@ public:
     std::ostream& pragmaThreads( std::ostream& output, bool verbose ) const;
     std::ostream& pragmaVariance( std::ostream& output, bool verbose ) const;
     std::ostream& pragmaSeverityLevel( std::ostream& output, bool verbose ) const;
+    std::ostream& pragmaSpexComment( std::ostream& output, bool verbose ) const;
     std::ostream& pragmaSpexHeader( std::ostream& output, bool verbose ) const;
     std::ostream& pragmaPrune( std::ostream& output, bool verbose ) const;
 
@@ -318,6 +319,9 @@ public:
     std::ostream& pragmaSeverityLevelWarnings( std::ostream& output, bool verbose ) const;
     std::ostream& pragmaSeverityLevelRunTime( std::ostream& output, bool verbose ) const;
 
+    std::ostream& pragmaSpexCommentFalse( std::ostream& output, bool verbose ) const;
+    std::ostream& pragmaSpexCommentTrue( std::ostream& output, bool verbose ) const;
+
     std::ostream& pragmaSpexHeaderFalse( std::ostream& output, bool verbose ) const;
     std::ostream& pragmaSpexHeaderTrue( std::ostream& output, bool verbose ) const;
 
@@ -359,6 +363,7 @@ private:
 #if RESCHEDULE
     static parameter_map_t  __reschedule_args;
 #endif
+    static parameter_map_t  __spex_comment_args;
     static parameter_map_t  __spex_header_args;
     static parameter_map_t  __stop_on_message_loss_args;
     static parameter_map_t  __threads_args;
