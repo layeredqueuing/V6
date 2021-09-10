@@ -10,7 +10,7 @@
  * November, 1994
  *
  * ------------------------------------------------------------------------
- * $Id: task.cc 14894 2021-07-09 16:22:28Z greg $
+ * $Id: task.cc 14946 2021-08-19 16:46:46Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -2234,6 +2234,9 @@ ServerTask::makeServer( const unsigned nChains )
 		if ( dynamic_cast<Suri_Multi_Server *>(_station)  && _station->marginalProbabilitiesSize() == copies()) return nullptr;
 		_station = new Suri_Multi_Server(    copies(), nEntries(), nChains, maxPhase());
 		break;
+
+	    case Pragma::Multiserver::ZHOU:
+		throw not_implemented( "Task::makeServer", __FILE__, __LINE__ );
 	    }
 
 	} else if ( markovOvertaking() ) {
@@ -2268,6 +2271,8 @@ ServerTask::makeServer( const unsigned nChains )
 		_station = new Markov_Phased_Suri_Multi_Server(     copies(), nEntries(), nChains, maxPhase());
 		break;
 
+	    case Pragma::Multiserver::ZHOU:
+		throw not_implemented( "Task::makeServer", __FILE__, __LINE__ );
 	    }
 
 	} else {

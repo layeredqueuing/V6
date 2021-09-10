@@ -41,6 +41,7 @@ Pragma::Pragma() :
     _reschedule_on_async_send(false),	/* force schedule after snr.	*/
     _scheduling_model(SCHEDULE_SLICE),
     _severity_level(LQIO::NO_ERROR),
+    _spex_comment(false),
     _spex_header(true),
     _block_period(0.0),
     _number_of_blocks(0),

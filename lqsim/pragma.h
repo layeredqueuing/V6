@@ -3,7 +3,7 @@
  *
  * $URL$
  * ------------------------------------------------------------------------
- * $Id: pragma.h 14882 2021-07-07 11:09:54Z greg $
+ * $Id: pragma.h 14964 2021-09-10 15:27:44Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -42,6 +42,7 @@ public:
     int scheduling_model() const { return _scheduling_model; }
     double seed_value() const { return _seed_value; }
     LQIO::severity_t severity_level() { return _severity_level; }
+    bool spex_comment() const { return _spex_comment; }
     bool spex_header() const { return _spex_header; }
 
     static void usage( std::ostream& output );
@@ -72,6 +73,7 @@ private:
     bool _reschedule_on_async_send;
     int _scheduling_model;
     LQIO::severity_t _severity_level;
+    bool _spex_comment;
     bool _spex_header;
 
     double _block_period;

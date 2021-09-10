@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: lqns.cc 14882 2021-07-07 11:09:54Z greg $
+ * $Id: lqns.cc 14964 2021-09-10 15:27:44Z greg $
  *
  * Command line processing.
  *
@@ -100,6 +100,7 @@ const struct option longopts[] =
     { "reload-lqx",           no_argument,       0, 512+'r' },
     { "restart",	      no_argument,	 0, 512+'R' },
     { LQIO::DOM::Pragma::_spex_header_, no_argument, 0, 512+'h' },
+    { "print-comment",	      no_argument,	 0, 512+'p' },
     { "reset-mva", 	      no_argument,       0, 256+'r' },
     { "trace-mva",            no_argument,       0, 256+'t' },
     { "debug-lqx",            no_argument,       0, 512+'l' },
@@ -153,6 +154,7 @@ const char * opthelp[]  = {
     /* no-variance"     */      "Ignore the variance computation during solution.",
     /* reload_lqx"      */      "Run the LQX program, but re-use the results from a previous invocation.",
     /* restart		*/	"Reuse existing valid results.  Otherwise, run the solver.",
+    /* print-comment	*/	"Output the model comment on SPEX results.",
     /* no-header        */      "Do not output the variable name header on SPEX results.",
     /* reset-mva	*/	"Reset the MVA calculation prior to solving a submodel.", 
     /* trace-mva"       */      "Trace the operation of the MVA solver.",
@@ -359,6 +361,12 @@ int main (int argc, char *argv[])
             pragmas.insert( LQIO::DOM::Pragma::_processor_scheduling_, scheduling_label[SCHEDULE_PS].XML );
             break;
 
+	case 512+'p':
+	    /* Set immediately, as it can't be changed once the SPEX program is loaded */
+	    LQIO::Spex::__print_comment = true;
+	    pragmas.insert(LQIO::DOM::Pragma::_spex_comment_,"true");
+	    break;
+	    
         case 256+'q': //tomari quorum options
             flags.disable_expanding_quorum_tree = true;
             break;
@@ -539,8 +547,13 @@ process( const std::string& inputFileName, const std::string& outputFileName )
     document->mergePragmas( pragmas.getList() );       /* Save pragmas -- prepare will process */
     if ( Model::prepare(document) == false ) return INVALID_INPUT;
         
-    if ( document->getInputFormat() != LQIO::DOM::Document::InputFormat::LQN && LQIO::Spex::__no_header ) {
-        std::cerr << LQIO::io_vars.lq_toolname << ": --no-header is ignored for " << inputFileName << "." << std::endl;
+    if ( document->getInputFormat() == LQIO::DOM::Document::InputFormat::XML ) {
+	if ( LQIO::Spex::__no_header ) {
+	    std::cerr << LQIO::io_vars.lq_toolname << ": --no-header is ignored for " << inputFileName << "." << std::endl;
+	}
+	if ( LQIO::Spex::__print_comment ) {
+	    std::cerr << LQIO::io_vars.lq_toolname << ": --print-comment is ignored for " << inputFileName << "." << std::endl;
+	}
     }
 
     /* declare Model * at this scope but don't instantiate due to problems with LQX programs and registering external symbols*/
@@ -566,6 +579,9 @@ process( const std::string& inputFileName, const std::string& outputFileName )
 		model = Model::create( document, inputFileName, outputFileName );
 
 		if ( model->check() && model->initialize() ) {
+		    if ( Pragma::spexComment() ) {	// Not spex/lqx, so output on stderr.
+			std::cerr << document->getModelCommentString() << std::endl;
+		    }
 		    model->solve();
 		} else {
 		    rc = INVALID_INPUT;
@@ -710,4 +726,3 @@ under_relax( double& old_value, const double new_value, const double relax )
 	old_value = new_value;
     }
 }
-

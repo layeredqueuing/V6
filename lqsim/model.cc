@@ -9,7 +9,7 @@
 /*
  * Input processing.
  *
- * $Id: model.cc 14882 2021-07-07 11:09:54Z greg $
+ * $Id: model.cc 14964 2021-09-10 15:27:44Z greg $
  */
 
 /* Debug Messages for Loading */
@@ -150,6 +150,7 @@ Model::construct()
     }
     Pragma::set( _document->getPragmaList() );
     LQIO::io_vars.severity_level = Pragma::__pragmas->severity_level();
+    LQIO::Spex::__print_comment = !Pragma::__pragmas->spex_comment();
     LQIO::Spex::__no_header = !Pragma::__pragmas->spex_header();
     
 	

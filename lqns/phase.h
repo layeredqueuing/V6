@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: phase.h 14882 2021-07-07 11:09:54Z greg $
+ * $Id: phase.h 14964 2021-09-10 15:27:44Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -73,7 +73,8 @@ public:
     NullPhase& setPhaseNumber( unsigned int p ) { _phase_number = p; return *this; }
 
     /* Queries */
-    virtual bool isPresent() const { return _dom != 0 && _dom->isPresent(); }
+    virtual bool isPresent() const { return _dom && _dom->isPresent(); }
+    bool hasServiceTime() const { return _dom && _dom->hasServiceTime(); }
     bool hasThinkTime() const { return _dom && _dom->hasThinkTime(); }
     virtual bool isActivity() const { return false; }
 	
@@ -175,6 +176,7 @@ private:
 	double think_time() const { return _phase.thinkTime(); }
 	double n_calls() const { return _phase.numberOfSlices(); }
 	double cv_sqr() const { return _phase.CV_sqr(); }
+	double n_processor_calls() const { return service_time() > 0. ? n_calls() : 0.0; }	// zero if no service. BUG 315.
 
 	static void initWait( DeviceInfo * device ) { device->call()->initWait(); }
 	static std::set<Entity *>& add_server( std::set<Entity *>&, const DeviceInfo * );

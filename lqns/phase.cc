@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: phase.cc 14882 2021-07-07 11:09:54Z greg $
+ * $Id: phase.cc 14964 2021-09-10 15:27:44Z greg $
  *
  * Everything you wanted to know about an phase, but were afraid to ask.
  *
@@ -15,6 +15,7 @@
 
 #include "lqns.h"
 #include <cmath>
+#include <cctype>
 #include <numeric>
 #include <cstdlib>
 #include <sstream>
@@ -451,23 +452,24 @@ Phase::check() const
 {
     if ( !isPresent() ) return true;
 
-    /* Service time for the entry? */
+    const LQIO::DOM::DocumentObject * parent = isActivity() ? dynamic_cast<LQIO::DOM::DocumentObject *>(owner()->getDOM()) : dynamic_cast<LQIO::DOM::DocumentObject *>(entry()->getDOM());
+    std::string parent_type = parent->getTypeName();
+    parent_type[0] = std::toupper( parent_type[0] );
+
+    /* Service time not zero? */
     if ( serviceTime() == 0 ) {
-	if ( isActivity() ) {
-	    LQIO::solution_error( LQIO::WRN_NO_SERVICE_TIME_FOR, "Task", owner()->name().c_str(), getDOM()->getTypeName(),  name().c_str() );
-	} else {
-	    LQIO::solution_error( LQIO::WRN_NO_SERVICE_TIME_FOR, "Entry", entry()->name().c_str(), getDOM()->getTypeName(),  name().c_str() );
-	}
+	LQIO::solution_error( LQIO::WRN_XXXX_TIME_DEFINED_BUT_ZERO, parent_type.c_str(), parent->getName().c_str(), getDOM()->getTypeName(), name().c_str(), "service" );
+    }
+
+    /* Think time present and not zero? */
+    if ( hasThinkTime() && thinkTime() == 0 ) {
+	LQIO::solution_error( LQIO::WRN_XXXX_TIME_DEFINED_BUT_ZERO, parent_type.c_str(), parent->getName().c_str(), getDOM()->getTypeName(), name().c_str(), "think" );
     }
 
     std::for_each( callList().begin(), callList().end(), Predicate<Call>( &Call::check ) );
 
     if ( phaseTypeFlag() == LQIO::DOM::Phase::STOCHASTIC && CV_sqr() != 1.0 ) {
-	if ( isActivity() ) {			/* c, phase_flag are incompatible  */
-	    LQIO::solution_error( WRN_COEFFICIENT_OF_VARIATION, "Task", owner()->name().c_str(), getDOM()->getTypeName(), name().c_str() );
-	} else {
-	    LQIO::solution_error( WRN_COEFFICIENT_OF_VARIATION, "Entry", entry()->name().c_str(), getDOM()->getTypeName(), name().c_str() );
-	}
+	LQIO::solution_error( WRN_COEFFICIENT_OF_VARIATION, parent_type.c_str(), parent->getName().c_str(), getDOM()->getTypeName(), name().c_str() );
     }
     return true;
 }
@@ -1785,7 +1787,7 @@ Phase::initProcessor()
      * that the processor is interesting 
      */
 	
-    if ( getDOM()->hasServiceTime() ) {
+    if ( hasServiceTime() ) {
 	std::ostringstream entry_name;
 	entry_name << owner()->name() << "." << owner()->getReplicaNumber() << ':' << name();
 	_devices.push_back( new DeviceInfo( *this, entry_name.str(), DeviceInfo::Type::HOST ) );
@@ -1823,6 +1825,7 @@ Phase::DeviceInfo::DeviceInfo( const Phase& phase, const std::string& name, Type
 {
     const LQIO::DOM::Document * document = _phase.getDOM()->getDocument();
     const Processor * processor = _phase.owner()->getProcessor();
+    LQIO::DOM::ConstantExternalVariable * visits = nullptr;
 
     _entry_dom = new LQIO::DOM::Entry( document, name );
     switch ( type ) {
@@ -1831,12 +1834,14 @@ Phase::DeviceInfo::DeviceInfo( const Phase& phase, const std::string& name, Type
 	_entry->setServiceTime( think_time() )
 	    .setCV_sqr( 1.0 )
 	    .initVariance();
+	visits = new LQIO::DOM::ConstantExternalVariable( 1.0 );
 	break;
     case Type::CFS_DELAY:
 	_entry = new DeviceEntry( _entry_dom, Model::__cfs_server );
 	_entry->setServiceTime( 0.00001 )
 	    .setCV_sqr( 1.0 )
 	    .initVariance();
+	visits = new LQIO::DOM::ConstantExternalVariable( 1.0 );
 	break;
     default:
 	_entry = new DeviceEntry( _entry_dom, const_cast<Processor *>( processor ) );
@@ -1844,6 +1849,7 @@ Phase::DeviceInfo::DeviceInfo( const Phase& phase, const std::string& name, Type
 	    .setCV_sqr( cv_sqr() )
 	    .initVariance()
 	    .setPriority( phase.owner()->priority() );
+	visits = new LQIO::DOM::ConstantExternalVariable( n_processor_calls() );
 	break;
     }
 
@@ -1855,12 +1861,6 @@ Phase::DeviceInfo::DeviceInfo( const Phase& phase, const std::string& name, Type
      * chain.  Note - _call_dom is NOT stored in the DOM, so we delete it.
      */	
 
-    LQIO::DOM::ConstantExternalVariable * visits;
-    if ( isProcessor() ) {
-	visits = new LQIO::DOM::ConstantExternalVariable(n_calls());
-    } else {
-	visits = new LQIO::DOM::ConstantExternalVariable(1.0);
-    }
     _call = _phase.newProcessorCall( _entry );
     _call_dom = new LQIO::DOM::Call( document, LQIO::DOM::Call::Type::RENDEZVOUS,
 				     _phase.getDOM(), _entry->getDOM(), visits );
@@ -1890,7 +1890,7 @@ Phase::DeviceInfo::recalculateDynamicValues()
 	    .initVariance()
 	    .initWait();
 
-	_call_dom->setCallMeanValue( n_calls() );
+	_call_dom->setCallMeanValue( n_processor_calls() );
 	_call->setWait( old_time > 0.0 ? _call->wait() * new_time / old_time : new_time );
 
     } else {

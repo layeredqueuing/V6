@@ -8,7 +8,7 @@
 /************************************************************************/
 
 /*
- * $Id: model.cc 14930 2021-07-20 12:00:33Z greg $
+ * $Id: model.cc 14964 2021-09-10 15:27:44Z greg $
  *
  * Load the SRVN model.
  */
@@ -228,6 +228,7 @@ Model::construct()
 
     Pragma::set( _document->getPragmaList() );
     LQIO::Spex::__no_header = !Pragma::__pragmas->spex_header();
+    LQIO::Spex::__print_comment = Pragma::__pragmas->spex_comment();
     LQIO::io_vars.severity_level = Pragma::__pragmas->severity_level();
 	
     /* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- [Step 1: Add Processors] */

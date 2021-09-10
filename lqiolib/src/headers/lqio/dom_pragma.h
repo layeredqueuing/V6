@@ -8,7 +8,7 @@
 /************************************************************************/
 
 /*
- * $Id: dom_pragma.h 14913 2021-07-16 16:35:20Z greg $
+ * $Id: dom_pragma.h 14957 2021-09-07 19:29:19Z greg $
  */
 
 #ifndef __LQIO_DOM_PRAGMA_H__
@@ -80,8 +80,8 @@ namespace LQIO {
 	    static const char * _batched_back_;
 	    static const char * _bcmp_;			// BUG 270
 	    static const char * _block_period_;
-	    static const char * _bruell_;
-	    static const char * _conway_;
+	    static const char * _bruell_;		// multiserver
+	    static const char * _conway_;		// multiserver
 	    static const char * _custom_;
 	    static const char * _custom_natural_;
 	    static const char * _cycles_;
@@ -137,27 +137,28 @@ namespace LQIO {
 	    static const char * _quorum_distribution_;	// Quroum
 	    static const char * _quorum_idle_time_;	// Qurom
 	    static const char * _quorum_reply_;		// Quroum
-	    static const char * _reiser_;
-	    static const char * _reiser_ps_;
+	    static const char * _reiser_;		// multiserver
+	    static const char * _reiser_ps_;		// multiserver
 	    static const char * _replication_;
 	    static const char * _reschedule_on_async_send_;
-	    static const char * _rolia_;
-	    static const char * _rolia_ps_;
+	    static const char * _rolia_;		// multiserver
+	    static const char * _rolia_ps_;		// multiserver
 	    static const char * _run_time_;
 	    static const char * _scheduling_model_;
-	    static const char * _schmidt_;
+	    static const char * _schmidt_;		// multiserver
 	    static const char * _schweitzer_;
 	    static const char * _seed_value_;
 	    static const char * _severity_level_;
 	    static const char * _simple_;
 	    static const char * _special_;
+	    static const char * _spex_comment_;
 	    static const char * _spex_header_;
 	    static const char * _squashed_;
 	    static const char * _srvn_;
 	    static const char * _stochastic_;
 	    static const char * _stop_on_bogus_utilization_;
 	    static const char * _stop_on_message_loss_;
-	    static const char * _suri_;
+	    static const char * _suri_;			// multiserver
 	    static const char * _task_scheduling_;
 	    static const char * _tasks_;
 	    static const char * _tau_;
@@ -168,6 +169,7 @@ namespace LQIO {
 	    static const char * _variance_;
 	    static const char * _warning_;
 	    static const char * _yes_;
+	    static const char * _zhou_;			// Multiserver
 	};
     }
 }
