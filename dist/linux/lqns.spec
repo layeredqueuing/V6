@@ -1,6 +1,6 @@
 # LQNS RPM file.
 # ------------------------------------------------------------------------
-# $Id: lqns.spec 14964 2021-09-10 15:27:44Z greg $
+# $Id: lqns.spec 14973 2021-09-13 14:22:11Z greg $
 # ------------------------------------------------------------------------
 
 %define product_name lqns
@@ -111,17 +111,19 @@ rm -f lqn2lqx.%{product_man_section}
 %attr( 0755 , root , root ) %{install_prefix}/bin/lqn2emf
 %attr( 0755 , root , root ) %{install_prefix}/bin/lqn2fig
 %attr( 0755 , root , root ) %{install_prefix}/bin/lqn2lqn
+%attr( 0755 , root , root ) %{install_prefix}/bin/lqn2lqx
 %attr( 0755 , root , root ) %{install_prefix}/bin/lqn2out
 %attr( 0755 , root , root ) %{install_prefix}/bin/lqn2ps
 %attr( 0755 , root , root ) %{install_prefix}/bin/lqn2svg
 %attr( 0755 , root , root ) %{install_prefix}/bin/lqn2xml
-%attr( 0755 , root , root ) %{install_prefix}/bin/lqn2lqx
 %attr( 0755 , root , root ) %{install_prefix}/bin/lqngen
 %attr( 0755 , root , root ) %{install_prefix}/bin/lqns
 %attr( 0755 , root , root ) %{install_prefix}/bin/lqsim
+%attr( 0755 , root , root ) %{install_prefix}/bin/lqx
+%attr( 0755 , root , root ) %{install_prefix}/bin/petrisrvn
+%attr( 0755 , root , root ) %{install_prefix}/bin/qnsolver
 %attr( 0755 , root , root ) %{install_prefix}/bin/rep2flat
 %attr( 0755 , root , root ) %{install_prefix}/bin/srvndiff
-%attr( 0755 , root , root ) %{install_prefix}/bin/lqx
 %dir %attr( - , root , root ) %{install_prefix}/lib
 %attr( 0755 , root , root ) %{install_prefix}/lib/liblqio.a
 %attr( 0755 , root , root ) %{install_prefix}/lib/liblqio.la
@@ -131,19 +133,21 @@ rm -f lqn2lqx.%{product_man_section}
 %attr( 0755 , root , root ) %{install_prefix}/lib/libmva.la
 %dir %attr( - , root , root ) %{install_prefix}/share
 %dir %attr( - , root , root ) %{install_prefix}/share/man/man%{product_man_section}*
-%attr( 0444 , root , root ) %{install_prefix}/share/man/man%{product_man_section}/lqn2ps.%{product_man_section}*
-%attr( 0444 , root , root ) %{install_prefix}/share/man/man%{product_man_section}/lqngen.%{product_man_section}*
-%attr( 0444 , root , root ) %{install_prefix}/share/man/man%{product_man_section}/lqns.%{product_man_section}*
-%attr( 0444 , root , root ) %{install_prefix}/share/man/man%{product_man_section}/lqn2lqx.%{product_man_section}*
-%attr( 0444 , root , root ) %{install_prefix}/share/man/man%{product_man_section}/lqsim.%{product_man_section}*
-%attr( 0444 , root , root ) %{install_prefix}/share/man/man%{product_man_section}/srvndiff.%{product_man_section}*
 %attr( 0444 , root , root ) %{install_prefix}/share/man/man%{product_man_section}/lqn2emf.%{product_man_section}*
 %attr( 0444 , root , root ) %{install_prefix}/share/man/man%{product_man_section}/lqn2fig.%{product_man_section}*
 %attr( 0444 , root , root ) %{install_prefix}/share/man/man%{product_man_section}/lqn2lqn.%{product_man_section}*
+%attr( 0444 , root , root ) %{install_prefix}/share/man/man%{product_man_section}/lqn2lqx.%{product_man_section}*
 %attr( 0444 , root , root ) %{install_prefix}/share/man/man%{product_man_section}/lqn2out.%{product_man_section}*
+%attr( 0444 , root , root ) %{install_prefix}/share/man/man%{product_man_section}/lqn2ps.%{product_man_section}*
 %attr( 0444 , root , root ) %{install_prefix}/share/man/man%{product_man_section}/lqn2svg.%{product_man_section}*
 %attr( 0444 , root , root ) %{install_prefix}/share/man/man%{product_man_section}/lqn2xml.%{product_man_section}*
+%attr( 0444 , root , root ) %{install_prefix}/share/man/man%{product_man_section}/lqngen.%{product_man_section}*
+%attr( 0444 , root , root ) %{install_prefix}/share/man/man%{product_man_section}/lqns.%{product_man_section}*
+%attr( 0444 , root , root ) %{install_prefix}/share/man/man%{product_man_section}/lqsim.%{product_man_section}*
+%attr( 0444 , root , root ) %{install_prefix}/share/man/man%{product_man_section}/petrisrvn.%{product_man_section}*
+%attr( 0444 , root , root ) %{install_prefix}/share/man/man%{product_man_section}/qnsolver.%{product_man_section}*
 %attr( 0444 , root , root ) %{install_prefix}/share/man/man%{product_man_section}/rep2flat.%{product_man_section}*
+%attr( 0444 , root , root ) %{install_prefix}/share/man/man%{product_man_section}/srvndiff.%{product_man_section}*
 %dir %attr( 0755 , root , root ) %{install_prefix}/%{share_dir}
 %attr( 0444 , root , root ) %{install_prefix}/%{share_dir}/lqn-core.xsd
 %attr( 0444 , root , root ) %{install_prefix}/%{share_dir}/lqn-sub.xsd

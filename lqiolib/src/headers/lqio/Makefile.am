@@ -1,4 +1,4 @@
-# $Id: Makefile.am 14639 2021-05-13 21:25:02Z greg $
+# $Id: Makefile.am 14975 2021-09-13 16:01:08Z greg $
 # ------------------------------------------------------------------------
 noinst_HEADERS = bcmp_bindings.h \
 	bcmp_document.h \
@@ -32,6 +32,7 @@ noinst_HEADERS = bcmp_bindings.h \
 	json_document.h \
 	labels.h \
 	picojson.h \
+	pmif_document.h \
 	qnap2_document.h \
 	rapidxml.h \
 	rapidxml_print.h \
@@ -39,7 +40,6 @@ noinst_HEADERS = bcmp_bindings.h \
 	srvn_output.h \
 	srvn_results.h \
 	srvn_spex.h \
-	submodel_info.h
 	submodel_info.h \
 	xml_input.h \
 	xml_output.h

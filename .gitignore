@@ -8,6 +8,9 @@
 *.dvi
 *.eps
 *.exe
+*.gnuplot
+*.gz
+*.html
 *.idx
 *.ilg
 *.ind
@@ -21,9 +24,11 @@
 *.lqxo
 *.o
 *.out
-*.out
+*.p
 *.pdf
+*.png
 *.ps
+*.spex
 *.svg
 *.toc
 *~
@@ -33,10 +38,7 @@
 .svn
 Makefile
 Makefile.in
-Parser_pre.cpp
-Parser_pre.h
-Parser_pre.out
-Scanner_pre.cpp
+\#*
 aclocal.m4
 confdefs.h
 config
@@ -97,8 +99,12 @@ libtool
 lqn2ps/lqn2ps
 lqngen/lqngen
 lqns/lqns
+lqns/regression/disttest
 lqsim/lqsim
-lqx
+lqx/drvsrc/lqx
+lqx/libsrc/Parser_pre.cpp
+lqx/libsrc/Parser_pre.h
+lqx/libsrc/Scanner_pre.cpp
 missing
 models/bugs
 parasol/tests
@@ -112,5 +118,5 @@ srvn_result_gram.h
 srvn_result_gram.output
 srvn_result_scan.c
 srvn_scan.c
-srvndiff
+srvndiff/srvndiff
 stamp-h1
