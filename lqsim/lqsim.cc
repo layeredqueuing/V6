@@ -7,7 +7,7 @@
 /************************************************************************/
 
 /*
- * $Id: lqsim.cc 14964 2021-09-10 15:27:44Z greg $
+ * $Id: lqsim.cc 14983 2021-09-22 23:06:37Z greg $
  */
 
 #define STACK_TESTING
@@ -334,7 +334,7 @@ main( int argc, char * argv[] )
     LQIO::io_vars.init( VERSION, basename( argv[0] ), severity_action, local_error_messages, LSTLCLERRMSG-LQIO::LSTGBLERRMSG );
 
     command_line = LQIO::io_vars.lq_toolname;
-    (void) sscanf( "$Date: 2021-09-10 11:27:44 -0400 (Fri, 10 Sep 2021) $", "%*s %s %*s", copyright_date );
+    (void) sscanf( "$Date: 2021-09-22 19:06:37 -0400 (Wed, 22 Sep 2021) $", "%*s %s %*s", copyright_date );
     stddbg    = stdout;
 
     /* Stuff set from the input file.				*/
@@ -377,7 +377,7 @@ main( int argc, char * argv[] )
 		pragmas.insert(LQIO::DOM::Pragma::_block_period_, token );
 		token = strtok(nullptr, "," );
 		if ( token == nullptr ) break;
-		pragmas.insert(LQIO::DOM::Pragma::_precision_ );
+		pragmas.insert(LQIO::DOM::Pragma::_precision_, token );
 		token = strtok(nullptr, "," );
 		if ( token == nullptr ) break;
 		pragmas.insert(LQIO::DOM::Pragma::_initial_delay_, token );
