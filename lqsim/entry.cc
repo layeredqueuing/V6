@@ -12,7 +12,7 @@
  *
  * $URL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqsim/entry.cc $
  *
- * $Id: entry.cc 14769 2021-06-04 16:18:43Z greg $
+ * $Id: entry.cc 14996 2021-09-27 14:14:50Z greg $
  */
 
 #include <parasol.h>
@@ -39,7 +39,7 @@ unsigned int open_arrival_count = 0;
  * task and entry information.
  */
 
-std::set <Entry *, ltEntry> entry;			/* Entry table.		*/
+std::set <Entry *, ltEntry> entry;		/* Entry table.		*/
 Entry * Entry::entry_table[MAX_PORTS+1];	/* Reverse map		*/
 
 Entry::Entry( LQIO::DOM::Entry* dom, Task * task )

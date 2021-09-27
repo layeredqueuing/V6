@@ -10,7 +10,7 @@
 /*
  * Global vars for simulation.
  *
- * $Id: histogram.h 14882 2021-07-07 11:09:54Z greg $
+ * $Id: histogram.h 14996 2021-09-27 14:14:50Z greg $
  */
 
 #ifndef HISTOGRAM_H

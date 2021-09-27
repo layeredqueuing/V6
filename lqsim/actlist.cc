@@ -10,7 +10,7 @@
  * Activities are arcs in the graph that do work.
  * Nodes are points in the graph where splits and joins take place.
  *
- * $Id: actlist.cc 14131 2020-11-25 02:17:53Z greg $
+ * $Id: actlist.cc 14996 2021-09-27 14:14:50Z greg $
  */
 
 #include <sstream>
@@ -28,8 +28,6 @@
 #include "instance.h"
 #include "task.h"
 
-using namespace std;
-  
 static inline int i_max( int a, int b ) { return a > b ? a : b; }
 static void activity_path_error( int, const ActivityList *, std::deque<Activity *>& activity_stack );
 static void activity_cycle_error( int err, const char * task_name, std::deque<Activity *>& activity_stack );

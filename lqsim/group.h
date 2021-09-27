@@ -2,7 +2,7 @@
  * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqsim/group.h $
  * Global vars for simulation.
  *
- * $Id: group.h 14882 2021-07-07 11:09:54Z greg $
+ * $Id: group.h 14996 2021-09-27 14:14:50Z greg $
  */
 
 /************************************************************************/

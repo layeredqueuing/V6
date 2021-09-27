@@ -11,7 +11,7 @@
  *
  * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqsim/processor.h $
  *
- * $Id: processor.h 13937 2020-10-16 15:12:02Z greg $
+ * $Id: processor.h 14996 2021-09-27 14:14:50Z greg $
  */
 
 #ifndef	PROCESSOR_H
@@ -77,7 +77,6 @@ public:
 public:
     bool trace_flag;			/* For tracing.			*/
     result_t r_util;			/* Utilization.			*/
-//    Group * group;			/*				*/
 
 protected:
     long _node_id;			/* Parasol node id	.	*/

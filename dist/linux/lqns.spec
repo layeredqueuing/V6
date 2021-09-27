@@ -1,6 +1,6 @@
 # LQNS RPM file.
 # ------------------------------------------------------------------------
-# $Id: lqns.spec 14983 2021-09-22 23:06:37Z greg $
+# $Id: lqns.spec 14996 2021-09-27 14:14:50Z greg $
 # ------------------------------------------------------------------------
 
 %define product_name lqns
@@ -40,7 +40,7 @@ resources, and the modeling concepts include asynchronous messaging,
 and parallel execution.
 
 %changelog
-* Wed  8 Sep 2021 08:48:28 EDT
+* Mon Sep 13 2021 Gregory Franks <greg@Gregs-Retina-iMac.local> - VERSION-2
 - Bug 315 	Phase think time not working 
 
 %prep
@@ -108,14 +108,6 @@ rm -f lqn2lqx.%{product_man_section}
 %files
 %dir %attr( - , root , root ) %{install_prefix}
 %dir %attr( - , root , root ) %{install_prefix}/bin
-%attr( 0755 , root , root ) %{install_prefix}/bin/lqn2emf
-%attr( 0755 , root , root ) %{install_prefix}/bin/lqn2fig
-%attr( 0755 , root , root ) %{install_prefix}/bin/lqn2lqn
-%attr( 0755 , root , root ) %{install_prefix}/bin/lqn2lqx
-%attr( 0755 , root , root ) %{install_prefix}/bin/lqn2out
-%attr( 0755 , root , root ) %{install_prefix}/bin/lqn2ps
-%attr( 0755 , root , root ) %{install_prefix}/bin/lqn2svg
-%attr( 0755 , root , root ) %{install_prefix}/bin/lqn2xml
 %attr( 0755 , root , root ) %{install_prefix}/bin/lqngen
 %attr( 0755 , root , root ) %{install_prefix}/bin/lqns
 %attr( 0755 , root , root ) %{install_prefix}/bin/lqsim
@@ -126,27 +118,20 @@ rm -f lqn2lqx.%{product_man_section}
 %attr( 0755 , root , root ) %{install_prefix}/bin/srvndiff
 %dir %attr( - , root , root ) %{install_prefix}/lib
 %attr( 0755 , root , root ) %{install_prefix}/lib/liblqio.a
-%attr( 0755 , root , root ) %{install_prefix}/lib/liblqio.la
+%attr( 0644 , root , root ) %{install_prefix}/lib/liblqio.la
 %attr( 0755 , root , root ) %{install_prefix}/lib/liblqx.a
-%attr( 0755 , root , root ) %{install_prefix}/lib/liblqx.la
+%attr( 0644 , root , root ) %{install_prefix}/lib/liblqx.la
 %attr( 0755 , root , root ) %{install_prefix}/lib/libmva.a
-%attr( 0755 , root , root ) %{install_prefix}/lib/libmva.la
+%attr( 0644 , root , root ) %{install_prefix}/lib/libmva.la
 %dir %attr( - , root , root ) %{install_prefix}/share
 %dir %attr( - , root , root ) %{install_prefix}/share/man/man%{product_man_section}*
-%attr( 0444 , root , root ) %{install_prefix}/share/man/man%{product_man_section}/lqn2emf.%{product_man_section}*
-%attr( 0444 , root , root ) %{install_prefix}/share/man/man%{product_man_section}/lqn2fig.%{product_man_section}*
-%attr( 0444 , root , root ) %{install_prefix}/share/man/man%{product_man_section}/lqn2lqn.%{product_man_section}*
 %attr( 0444 , root , root ) %{install_prefix}/share/man/man%{product_man_section}/lqn2lqx.%{product_man_section}*
-%attr( 0444 , root , root ) %{install_prefix}/share/man/man%{product_man_section}/lqn2out.%{product_man_section}*
-%attr( 0444 , root , root ) %{install_prefix}/share/man/man%{product_man_section}/lqn2ps.%{product_man_section}*
-%attr( 0444 , root , root ) %{install_prefix}/share/man/man%{product_man_section}/lqn2svg.%{product_man_section}*
 %attr( 0444 , root , root ) %{install_prefix}/share/man/man%{product_man_section}/lqn2xml.%{product_man_section}*
 %attr( 0444 , root , root ) %{install_prefix}/share/man/man%{product_man_section}/lqngen.%{product_man_section}*
 %attr( 0444 , root , root ) %{install_prefix}/share/man/man%{product_man_section}/lqns.%{product_man_section}*
 %attr( 0444 , root , root ) %{install_prefix}/share/man/man%{product_man_section}/lqsim.%{product_man_section}*
 %attr( 0444 , root , root ) %{install_prefix}/share/man/man%{product_man_section}/petrisrvn.%{product_man_section}*
 %attr( 0444 , root , root ) %{install_prefix}/share/man/man%{product_man_section}/qnsolver.%{product_man_section}*
-%attr( 0444 , root , root ) %{install_prefix}/share/man/man%{product_man_section}/rep2flat.%{product_man_section}*
 %attr( 0444 , root , root ) %{install_prefix}/share/man/man%{product_man_section}/srvndiff.%{product_man_section}*
 %dir %attr( 0755 , root , root ) %{install_prefix}/%{share_dir}
 %attr( 0444 , root , root ) %{install_prefix}/%{share_dir}/lqn-core.xsd

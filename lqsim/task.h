@@ -2,7 +2,7 @@
  * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqsim/task.h $
  * Global vars for simulation.
  *
- * $Id: task.h 14131 2020-11-25 02:17:53Z greg $
+ * $Id: task.h 14996 2021-09-27 14:14:50Z greg $
  */
 
 /************************************************************************/
@@ -397,7 +397,7 @@ private:
 class Pseudo_Task : public Task
 {
 public:
-    Pseudo_Task( const char * name ) : Task( Task::OPEN_ARRIVAL_SOURCE, 0, 0, 0 ), _name(name) {}
+    Pseudo_Task( const char * name ) : Task( Task::OPEN_ARRIVAL_SOURCE, nullptr, nullptr, nullptr ), _name(name) {}
 
     virtual const char * name() const { return _name.c_str(); }
     virtual scheduling_type discipline() const { return SCHEDULE_DELAY; }

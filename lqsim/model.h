@@ -10,7 +10,7 @@
 /*
  * Global vars for simulation.
  *
- * $Id: model.h 14882 2021-07-07 11:09:54Z greg $
+ * $Id: model.h 14996 2021-09-27 14:14:50Z greg $
  */
 
 #ifndef LQSIM_MODEL_H
@@ -98,7 +98,7 @@ public:
     Model( LQIO::DOM::Document* document, const std::string&, const std::string& );
     virtual ~Model();
     
-    bool operator!() const { return _document == 0; }
+    bool operator!() const { return _document == nullptr; }
     bool construct();	/* Step 1 */
     bool hasVariables() const;
 

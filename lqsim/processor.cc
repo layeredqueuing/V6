@@ -11,7 +11,7 @@
  *
  * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqsim/processor.cc $
  *
- * $Id: processor.cc 14882 2021-07-07 11:09:54Z greg $
+ * $Id: processor.cc 14996 2021-09-27 14:14:50Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -183,7 +183,7 @@ Custom_Processor::~Custom_Processor()
     if ( _active_task ) {
 	delete [] _active_task;
     }
-    _active_task = 0;
+    _active_task = nullptr;
 }
 
 
@@ -226,7 +226,7 @@ Custom_Processor::main()
 {
     long * rtrq = static_cast<long *>(calloc( MAX_TASKS, sizeof(long) ));
 
-    _active_task[ps_my_host] = 0;
+    _active_task[ps_my_host] = nullptr;
     _scheduler = ps_std_port(ps_myself);
 	
     for ( ;; ) {
@@ -287,7 +287,7 @@ Custom_Processor::main()
 		quantum = NEVER;
 
 		_active -= 1;
-		_active_task[ps_my_host] = 0;
+		_active_task[ps_my_host] = nullptr;
 		ps_record_stat( r_util.raw, _active );
 		ps_schedule( NULL_TASK, ps_my_host );
 	    }
@@ -567,7 +567,7 @@ Processor::add( const std::pair<std::string,LQIO::DOM::Processor*>& p )
 	break;
     }
 
-    Processor * aProcessor = 0;
+    Processor * aProcessor = nullptr;
     if ( Pragma::__pragmas->scheduling_model() & SCHEDULE_CUSTOM ) {
 	aProcessor = new Custom_Processor( domProcessor );
     } else {
