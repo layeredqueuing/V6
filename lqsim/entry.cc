@@ -12,14 +12,14 @@
  *
  * $URL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqsim/entry.cc $
  *
- * $Id: entry.cc 14996 2021-09-27 14:14:50Z greg $
+ * $Id: entry.cc 14998 2021-09-27 18:13:54Z greg $
  */
 
 #include <parasol.h>
 #include "lqsim.h"
-#include <cmath>
 #include <algorithm>
-#include <string.h>
+#include <cmath>
+#include <cstring>
 #include <limits.h>
 #include <lqio/input.h>
 #include <lqio/error.h>
@@ -58,7 +58,7 @@ Entry::Entry( LQIO::DOM::Entry* dom, Task * task )
       _join_list(nullptr)
 {
     entry_table[_entry_id] = this;
-    
+
     for ( unsigned p = 0; p < MAX_PHASES; ++p ) {
 	std::string activity_name = "Entry ";
 	activity_name += this->name();
@@ -208,7 +208,7 @@ Entry::initialize()
 	_port = task()->std_port();
 	break;
     }
-		
+
     for ( std::vector<Activity>::iterator phase = _phase.begin(); phase != _phase.end(); ++phase ) {
 	phase->initialize();
     }
@@ -221,6 +221,7 @@ Entry::initialize()
 
     return *this;
 }
+
 
 bool 
 Entry::is_regular() const
@@ -482,7 +483,7 @@ Entry::insertDOMResults()
  * For Reference tasks, it's the total time.
  */
 
-double 
+double
 Entry::compute_minimum_service_time()
 {
     if ( minimum_service_time() == 0. ) {
@@ -514,6 +515,7 @@ Entry::compute_minimum_service_time()
     }
     return sum;
 }
+
 
 double
 Entry::throughput() const

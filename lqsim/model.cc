@@ -9,7 +9,7 @@
 /*
  * Input processing.
  *
- * $Id: model.cc 14996 2021-09-27 14:14:50Z greg $
+ * $Id: model.cc 14999 2021-09-27 18:19:56Z greg $
  */
 
 /* Debug Messages for Loading */
@@ -20,15 +20,13 @@
 #endif
 
 #include "lqsim.h"
+#include <cassert>
+#include <cmath>
+#include <cstdarg>
+#include <cstdlib>
 #include <fstream>
 #include <sstream>
-#include <cstdlib>
-#include <parasol.h>
-#include <para_internals.h>
-#include <stdarg.h>
-#include <assert.h>
 #include <errno.h>
-#include <cmath>
 #include <unistd.h>
 #if HAVE_SYS_UTSNAME_H
 #include <sys/utsname.h>
@@ -48,6 +46,8 @@
 #include <lqio/srvn_output.h>
 #include <lqio/json_document.h>
 #include <lqio/srvn_spex.h>
+#include <parasol.h>
+#include <para_internals.h>
 #include "runlqx.h"
 #include "errmsg.h"
 #include "model.h"
@@ -363,7 +363,7 @@ Model::print()
 	    std::ofstream output;
 	    LQIO::Filename filename( _input_file_name, "lqxo", directory_name, suffix );
 	    filename.backup();
-	    output.open( filename().c_str(), std::ios::out );
+	    output.open( filename(), std::ios::out );
 	    if ( !output ) {
 		solution_error( LQIO::ERR_CANT_OPEN_FILE, filename().c_str(), strerror( errno ) );
 	    } else {
@@ -388,8 +388,8 @@ Model::print()
 
 	if ( ( _document->getInputFormat() == LQIO::DOM::Document::InputFormat::LQN && lqx_output && !global_xml_flag ) || global_parse_flag ) {
 	    std::ofstream output;
-	    LQIO::Filename filename( _input_file_name.c_str(), "p", directory_name.c_str(), suffix.c_str() );
-	    output.open( filename().c_str(), std::ios::out );
+	    LQIO::Filename filename( _input_file_name, "p", directory_name, suffix );
+	    output.open( filename(), std::ios::out );
 	    if ( !output ) {
 		solution_error( LQIO::ERR_CANT_OPEN_FILE, filename().c_str(), strerror( errno ) );
 	    } else {
@@ -402,7 +402,7 @@ Model::print()
 
 	std::ofstream output;
 	LQIO::Filename filename( _input_file_name, global_rtf_flag ? "rtf" : "out", directory_name, suffix );
-	output.open( filename().c_str(), std::ios::out );
+	output.open( filename(), std::ios::out );
 	if ( !output ) {
 	    solution_error( LQIO::ERR_CANT_OPEN_FILE, filename().c_str(), strerror( errno ) );
 	} else {
@@ -478,7 +478,7 @@ Model::print_intermediate()
     filename << "~" << number_blocks << "~";
 
     std::ofstream output;
-    output.open( filename().c_str(), std::ios::out );
+    output.open( filename(), std::ios::out );
 
     if ( !output ) {
 	return;			/* Ignore errors */

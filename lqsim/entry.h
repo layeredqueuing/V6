@@ -9,7 +9,7 @@
 /*
  * Global vars for simulation.
  *
- * $Id: entry.h 14131 2020-11-25 02:17:53Z greg $
+ * $Id: entry.h 14999 2021-09-27 18:19:56Z greg $
  */
 
 #ifndef ENTRY_H
@@ -68,6 +68,10 @@ public:
     int get_port() const { return _port; }
     int entry_id() const { return _entry_id; }
     const Targets& get_fwd() const { return _fwd; }
+    Activity * get_start_activity() const { return _activity; }
+    Entry& set_start_activity( Activity * activity ) { _activity = activity; return *this; }
+    int get_port() const { return _port; }
+    int entry_id() const { return _entry_id; }
     Activity * get_start_activity() const { return _activity; }
     Entry& set_start_activity( Activity * activity ) { _activity = activity; return *this; }
     Entry& set_reply();

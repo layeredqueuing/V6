@@ -2,7 +2,7 @@
  * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqsim/task.h $
  * Global vars for simulation.
  *
- * $Id: task.h 14996 2021-09-27 14:14:50Z greg $
+ * $Id: task.h 14998 2021-09-27 18:13:54Z greg $
  */
 
 /************************************************************************/
@@ -105,7 +105,7 @@ public:
     unsigned n_entries() const { return _entry.size(); }
     unsigned max_phases() const { return _max_phases; }
     Task& max_phases( unsigned max_phases ) { _max_phases = std::max( _max_phases, max_phases ); return *this; }
-    
+
     Instance * add_task ( const char *task_name, task_type type, int cpu_no, Instance * rip );
     virtual int std_port() const { return -1; }
     virtual int worker_port() const { return -1; }
@@ -196,8 +196,8 @@ public:
 class Reference_Task : public Task
 {
 private:
-    Reference_Task( const Reference_Task& );
-    Reference_Task& operator=( const Reference_Task& );
+    Reference_Task( const Reference_Task& ) = delete;
+    Reference_Task& operator=( const Reference_Task& ) = delete;
 
 public:
     Reference_Task( const task_type type, LQIO::DOM::Task* domTask, Processor * aProc, Group * aGroup );

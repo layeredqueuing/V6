@@ -11,16 +11,16 @@
  *
  * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqsim/processor.cc $
  *
- * $Id: processor.cc 14996 2021-09-27 14:14:50Z greg $
+ * $Id: processor.cc 14999 2021-09-27 18:19:56Z greg $
  * ------------------------------------------------------------------------
  */
 
 #include <parasol.h>
-#include <cassert>
 #include <algorithm>
-#include <sstream>
-#include <cstdlib>
+#include <cassert>
 #include <cstdarg>
+#include <cstdlib>
+#include <sstream>
 #include "lqsim.h"
 #include <lqio/input.h>
 #include <lqio/error.h>
@@ -65,7 +65,7 @@ int Processor::scheduling_types[N_SCHEDULING_TYPES] =
 Processor *
 Processor::find( const std::string& processor_name  )
 {
-    if ( processor_name.size() == 0 ) return 0;
+    if ( processor_name.size() == 0 ) return nullptr;
     std::set<Processor *,ltProcessor>::const_iterator nextProcessor = find_if( ::processor.begin(), ::processor.end(), eqProcStr( processor_name ) );
     if ( nextProcessor == processor.end() ) {
 	return nullptr;
@@ -519,7 +519,7 @@ Processor::add( const std::pair<std::string,LQIO::DOM::Processor*>& p )
 {
     LQIO::DOM::Processor* domProcessor = p.second;
     const std::string& processor_name = p.first;
-    
+
     /* Unroll some of the encapsulated information */
 
     assert( processor_name.size() >  0 );

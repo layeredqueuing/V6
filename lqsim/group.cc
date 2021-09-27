@@ -9,7 +9,7 @@
 /*
  * Input output processing.
  *
- * $Id: group.cc 14996 2021-09-27 14:14:50Z greg $
+ * $Id: group.cc 14999 2021-09-27 18:19:56Z greg $
  */
 
 #include <algorithm>
@@ -116,7 +116,7 @@ Group::create()
 Group *
 Group::find( const std::string& group_name  )
 {
-    if ( group_name.size() == 0 ) return 0;
+    if ( group_name.empty() ) return nullptr;
     std::set<Group *,ltGroup>::const_iterator nextGroup = find_if( ::group.begin(), ::group.end(), eqGroupStr( group_name ) );
     if ( nextGroup == group.end() ) {
 	return nullptr;
