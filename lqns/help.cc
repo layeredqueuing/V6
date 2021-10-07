@@ -60,6 +60,55 @@ Help::parameter_map_t  Help::__quorum_distribution_args;
 Help::parameter_map_t  Help::__quorum_delayed_calls_args;
 Help::parameter_map_t  Help::__idle_time_args;
 #endif
+
+
+static const std::map<const std::string,const std::string> opt_help = {
+    { "no-advisories",		"Do not output advisory messages" },
+    { "bounds-only",       	"Compute throughput bounds only." },
+    { "convergence",       	"Set the convergence value to ARG." },
+    { "debug",       		"Enable debug code.  See -Hd." },
+    { "error",       		"Set floating point exception mode." },
+    { LQIO::DOM::Pragma::_fast_,"Solve using one-step-linearizer, batch layering and Conway multiserver." },
+    { "help",			"Show this help.  The optional argument shows help for -d, -t, -z, and -P respectively." },
+    { "huge",			"Solve using one-step-schweitzer, no interlocking, and Rolia multiserver." },
+    { "iteration-limit",       	"Set the iteration limit to ARG." },
+    { "input-format",       	"Force input format to ARG.  ARG is either 'lqn' or 'xml'." },
+    { "no-execute",       	"Build the model, but do not solve." },
+    { "output",       		"Redirect ouptut to FILE." },
+    { "parseable",       	"Generate parseable (.p) output." },
+    { "pragma",       		"Set solver options.  See -HP." },
+    { "rtf",       		"Output results in Rich Text Format instead of plain text." },
+    { "trace",       		"Trace solver operation.  See -Ht." },
+    { "underrelaxation",        "Set the under-relaxation value to ARG." },
+    { "verbose",       		"Output on standard error the progress of the solver." },
+    { "version",       		"Print the version of the solver." },
+    { "no-warnings",       	"Do not output warning messages." },
+    { "xml",       		"Ouptut results in XML format." },
+    { "special",		"Set special options.  See -Hz." },
+    { "exact-mva",       	"Use exact MVA instead of Linearizer for solving submodels." },
+    { LQIO::DOM::Pragma::_schweitzer_,  "Use Schweitzer approximate MVA instead of Linearizer." },
+    { "batch-layering", 	"Default layering strategy." },
+    { "hwsw-layering",       	"Use HW/SW layering instead of batched layering." },
+    { "method-of-layers",       "Use the Method of Layers instead of batched layering." },
+    { "squashed-layering",      "Use only one submodel to solve the model." },
+    { "srvn-layering",       	"Use one server per layer instead of batched layering." },
+    { "processor-sharing",      "Use processor sharing scheduling at fifo scheduled processors." },
+#if HAVE_LIBGSL && HAVE_LIBGSLCBLAS
+    { "quorum",       		"Quorum." },
+#endif
+    { "no-stop-on-message-loss","Ignore infinities caused by open arrivals or asynchronous sends." },
+    { "no-variance",       	"Ignore the variance computation during solution." },
+    { "reload-lqx",       	"Run the LQX program, but re-use the results from a previous invocation." },
+    { "restart",		"Reuse existing valid results.  Otherwise, run the solver." },
+    { "no-header",		"Do not output the variable name header on SPEX results." },
+    { "print-comment",		"Output the model comment on SPEX results." },
+    { "reset-mva",		"Reset the MVA calculation prior to solving a submodel." }, 
+    { "trace-mva",       	"Trace the operation of the MVA solver." },
+    { "debug-lqx",       	"Output debugging information while parsing LQX input." },
+    { "debug-xml",       	"Output debugging information while parsing XML input." },
+    { "debug-srvn",       	"Output debugging information while parsing SRVN input." },
+    { "debug-spex",		"Output LQX progam corresponding to SPEX input." }
+};
 
 /* -------------------------------------------------------------------- */
 /* Help/Usage info.							*/
@@ -77,9 +126,8 @@ usage ( const char * optarg )
 
 	std::cerr << " [option] [file ...]" << std::endl << std::endl;
 	std::cerr << "Options" << std::endl;
-	const char ** p = opthelp;
 #if HAVE_GETOPT_LONG
-	for ( const struct option *o = longopts; (o->name || o->val) && *p; ++o, ++p ) {
+	for ( const struct option *o = longopts; (o->name || o->val); ++o ) {
 	    std::string s;
 	    if ( o->name ) {
 		s = "--";
@@ -111,7 +159,7 @@ usage ( const char * optarg )
 	        std::cerr << "     ";
 	    }
 	    std::cerr.setf( std::ios::left, std::ios::adjustfield );
-	    std::cerr << std::setw(28) << s << *p << std::endl;
+	    std::cerr << std::setw(28) << s << opt_help.at(o->name) << std::endl;
 	}
 #else
 	for ( const char * o = opts; *o && *p; ++o, ++p ) {

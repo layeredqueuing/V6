@@ -23,7 +23,6 @@ extern const char opts[];
 #if HAVE_GETOPT_LONG
 extern const struct option longopts[];
 #endif
-extern const char * opthelp[];
 
 class StringManip {
 public:
