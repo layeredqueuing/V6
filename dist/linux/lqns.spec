@@ -1,6 +1,6 @@
 # LQNS RPM file.
 # ------------------------------------------------------------------------
-# $Id: lqns.spec 14996 2021-09-27 14:14:50Z greg $
+# $Id: lqns.spec 15005 2021-09-29 18:17:40Z greg $
 # ------------------------------------------------------------------------
 
 %define product_name lqns
@@ -114,7 +114,6 @@ rm -f lqn2lqx.%{product_man_section}
 %attr( 0755 , root , root ) %{install_prefix}/bin/lqx
 %attr( 0755 , root , root ) %{install_prefix}/bin/petrisrvn
 %attr( 0755 , root , root ) %{install_prefix}/bin/qnsolver
-%attr( 0755 , root , root ) %{install_prefix}/bin/rep2flat
 %attr( 0755 , root , root ) %{install_prefix}/bin/srvndiff
 %dir %attr( - , root , root ) %{install_prefix}/lib
 %attr( 0755 , root , root ) %{install_prefix}/lib/liblqio.a
@@ -126,7 +125,6 @@ rm -f lqn2lqx.%{product_man_section}
 %dir %attr( - , root , root ) %{install_prefix}/share
 %dir %attr( - , root , root ) %{install_prefix}/share/man/man%{product_man_section}*
 %attr( 0444 , root , root ) %{install_prefix}/share/man/man%{product_man_section}/lqn2lqx.%{product_man_section}*
-%attr( 0444 , root , root ) %{install_prefix}/share/man/man%{product_man_section}/lqn2xml.%{product_man_section}*
 %attr( 0444 , root , root ) %{install_prefix}/share/man/man%{product_man_section}/lqngen.%{product_man_section}*
 %attr( 0444 , root , root ) %{install_prefix}/share/man/man%{product_man_section}/lqns.%{product_man_section}*
 %attr( 0444 , root , root ) %{install_prefix}/share/man/man%{product_man_section}/lqsim.%{product_man_section}*

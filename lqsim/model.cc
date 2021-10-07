@@ -9,7 +9,7 @@
 /*
  * Input processing.
  *
- * $Id: model.cc 14999 2021-09-27 18:19:56Z greg $
+ * $Id: model.cc 15001 2021-09-27 22:12:07Z greg $
  */
 
 /* Debug Messages for Loading */
@@ -253,7 +253,7 @@ Model::construct()
 
 	if ( newEntry->is_regular() ) {
 	    const Task * aTask = newEntry->task();
-	    if ( aTask->type() != Task::CLIENT && aTask->type() != Task::OPEN_ARRIVAL_SOURCE ) {
+	    if ( aTask->type() != Task::Type::CLIENT && aTask->type() != Task::Type::OPEN_ARRIVAL_SOURCE ) {
 		newEntry->_phase[0].act_add_reply( newEntry );	
 	    }
 	}
@@ -944,7 +944,7 @@ Model::rms_confidence()
     
     for ( std::set<Task *,ltTask>::const_iterator nextTask = ::task.begin(); nextTask != ::task.end(); ++nextTask ) {
 	const Task * aTask = *nextTask;
-	if ( aTask->type() == Task::OPEN_ARRIVAL_SOURCE ) continue;		/* Skip. */
+	if ( aTask->type() == Task::Type::OPEN_ARRIVAL_SOURCE ) continue;		/* Skip. */
 
 	for ( std::vector<Entry *>::const_iterator nextEntry = aTask->_entry.begin(); nextEntry != aTask->_entry.end(); ++nextEntry ) {
 	    double temp = normalized_conf95( (*nextEntry)->r_cycle );

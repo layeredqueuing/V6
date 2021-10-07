@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: phase.cc 14964 2021-09-10 15:27:44Z greg $
+ * $Id: phase.cc 15048 2021-10-07 15:10:18Z greg $
  *
  * Everything you wanted to know about an phase, but were afraid to ask.
  *
@@ -424,7 +424,7 @@ Phase::initWait()
 Phase&
 Phase::initVariance()
 {
-    _variance = CV_sqr() * square( serviceTime() );
+    setVariance( CV_sqr() * square( serviceTime() ) );
     return *this;
 }
 
@@ -1137,6 +1137,14 @@ Phase::updateWait( const Submodel& submodel, const double relax )
 
 
 
+Phase&
+Phase::updateVariance()
+{
+    setVariance( computeVariance() );
+    return *this;
+}
+
+
 #if PAN_REPLICATION
 double
 Phase::getReplicationProcWait( unsigned int submodel, const double relax )
@@ -1516,48 +1524,37 @@ Phase::recalculateDynamicValues()
 /*----------------------------------------------------------------------*/
 
 /*
- * Compute variance.
+ * Compute the variance. 
  */
 
 double
-Phase::computeVariance()
+Phase::computeVariance() const
 {
+    typedef double (Phase::*fptr)() const;
+    static std::map<const Pragma::Variance,fptr> stochastic =
+    {
+	{ Pragma::Variance::DEFAULT,	&Phase::stochastic_phase },
+	{ Pragma::Variance::NONE, 	&Phase::square_phase },
+	{ Pragma::Variance::STOCHASTIC, &Phase::stochastic_phase },
+	{ Pragma::Variance::MOL, 	&Phase::mol_phase }
+    };
+    static std::map<const Pragma::Variance,fptr> deterministic =
+    {
+	{ Pragma::Variance::DEFAULT,	&Phase::deterministic_phase },
+	{ Pragma::Variance::NONE, 	&Phase::square_phase },
+	{ Pragma::Variance::STOCHASTIC, &Phase::deterministic_phase },
+	{ Pragma::Variance::MOL, 	&Phase::deterministic_phase }
+    };
+
     if ( !std::isfinite( elapsedTime() ) ) {
-	_variance = elapsedTime();
-    } else switch ( Pragma::variance() ) {
-
-	case Pragma::Variance::MOL:
-	    if ( phaseTypeFlag() == LQIO::DOM::Phase::Type::STOCHASTIC ) {
-		_variance =  mol_phase();
-		break;
-	    } else {
-		_variance =  deterministic_phase();
-	    }
-	    break;
-
-	case Pragma::Variance::STOCHASTIC:
-	    if ( phaseTypeFlag() == LQIO::DOM::Phase::Type::STOCHASTIC ) {
-		_variance =  stochastic_phase();
-		break;
-	    } else {
-		_variance =  deterministic_phase();
-	    }
-	    break;
-		
-	case Pragma::Variance::DEFAULT:
-	    if ( phaseTypeFlag() == LQIO::DOM::Phase::Type::STOCHASTIC ) {
-		_variance =  stochastic_phase();
-	    } else {
-		_variance =  deterministic_phase();
-	    }
-	    break;
-
-	default:
-	    _variance =  square( elapsedTime() );
-	    break;
-	}
-
-    return _variance;
+	return elapsedTime();
+    } else if ( phaseTypeFlag() == LQIO::DOM::Phase::Type::STOCHASTIC ) {
+	const fptr f = stochastic.at(Pragma::variance());
+	return (this->*f)();
+    } else {
+	const fptr f = deterministic.at(Pragma::variance());
+	return (this->*f)();
+    }
 }
 
 

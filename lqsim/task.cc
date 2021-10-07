@@ -10,7 +10,7 @@
 /*
  * Input output processing.
  *
- * $Id: task.cc 14999 2021-09-27 18:19:56Z greg $
+ * $Id: task.cc 15001 2021-09-27 22:12:07Z greg $
  */
 
 #include <iostream>
@@ -41,28 +41,27 @@
 
 std::set <Task *, ltTask> task;	/* Task table.	*/
 
-const char * Task::type_strings[] =
-{
-    "Undefined",
-    "client",
-    "server",
-    "multi",
-    "infsrv",
-    "sync",
-    "semph",
-    "open",
-    "worker",
-    "thread",
-    "token",
-    "token_r",
-    "signal",
-    "rw_lock",
-    "rwlock",
-    "token_w",
-    "timeout_queue",
-    "timeout_worker",
-    "retry_queue",
-    "retry_worker"
+const std::map<const Task::Type,const std::string> Task::type_strings =  {
+    { Task::Type::UNDEFINED,              "Undefined" },
+    { Task::Type::CLIENT,                 "client" },
+    { Task::Type::SERVER,                 "server" },
+    { Task::Type::MULTI_SERVER,           "multi" },
+    { Task::Type::INFINITE_SERVER,        "infsrv" },
+    { Task::Type::SYNCHRONIZATION_SERVER, "sync" },
+    { Task::Type::SEMAPHORE,              "semph" },
+    { Task::Type::OPEN_ARRIVAL_SOURCE,    "open" },
+    { Task::Type::WORKER,                 "worker" },
+    { Task::Type::THREAD,                 "thread" },
+    { Task::Type::TOKEN,                  "token" },
+    { Task::Type::TOKEN_R,                "token_r" },
+    { Task::Type::SIGNAL,                 "signal" },
+    { Task::Type::RWLOCK,                 "rw_lock" },
+    { Task::Type::RWLOCK_SERVER,          "rwlock" },
+    { Task::Type::WRITER_TOKEN,           "token_w" },
+    { Task::Type::TIMEOUT_QUEUE,          "timeout_queue" },
+    { Task::Type::TIMEOUT_WORKER,         "timeout_worker" },
+    { Task::Type::RETRY_QUEUE,            "retry_queue" },
+    { Task::Type::RETRY_WORKER,           "retry_worker" }
 };
 
 
@@ -76,7 +75,7 @@ const char * Task::type_strings[] =
 
 unsigned total_tasks = 0;
 
-Task::Task( const task_type type, LQIO::DOM::Task* dom, Processor * processor, Group * a_group )
+Task::Task( const Task::Type type, LQIO::DOM::Task* dom, Processor * processor, Group * a_group )
     : _dom(dom),
       _processor(processor),
       _group_id(-1),
@@ -180,7 +179,7 @@ Task::create()
 #endif
 
     if ( debug_flag ){
-	(void) fprintf( stddbg, "\n-+++++---- %s task %s", type_name(), name() );
+	(void) fprintf( stddbg, "\n-+++++---- %s task %s", type_name().c_str(), name() );
 	if ( _compute_func == ps_sleep ) {
 	    (void) fprintf( stddbg, " [delay]" );
 	}
@@ -238,9 +237,9 @@ Task::initialize()
     _active = 0;		/* Reset counts */
     _hold_active = 0;
 
-    r_cycle.init( SAMPLE,        "%s %-11.11s - Cycle Time        ", type_name(), name() );
-    r_util.init( VARIABLE,       "%s %-11.11s - Utilization       ", type_name(), name() );
-    r_group_util.init( VARIABLE, "%s %-11.11s - Group Utilization ", type_name(), name() );
+    r_cycle.init( SAMPLE,        "%s %-11.11s - Cycle Time        ", type_name().c_str(), name() );
+    r_util.init( VARIABLE,       "%s %-11.11s - Utilization       ", type_name().c_str(), name() );
+    r_group_util.init( VARIABLE, "%s %-11.11s - Group Utilization ", type_name().c_str(), name() );
     return *this;
 }
 
@@ -404,11 +403,11 @@ double
 Task::throughput() const
 {
     switch ( type() ) {
-    case Task::SEMAPHORE:  return r_cycle.mean_count() / (Model::block_period() * n_entries()); 		/* Only count for one entry.  */
-    case Task::RWLOCK:	   return r_cycle.mean_count() / (Model::block_period() * n_entries()/2); 	/* Only count for two entries.  */
-    case Task::SERVER:	   if ( is_sync_server() ) return  r_cycle.mean_count() / (Model::block_period() * n_entries());
+    case Task::Type::SEMAPHORE: return r_cycle.mean_count() / (Model::block_period() * n_entries()); 		/* Only count for one entry.  */
+    case Task::Type::RWLOCK:	return r_cycle.mean_count() / (Model::block_period() * n_entries()/2); 	/* Only count for two entries.  */
+    case Task::Type::SERVER:	if ( is_sync_server() ) return  r_cycle.mean_count() / (Model::block_period() * n_entries());
 	/* Fall through */
-    default: 		   return r_cycle.mean_count() / Model::block_period();
+    default: 		   	return r_cycle.mean_count() / Model::block_period();
     }
 }
 
@@ -418,11 +417,11 @@ double
 Task::throughput_variance() const
 {
     switch ( type() ) {
-    case Task::SEMAPHORE:  return r_cycle.variance_count() / (square(Model::block_period()) * n_entries());
-    case Task::RWLOCK:     return r_cycle.variance_count() / (square(Model::block_period()) * n_entries()/2);
-    case Task::SERVER:	   if ( is_sync_server() ) return r_cycle.variance_count() / (square(Model::block_period()) * n_entries());
+    case Task::Type::SEMAPHORE: return r_cycle.variance_count() / (square(Model::block_period()) * n_entries());
+    case Task::Type::RWLOCK:    return r_cycle.variance_count() / (square(Model::block_period()) * n_entries()/2);
+    case Task::Type::SERVER:	if ( is_sync_server() ) return r_cycle.variance_count() / (square(Model::block_period()) * n_entries());
 	/* Fall through */
-    default:		   return r_cycle.variance_count() / square(Model::block_period());
+    default:		   	return r_cycle.variance_count() / square(Model::block_period());
     }
 }
 	
@@ -455,7 +454,7 @@ Task::reset_stats()
 Task&
 Task::accumulate_data()
 {
-    if ( type() == Task::UNDEFINED ) return *this;    /* Some tasks don't have statistics */
+    if ( type() == Task::Type::UNDEFINED ) return *this;    /* Some tasks don't have statistics */
 
     r_util.accumulate();
     r_cycle.accumulate();
@@ -482,8 +481,8 @@ Task::accumulate_data()
 FILE *
 Task::print( FILE * output ) const
 {
-    r_util.print_raw( output,     "%-6.6s %-11.11s - Utilization", type_name(), name() );
-    r_cycle.print_raw( output,    "%-6.6s %-11.11s - Cycle Time ", type_name(), name() );
+    r_util.print_raw( output,     "%-6.6s %-11.11s - Utilization", type_name().c_str(), name() );
+    r_cycle.print_raw( output,    "%-6.6s %-11.11s - Cycle Time ", type_name().c_str(), name() );
 
     for ( std::vector<Entry *>::const_iterator entry = _entry.begin(); entry != _entry.end(); ++entry ) {
 	(*entry)->r_cycle.print_raw( output, "Entry %-11.11s  - Cycle Time      ", (*entry)->name() );
@@ -494,8 +493,8 @@ Task::print( FILE * output ) const
     for_each( _activity.begin(), _activity.end(), ConstExec1<Activity,FILE *>( &Activity::print_raw_stat, output ) );
 
     for ( std::vector<AndJoinActivityList *>::const_iterator lp = _joins.begin(); lp != _joins.end(); ++lp ) {
-	(*lp)->r_join.print_raw( output, "%-6.6s %-11.11s - Join Delay ", type_name(), name() );
-	(*lp)->r_join_sqr.print_raw( output, "%-6.6s %-11.11s - Join DelSqr", type_name(), name() );
+	(*lp)->r_join.print_raw( output, "%-6.6s %-11.11s - Join Delay ", type_name().c_str(), name() );
+	(*lp)->r_join_sqr.print_raw( output, "%-6.6s %-11.11s - Join DelSqr", type_name().c_str(), name() );
     }
 
     return output;
@@ -506,7 +505,7 @@ Task::insertDOMResults()
 {
     /* Some tasks don't have statistics */
 
-    if ( type() == Task::UNDEFINED ) return *this;
+    if ( type() == Task::Type::UNDEFINED ) return *this;
 
     double phaseUtil[MAX_PHASES];
     double phaseVar[MAX_PHASES];
@@ -612,7 +611,7 @@ Task::add( LQIO::DOM::Task* domTask )
 	if ( domTask->isInfinite() ) {
 	    input_error2( LQIO::ERR_REFERENCE_TASK_IS_INFINITE, task_name );
 	}
-	cp = new Reference_Task( Task::CLIENT, domTask, processor, group );
+	cp = new Reference_Task( Task::Type::CLIENT, domTask, processor, group );
 	break;
 
     case SCHEDULE_PPR:
@@ -621,14 +620,14 @@ Task::add( LQIO::DOM::Task* domTask )
 	if ( domTask->hasThinkTime() ) {
 	    input_error2( LQIO::ERR_NON_REF_THINK_TIME, task_name );
 	}
-	Task::task_type a_type;
+	Task::Type a_type;
 	
 	if ( domTask->isInfinite() ) {
-	    a_type = Task::INFINITE_SERVER;
+	    a_type = Task::Type::INFINITE_SERVER;
 	} else if ( domTask->isMultiserver() ) {
-	    a_type = Task::MULTI_SERVER;
+	    a_type = Task::Type::MULTI_SERVER;
 	} else {
-	    a_type = Task::SERVER;
+	    a_type = Task::Type::SERVER;
 	}
 	cp = new Server_Task( a_type, domTask, processor, group );
 	//}
@@ -644,7 +643,7 @@ Task::add( LQIO::DOM::Task* domTask )
 	if ( domTask->hasQueueLength() ) {
 	    LQIO::input_error2( LQIO::WRN_QUEUE_LENGTH, task_name );
 	}
-	cp = new Server_Task( Task::INFINITE_SERVER, domTask, processor, group );
+	cp = new Server_Task( Task::Type::INFINITE_SERVER, domTask, processor, group );
 	break;
 
 /*+ BUG_164 */
@@ -655,7 +654,7 @@ Task::add( LQIO::DOM::Task* domTask )
 	if ( domTask->isInfinite() ) {
 	    input_error2( LQIO::ERR_INFINITE_TASK, task_name );
 	}
- 	cp = new Semaphore_Task( Task::SEMAPHORE, domTask, processor, group );
+ 	cp = new Semaphore_Task( Task::Type::SEMAPHORE, domTask, processor, group );
 	break;
 /*- BUG_164 */
 	
@@ -668,25 +667,25 @@ Task::add( LQIO::DOM::Task* domTask )
 	if ( domTask->isInfinite() ) {
 	    input_error2( LQIO::ERR_INFINITE_TASK, task_name );
 	}
- 	cp = new ReadWriteLock_Task( Task::RWLOCK, domTask, processor, group );
+ 	cp = new ReadWriteLock_Task( Task::Type::RWLOCK, domTask, processor, group );
 	break;
 /* reader_writer lock*/
 
 /* Decision tasks */
     case SCHEDULE_ABORT:
     case SCHEDULE_TIMEOUT:
-	cp = new Timeout_Task( Task::TIMEOUT_QUEUE, domTask, processor, group );
+	cp = new Timeout_Task( Task::Type::TIMEOUT_QUEUE, domTask, processor, group );
 	break;
 
     case SCHEDULE_INF_RETRY:      
     case SCHEDULE_RETRY:
 
-	cp = new Retry_Task( Task::RETRY_QUEUE, domTask, processor, group );
+	cp = new Retry_Task( Task::Type::RETRY_QUEUE, domTask, processor, group );
 	break;
 /* Decision tasks */
 
     default:
-	cp = new Server_Task( Task::SERVER, domTask, processor, group );		/* Punt... */
+	cp = new Server_Task( Task::Type::SERVER, domTask, processor, group );		/* Punt... */
 	input_error2( LQIO::WRN_SCHEDULING_NOT_SUPPORTED, scheduling_label[sched_type].str, "task", task_name );
 	break;
     }
@@ -770,7 +769,7 @@ Task::has_lost_messages() const
 
 /* ------------------------------------------------------------------------ */
 
-Reference_Task::Reference_Task( const task_type type, LQIO::DOM::Task* domTask, Processor * aProc, Group * aGroup )
+Reference_Task::Reference_Task( const Task::Type type, LQIO::DOM::Task* domTask, Processor * aProc, Group * aGroup )
     : Task( type, domTask, aProc, aGroup ), _think_time(0.0), _task_list()
 {
 }
@@ -822,7 +821,7 @@ Reference_Task::is_not_waiting() const
 
 /* ------------------------------------------------------------------------ */
 
-Server_Task::Server_Task( const task_type type, LQIO::DOM::Task* domTask, Processor * aProc, Group * aGroup )
+Server_Task::Server_Task( const Task::Type type, LQIO::DOM::Task* domTask, Processor * aProc, Group * aGroup )
     : Task( type, domTask, aProc, aGroup ),
       _task(0),
       _worker_port(-1),
@@ -862,15 +861,15 @@ Server_Task::create_instance()
     if ( is_infinite() ) {
 	_task = new srn_multiserver( this, name(), ~0 );
 	_worker_port = ps_allocate_port( name(), _task->task_id() );
-	_type = Task::INFINITE_SERVER;
+	_type = Task::Type::INFINITE_SERVER;
     } else if ( is_multiserver() ) {
 	_task = new srn_multiserver( this, name(), multiplicity() );
 	_worker_port = ps_allocate_port( name(), _task->task_id() );
-	_type = Task::MULTI_SERVER;
+	_type = Task::Type::MULTI_SERVER;
     } else {
 	_task = new srn_server( this, name() );
 	_worker_port = -1;
-	_type = Task::SERVER;
+	_type = Task::Type::SERVER;
     }
 }
 
@@ -894,7 +893,7 @@ Server_Task::kill()
 
 /* ------------------------------------------------------------------------ */
 
-Semaphore_Task::Semaphore_Task( const task_type type, LQIO::DOM::Task* domTask, Processor * aProc, Group * aGroup )
+Semaphore_Task::Semaphore_Task( const Task::Type type, LQIO::DOM::Task* domTask, Processor * aProc, Group * aGroup )
     : Server_Task( type, domTask, aProc, aGroup ),
       r_hold(),
       r_hold_sqr(),
@@ -910,9 +909,9 @@ Semaphore_Task::create()
 {
     Task::create();
 
-    r_hold.init( SAMPLE,         "%s %-11.11s - Hold Time         ", type_name(), name() );
-    r_hold_sqr.init( SAMPLE,     "%s %-11.11s - Hold Time Sq      ", type_name(), name() );
-    r_hold_util.init( VARIABLE,  "%s %-11.11s - Hold Utilization  ", type_name(), name() );
+    r_hold.init( SAMPLE,         "%s %-11.11s - Hold Time         ", type_name().c_str(), name() );
+    r_hold_sqr.init( SAMPLE,     "%s %-11.11s - Hold Time Sq      ", type_name().c_str(), name() );
+    r_hold_util.init( VARIABLE,  "%s %-11.11s - Hold Utilization  ", type_name().c_str(), name() );
     return *this;
 }
 
@@ -1017,16 +1016,16 @@ FILE *
 Semaphore_Task::print( FILE * output ) const
 {
     Task::print( output );
-    r_hold.print_raw( output,      "%-6.6s %-11.11s - Hold Time  ", type_name(), name() );
-    r_hold_sqr.print_raw( output,  "%-6.6s %-11.11s - Hold Sqr   ", type_name(), name() );
-    r_hold_util.print_raw( output, "%-6.6s %-11.11s - Hold Util  ", type_name(), name() );
+    r_hold.print_raw( output,      "%-6.6s %-11.11s - Hold Time  ", type_name().c_str(), name() );
+    r_hold_sqr.print_raw( output,  "%-6.6s %-11.11s - Hold Sqr   ", type_name().c_str(), name() );
+    r_hold_util.print_raw( output, "%-6.6s %-11.11s - Hold Util  ", type_name().c_str(), name() );
 
     return output;
 }
 
 /* ------------------------------------------------------------------------ */
 
-ReadWriteLock_Task::ReadWriteLock_Task( const task_type type, LQIO::DOM::Task* domTask, Processor * aProc, Group * aGroup )
+ReadWriteLock_Task::ReadWriteLock_Task( const Task::Type type, LQIO::DOM::Task* domTask, Processor * aProc, Group * aGroup )
     : Semaphore_Task( type, domTask, aProc, aGroup ),
       _reader(0),
       _writer(0),
@@ -1135,16 +1134,16 @@ ReadWriteLock_Task::create()
 {
     Semaphore_Task::create();
 
-    r_reader_hold.init( SAMPLE,         "%s %-11.11s - Reader Hold Time         ", type_name(), name() );
-    r_reader_hold_sqr.init( SAMPLE,     "%s %-11.11s - Reader Hold Time sq      ", type_name(), name() );
-    r_reader_wait.init( SAMPLE,         "%s %-11.11s - Reader Blocked Time      ", type_name(), name() );
-    r_reader_wait_sqr.init( SAMPLE,     "%s %-11.11s - Reader Blocked Time sq   ", type_name(), name() );
-    r_reader_hold_util.init( VARIABLE,  "%s %-11.11s - Reader Hold Utilization  ", type_name(), name() );
-    r_writer_hold.init( SAMPLE,         "%s %-11.11s - Writer Hold Time         ", type_name(), name() );
-    r_writer_hold_sqr.init( SAMPLE,     "%s %-11.11s - Writer Hold Time sq      ", type_name(), name() );
-    r_writer_wait.init( SAMPLE,         "%s %-11.11s - Writer Blocked Time      ", type_name(), name() );
-    r_writer_wait_sqr.init( SAMPLE,     "%s %-11.11s - Writer Blocked Time sq   ", type_name(), name() );
-    r_writer_hold_util.init( VARIABLE,  "%s %-11.11s - Writer Hold Utilization  ", type_name(), name() );
+    r_reader_hold.init( SAMPLE,         "%s %-11.11s - Reader Hold Time         ", type_name().c_str(), name() );
+    r_reader_hold_sqr.init( SAMPLE,     "%s %-11.11s - Reader Hold Time sq      ", type_name().c_str(), name() );
+    r_reader_wait.init( SAMPLE,         "%s %-11.11s - Reader Blocked Time      ", type_name().c_str(), name() );
+    r_reader_wait_sqr.init( SAMPLE,     "%s %-11.11s - Reader Blocked Time sq   ", type_name().c_str(), name() );
+    r_reader_hold_util.init( VARIABLE,  "%s %-11.11s - Reader Hold Utilization  ", type_name().c_str(), name() );
+    r_writer_hold.init( SAMPLE,         "%s %-11.11s - Writer Hold Time         ", type_name().c_str(), name() );
+    r_writer_hold_sqr.init( SAMPLE,     "%s %-11.11s - Writer Hold Time sq      ", type_name().c_str(), name() );
+    r_writer_wait.init( SAMPLE,         "%s %-11.11s - Writer Blocked Time      ", type_name().c_str(), name() );
+    r_writer_wait_sqr.init( SAMPLE,     "%s %-11.11s - Writer Blocked Time sq   ", type_name().c_str(), name() );
+    r_writer_hold_util.init( VARIABLE,  "%s %-11.11s - Writer Hold Utilization  ", type_name().c_str(), name() );
     return *this;
 }
 
@@ -1244,23 +1243,23 @@ ReadWriteLock_Task::print( FILE * output ) const
 {
     Semaphore_Task::print( output );
 
-    r_reader_hold.print_raw( output,      "%-6.6s %-11.11s - Reader Hold Time    ", type_name(), name() );
-    r_reader_hold_sqr.print_raw( output,  "%-6.6s %-11.11s - Reader Hold Sqr     ", type_name(), name() );
-    r_reader_wait.print_raw( output,      "%-6.6s %-11.11s - Reader Blocked Time ", type_name(), name() );
-    r_reader_wait_sqr.print_raw( output,  "%-6.6s %-11.11s - Reader Blocked Sqr  ", type_name(), name() );
-    r_reader_hold_util.print_raw( output, "%-6.6s %-11.11s - Reader Hold Util    ", type_name(), name() );
+    r_reader_hold.print_raw( output,      "%-6.6s %-11.11s - Reader Hold Time    ", type_name().c_str(), name() );
+    r_reader_hold_sqr.print_raw( output,  "%-6.6s %-11.11s - Reader Hold Sqr     ", type_name().c_str(), name() );
+    r_reader_wait.print_raw( output,      "%-6.6s %-11.11s - Reader Blocked Time ", type_name().c_str(), name() );
+    r_reader_wait_sqr.print_raw( output,  "%-6.6s %-11.11s - Reader Blocked Sqr  ", type_name().c_str(), name() );
+    r_reader_hold_util.print_raw( output, "%-6.6s %-11.11s - Reader Hold Util    ", type_name().c_str(), name() );
 
-    r_writer_hold.print_raw( output,      "%-6.6s %-11.11s - Writer Hold Time    ", type_name(), name() );
-    r_writer_hold_sqr.print_raw( output,  "%-6.6s %-11.11s - Writer Hold Sqr     ", type_name(), name() );
-    r_writer_wait.print_raw( output,      "%-6.6s %-11.11s - Writer Blocked Time ", type_name(), name() );
-    r_writer_wait_sqr.print_raw( output,  "%-6.6s %-11.11s - Writer Blocked Sqr  ", type_name(), name() );
-    r_writer_hold_util.print_raw( output, "%-6.6s %-11.11s - Writer Hold Util    ", type_name(), name() );
+    r_writer_hold.print_raw( output,      "%-6.6s %-11.11s - Writer Hold Time    ", type_name().c_str(), name() );
+    r_writer_hold_sqr.print_raw( output,  "%-6.6s %-11.11s - Writer Hold Sqr     ", type_name().c_str(), name() );
+    r_writer_wait.print_raw( output,      "%-6.6s %-11.11s - Writer Blocked Time ", type_name().c_str(), name() );
+    r_writer_wait_sqr.print_raw( output,  "%-6.6s %-11.11s - Writer Blocked Sqr  ", type_name().c_str(), name() );
+    r_writer_hold_util.print_raw( output, "%-6.6s %-11.11s - Writer Hold Util    ", type_name().c_str(), name() );
 
     return output;
 }
 /* ------------------------------------------------------------------------ */
 
-Timeout_Task::Timeout_Task( const task_type type, LQIO::DOM::Task* domTask, Processor * aProc, Group * aGroup )
+Timeout_Task::Timeout_Task( const Task::Type type, LQIO::DOM::Task* domTask, Processor * aProc, Group * aGroup )
     : Server_Task( type, domTask, aProc, aGroup ),
       _server_task(0),
       _ready_port(-1)
@@ -1276,13 +1275,13 @@ Timeout_Task::create()
     _timeout = domtask->getTimeoutValue();
     _cleanup = domtask->getAbortValue();
 
-    r_timeout.init( SAMPLE,         "%s %-11.11s - Timeout         ", type_name(), name() );
-    r_timeout_sqr.init( SAMPLE,         "%s %-11.11s - Timeout sq         ", type_name(), name() );
-    r_timeout_cycle.init( SAMPLE,         "%s %-11.11s - Timeout cycle         ", type_name(), name() );
-    r_timeout_util.init( VARIABLE,  "%s %-11.11s - Timeout Utilization  ", type_name(), name() );
-    r_timeout_prob.init( SAMPLE,  "%s %-11.11s - Timeout Probability  ", type_name(), name() );
-    r_forward.init( SAMPLE,  "%s %-11.11s - Timeout stamp  ", type_name(), name() );
-    r_calldelay.init( SAMPLE,  "%s %-11.11s - Timeout call delay  ", type_name(), name() );
+    r_timeout.init( SAMPLE,         "%s %-11.11s - Timeout              ", type_name().c_str(), name() );
+    r_timeout_sqr.init( SAMPLE,     "%s %-11.11s - Timeout sq           ", type_name().c_str(), name() );
+    r_timeout_cycle.init( SAMPLE,   "%s %-11.11s - Timeout cycle        ", type_name().c_str(), name() );
+    r_timeout_util.init( VARIABLE,  "%s %-11.11s - Timeout Utilization  ", type_name().c_str(), name() );
+    r_timeout_prob.init( SAMPLE,    "%s %-11.11s - Timeout Probability  ", type_name().c_str(), name() );
+    r_forward.init( SAMPLE,         "%s %-11.11s - Timeout stamp        ", type_name().c_str(), name() );
+    r_calldelay.init( SAMPLE,       "%s %-11.11s - Timeout call delay   ", type_name().c_str(), name() );
 
     return *this;
 }
@@ -1308,7 +1307,7 @@ Timeout_Task::create_instance()
     _task = new srn_timeout_queue( this, buf.c_str());
     _ready_port = ps_allocate_port( buf.c_str(), _task->task_id() );
     _worker_port = ps_allocate_port( buf.c_str(), _task->task_id() );
-    _type = Task::TIMEOUT_QUEUE;
+    _type = Task::Type::TIMEOUT_QUEUE;
        
     buf = name();
     buf += "-server";
@@ -1380,7 +1379,7 @@ Timeout_Task::insertDOMResults()
 {
     Task::insertDOMResults();
 
-    printf("%s task (%s) results:\n",type_name(), name());
+    printf("%s task (%s) results:\n", type_name().c_str(), name());
     printf("- Timeout  %-11.11f  \n", r_timeout.mean());
 
     printf("- Timeout cycle  %-11.11f  \n", r_timeout_cycle.mean());
@@ -1409,17 +1408,17 @@ Timeout_Task::print( FILE * output ) const
 {
     Task::print( output );
 
-    r_timeout.print_raw( output,      "%-6.6s %-11.11s - Timeout  ", type_name(), name() );
-    r_timeout_sqr.print_raw( output,  "%-6.6s %-11.11s - Timeout sq ", type_name(), name() );
-    r_timeout_cycle.print_raw( output,"%-6.6s %-11.11s - Timeout Cycle ", type_name(), name() );
-    r_timeout_util.print_raw( output, "%-6.6s %-11.11s - Timeout Utilization  ", type_name(), name() );
-    r_timeout_prob.print_raw( output, "%-6.6s %-11.11s - Timeout probability  ", type_name(), name() );
+    r_timeout.print_raw( output,      "%-6.6s %-11.11s - Timeout             ", type_name().c_str(), name() );
+    r_timeout_sqr.print_raw( output,  "%-6.6s %-11.11s - Timeout sq          ", type_name().c_str(), name() );
+    r_timeout_cycle.print_raw( output,"%-6.6s %-11.11s - Timeout Cycle       ", type_name().c_str(), name() );
+    r_timeout_util.print_raw( output, "%-6.6s %-11.11s - Timeout Utilization ", type_name().c_str(), name() );
+    r_timeout_prob.print_raw( output, "%-6.6s %-11.11s - Timeout probability ", type_name().c_str(), name() );
     return output;
 }
 
 /* ------------------------------------------------------------------------ */
 
-Retry_Task::Retry_Task( const task_type type, LQIO::DOM::Task* domTask, Processor * aProc, Group * aGroup )
+Retry_Task::Retry_Task( const Task::Type type, LQIO::DOM::Task* domTask, Processor * aProc, Group * aGroup )
     : Server_Task( type, domTask, aProc, aGroup ),
       _server_task(0),
       _ready_port(-1)
@@ -1438,10 +1437,10 @@ Retry_Task::create()
     _maxRetries = domtask->getMaxRetriesValue();
     
 
-    r_nretry.init( SAMPLE,         "%s %-11.11s - Retry         ", type_name(), name() );
-    r_tretry.init( SAMPLE,         "%s %-11.11s - total requests to Retry         ", type_name(), name() );
-    r_Yretry.init( SAMPLE,         "%s %-11.11s - Retry         ", type_name(), name() );
-    r_abort_prob.init( SAMPLE,  "%s %-11.11s - Retry Probability  ", type_name(), name() );
+    r_nretry.init( SAMPLE,     "%s %-11.11s - Retry                    ", type_name().c_str(), name() );
+    r_tretry.init( SAMPLE,     "%s %-11.11s - total requests to Retry  ", type_name().c_str(), name() );
+    r_Yretry.init( SAMPLE,     "%s %-11.11s - Retry                    ", type_name().c_str(), name() );
+    r_abort_prob.init( SAMPLE, "%s %-11.11s - Retry Probability        ", type_name().c_str(), name() );
 
     return *this;
 }
@@ -1465,7 +1464,7 @@ Retry_Task::create_instance()
     _task = new srn_retry_queue( this, buf.c_str());
     _ready_port = ps_allocate_port( buf.c_str(), _task->task_id() );
     _worker_port = ps_allocate_port( buf.c_str(), _task->task_id() );
-    _type = Task::RETRY_QUEUE;
+    _type = Task::Type::RETRY_QUEUE;
     
     buf = name();
     buf += "-server";
@@ -1531,7 +1530,7 @@ Retry_Task&
 Retry_Task::insertDOMResults()
 {
     Task::insertDOMResults();
-    printf("%s task (%s) results:\n",type_name(), name());
+    printf("%s task (%s) results:\n", type_name().c_str(), name());
     printf("- nRetries  %-11.11f  \n", r_nretry.mean());
     printf("- nRetries  mean count %-11.11f  \n", r_nretry.mean_count());
     printf("- totalRequest  %-11.11f  \n", r_tretry.mean());
@@ -1570,11 +1569,10 @@ Retry_Task::print( FILE * output ) const
 {
     Task::print( output );
 
-    r_nretry.print_raw( output, "%-6.6s %-11.11s - nRetries  ", type_name(), name() );
-    r_tretry.print_raw( output, "%-6.6s %-11.11s - totalRequests  ", type_name(), name() );
-    r_Yretry.print_raw( output, "%-6.6s %-11.11s - Y_Retry  ", type_name(), name() );
-    r_abort_prob.print_raw( output, "%-6.6s %-11.11s - Abort probability  ", type_name(), name() );
-
+    r_nretry.print_raw( output,     "%-6.6s %-11.11s - nRetries          ", type_name().c_str(), name() );
+    r_tretry.print_raw( output,     "%-6.6s %-11.11s - totalRequests     ", type_name().c_str(), name() );
+    r_Yretry.print_raw( output,     "%-6.6s %-11.11s - Y_Retry           ", type_name().c_str(), name() );
+    r_abort_prob.print_raw( output, "%-6.6s %-11.11s - Abort probability ", type_name().c_str(), name() );
     return output;
 }
 
@@ -1590,7 +1588,7 @@ Retry_Task::print( FILE * output ) const
 Pseudo_Task&
 Pseudo_Task::insertDOMResults()
 {
-    if ( type() != Task::OPEN_ARRIVAL_SOURCE ) return *this;
+    if ( type() != Task::Type::OPEN_ARRIVAL_SOURCE ) return *this;
 
     /* Waiting times for open arrivals */
 
@@ -1602,7 +1600,7 @@ Pseudo_Task::insertDOMResults()
 void
 Pseudo_Task::create_instance()
 {
-    if ( type() != Task::OPEN_ARRIVAL_SOURCE ) return;
+    if ( type() != Task::Type::OPEN_ARRIVAL_SOURCE ) return;
 
     _task = new srn_open_arrivals( this, name() );	/* Create a fake task.			*/
 }

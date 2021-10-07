@@ -10,7 +10,7 @@
  * February 1997
  *
  * ------------------------------------------------------------------------
- * $Id: actlist.cc 14882 2021-07-07 11:09:54Z greg $
+ * $Id: actlist.cc 15048 2021-10-07 15:10:18Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -1080,7 +1080,7 @@ AndForkActivityList::collect( std::deque<const Activity *>& activityStack, std::
         if ( submodel != 0 ) {
             time = currEntry->getStartTime();
             for ( unsigned p = 1; p <= currEntry->maxPhase(); ++p ) {
-                time += currEntry->_phase[p]._wait[submodel]; /* Pick off time for this pass. - (since day 1!) */
+                time += currEntry->_phase[p].getWaitTime(submodel); /* Pick off time for this pass. - (since day 1!) */
             }
         } else {
             time = currEntry->getStartTimeVariance();
@@ -1113,12 +1113,12 @@ AndForkActivityList::collect( std::deque<const Activity *>& activityStack, std::
                 DiscretePoints sumLocal;
                 DiscretePoints sumRemote;
 
-                anEntry->_total._variance = 0.0;
+                anEntry->_total.setVariance( 0.0 );
                 for ( unsigned p = 1; p <= currEntry->maxPhase(); ++p ) {
-                    anEntry->_total._variance += anEntry->_phase[p].variance();
+                    anEntry->_total.addVariance( anEntry->_phase[p].variance() );
                     if (flags.trace_quorum) {
                         std::cout <<"\nEntry " << anEntry->name() << ", anEntry->elapsedTime(p="<<p<<")=" << anEntry->_phase[p].elapsedTime() << std::endl;
-                        std::cout << "anEntry->phase[p="<<p<<"]._wait[submodel=1]=" << anEntry->_phase[p]._wait[1] << std::endl;
+                        std::cout << "anEntry->phase[p="<<p<<"]._wait[submodel=1]=" << anEntry->_phase[p].getWaitTime(1) << std::endl;
                         std::cout << "anEntry->Entry::variance(p="<<p<<"]="<< anEntry->_phase[p].variance() << std::endl;
                     }
 
@@ -1142,9 +1142,9 @@ AndForkActivityList::collect( std::deque<const Activity *>& activityStack, std::
                 DiscretePoints sumLocal;
                 DiscretePoints sumRemote;
 
-                anEntry->_total._wait[submodel] = 0.0;
+                anEntry->_total.setWaitTime( submodel,0.0 );
                 for ( unsigned p = 1; p <= currEntry->maxPhase(); ++p ) {
-                    anEntry->_total._wait[submodel] += anEntry->_phase[p]._wait[submodel];
+                    anEntry->_total.addWaitTime( submodel, anEntry->_phase[p].getWaitTime( submodel ) );
                     if (flags.trace_quorum) {
                         std::cout <<"\nEntry " << anEntry->name() <<", anEntry->elapsedTime(p="<<p<<")=" <<anEntry->_phase[p].elapsedTime() << std::endl;
 //                        std::cout << "anEntry->phase[curr_p="<<curr_p<<"]._wait[submodel="<<2<<"]=" << anEntry->_phase[curr_p]._wait[2] << std::endl;
@@ -1166,10 +1166,10 @@ AndForkActivityList::collect( std::deque<const Activity *>& activityStack, std::
 
                 /* Updating the waiting time for this submodel */
 
-                anEntry->_total._wait[submodel] = 0.0;
+		    anEntry->_total.setWaitTime(submodel, 0.0 );
                 for ( unsigned p = 1; p <= currEntry->maxPhase(); ++p ) {
-                    anEntry->_total._wait[submodel] += anEntry->_phase[p]._wait[submodel];
-                    term[p].init( anEntry->_phase[p]._wait[submodel], anEntry->_phase[p].variance() );
+                    anEntry->_total.addWaitTime( submodel, anEntry->_phase[p].getWaitTime(submodel) );
+                    term[p].init( anEntry->_phase[p].getWaitTime(submodel), anEntry->_phase[p].variance() );
                 }
             }
 

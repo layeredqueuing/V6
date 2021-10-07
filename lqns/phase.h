@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: phase.h 14964 2021-09-10 15:27:44Z greg $
+ * $Id: phase.h 15048 2021-10-07 15:10:18Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -46,11 +46,8 @@ namespace LQIO {
 /* -------------------------------------------------------------------- */
 
 class NullPhase {
-    friend class Entry;			/* For access to myVariance */
-    friend class TaskEntry;		/* For access to myVariance */
+    friend class Entry;			/* For access to myWait     */
     friend class DeviceEntry;		/* For access to myWait     */
-    friend class Activity;		/* For access to myVariance */
-    friend class AndForkActivityList;	/* For access to myVariance */
 
 public:
     NullPhase( const std::string& name );
@@ -85,6 +82,7 @@ public:
     double CV_sqr() const;
 
     NullPhase& setVariance( double variance ) { _variance = variance; return *this; }
+    NullPhase& addVariance( double variance ) { _variance += variance; return *this; }
     virtual double variance() const { return _variance; } 		/* Computed variance.		*/
     double computeCV_sqr() const;
 
@@ -94,8 +92,9 @@ public:
     void setILWait (unsigned int submodel, double il_wait);
     void addILWait (unsigned int submodel, double il_wait);
     double getILWait (unsigned submodel) const;
-    NullPhase& setWaitingTime( unsigned int submodel, double value ) { _wait[submodel] = value; return *this; }
-    double waitingTime( unsigned int submodel ) const { return _wait[submodel];}
+    NullPhase& setWaitTime( unsigned int submodel, double value ) { _wait[submodel] = value; return *this; }
+    NullPhase& addWaitTime( unsigned int submodel, double value ) { _wait[submodel] += value; return *this; }
+    double getWaitTime( unsigned int submodel ) const { return _wait[submodel];}
 
     virtual NullPhase& recalculateDynamicValues() { return *this; }
 
@@ -105,11 +104,11 @@ private:
     LQIO::DOM::Phase* _dom;
     std::string _name;			/* Name -- computed dynamically		*/
     unsigned int _phase_number;		/* phase of entry (if phase)		*/
+    double _serviceTime;		/* Initial service time.		*/
+    double _variance;			/* Set if this is a processor		*/
 
 protected:
     /* Computed in class Phase */
-    double _serviceTime;		/* Initial service time.		*/
-    double _variance;			/* Set if this is a processor		*/
     VectorMath<double> _wait;		/* Saved waiting time.			*/
     VectorMath<double> _interlockedWait;/* Saved interlocked waiting time.	*/
 };
@@ -316,8 +315,8 @@ public:
 #if PAN_REPLICATION
     double waitExceptChain( const unsigned, const unsigned k );
 #endif
-    double computeVariance();	 			/* Computed variance.		*/
-    Phase& updateWait( const Submodel&, const double ); 
+    Phase& updateWait( const Submodel&, const double );
+    Phase& updateVariance();
     double getProcWait( unsigned int submodel, const double relax ); // tomari quorum
     double getTaskWait( unsigned int submodel, const double relax );
     double getRendezvous( unsigned int submodel, const double relax );
@@ -351,6 +350,7 @@ protected:
     virtual Call * findOrAddCall( const Entry * anEntry, const queryFunc = nullptr );
     virtual Call * findOrAddFwdCall( const Entry * anEntry, const Call * fwdCall );
 
+    double computeVariance() const;	 			/* Computed variance.		*/
     double processorVariance() const;
     virtual ProcessorCall * newProcessorCall( Entry * procEntry ) const;
 
@@ -365,10 +365,10 @@ private:
     double stochastic_phase() const;
     double deterministic_phase() const;
     double random_phase() const;
+    double square_phase() const { return square( elapsedTime() ); }
 
     double cfsThinkTime( double groupRatio );
 
-	
 protected:
     const Entry * _entry;		/* Root for activity			*/
     std::set<Call *> _callList;         /* Who I call.                          */

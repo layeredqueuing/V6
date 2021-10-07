@@ -12,7 +12,7 @@
  *
  * $URL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqsim/entry.cc $
  *
- * $Id: entry.cc 14998 2021-09-27 18:13:54Z greg $
+ * $Id: entry.cc 15001 2021-09-27 22:12:07Z greg $
  */
 
 #include <parasol.h>
@@ -146,13 +146,13 @@ Entry::configure()
 
     _active.assign( MAX_PHASES, 0 );
 	
-    if ( (is_signal() || is_wait()) && task()->type() != Task::SEMAPHORE ) {
+    if ( (is_signal() || is_wait()) && task()->type() != Task::Type::SEMAPHORE ) {
 	LQIO::solution_error( LQIO::ERR_NOT_SEMAPHORE_TASK, task()->name(),
 			      (is_signal() ? "signal" : "wait"),
 			      name() );
     }
 
-    if ( (is_r_lock() || is_r_unlock() || is_w_lock() || is_w_unlock()) && task()->type() != Task::RWLOCK ) {
+    if ( (is_r_lock() || is_r_unlock() || is_w_lock() || is_w_unlock()) && task()->type() != Task::Type::RWLOCK ) {
 	if ( is_r_lock() || is_r_unlock() ) {
 	    LQIO::solution_error( LQIO::ERR_NOT_RWLOCK_TASK, task()->name(),
 				  (is_r_lock() ? "r_lock" : "r_unlock"),
@@ -190,11 +190,11 @@ Entry::initialize()
     r_cycle.init( SAMPLE, "Entry %-11.11s  - Cycle Time      ", name() );
 
     switch ( task()->type() ) {
-    case Task::CLIENT:
+    case Task::Type::CLIENT:
 	_port = -1;
 	break;
 
-    case Task::SEMAPHORE:
+    case Task::Type::SEMAPHORE:
 	if ( is_signal() ) {
 	    _port = dynamic_cast<const Semaphore_Task *>(task())->signal_task()->std_port();
 	} else if ( is_wait() ) {
@@ -508,7 +508,7 @@ Entry::compute_minimum_service_time()
     }
 
     double sum = 0.0;
-    if ( task()->type() == Task::CLIENT || open_arrival_rate() != 0. ) {
+    if ( task()->type() == Task::Type::CLIENT || open_arrival_rate() != 0. ) {
 	for( std::vector<double>::const_iterator i = _minimum_service_time.begin(); i != _minimum_service_time.end(); ++i ) {
 	    sum += *i;
 	}

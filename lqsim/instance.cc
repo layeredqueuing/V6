@@ -10,7 +10,7 @@
 /*
  * Input output processing.
  *
- * $Id: instance.cc 14609 2021-04-18 14:09:42Z greg $
+ * $Id: instance.cc 15001 2021-09-27 22:12:07Z greg $
  */
 
 /*
@@ -392,13 +392,13 @@ srn_server::run()
  * If we have an "unlimited" number of servers, then we're infinite.
  */
 
-const char * 
+const std::string&
 srn_multiserver::type_name() const
 { 
     if ( _max_workers != static_cast<unsigned long>(~0) ) {
-	return Task::type_strings[Task::MULTI_SERVER]; 
+	return Task::type_strings.at(Task::Type::MULTI_SERVER); 
     } else {
-	return Task::type_strings[Task::INFINITE_SERVER]; 
+	return Task::type_strings.at(Task::Type::INFINITE_SERVER); 
     }
 }
 
@@ -591,7 +591,7 @@ srn_worker::run()
 	Message * msg;		/* Time stamp info from client	*/
 	double start_time = ps_now;
 
-	if ( ps_send( _cp->worker_port(), -Task::WORKER, (char *)0, std_port() ) != OK ) {
+	if ( ps_send( _cp->worker_port(), -1, (char *)0, ps_my_std_port ) != OK ) {
 	    abort();
 	}
 
@@ -639,7 +639,7 @@ srn_token::run()
 
 	/* Send to the wait task first and do the wait processing. */
 
-	if ( ps_send( cp->worker_port(), -Task::WORKER, (char *)0, std_port() ) != OK ) {
+	if ( ps_send( cp->worker_port(), -1, (char *)0, ps_my_std_port ) != OK ) {
 	    abort();
 	}
 
@@ -668,7 +668,7 @@ srn_token::run()
 
 	/* Send to the signal task next and do the signal processing. */
 
-	if ( ps_send( cp->signal_port(), -Task::WORKER, (char *)0, std_port() ) != OK ) {
+	if ( ps_send( cp->signal_port(), -1, (char *)0, ps_my_std_port ) != OK ) {
 	    abort();
 	}
 
@@ -743,7 +743,7 @@ srn_token_r::run()
 
 	/* Send to the signal task first */
 
-	if ( ps_send( cp->signal_port(), -Task::WORKER, (char *)0, std_port() ) != OK ) {
+	if ( ps_send( cp->signal_port(), -1, (char *)0, ps_my_std_port ) != OK ) {
 	    abort();
 	}
 
@@ -767,7 +767,7 @@ srn_token_r::run()
 
 	/* Send to the queue (wait) task next and do the signal processing. */
 
-	if ( ps_send( cp->worker_port(), -Task::WORKER, (char *)0, std_port() ) != OK ) {
+	if ( ps_send( cp->worker_port(), -1, (char *)0, ps_my_std_port ) != OK ) {
 	    abort();
 	}
 
@@ -983,7 +983,7 @@ srn_writer_token::run()
 
 	/* Send to the signal task next and do the signal processing. */
 
-	if ( ps_send( cp->signal_port2(), -Task::WRITER_TOKEN, (char *)0, std_port() ) != OK ) {
+	if ( ps_send( cp->signal_port2(), -1, (char *)0, ps_my_std_port ) != OK ) {
 	    abort();
 	}
 
@@ -1037,10 +1037,10 @@ srn_thread::run()
     for ( ;; ) {
 	double time_stamp;		/* Time stamp.		*/
 	long entry_id;			/* entry id		*/
-	long reply_port;			/* reply port		*/
+	long reply_port;		/* reply port		*/
 	Entry * ep;
 
-	if ( ps_send( pp->thread_port(), -Task::THREAD, (char *)ap, std_port() ) != OK ) {
+	if ( ps_send( pp->thread_port(), -1, (char *)ap, ps_my_std_port ) != OK ) {
 	    abort();
 	}
 
@@ -1199,7 +1199,7 @@ srn_timeout_worker::run()
 	Message * msg;		/* Time stamp info from client	*/
 	double start_time = ps_now;
 
-	if ( ps_send( _cp->worker_port(), -Task::TIMEOUT_WORKER, (char *)0, ps_my_std_port ) != OK ) {
+	if ( ps_send( _cp->worker_port(), -1, (char *)0, ps_my_std_port ) != OK ) {
 	    abort();
 	}
 
@@ -1552,7 +1552,7 @@ srn_retry_worker::run()
 	double start_time = ps_now;
 
 
-	if ( ps_send( _cp->worker_port(), -Task::RETRY_WORKER, (char *)0, ps_my_std_port ) != OK ) {
+	if ( ps_send( _cp->worker_port(), -1, (char *)0, ps_my_std_port ) != OK ) {
 	    abort();
 	}
 
@@ -1800,14 +1800,14 @@ Instance::do_forwarding ( Message * msg, const Entry * ep )
 
 	    timeline_trace( SYNC_INTERACTION_REPLIES, ep, msg->client );
 	    ps_send( reply_port, 0, (char *)msg->init( ep, nullptr ), ps_my_std_port );
-	}else if ((_cp->type()==Task::RETRY_QUEUE)){
+	}else if ((_cp->type()==Task::Type::RETRY_QUEUE)){
 			    /* Reply to sender	*/
 
 	    long reply_port  = msg->reply_port;	/* Local copy	*/
 
 	    timeline_trace( SYNC_INTERACTION_REPLIES, ep, msg->client );
 	    ps_send( reply_port, 0, (char *)msg->init( ep, nullptr ), std_port() );
-	}else if ((_cp->type()==Task::TIMEOUT_QUEUE)){
+	}else if ((_cp->type()==Task::Type::TIMEOUT_QUEUE)){
 			    /* Reply to sender	*/
 
 	    long reply_port  = msg->reply_port;	/* Local copy	*/
@@ -2401,12 +2401,12 @@ Instance::timeline_trace( const trace_events event, ... )
 	if ( trace_driver ) {
 	    (void) fprintf( stddbg, "\nTime* %8g T %s(%ld): ", ps_now, _cp->name(), task_id() );
 	} else {
-	    (void) fprintf( stddbg, "%8g %8s %8s(%2ld): ", ps_now, type_name(), _cp->name(), task_id() );
+	    (void) fprintf( stddbg, "%8g %8s %8s(%2ld): ", ps_now, type_name().c_str(), _cp->name(), task_id() );
 	}
 
 	switch ( event ) {
 	case TASK_CREATED:
-	    (void) fprintf( stddbg, "%s created.", type_name() );
+	    (void) fprintf( stddbg, "%s created.", type_name().c_str() );
 	    break;
 
 	case ASYNC_INTERACTION_INITIATED:
