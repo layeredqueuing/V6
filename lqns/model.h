@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: model.h 14882 2021-07-07 11:09:54Z greg $
+ * $Id: model.h 15054 2021-10-08 12:08:59Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -117,10 +117,10 @@ private:
     std::ostream& printOvertaking( std::ostream& ) const;
 
 public:
-    static double convergence_value;
-    static unsigned iteration_limit;
-    static double underrelaxation;
-    static unsigned print_interval;
+    static double __convergence_value;
+    static unsigned __iteration_limit;
+    static double __underrelaxation;
+    static unsigned __print_interval;
     static LQIO::DOM::Document::InputFormat input_format;
     static std::set<Processor *,lt_replica<Processor>> __processor;
     static std::set<Group *,lt_replica<Group>> __group;

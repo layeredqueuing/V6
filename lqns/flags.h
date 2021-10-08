@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: flags.h 14882 2021-07-07 11:09:54Z greg $
+ * $Id: flags.h 15054 2021-10-08 12:08:59Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -52,10 +52,6 @@ extern struct FLAGS {
     unsigned trace_wait:1;			/* Print out wait after each major loop	*/
 	
     unsigned print_overtaking:1;		/* Print out overtaking values.		*/
-    unsigned override_iterations:1;		/* Ignore value in model file.		*/
-    unsigned override_convergence:1;		/* Ignore value in model file.		*/
-    unsigned override_print_interval:1;		/* Ignore value in model file.		*/
-    unsigned override_underrelaxation:1;	/* Ignore value in model file.		*/
     unsigned disable_expanding_quorum_tree:1;
     unsigned ignore_overhanging_threads:1;
     unsigned full_reinitialize:1;		/* Maybe a pragma?			*/

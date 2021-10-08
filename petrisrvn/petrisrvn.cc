@@ -150,7 +150,6 @@ static const char * opthelp[]  = {
     /* "xml"		    */    "Output results in XML format.",
     /* "disjoint-customers" */    "Create copies for reference tasks (increases state space).",
     /* "no-header"	    */	  "Do not output the variable name header on SPEX results.",
-    /* "print-comment"	    */	  "Output the model comment on SPEX results.",
     /* "overtaking"	    */	  "Find in-service and overtaking probabilities (increases state space). ARG=condition",
     /* "queue-limit    	    */	  "Set the maximum queue size (open model).",
     /* "random-processors"  */	  "Use random queueing at all processors (reduces state space).",

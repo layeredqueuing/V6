@@ -1,6 +1,6 @@
 .\" t -*- nroff -*-
-.TH lqns 1 "17 February 2021" "5.19"
-.\" $Id: lqns.1 14882 2021-07-07 11:09:54Z greg $
+.TH lqns 1 "à'{çþ" "6.2"
+.\" $Id: lqns.1 15054 2021-10-08 12:08:59Z greg $
 .\"
 .\" --------------------------------
 .SH "NAME"
@@ -38,13 +38,17 @@ when using this option.  Output can be directed to standard output by
 using \fB\-o\fP\fI-\fR (i.e., the output file name is `\fI-\fR'.)
 .SH "OPTIONS"
 .TP
-\fB\-a\fP, \fB\-\-ignore-advisories\fR
+\fB\-a\fP, \fB\-\-no-advisories\fR
 Ignore advisories.  The default is to print out all advisories.
 .TP
 \fB\-b\fP, \fB\-\-bounds-only\fR
 This option is used to compute the ``Type 1 throughput bounds'' only.
 These bounds are computed assuming no contention anywhere in the model
 and represent the guaranteed not to exceed values.
+.TP
+\fB\-c\fP, \fB\-\-convergence\fR=\fIarg\fR
+Set the convergence value to \fIarg\fP.  
+\fIArg\fP must be a number between 0.0 and 1.0.
 .TP
 \fB\-d\fP, \fB\-\-debug\fR=\fIarg\fR
 This option is used to enable debug output.
@@ -68,6 +72,9 @@ Print out the actions the LQX parser while reading an LQX program.
 .TP
 \fBovertaking\fR
 Print the overtaking probabilities in the output file.
+.TP
+\fBvariance\fR
+Print out variance calculation.
 .TP
 \fBxml\fR
 Print out the actions of the Expat parser while reading XML input.
@@ -102,13 +109,20 @@ It is equivalent to setting \fBpragma\fP \fImva\fP=\fIone-step\fP, \fIlayering\f
 .TP
 \fB\-H\fP, \fB\-\-help\fR=\fIarg\fR
 .TP
+\fB\-h\fP, \fB\-\-huge\fR
+Solve using one-step-schweitzer, no interlocking, and Rolia multiserver.
+.TP
+\fB\-i\fP, \fB\-\-iteration-limit\fR=\fIarg\fR
+Set the maximum number of iterations to \fIarg\fP.
+\fIArg\fP must be an integer greater than 0.  The default value is 50.
+.TP
+\fB\-j\fP, \fB\-\-json\fR
+Generate JSON output regardless of input format.
+.TP
 \fB\-I\fP, \fB\-\-input-format\fR=\fIarg\fR
 This option is used to force the input file format to either \fIxml\fP or \fIlqn\fP.
 By default, if the suffix of the input filename is one of: \fI.in\fP, \fI.lqn\fP or \fI.xlqn\fP
 , then the LQN parser will be used.  Otherwise, input is assumed to be XML.
-.TP
-\fB\-j\fP, \fB\-\-json\fR
-Generate JSON output regardless of input format.
 .TP
 \fB\-n\fP, \fB\-\-no-execute\fR
 Read input, but do not solve.  The input is checked for validity.  
@@ -144,19 +158,25 @@ intermediate results  while a model is being solved.
 \fBactivities\fR
 Print out results of activity aggregation.
 .TP
+\fBcfs\fR
+Print out CFS computation before each submodel is solved.
+.TP
 \fBconvergence\fR=\fIarg\fR
 Print out convergence value after each submodel is solved.
 This option is useful for tracking the rate of convergence for a model.
 The optional numeric argument supplied to this option will print out the convergence value for the specified MVA submodel, otherwise,
 the convergence value for all submodels will be printed.
 .TP
-\fBdelta_wait\fR
+\fBcustomers\fR
+Print the real number of customers or maximum customers traces.
+.TP
+\fBdelta-wait\fR
 Print out difference in entry service time after each submodel is solved.
 .TP
 \fBforks\fR
 Print out overlap table for forks prior to submodel solution.
 .TP
-\fBidle_time\fR
+\fBidle-time\fR
 Print out computed idle time after each submodel is solved.
 .TP
 \fBinterlock\fR
@@ -165,9 +185,6 @@ Print out interlocking adjustment before each submodel is solved.
 \fBintermediate\fR
 Print out intermediate solutions at the print interval specified in the model.
 The print interval field in the input is ignored otherwise.
-.TP
-\fBjoins\fR
-Print out computed join delay and join overlap table prior to submodel solution.
 .TP
 \fBmva\fR=\fIarg\fR
 Print out the MVA submodel and its solution.
@@ -178,6 +195,9 @@ Print out overtaking calculations.
 .TP
 \fBquorum\fR
 Print quorum traces.
+.TP
+\fBreplication\fR
+
 .TP
 \fBthroughput\fR
 Print throughput's values.
@@ -191,6 +211,11 @@ Print waiting time for each rendezvous in the model after it has been computed; 
 \fBwait\fR
 Print waiting time for each rendezvous in the model after it has been computed.
 .RE
+.TP
+\fB\-u\fP, \fB\-\-underrelaxation\fR=\fIarg\fR
+Set the underrelaxation to \fIarg\fP.
+\fIArg\fP must be a number between 0.0 and 1.0.
+The default value is 0.9.
 .TP
 \fB\-v\fP, \fB\-\-verbose\fR
 Generate output after each iteration of the MVA solver and the convergence value at the end of each outer iteration of the solver.
@@ -215,14 +240,11 @@ Set the convergence value to \fIarg\fP.
 \fIArg\fP must be a number between 0.0 and 1.0.
 .TP
 \fBfull-reinitialize\fR
-For multiple runs, reinitialize all processors.
+For multiple runs, reinitialize all service times at processors.
 .TP
 \fBgenerate\fR=\fIarg\fR
 This option is used for debugging the solver.
 A directory named \fIarg\fP will be created containing source code for invoking the MVA solver directly.
-.TP
-\fBignore-overhanging-threads\fR
-Ignore the effect of the overhanging threads.
 .TP
 \fBiteration-limit\fR=\fIarg\fR
 Set the maximum number of iterations to \fIarg\fP.
@@ -253,9 +275,6 @@ The default value is 10.
 Stop after each MVA submodel is solved.
 Any character typed at the terminal except end-of-file will resume the calculation.  End-of-file will cancel single-stepping altogether.
 .TP
-\fBskip-layer\fR=\fIarg\fR
-Ignore submodel \fIarg\fP during solution.
-.TP
 \fBtex\fR=\fIarg\fR
 Output this manual page in LaTeX format.
 If an optional \fIarg\fP
@@ -272,26 +291,14 @@ value specified in the input file for general information, `G', is
 ignored.  
 .RE
 .TP
-\fB\-\-convergence\fR=\fIarg\fR
-Set the convergence value to \fIarg\fP.  
-\fIArg\fP must be a number between 0.0 and 1.0.
-.TP
-\fB\-\-iteration-limit\fR=\fIarg\fR
-Set the maximum number of iterations to \fIarg\fP.
-\fIArg\fP must be an integer greater than 0.  The default value is 50.
-.TP
-\fB\-\-underrelaxation\fR=\fIarg\fR
-Set the underrelaxation to \fIarg\fP.
-\fIArg\fP must be a number between 0.0 and 1.0.
-The default value is 0.9.
-.TP
 \fB\-\-exact-mva\fR
 Use Exact MVA to solve all submodels.
 .TP
-\fB\-\-schweitzer-amva\fR
+\fB\-\-schweitzer\fR
 Use Bard-Schweitzer approximate MVA to solve all submodels.
 .TP
 \fB\-\-batch-layering\fR
+Default layering strategy.
 .TP
 \fB\-\-hwsw-layering\fR
 .TP
@@ -326,21 +333,34 @@ This option is useful for running a second pass with a new convergnece value and
 Do not print out the Result Variable header when running with SPEX input.
 This option has no effect otherwise.
 .TP
+\fB\-\-print-comment\fR
+Add the model comment as the first line of output when running with SPEX input.
+.TP
+\fB\-\-print-interval\fR=\fIarg\fR
+Output the intermediate solution of the model after <n> iterations.
+.TP
 \fB\-\-reset-mva\fR
+Reset the MVA calculation prior to solving a submodel.
 .TP
 \fB\-\-trace-mva\fR
 Output the inputs and results of each MVA submodel for every iteration of the solver.
 .TP
+\fB\-\-debug-json\fR
+Output JSON elements and attributes as they are being parsed.   Since the JSON parser usually stops when it encounters an error,
+this option can be used to localize the error.
+.TP
 \fB\-\-debug-lqx\fR
 Output debugging information as an LQX program is being parsed.
+.TP
+\fB\-\-debug-spex\fR
+Output LQX progam corresponding to SPEX input.
+.TP
+\fB\-\-debug-srvn\fR
+Output debugging information while parsing SRVN input.This is the output of the Bison LALR parser.
 .TP
 \fB\-\-debug-xml\fR
 Output XML elements and attributes as they are being parsed.   Since the XML parser usually stops when it encounters an error,
 this option can be used to localize the error.
-.TP
-\fB\-\-debug-json\fR
-.TP
-\fB\-\-debug-srvn\fR
 .PP
 \fBLqns\fP exits with 0 on success, 1 if the model failed to converge,
 2 if the input was invalid, 4 if a command line argument was
@@ -365,19 +385,61 @@ graph.  Cycles may indicate the presence of deadlocks.
 \fIArg\fP must be one of: 
 .RS
 .TP
-\fBallow\fP
-Allow cycles in the call graph.  The interlock adjustment is disabled.
+\fBno\fP
+Disallow cycles in the call graph.
 .TP
+\fByes\fP
+Allow cycles in the call graph.  The interlock adjustment is disabled.
+.LP
+The default is no.
+.RE
+.TP
+\fBforce-infinite\fR=\fIarg\fR
+This pragma is used to force the use of a infinite
+server instead of a fixed-rate server and/or multiserver for all the tasks in the model.
+\fIArg\fP must be one of: 
+.RS
+.TP
+\fBall\fP
+Change all tasks to infinite servers.
+.TP
+\fBfixed-rate\fP
+Change all fixed-rate tasks to infinite servers.
+.TP
+\fBmultiservers\fP
+Change all multiserver tasks to infinite servers.
+.TP
+\fBnone\fP
+Do not change and fixed-rate or multiserver task to an infinite server.
+.LP
+The default is none.
+.RE
+.TP
+\fBforce-multiserver\fR=\fIarg\fR
+This pragma is used to force the use of a multiserver
+instead of a fixed-rate server whenever the multiplicity of a server is one.
+\fIArg\fP must be one of: 
+.RS
+.TP
+\fBall\fP
+Always use a multiserver solution for non-delay servers (tasks and processors) even if the number of servers is one (1).
+The Rolia multiserver approximationis known to fail for this case.
+.TP
+\fBnone\fP
+Use fixed-rate servers whenever a server multiplicity is one (1).
+Note that fixed-rateservers with variance
+may have results that differ from fixed-rate servers that don't and that the
+multiserver servers never take variance into consideration.
 .TP
 \fBprocessors\fP
 Always use a multiserver solution for non-delay processors even if the number of servers is one (1).
-The Rolia mutliserver approximationis known to fail for this case.
+The Rolia multiserver approximationis known to fail for this case.
 .TP
 \fBtasks\fP
 Always use a multiserver solution for non-delay server tasks even if the number of servers is one (1).
-The Rolia mutliserver approximationis known to fail for this case.
+The Rolia multiserver approximationis known to fail for this case.
 .LP
-The default is disallow.
+The default is none.
 .RE
 .TP
 \fBinterlocking\fR=\fIarg\fR
@@ -387,13 +449,13 @@ choose the algorithm used.
 \fIArg\fP must be one of: 
 .RS
 .TP
-\fBnone\fP
+\fBno\fP
 Do not perform interlock adjustment.
 .TP
-\fBthroughput\fP
+\fByes\fP
 Perform interlocking by adjusting throughputs.
 .LP
-The default is throughput.
+The default is yes.
 .RE
 .TP
 \fBlayering\fR=\fIarg\fR
@@ -425,7 +487,7 @@ Solution speed may suffer because this method generates the most number of chain
 SRVN layers -- solve layers composed of only one server.
 This method of solution is comparable to the technique used by the \fBsrvn\fP solver.  See also \fB\-P\fP\fImva\fP.
 .LP
-The default is batched-back.
+The default is batched.
 .RE
 .TP
 \fBmultiserver\fR=\fIarg\fR
@@ -507,10 +569,10 @@ Simpler, but faster approximation.
 \fBspecial\fP
 ?
 .LP
-The default is rolia.
+The default is markov.
 .RE
 .TP
-\fBprocessor\fR=\fIarg\fR
+\fBprocessor-scheduling\fR=\fIarg\fR
 Force the scheduling type of all uni-processors to the type specfied.
 .RS
 .TP
@@ -542,7 +604,34 @@ This pragma is used to enable or disable warning messages.
 .TP
 \fBwarning\fP
 .LP
-The default is all.
+.RE
+.TP
+\fBspex-comment\fR=\fIarg\fR
+This pragma is used to enable or disable the comment line of SPEX output.
+\fIArg\fP must be one of: 
+.RS
+.TP
+\fBfalse\fP
+Do not output a comment line (the output can then be fed into gnuplot easily).
+.TP
+\fBtrue\fP
+Output the model comment in the SPEX output.
+.LP
+The default is false.
+.RE
+.TP
+\fBspex-header\fR=\fIarg\fR
+This pragma is used to enable or disable the header line of SPEX output.
+\fIArg\fP must be one of: 
+.RS
+.TP
+\fBfalse\fP
+Do not output a header line (the output can then be fed into gnuplot easily).
+.TP
+\fBtrue\fP
+Output a header line consisting of the names of all of the variables used in the Result section on the input file.
+.LP
+The default is false.
 .RE
 .TP
 \fBstop-on-message-loss\fR=\fIarg\fR
@@ -551,12 +640,12 @@ arrival rate exceeds the service rate of a server.
 \fIArg\fP must be one of: 
 .RS
 .TP
-\fBfalse\fP
-Ignore queue overflows for open arrivals and send-no-reply requests.  If a queue overflows, its waiting times is reported as inisfinite..TP
-\fBtrue\fP
+\fBno\fP
 Stop if messages are lost.
-.LP
-The default is false.
+.TP
+\fByes\fP
+Ignore queue overflows for open arrivals and send-no-reply requests.  If a queue overflows, its waiting times is reported as infinite..LP
+The default is no.
 .RE
 .TP
 \fBtau\fR=\fIarg\fR
@@ -604,20 +693,6 @@ Disable variance adjustment.  All stations in the MVA submodels are either delay
 ?
 .LP
 
-.RE
-.TP
-\fBxml-schema\fR=\fIarg\fR
-This pragma is used to set scheman used for JSON output.
-\fIArg\fP must be one of: 
-.RS
-.TP
-\fBfalse\fP
-JSON output is similar to LQN input -- processors, then tasks, then entries, then activities.
-.TP
-\fBtrue\fP
-JSON output is similar to XML input -- processors contain tasks, and tasks contain entries and activities.
-.LP
-The default is false.
 .RE
 .SH "STOPPING CRITERIA"
 \fBLqns\fP computes the model results by iterating through a set of
