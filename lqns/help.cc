@@ -1,6 +1,6 @@
 /* help.cc	-- Greg Franks Wed Oct 12 2005
  *
- * $Id: help.cc 15054 2021-10-08 12:08:59Z greg $
+ * $Id: help.cc 15057 2021-10-08 17:23:58Z greg $
  */
 
 #include "lqns.h"
@@ -513,8 +513,8 @@ Help::print( std::ostream& output ) const
     label( output, "sec:lqns-pragmas" );
     output << emph( *this, "Pragmas" ) << ix( *this, "pragma" ) << " are used to alter the behaviour of the solver in a" << std::endl
 	   << "variety of ways.  They can be specified in the input file with" << std::endl
-	   << "``#pragma'', on the command line with the " << flag( *this, "P" ) << " option, or through" << std::endl
-	   << "the environment variable " << ix( *this, "environment variable" ) << emph( *this, "LQNS_PRAGMAS" ) << ix( *this, "LQNS\\_PRAGMAS@\\texttt{LQNS\\_PRAGMAS}" ) << ".  Command line" << std::endl
+	   << tr( *this, "``#pragma''" ) << ", on the command line with the " << flag( *this, "P" ) << " option, or through" << std::endl
+	   << "the environment variable " << ix( *this, "environment variable" ) << emph( *this, "LQNS\\_PRAGMAS" ) << ix( *this, "LQNS_PRAGMAS@\\texttt{LQNS_PRAGMAS}" ) << ".  Command line" << std::endl
 	   << "specification of pragmas overrides those defined in the environment" << std::endl
 	   << "variable which in turn override those defined in the input file.  The" << std::endl
 	   << "following pragmas are supported.  Invalid pragma" << ix( *this, "pragma!invalid" ) << " specification at the" << std::endl
@@ -648,7 +648,7 @@ Help::flagDebug( std::ostream& output, bool verbose ) const
     dl_begin( output );
     std::map<const std::string, const Options::Debug>::const_iterator opt;
     for ( opt = Options::Debug::__table.begin(); opt != Options::Debug::__table.end(); ++opt ) {
-	print_option( output, opt->first.c_str(), opt->second );
+	print_option( output, opt->first, opt->second );
     }
     dl_end( output );
     decrease_indent( output );
@@ -1611,7 +1611,7 @@ std::ostream&
 Help::pragmaForceMultiserverProcessors( std::ostream& output, bool verbose ) const
 {
     output << "Always use a multiserver solution for non-delay processors even if the number of servers is one (1)." << std::endl
-	   << "The Rolia multiserver approximation" << ix( *this, "multiserver!rolia" ) << "is known to fail for this case." << std::endl;
+	   << "The Rolia multiserver approximation" << ix( *this, "multiserver!rolia" ) << " is known to fail for this case." << std::endl;
     return output;
 }
 
@@ -1619,7 +1619,7 @@ std::ostream&
 Help::pragmaForceMultiserverTasks( std::ostream& output, bool verbose ) const
 {
     output << "Always use a multiserver solution for non-delay server tasks even if the number of servers is one (1)." << std::endl
-	   << "The Rolia multiserver approximation" << ix( *this, "multiserver!rolia" ) << "is known to fail for this case." << std::endl;
+	   << "The Rolia multiserver approximation" << ix( *this, "multiserver!rolia" ) << " is known to fail for this case." << std::endl;
     return output;
 }
 
@@ -1627,7 +1627,7 @@ std::ostream&
 Help::pragmaForceMultiserverAll( std::ostream& output, bool verbose ) const
 {
     output << "Always use a multiserver solution for non-delay servers (tasks and processors) even if the number of servers is one (1)." << std::endl
-	   << "The Rolia multiserver approximation" << ix( *this, "multiserver!rolia" ) << "is known to fail for this case." << std::endl;
+	   << "The Rolia multiserver approximation" << ix( *this, "multiserver!rolia" ) << " is known to fail for this case." << std::endl;
     return output;
 }
 
@@ -2141,7 +2141,7 @@ Help::pragmaIdleTimeRootentry( std::ostream& output, bool verbose ) const
 
 /* -------------------------------------------------------------------- */
 
-const char * HelpTroff::__comment = ".\\\"";
+const std::string HelpTroff::__comment = ".\\\"";
 
 std::ostream&
 HelpTroff::preamble( std::ostream& output ) const
@@ -2157,7 +2157,7 @@ HelpTroff::preamble( std::ostream& output ) const
     output << __comment << " t -*- nroff -*-" << std::endl
 	   << ".TH lqns 1 \"" << date << "\" \"" << VERSION << "\"" << std::endl;
 
-    output << __comment << " $Id: help.cc 15054 2021-10-08 12:08:59Z greg $" << std::endl
+    output << __comment << " $Id: help.cc 15057 2021-10-08 17:23:58Z greg $" << std::endl
 	   << __comment << std::endl
 	   << __comment << " --------------------------------" << std::endl;
 
@@ -2209,7 +2209,7 @@ HelpTroff::see_also( std::ostream& output ) const
 
 
 std::ostream&
-HelpTroff::textbf( std::ostream& output, const char * s ) const
+HelpTroff::textbf( std::ostream& output, const std::string& s ) const
 {
     output << "\\fB" << s << "\\fP";
     return output;
@@ -2217,17 +2217,17 @@ HelpTroff::textbf( std::ostream& output, const char * s ) const
 
 
 std::ostream&
-HelpTroff::textit( std::ostream& output, const char * s ) const
+HelpTroff::textit( std::ostream& output, const std::string& s ) const
 {
     output << "\\fI" << s << "\\fP";
     return output;
 }
 
 std::ostream&
-HelpTroff::filename( std::ostream& output, const char * s1, const char * s2 ) const
+HelpTroff::filename( std::ostream& output, const std::string& s1, const std::string& s2 ) const
 {
     output << "\\fI" << s1;
-    if ( s2 ) {
+    if ( !s2.empty() ) {
 	output << "\\fB" << s2;
     }
     output << "\\fR";
@@ -2278,29 +2278,29 @@ HelpTroff::dl_end( std::ostream& output ) const
 
 
 std::ostream&
-HelpTroff::li( std::ostream& output, const char * s  ) const
+HelpTroff::li( std::ostream& output, const std::string& s  ) const
 {
     output << ".TP 3" << std::endl;
-    if ( s ) output << s << std::endl;
+    if ( !s.empty() ) output << s << std::endl;
     return output;
 }
 
 std::ostream&
-HelpTroff::flag( std::ostream& output, const char * s ) const
+HelpTroff::flag( std::ostream& output, const std::string& s ) const
 {
     output << "\\fB\\-" << s << "\\fP";
     return output;
 }
 
 std::ostream&
-HelpTroff::section( std::ostream& output, const char * s, const char * ) const
+HelpTroff::section( std::ostream& output, const std::string& s, const std::string& ) const
 {
     output << ".SH \"" << s << "\"" << std::endl;
     return output;
 }
 
 std::ostream&
-HelpTroff::label( std::ostream& output, const char * s ) const
+HelpTroff::label( std::ostream& output, const std::string& s ) const
 {
     return output;
 }
@@ -2343,7 +2343,7 @@ HelpTroff::decrease_indent( std::ostream& output ) const
 }
 
 std::ostream&
-HelpTroff::print_option( std::ostream& output, const char * name, const Options::Option& opt ) const
+HelpTroff::print_option( std::ostream& output, const std::string& name, const Options::Option& opt ) const
 {
     output << ".TP" << std::endl
 	   << "\\fB" << name;
@@ -2417,7 +2417,7 @@ HelpTroff::table_header( std::ostream& output ) const
 
 
 std::ostream&
-HelpTroff::table_row( std::ostream& output, const char * col1, const char * col2, const char * index ) const
+HelpTroff::table_row( std::ostream& output, const std::string& col1, const std::string& col2, const std::string& index ) const
 {
     output << "T{" << std::endl << col1 << std::endl << "T}&T{" << std::endl << col2 << std::endl << "T}" << std::endl;
     return output;
@@ -2433,7 +2433,7 @@ HelpTroff::table_footer( std::ostream& output ) const
 
 /* -------------------------------------------------------------------- */
 
-const char * HelpLaTeX::__comment = "%%";
+const std::string HelpLaTeX::__comment = "%%";
 
 std::ostream&
 HelpLaTeX::preamble( std::ostream& output ) const
@@ -2454,7 +2454,7 @@ HelpLaTeX::preamble( std::ostream& output ) const
 	   << __comment << " Created:             " << date << std::endl
 	   << __comment << "" << std::endl
 	   << __comment << " ----------------------------------------------------------------------" << std::endl
-	   << __comment << " $Id: help.cc 15054 2021-10-08 12:08:59Z greg $" << std::endl
+	   << __comment << " $Id: help.cc 15057 2021-10-08 17:23:58Z greg $" << std::endl
 	   << __comment << " ----------------------------------------------------------------------" << std::endl << std::endl;
 
     output << "\\chapter{Invoking the Analytic Solver ``lqns''}" << std::endl
@@ -2467,7 +2467,7 @@ HelpLaTeX::preamble( std::ostream& output ) const
 
 
 std::ostream&
-HelpLaTeX::textbf( std::ostream& output, const char * s ) const
+HelpLaTeX::textbf( std::ostream& output, const std::string& s ) const
 {
     output << "\\textbf{" << s << "}";
     return output;
@@ -2475,30 +2475,34 @@ HelpLaTeX::textbf( std::ostream& output, const char * s ) const
 
 
 std::ostream&
-HelpLaTeX::textit( std::ostream& output, const char * s ) const
+HelpLaTeX::textit( std::ostream& output, const std::string& s ) const
 {
     output << "\\emph{" << s << "}";
     return output;
 }
 
+/*
+ * Escape special Latex characters
+ */
+
 std::ostream&
-HelpLaTeX::tr_( std::ostream& output, const char * s ) const
+HelpLaTeX::tr( std::ostream& output, const std::string& s ) const
 {
-    for ( ; *s; ++s ) {
-	if ( *s == '_' ) {
+    for ( std::string::const_iterator c = s.begin(); c != s.end(); ++c ) {
+	if ( *c == '_' || *c == '#' ) {
 	    output << "\\";
 	}
-	output << *s;
+	output << *c;
     }
     return output;
 }
 
 
 std::ostream&
-HelpLaTeX::filename( std::ostream& output, const char * s1, const char * s2 ) const
+HelpLaTeX::filename( std::ostream& output, const std::string& s1, const std::string& s2 ) const
 {
     output << "\\texttt{" << s1;
-    if ( s2 ) {
+    if ( !s2.empty() ) {
 	output << s2;
     }
     output << "}";
@@ -2552,42 +2556,42 @@ HelpLaTeX::dl_end( std::ostream& output ) const
 
 
 std::ostream&
-HelpLaTeX::li( std::ostream& output, const char * s  ) const
+HelpLaTeX::li( std::ostream& output, const std::string& s  ) const
 {
     output << "\\item ";
     return output;
 }
 
 std::ostream&
-HelpLaTeX::flag( std::ostream& output, const char * s ) const
+HelpLaTeX::flag( std::ostream& output, const std::string& s ) const
 {
     output << "\\flag{" << s << "}{}";
     return output;
 }
 
 std::ostream&
-HelpLaTeX::ix( std::ostream& output, const char * s ) const
+HelpLaTeX::ix( std::ostream& output, const std::string& s ) const
 {
-    output << "\\index{" << s << "}";
+    output << "\\index{" << Help::tr( *this, s ) << "}";
     return output;
 }
 
 std::ostream&
-HelpLaTeX::cite( std::ostream& output, const char * s ) const
+HelpLaTeX::cite( std::ostream& output, const std::string& s ) const
 {
     output << "~\\cite{" << s << "}";
     return output;
 }
 
 std::ostream&
-HelpLaTeX::section( std::ostream& output, const char *, const char * s ) const
+HelpLaTeX::section( std::ostream& output, const std::string&, const std::string& s ) const
 {
     output << "\\section{" << s << "}" << std::endl;
     return output;
 }
 
 std::ostream&
-HelpLaTeX::label( std::ostream& output, const char * s ) const
+HelpLaTeX::label( std::ostream& output, const std::string& s ) const
 {
     output << "\\label{" << s << "}" << std::endl;
     return output;
@@ -2625,9 +2629,9 @@ HelpLaTeX::decrease_indent( std::ostream& output ) const
 }
 
 std::ostream&
-HelpLaTeX::print_option( std::ostream& output, const char * name, const Options::Option& opt ) const
+HelpLaTeX::print_option( std::ostream& output, const std::string& name, const Options::Option& opt ) const
 {
-    output << "\\item[\\optarg{" << tr_( *this, name ) << "}{";
+    output << "\\item[\\optarg{" << Help::tr( *this, name ) << "}{";
     if ( opt.hasArg() ) {
 	output << "=" << emph( *this, "arg" );
     }
@@ -2648,7 +2652,7 @@ HelpLaTeX::print_pragma( std::ostream& output, const std::string& name ) const
     const parameter_map_t* value = pragma->second._value;
     std::string default_param;
 
-    output << "\\item[\\optarg{" << tr_( *this, name.c_str() ) << "}{=\\emph{arg}}]~\\\\" << std::endl;
+    output << "\\item[\\optarg{" << Help::tr( *this, name ) << "}{=\\emph{arg}}]~\\\\" << std::endl;
     (this->*(pragma->second._help))( output, true );
     /* Comment */
     if ( value && value->size() > 1 ) {
@@ -2659,7 +2663,7 @@ HelpLaTeX::print_pragma( std::ostream& output, const std::string& name ) const
 		h = arg->second._help;
 		continue;
 	    } else {
-		output << "\\item[\\optarg{" << tr_( *this, arg->first.c_str() ) << "}{}]" << std::endl;
+		output << "\\item[\\optarg{" << Help::tr( *this, arg->first ) << "}{}]" << std::endl;
 		(this->*(arg->second._help))( output, true );
 		if ( arg->second._default == true ) {
 		    default_param = arg->first;
@@ -2693,10 +2697,10 @@ HelpLaTeX::table_header( std::ostream& output ) const
 
 
 std::ostream&
-HelpLaTeX::table_row( std::ostream& output, const char * col1, const char * col2, const char * index ) const
+HelpLaTeX::table_row( std::ostream& output, const std::string& col1, const std::string& col2, const std::string& index ) const
 {
     output << "    " << col1;
-    if ( index ) {
+    if ( !index.empty() ) {
 	output << "\\index{ " << index << "}";
     }
     output << " & " << col2 << "\\\\" << std::endl;
@@ -2730,7 +2734,7 @@ HelpLaTeX::trailer( std::ostream& output ) const
 /* -------------------------------------------------------------------- */
 
 std::ostream&
-HelpPlain::print_option( std::ostream& output, const char * name, const Options::Option& opt ) const
+HelpPlain::print_option( std::ostream& output, const std::string& name, const Options::Option& opt ) const
 {
     std::ios_base::fmtflags oldFlags = output.setf( std::ios::left, std::ios::adjustfield );
     std::string s = name;
@@ -2754,7 +2758,7 @@ HelpPlain::print_pragma( std::ostream& output, const std::string& ) const
 
 
 std::ostream&
-HelpPlain::textbf( std::ostream& output, const char * s ) const
+HelpPlain::textbf( std::ostream& output, const std::string& s ) const
 {
     output << s;
     return output;
@@ -2762,17 +2766,17 @@ HelpPlain::textbf( std::ostream& output, const char * s ) const
 
 
 std::ostream&
-HelpPlain::textit( std::ostream& output, const char * s ) const
+HelpPlain::textit( std::ostream& output, const std::string& s ) const
 {
     output << s;
     return output;
 }
 
 std::ostream&
-HelpPlain::filename( std::ostream& output, const char * s1, const char * s2 ) const
+HelpPlain::filename( std::ostream& output, const std::string& s1, const std::string& s2 ) const
 {
     output << s1;
-    if ( s2 ) {
+    if ( !s2.empty() ) {
 	output << s2;
     }
     return output;
@@ -2810,6 +2814,6 @@ HelpPlain::print_debug( std::ostream& output )
     HelpPlain self;
     output << "Valid arguments for --debug" << std::endl;
     for ( std::map<const std::string, const Options::Debug>::const_iterator tp = Options::Debug::__table.begin(); tp != Options::Debug::__table.end(); ++tp ) {
-	self.print_option( output, tp->first.c_str(), tp->second );
+	self.print_option( output, tp->first, tp->second );
     }
 }
