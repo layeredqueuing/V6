@@ -1,6 +1,6 @@
 /* option.cc -- Greg Franks Wed Oct 12 2005
  *
- * $Id: option.cc 15061 2021-10-09 23:44:11Z greg $
+ * $Id: option.cc 15064 2021-10-10 15:04:28Z greg $
  */
 
 #include "lqns.h"
@@ -9,9 +9,6 @@
 #include <errno.h>
 #include <ctype.h>
 #include <cstdlib>
-#if HAVE_GETOPT_H
-#include <getopt.h>
-#endif
 #include <lqio/error.h>
 #include <lqio/dom_document.h>
 #include <mva/mva.h>
@@ -107,11 +104,7 @@ Options::Debug::lqx( const std::string& )
 void
 Options::Debug::exec( const int ix, const std::string& arg )
 {
-    if ( ix >= 0 ) {
-	(*__table.at(std::string(__options[ix])).func())( arg );
-    } else {
-	usage( 'd', optarg );
-    }
+    (*__table.at(std::string(__options.at(ix))).func())( arg );
 }
 
 std::map<const std::string, const Options::Trace> Options::Trace::__table =
@@ -260,11 +253,7 @@ Options::Trace::wait( const std::string& arg )
 void
 Options::Trace::exec( const int ix, const std::string& arg )
 {
-    if ( ix >= 0 ) {
-	(*__table.at(std::string(__options[ix])).func())( arg );
-    } else {
-	usage( 't', optarg );
-    }
+    (*__table.at(std::string(__options.at(ix))).func())( arg );
 }
 
 std::map<const std::string, const Options::Special> Options::Special::__table =
@@ -446,9 +435,5 @@ Options::Special::full_reinitialize( const std::string& )
 void
 Options::Special::exec( const int ix, const std::string& arg )
 {
-    if ( ix >= 0 ) {
-	(*__table[__options[ix]].func())( arg );
-    } else {
-	usage( 'z', optarg );
-    }
+    (*__table.at(std::string(__options.at(ix))).func())( arg );
 }
