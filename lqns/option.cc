@@ -1,6 +1,6 @@
 /* option.cc -- Greg Franks Wed Oct 12 2005
  *
- * $Id: option.cc 15054 2021-10-08 12:08:59Z greg $
+ * $Id: option.cc 15061 2021-10-09 23:44:11Z greg $
  */
 
 #include "lqns.h"
@@ -43,12 +43,23 @@ const std::map<const std::string, const Options::Debug> Options::Debug::__table
     { "lqx",        Debug( &Debug::lqx,         &Help::debugLQX ) },
 };
 
-const char ** Options::Debug::__options = NULL;
-
+std::vector<char *> Options::Debug::__options;
 std::vector<bool> Options::Debug::_bits(Options::Debug::QUORUM+1);
 
 void
-Options::Debug::all( const char * )
+Options::Debug::initialize()
+{
+    if ( __options.empty() ) {
+	/* Populate for getsubopt */
+	for ( std::map<const std::string, const Options::Debug>::const_iterator next_opt = __table.begin(); next_opt != __table.end(); ++next_opt ) {
+	    __options.push_back( const_cast<char *>(next_opt->first.c_str()) );
+	}
+	__options.push_back( nullptr );
+    }
+}
+	
+void
+Options::Debug::all( const std::string& )
 {
 //    _bits[CALLS]      = true;
     _bits[FORKS]      = true;
@@ -61,7 +72,7 @@ Options::Debug::all( const char * )
 }
 
 void
-Options::Debug::mva( const char * )
+Options::Debug::mva( const std::string& )
 {
 #if DEBUG_MVA
     MVA::debug_D = false;			/* Linearizer */
@@ -76,38 +87,25 @@ Options::Debug::mva( const char * )
 }
 
 void
-Options::Debug::overtaking( const char * )
+Options::Debug::overtaking( const std::string& )
 {
     flags.print_overtaking = true;
 }
 
 void
-Options::Debug::xml( const char * )
+Options::Debug::xml( const std::string& )
 {
     LQIO::DOM::Document::__debugXML = true;
 }
 
 void
-Options::Debug::lqx( const char * )
+Options::Debug::lqx( const std::string& )
 {
     LQIO::DOM::Document::lqx_parser_trace(stderr);
 }
 
-/* static */ void
-Options::Debug::initialize()
-{
-    if ( __options != nullptr ) return;
-    __options = new const char * [__table.size()+1];
-
-    size_t i = 0;
-    for ( std::map<const std::string, const Options::Debug>::const_iterator next_opt = __table.begin(); next_opt != __table.end(); ++next_opt ) {
-	__options[i++] = next_opt->first.c_str();
-    }
-    __options[i] = nullptr;
-}
-
 void
-Options::Debug::exec( const int ix, const char * arg )
+Options::Debug::exec( const int ix, const std::string& arg )
 {
     if ( ix >= 0 ) {
 	(*__table.at(std::string(__options[ix])).func())( arg );
@@ -116,87 +114,99 @@ Options::Debug::exec( const int ix, const char * arg )
     }
 }
 
-std::map<const char *, Options::Trace, lt_str> Options::Trace::__table =
+std::map<const std::string, const Options::Trace> Options::Trace::__table =
 {
-    { "activities", 	Trace( &Trace::activities        , false, &Help::traceActivities ) },
-    { "cfs", 	     	Trace( &Trace::cfs		 , false, &Help::traceCFS ) },
-    { "convergence",  	Trace( &Trace::convergence       , true,  &Help::traceConvergence ) },
-    { "customers",    	Trace( &Trace::customers         , false, &Help::traceCustomers ) },
-    { "delta-wait",   	Trace( &Trace::delta_wait        , false, &Help::traceDeltaWait ) },
-    { "forks", 	     	Trace( &Trace::forks             , false, &Help::traceForks ) },
-    { "idle-time",    	Trace( &Trace::idle_time         , false, &Help::traceIdleTime ) },
-    { "interlock",    	Trace( &Trace::interlock         , false, &Help::traceInterlock ) },
-    { "intermediate", 	Trace( &Trace::intermediate      , false, &Help::traceIntermediate ) },
-    { "mva", 	     	Trace( &Trace::mva               , true,  &Help::traceMva ) },
-    { "overtaking",   	Trace( &Trace::overtaking        , false, &Help::traceOvertaking ) },
-//  { "processor",    	Trace( &Trace::processor         , true,  &Help::traceProcessor ) },
-    { "quorum",       	Trace( &Trace::quorum            , false, &Help::traceQuorum ) },
-    { "replication",  	Trace( &Trace::replication       , false, &Help::traceReplication ) },
-//  { "task",         	Trace( &Trace::task              , true,  &Help::traceTask ) },
-    { "throughput",   	Trace( &Trace::throughput        , false, &Help::traceThroughput ) },
-    { "variance",     	Trace( &Trace::variance          , false, &Help::traceVariance ) },
-    { "virtual-entry", 	Trace( &Trace::virtual_entry     , false, &Help::traceVirtualEntry ) },
-    { "wait", 	     	Trace( &Trace::wait              , false, &Help::traceWait ) }
+    { "activities",    Trace( &Trace::activities,     false, &Help::traceActivities ) },
+    { "cfs", 	       Trace( &Trace::cfs,            false, &Help::traceCFS ) },
+    { "convergence",   Trace( &Trace::convergence,    true,  &Help::traceConvergence ) },
+    { "delta_wait",    Trace( &Trace::delta_wait,     false, &Help::traceDeltaWait ) },
+    { "forks",	       Trace( &Trace::forks,          false, &Help::traceForks ) },
+    { "idle-time",     Trace( &Trace::idle_time,      false, &Help::traceIdleTime ) },
+    { "interlock",     Trace( &Trace::interlock,      false, &Help::traceInterlock ) },
+    { "intermediate",  Trace( &Trace::intermediate,   false, &Help::traceIntermediate ) },
+    { "mva",	       Trace( &Trace::mva,            true,  &Help::traceMva ) },
+    { "overtaking",    Trace( &Trace::overtaking,     false, &Help::traceOvertaking ) },
+//  { "processor",     Trace( &Trace::processor,      true,  &Help::traceProcessor ) },
+    { "quorum",        Trace( &Trace::quorum,         false, &Help::traceQuorum ) },
+    { "replication",   Trace( &Trace::replication,    false, &Help::traceReplication ) },
+//  { "task",          Trace( &Trace::task,	    true,  &Help::traceTask ) },
+    { "throughput",    Trace( &Trace::throughput,     false, &Help::traceThroughput ) },
+    { "variance",      Trace( &Trace::variance,       false, &Help::traceVariance ) },
+    { "virtual-entry", Trace( &Trace::virtual_entry,  false, &Help::traceVirtualEntry ) },
+    { "wait",	       Trace( &Trace::wait,           false, &Help::traceWait ) }
 };
 
-const char ** Options::Trace::__options = NULL;
+std::vector<char *> Options::Trace::__options;
 
 void
-Options::Trace::activities( const char * arg )
+Options::Trace::initialize()
+{
+    if ( __options.empty() ) {
+	/* Populate for getsubopt */
+	for ( std::map<const std::string, const Options::Trace>::const_iterator next_opt = __table.begin(); next_opt != __table.end(); ++next_opt ) {
+	    __options.push_back( const_cast<char *>(next_opt->first.data()) );
+	}
+	__options.push_back( nullptr );
+    }
+}
+
+
+void
+Options::Trace::activities( const std::string& arg )
 {
     flags.trace_activities = true;
 }
 
 void
-Options::Trace::convergence( const char *arg )
+Options::Trace::convergence( const std::string& arg )
 {
     flags.trace_convergence = true;
 }
 
 void
-Options::Trace::cfs( const char *arg )
+Options::Trace::cfs( const std::string& )
 {
     flags.trace_cfs = true;
 }
 
 void
-Options::Trace::forks( const char *arg )
+Options::Trace::forks( const std::string& arg )
 {
     flags.trace_forks = true;
 }
 
 void
-Options::Trace::idle_time( const char *arg )
+Options::Trace::idle_time( const std::string& arg )
 {
     flags.trace_idle_time = true;
 }
 
 void
-Options::Trace::interlock( const char *arg )
+Options::Trace::interlock( const std::string& arg )
 {
     flags.trace_interlock = true;
 }
 
 void
-Options::Trace::intermediate( const char *arg )
+Options::Trace::intermediate( const std::string& arg )
 {
     flags.trace_intermediate = true;
 }
 
 void
-Options::Trace::delta_wait( const char *arg )
+Options::Trace::delta_wait( const std::string& arg )
 {
     flags.trace_delta_wait = true;
 }
 
 void
-Options::Trace::mva( const char *arg )
+Options::Trace::mva( const std::string& arg )
 {
     unsigned temp;
     flags.trace_mva = true;
-    if ( !arg ) {
+    if ( arg.empty() ) {
 	flags.trace_submodel = 0;	/* Do all submodels */
-    } else if ( 0 < ( temp = (unsigned)strtol( arg, 0, 10 ) ) && temp < 100 ) {
+    } else if ( 0 < ( temp = (unsigned)strtol( arg.c_str(), 0, 10 ) ) && temp < 100 ) {
 	flags.trace_submodel = temp;
     } else {
 	std::cerr << LQIO::io_vars.lq_toolname << " -tmva=" << arg << " is invalid." << std::endl;
@@ -204,81 +214,60 @@ Options::Trace::mva( const char *arg )
 }
 
 void
-Options::Trace::quorum( const char *arg )
+Options::Trace::quorum( const std::string& arg )
 {
     flags.trace_quorum = true;
 }
 
 void
-Options::Trace::overtaking( const char *arg )
+Options::Trace::overtaking( const std::string& arg )
 {
     flags.trace_overtaking = true;
     flags.print_overtaking = true;
 }
 
 void
-Options::Trace::replication( const char *arg )
+Options::Trace::replication( const std::string& arg )
 {
     flags.trace_replication = true;
 }
 
 void
-Options::Trace::throughput( const char *arg )
+Options::Trace::throughput( const std::string& arg )
 {
     flags.trace_throughput = true;
 }
 
 void
-Options::Trace::variance( const char *arg )
+Options::Trace::variance( const std::string& arg )
 {
     flags.trace_variance = true;
 }
 
 void
-Options::Trace::virtual_entry( const char *arg )
+Options::Trace::virtual_entry( const std::string& arg )
 {
     flags.trace_virtual_entry = true;
     flags.trace_wait = true;
 }
 
 void
-Options::Trace::wait( const char *arg )
+Options::Trace::wait( const std::string& arg )
 {
     flags.trace_wait = true;
 }
 
 void
-Options::Trace::customers( const char *arg )
-{
-    flags.trace_customers = true;
-}
-
-/* static */ void
-Options::Trace::initialize()
-{
-    if ( __options != nullptr ) return;
-
-    __options = new const char * [__table.size()+1];
-    std::map<const char *, Options::Trace>::const_iterator next_opt;
-
-    unsigned int i = 0;
-    for ( next_opt = __table.begin(); next_opt != __table.end(); ++next_opt ) {
-	__options[i++] = next_opt->first;
-    }
-    __options[i] = NULL;
-}
-
-void
-Options::Trace::exec( const int ix, const char * arg )
+Options::Trace::exec( const int ix, const std::string& arg )
 {
     if ( ix >= 0 ) {
-	(*__table[__options[ix]].func())( arg );
+	(*__table.at(std::string(__options[ix])).func())( arg );
     } else {
 	usage( 't', optarg );
     }
 }
 
-std::map<const char *, Options::Special, lt_str> Options::Special::__table =
+std::map<const std::string, const Options::Special> Options::Special::__table =
 {
     { "iteration-limit", 	    Special( &Special::iteration_limit, 	   true,  &Help::specialIterationLimit ) },
     { "print-interval", 	    Special( &Special::print_interval,    	   true,  &Help::specialPrintInterval ) },
@@ -297,21 +286,35 @@ std::map<const char *, Options::Special, lt_str> Options::Special::__table =
     { "full-reinitialize", 	    Special( &Special::full_reinitialize,          false, &Help::specialFullReinitialize ) }
 };
 
-const char ** Options::Special::__options = nullptr;
+std::vector<char *> Options::Special::__options;
+
 
 void
-Options::Special::iteration_limit( const char * arg )
+Options::Special::initialize()
 {
-    if ( !arg || (Model::__iteration_limit = (unsigned)strtol( arg, 0, 10 )) == 0 ) {
+    if ( __options.empty() ) {
+	for ( std::map<const std::string, const Options::Special>::const_iterator next_opt = __table.begin(); next_opt != __table.end(); ++next_opt ) {
+	    __options.push_back( const_cast<char *>(next_opt->first.c_str()) );
+	}
+	__options.push_back( nullptr );
+    }
+}
+
+
+
+void
+Options::Special::iteration_limit( const std::string& arg )
+{
+    if ( arg.empty() || (Model::__iteration_limit = (unsigned)strtol( arg.c_str(), 0, 10 )) == 0 ) {
 	std::cerr << LQIO::io_vars.lq_toolname << "iteration-limit=" << arg << " is invalid, choose non-negative integer." << std::endl;
 	(void) exit( INVALID_ARGUMENT );
     }
 }
 
 void
-Options::Special::print_interval( const char * arg )
+Options::Special::print_interval( const std::string& arg )
 {
-    if ( arg != nullptr && (Model::__print_interval = (unsigned)strtol( arg, 0, 10 )) == 0 ) {
+    if ( arg.empty() && (Model::__print_interval = (unsigned)strtol( arg.c_str(), 0, 10 )) == 0 ) {
 	std::cerr << LQIO::io_vars.lq_toolname << "print-interval=" << arg << " is invalid, choose non-negative integer." << std::endl;
 	(void) exit( INVALID_ARGUMENT );
     } else {
@@ -320,66 +323,66 @@ Options::Special::print_interval( const char * arg )
 }
 
 void
-Options::Special::overtaking( const char * )
+Options::Special::overtaking( const std::string& )
 {
     flags.print_overtaking = true;
 }
 
 void
-Options::Special::convergence_value( const char * arg )
+Options::Special::convergence_value( const std::string& arg )
 {
-    if ( !arg || (Model::__convergence_value = strtod( arg, 0 )) == 0 ) {
+    if ( arg.empty() || (Model::__convergence_value = strtod( arg.c_str(), 0 )) == 0 ) {
 	std::cerr << LQIO::io_vars.lq_toolname << "convergence=" << arg << " is invalid, choose non-negative real." << std::endl;
 	(void) exit( INVALID_ARGUMENT );
     }
 }
 
 void
-Options::Special::single_step( const char * arg )
+Options::Special::single_step( const std::string& arg )
 {
-    if ( !arg ) {
+    if ( arg.empty() ) {
 	flags.single_step = true;
-    } else if ( (flags.single_step = atol( arg )) <= 0 ) {
+    } else if ( (flags.single_step = atol( arg.c_str() )) <= 0 ) {
 	std::cerr << LQIO::io_vars.lq_toolname << ": step=" << arg << " is invalid, choose non-negative integer." << std::endl;
 	(void) exit( INVALID_ARGUMENT );
     }
 }
 
 void
-Options::Special::underrelaxation( const char * arg )
+Options::Special::underrelaxation( const std::string& arg )
 {
-    if ( !arg || (Model::__underrelaxation = strtod( arg, 0 )) <= 0.0 || 2.0 < Model::__underrelaxation ) {
+    if ( arg.empty() || (Model::__underrelaxation = strtod( arg.c_str(), 0 )) <= 0.0 || 2.0 < Model::__underrelaxation ) {
 	std::cerr << LQIO::io_vars.lq_toolname << "underrelaxation=" << arg << " is invalid, choose a value between 0.0 and 2.0." << std::endl;
 	(void) exit( INVALID_ARGUMENT );
     }
 }
 
 void
-Options::Special::generate_queueing_model( const char * arg )
+Options::Special::generate_queueing_model( const std::string& arg )
 {
-    if ( !arg ) {
+    if ( arg.empty() ) {
 	std::cerr << LQIO::io_vars.lq_toolname << "generate: missing filename argument.." << std::endl;
 	(void) exit( INVALID_ARGUMENT );
     } else {
 	flags.generate = true;
-	Generate::file_name = const_cast<char *>(arg);
+	Generate::file_name = const_cast<char *>(arg.c_str());
     }
 }
 
 void
-Options::Special::mol_ms_underrelaxation( const char * arg )
+Options::Special::mol_ms_underrelaxation( const std::string& arg )
 {
-    if ( !arg || (MVA::MOL_multiserver_underrelaxation = strtod( arg, 0 )) <= 0.0 || 1.0 < MVA::MOL_multiserver_underrelaxation ) {
+    if ( arg.empty() || (MVA::MOL_multiserver_underrelaxation = strtod( arg.c_str(), 0 )) <= 0.0 || 1.0 < MVA::MOL_multiserver_underrelaxation ) {
 	std::cerr << LQIO::io_vars.lq_toolname << "underrelaxation=" << arg << " is invalid, choose real between 0.0 and 1.0." << std::endl;
 	(void) exit( INVALID_ARGUMENT );
     }
 }
 
 void
-Options::Special::make_man( const char * arg )
+Options::Special::make_man( const std::string& arg )
 {
     HelpTroff man;
-    if ( arg ) {
+    if ( !arg.empty() ) {
 	std::ofstream output;
 	output.open( arg, std::ios::out );	/* NO \r's in output for windoze */
 	if ( !output ) {
@@ -397,10 +400,10 @@ Options::Special::make_man( const char * arg )
 }
 
 void
-Options::Special::make_tex( const char * arg )
+Options::Special::make_tex( const std::string& arg )
 {
     HelpLaTeX man;
-    if ( arg ) {
+    if ( !arg.empty() ) {
 	std::ofstream output;
 	output.open( arg, std::ios::out );	/* NO \r's in output for windoze */
 	if ( !output ) {
@@ -418,45 +421,30 @@ Options::Special::make_tex( const char * arg )
 }
 
 void
-Options::Special::min_steps( const char * arg )
+Options::Special::min_steps( const std::string& arg )
 {
-    if ( !arg ) {
+    if ( arg.empty() ) {
 	std::cerr << LQIO::io_vars.lq_toolname << ": no value supplied to -zmin-steps." << std::endl;
-    } else if ( (flags.min_steps = atoi( arg )) < 1 ) {
+    } else if ( (flags.min_steps = atoi( arg.c_str() )) < 1 ) {
 	std::cerr << LQIO::io_vars.lq_toolname << ": min-steps=" << arg << " is invalid, choose value greater than 1." << std::endl;
 	(void) exit( INVALID_ARGUMENT );
     }
 }
 
 void
-Options::Special::ignore_overhanging_threads( const char * )
+Options::Special::ignore_overhanging_threads( const std::string& )
 {
     flags.ignore_overhanging_threads = true;
 }
 
 void
-Options::Special::full_reinitialize( const char * )
+Options::Special::full_reinitialize( const std::string& )
 {
     flags.full_reinitialize = true;
 }
 
-/* static */ void
-Options::Special::initialize()
-{
-    if ( __options != nullptr ) return;
-
-    __options = new const char * [__table.size()+1];
-    std::map<const char *, Options::Special>::const_iterator next_opt;
-
-    unsigned int i = 0;
-    for ( next_opt = __table.begin(); next_opt != __table.end(); ++next_opt ) {
-	__options[i++] = next_opt->first;
-    }
-    __options[i] = NULL;
-}
-
 void
-Options::Special::exec( const int ix, const char * arg )
+Options::Special::exec( const int ix, const std::string& arg )
 {
     if ( ix >= 0 ) {
 	(*__table[__options[ix]].func())( arg );

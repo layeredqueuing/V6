@@ -12,7 +12,7 @@
  * Comparison of srvn output results.
  * By Greg Franks.  August, 1991.
  *
- * $Id: srvndiff.cc 14882 2021-07-07 11:09:54Z greg $
+ * $Id: srvndiff.cc 15058 2021-10-08 22:28:46Z greg $
  */
 
 #define DIFFERENCE_MODE	1
@@ -935,7 +935,7 @@ main (int argc, char * const argv[])
 
     if ( print_copyright ) {
 	char copyright_date[20];
-	sscanf( "$Date: 2021-07-07 07:09:54 -0400 (Wed, 07 Jul 2021) $", "%*s %s %*s", copyright_date );
+	sscanf( "$Date: 2021-10-08 18:28:46 -0400 (Fri, 08 Oct 2021) $", "%*s %s %*s", copyright_date );
 	(void) fprintf( stdout, "SRVN Difference, Version %s\n", VERSION );
 	(void) fprintf( stdout, "  Copyright %s the Real-Time and Distributed Systems Group,\n", copyright_date );
 	(void) fprintf( stdout, "  Department of Systems and Computer Engineering,\n" );
@@ -1290,6 +1290,7 @@ compare_directories (unsigned n, char * const dirs[])
     unsigned i;
     unsigned j;
     char * pathname[MAX_PASS];
+    static const std::vector<const std::string> patterns = { ".p", ".lqxo", ".lqjo", "*.lqjo~*~" };
 
     if ( list_of_files ) {
 	build_file_list2( n, dirs );
@@ -1299,19 +1300,10 @@ compare_directories (unsigned n, char * const dirs[])
 
 	for ( i = 0; i < n; ++i ) {
 	    int rc;
-	    sprintf( path, "%s/%s.p", dirs[i], file_pattern.c_str() );
-	    rc = glob( path, 0, NULL, &dir_list[i] );
-	    if ( dir_list[i].gl_pathc == 0 ) {
-		sprintf( path, "%s/%s.lqxo", dirs[i], file_pattern.c_str() );
-		rc = glob( path, 0, NULL, &dir_list[i] );
-	    }
-	    if ( dir_list[i].gl_pathc == 0 ) {
-		sprintf( path, "%s/%s.lqjo", dirs[i], file_pattern.c_str() );
-		rc = glob( path, 0, NULL, &dir_list[i] );
-	    }
-	    if ( dir_list[i].gl_pathc == 0 ) {
-		sprintf( path, "%s/%s", dirs[i], file_pattern.c_str() );
-		rc = glob( path, 0, NULL, &dir_list[i] );
+	    dir_list[i].gl_pathc = 0;
+	    for ( std::vector<const std::string>::const_iterator match = patterns.begin(); match != patterns.end() && dir_list[i].gl_pathc == 0 ; ++match ) {
+		std::string path = dirs[i] + "/" + file_pattern + *match;
+		rc = glob( path.c_str(), 0, NULL, &dir_list[i] );
 	    }
 	    if ( rc == GLOB_NOSPACE ) {
 		(void) fprintf( stderr, "%s: no more core!\n", lq_toolname );

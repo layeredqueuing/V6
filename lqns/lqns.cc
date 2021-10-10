@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: lqns.cc 15054 2021-10-08 12:08:59Z greg $
+ * $Id: lqns.cc 15061 2021-10-09 23:44:11Z greg $
  *
  * Command line processing.
  *
@@ -131,6 +131,9 @@ int main (int argc, char *argv[])
 #else
     LQIO::CommandLine command_line( );
 #endif
+    Options::Debug::initialize();
+    Options::Trace::initialize();
+    Options::Special::initialize();
 
     unsigned global_error_flag = 0;     /* Error detected anywhere??    */
 
@@ -180,11 +183,10 @@ int main (int argc, char *argv[])
 	    break;
         
 	case 'd':
-            Options::Debug::initialize();
             options = optarg;
             while ( *options ) {
                 char * value = nullptr;
-                Options::Debug::exec( getsubopt( &options, const_cast<char * const *>(Options::Debug::__options), &value ), value );
+                Options::Debug::exec( getsubopt( &options, Options::Debug::__options.data(), &value ), value );
             }
             break;
 
@@ -338,11 +340,10 @@ int main (int argc, char *argv[])
 	    break;
 	    
         case 't':
-            Options::Trace::initialize();
             options = optarg;
             while ( *options ) {
                 char * value = 0;
-                const int ix = getsubopt( &options, const_cast<char * const *>(Options::Trace::__options), &value );
+                const int ix = getsubopt( &options, Options::Trace::__options.data(), &value );
                 Options::Trace::exec( ix, value );
             }
             break;
@@ -388,11 +389,10 @@ int main (int argc, char *argv[])
             break;
 
         case 'z':
-            Options::Special::initialize();
             options = optarg;
             while ( *options ) {
                 char * value = 0;
-                const int ix = getsubopt( &options, const_cast<char * const *>(Options::Special::__options), &value );
+                const int ix = getsubopt( &options, Options::Special::__options.data(), &value );
                 Options::Special::exec( ix, value );
             }
             break;
