@@ -12,7 +12,7 @@
  * Comparison of srvn output results.
  * By Greg Franks.  August, 1991.
  *
- * $Id: srvndiff.cc 15058 2021-10-08 22:28:46Z greg $
+ * $Id: srvndiff.cc 15069 2021-10-12 14:34:08Z greg $
  */
 
 #define DIFFERENCE_MODE	1
@@ -935,7 +935,7 @@ main (int argc, char * const argv[])
 
     if ( print_copyright ) {
 	char copyright_date[20];
-	sscanf( "$Date: 2021-10-08 18:28:46 -0400 (Fri, 08 Oct 2021) $", "%*s %s %*s", copyright_date );
+	sscanf( "$Date: 2021-10-12 10:34:08 -0400 (Tue, 12 Oct 2021) $", "%*s %s %*s", copyright_date );
 	(void) fprintf( stdout, "SRVN Difference, Version %s\n", VERSION );
 	(void) fprintf( stdout, "  Copyright %s the Real-Time and Distributed Systems Group,\n", copyright_date );
 	(void) fprintf( stdout, "  Department of Systems and Computer Engineering,\n" );
@@ -1290,7 +1290,8 @@ compare_directories (unsigned n, char * const dirs[])
     unsigned i;
     unsigned j;
     char * pathname[MAX_PASS];
-    static const std::vector<const std::string> patterns = { ".p", ".lqxo", ".lqjo", "*.lqjo~*~" };
+
+    static const std::vector<std::string> patterns = { ".p", ".lqxo", ".lqjo", "*.lqjo~*~" };
 
     if ( list_of_files ) {
 	build_file_list2( n, dirs );
