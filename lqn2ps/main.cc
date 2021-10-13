@@ -1,6 +1,6 @@
 /* srvn2eepic.c	-- Greg Franks Sun Jan 26 2003
  *
- * $Id: main.cc 14882 2021-07-07 11:09:54Z greg $
+ * $Id: main.cc 15071 2021-10-13 13:51:49Z greg $
  */
 
 #include "lqn2ps.h"
@@ -110,7 +110,7 @@ const char * Options::io[] =
 #if HAVE_GD_H && HAVE_LIBGD && HAVE_GDIMAGEGIFPTR
     "gif",
 #endif
-#if JMVA_OUTPUT
+#if JMVA_OUTPUT && HAVE_EXPAT_H
     "jmva",
 #endif
 #if HAVE_GD_H && HAVE_LIBGD && HAVE_LIBJPEG

@@ -1,6 +1,6 @@
 /* model.cc	-- Greg Franks Mon Feb  3 2003
  *
- * $Id: model.cc 14882 2021-07-07 11:09:54Z greg $
+ * $Id: model.cc 15071 2021-10-13 13:51:49Z greg $
  *
  * Load, slice, and dice the lqn model.
  */
@@ -838,7 +838,7 @@ Model::getExtension()
 	extension = "gif";
 	break;
 #endif
-#if JMVA_OUTPUT
+#if JMVA_OUTPUT && HAVE_EXPAT_H
     case FORMAT_JMVA:
 	extension = "jmva";
 	break;
@@ -1499,7 +1499,7 @@ Model::print( std::ostream& output ) const
 	printGD( output, &GD::outputJPG );
 	break;
 #endif
-#if JMVA_OUTPUT
+#if JMVA_OUTPUT && HAVE_JMVA
     case FORMAT_JMVA:
 	printBCMP( output );
 	break;

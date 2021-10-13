@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: lqn2ps.cc 15045 2021-10-05 21:21:04Z greg $
+ * $Id: lqn2ps.cc 15071 2021-10-13 13:51:49Z greg $
  *
  * Command line processing.
  *
@@ -194,7 +194,7 @@ lqn2ps( int argc, char *argv[] )
     int arg;
     std::string output_file_name = "";
 
-    sscanf( "$Date: 2021-10-05 17:21:04 -0400 (Tue, 05 Oct 2021) $", "%*s %s %*s", copyrightDate );
+    sscanf( "$Date: 2021-10-13 09:51:49 -0400 (Wed, 13 Oct 2021) $", "%*s %s %*s", copyrightDate );
 
     static std::string opts = "";
 #if HAVE_GETOPT_H
@@ -1185,7 +1185,7 @@ setOutputFormat( const int i )
     case FORMAT_NULL:
 	break;
 
-#if JMVA_OUTPUT
+#if JMVA_OUTPUT && HAVE_EXPAT_H
     case FORMAT_JMVA:
 	Flags::bcmp_model = true;				/* No entries. */
 	break;
