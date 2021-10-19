@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_call.cpp 14627 2021-05-10 16:22:27Z greg $
+ *  $Id: dom_call.cpp 15076 2021-10-15 18:25:48Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -105,7 +105,7 @@ namespace LQIO {
 	    _callMean = checkDoubleVariable( callMean, 0.0 );
 	}
     
-	const double Call::getCallMeanValue() const
+	double Call::getCallMeanValue() const
 	{
 	    return getDoubleValue( getCallMean(), 0.0 );
 	}

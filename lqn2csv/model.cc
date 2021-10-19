@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: model.cc 15037 2021-10-04 16:35:47Z greg $
+ * $Id: model.cc 15081 2021-10-18 20:05:23Z greg $
  *
  * Command line processing.
  *
@@ -15,6 +15,7 @@
 #include <algorithm>
 #include <numeric>
 #include <regex>
+#include <set>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -43,10 +44,14 @@ const std::map<Model::Result::Type,Model::Result::result_fields> Model::Result::
     { Model::Result::Type::JOIN_DELAYS, 	  { Model::Object::Type::JOIN,      "Join Delay",  &LQIO::DOM::DocumentObject::getResultJoinDelay 	     } },
     { Model::Result::Type::LOSS_PROBABILITY, 	  { Model::Object::Type::CALL,      "Drop Prob",   &LQIO::DOM::DocumentObject::getResultDropProbability      } },
     { Model::Result::Type::OPEN_WAIT, 		  { Model::Object::Type::ENTRY,     "Waiting",     &LQIO::DOM::DocumentObject::getResultWaitingTime 	     } },
+    { Model::Result::Type::PROCESSOR_MULTIPLICITY,{ Model::Object::Type::PROCESSOR, "Copies",      &LQIO::DOM::DocumentObject::getCopiesValueAsDouble 	     } },
     { Model::Result::Type::PROCESSOR_UTILIZATION, { Model::Object::Type::PROCESSOR, "Utilization", &LQIO::DOM::DocumentObject::getResultUtilization 	     } },
     { Model::Result::Type::PROCESSOR_WAITING,     { Model::Object::Type::PHASE,     "Waiting",     &LQIO::DOM::DocumentObject::getResultProcessorWaiting     } },
+    { Model::Result::Type::REQUEST_RATE,	  { Model::Object::Type::CALL,      "Request",     &LQIO::DOM::DocumentObject::getCallMeanValue		     } },
+    { Model::Result::Type::SERVICE_DEMAND,	  { Model::Object::Type::PHASE,     "Demand",      &LQIO::DOM::DocumentObject::getServiceTimeValue 	     } },
     { Model::Result::Type::SERVICE_EXCEEDED,      { Model::Object::Type::PHASE,     "Pr. Exceed",  &LQIO::DOM::DocumentObject::getResultMaxServiceTimeExceeded } },
     { Model::Result::Type::SERVICE_TIME,          { Model::Object::Type::PHASE,     "Service",     &LQIO::DOM::DocumentObject::getResultServiceTime 	     } },
+    { Model::Result::Type::TASK_MULTIPLICITY,	  { Model::Object::Type::TASK,	    "Copies",      &LQIO::DOM::DocumentObject::getCopiesValueAsDouble 	     } },
     { Model::Result::Type::TASK_THROUGHPUT,       { Model::Object::Type::TASK,      "Throughput",  &LQIO::DOM::DocumentObject::getResultThroughput 	     } },
     { Model::Result::Type::TASK_UTILIZATION,      { Model::Object::Type::TASK,      "Utilization", &LQIO::DOM::DocumentObject::getResultUtilization 	     } },
     { Model::Result::Type::THROUGHPUT_BOUND,      { Model::Object::Type::ENTRY,     "Bound",       &LQIO::DOM::DocumentObject::getResultThroughputBound      } },
@@ -64,6 +69,21 @@ const std::map<Model::Object::Type, const std::string> Model::Object::__object_t
     { Model::Object::Type::PROCESSOR, "Processor" },
     { Model::Object::Type::TASK,      "Task"      }
 };
+
+bool Model::Result::isIndependentVariable( Model::Result::Type type )
+{
+    static const std::set<Result::Type> independent = {
+	Type::SERVICE_DEMAND,
+	Type::REQUEST_RATE,
+	Type::TASK_MULTIPLICITY,
+	Type::PROCESSOR_MULTIPLICITY };
+    return independent.find( type ) != independent.end();
+}
+
+bool Model::Result::isDependentVariable( Model::Result::Type type )
+{
+    return type != Type::NONE && !isIndependentVariable( type );
+}
 
 /*
  * Load a file then extract results using Model::Result::operator().
@@ -144,12 +164,13 @@ Model::Result::findObject( const std::string& item, Model::Result::Type type ) c
 	object = dom().getEntryByName( name );
 	break;
 
-    case Type::VARIANCE:
-    case Type::THROUGHPUT_BOUND:
+    case Type::SERVICE_DEMAND:
+    case Type::PHASE_UTILIZATION:
+    case Type::PROCESSOR_WAITING:
     case Type::SERVICE_EXCEEDED:
     case Type::SERVICE_TIME:
-    case Type::PROCESSOR_WAITING:
-    case Type::PHASE_UTILIZATION:
+    case Type::THROUGHPUT_BOUND:
+    case Type::VARIANCE:
 	/* entry,phase */
 	if ( tokens.size() == 2 ) {
 	    object = findPhase( dom().getEntryByName( name ), tokens.at(1));
@@ -157,6 +178,7 @@ Model::Result::findObject( const std::string& item, Model::Result::Type type ) c
 	break;
 	
     case Type::LOSS_PROBABILITY:
+    case Type::REQUEST_RATE:
     case Type::WAITING_TIME:			/* phase -> entry */
 	/* entry,phase,entry */
 	if ( tokens.size() == 3 ) {
@@ -164,11 +186,13 @@ Model::Result::findObject( const std::string& item, Model::Result::Type type ) c
 	}
 	break;
 
+    case Type::TASK_MULTIPLICITY:
     case Type::TASK_THROUGHPUT:
     case Type::TASK_UTILIZATION:		/* May be by phase */
 	object = dom().getTaskByName( name );
 	break;
 
+    case Type::PROCESSOR_MULTIPLICITY:
     case Type::PROCESSOR_UTILIZATION:
 	object = dom().getProcessorByName( name );
 	break;

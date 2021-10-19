@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: lqn2csv.cc 15069 2021-10-12 14:34:08Z greg $
+ * $Id: lqn2csv.cc 15081 2021-10-18 20:05:23Z greg $
  *
  * Command line processing.
  *
@@ -36,15 +36,18 @@
 #endif
 #include <unistd.h>
 #include <sys/stat.h>
-#include "model.h"
 #include <lqio/dom_document.h>
 #include <lqio/dom_task.h>
+#include "model.h"
+#include "gnuplot.h"
 
 int gnuplot_flag    = 0;
 int no_header       = 0;
 
 const std::vector<struct option> longopts = {
     /* name */ /* has arg */ /*flag */ /* val */
+    { "demand",		       required_argument, nullptr, 'd' },
+    { "request-rate",	       required_argument, nullptr, 'r' },
     { "open-wait",             required_argument, nullptr, 'a' }, 
     { "bounds",                required_argument, nullptr, 'b' }, 
     { "entry-utilization",     required_argument, nullptr, 'e' }, 
@@ -52,7 +55,9 @@ const std::vector<struct option> longopts = {
     { "activity-throughput",   required_argument, nullptr, 'F' }, 
     { "hold-times",            required_argument, nullptr, 'h' }, 
     { "join-delays",           required_argument, nullptr, 'j' }, 
-    { "loss-probability",      required_argument, nullptr, 'l' }, 
+    { "loss-probability",      required_argument, nullptr, 'l' },
+    { "processor-multiplicity",required_argument, nullptr, 'm' },
+    { "task-multiplicity",     required_argument, nullptr, 'n' },
     { "output",                required_argument, nullptr, 'o' },
     { "processor-utilization", required_argument, nullptr, 'p' }, 
     { "processor-waiting",     required_argument, nullptr, 'q' }, 
@@ -78,22 +83,26 @@ const static std::map<int,const std::string> help_str
 {
     { 'a', "print open arrival waiting time for <entry>." }, 
     { 'b', "print throughput bound for <entry>." }, 
+    { 'd', "print demand for <entry>, phase <n> (independent variable)." },
     { 'e', "print utilization for <entry>." }, 
     { 'f', "print throughput for <entry>." }, 
     { 'F', "print througput for <task>, <activity>." }, 
     { 'h', "Hold time." }, 
     { 'j', "Join delay." }, 
     { 'l', "Asynchronous send drop probability." }, 
+    { 'm', "print processor multiplicity (independent variable)." },
+    { 'n', "print task multiplicity (independent variable)." },
     { 'o', "write output to the file named <arg>." },
     { 'p', "print utilization for <processor>." }, 
     { 'q', "print waiting time at the processor for <entry>, phase <n>." }, 
+    { 'r', "print request rate from <src> entry, phase <n> to <dst> entry (independent variable)." }, 
     { 's', "print service time for <entry>, phase <n>." }, 
     { 'S', "print service time for <task>, <activity>." }, 
     { 't', "print throughput for <task>." }, 
     { 'u', "print utilization for <task>." }, 
     { 'v', "print service time variance for <entry>, phase <n>." }, 
     { 'V', "print service time variance for <task>, <activity>." }, 
-    { 'w', "print waiting time for <src> entry, phase <n> to <dst> entry." }, 
+    { 'w', "print waiting time from <src> entry, phase <n> to <dst> entry." }, 
     { 'W', "Activity call waiting time." }, 
     { 'x', "Probability phase service time exceeded." },
     { '@', "Read the argument list from <arg>.  --output-file and --arguments are ignored." },
@@ -105,6 +114,7 @@ const static std::map<char,Model::Result::Type> result_type
 {
     { 'a', Model::Result::Type::OPEN_WAIT              }, 
     { 'b', Model::Result::Type::THROUGHPUT_BOUND       }, 
+    { 'd', Model::Result::Type::SERVICE_TIME           }, 
     { 'e', Model::Result::Type::ENTRY_UTILIZATION      }, 
     { 'f', Model::Result::Type::ENTRY_THROUGHPUT       }, 
     { 'F', Model::Result::Type::ACTIVITY_THROUGHPUT    }, 
@@ -112,9 +122,12 @@ const static std::map<char,Model::Result::Type> result_type
     { 'j', Model::Result::Type::JOIN_DELAYS            }, 
     { 'l', Model::Result::Type::LOSS_PROBABILITY       }, 
 //  { 0,   Model::Result::Type::PHASE_UTILIZATION      },
+    { 'm', Model::Result::Type::PROCESSOR_MULTIPLICITY }, 
     { 'p', Model::Result::Type::PROCESSOR_UTILIZATION  }, 
     { 'q', Model::Result::Type::PROCESSOR_WAITING      }, 
+    { 'r', Model::Result::Type::WAITING_TIME           }, 
     { 's', Model::Result::Type::SERVICE_TIME           }, 
+    { 'n', Model::Result::Type::TASK_MULTIPLICITY      }, 
     { 't', Model::Result::Type::TASK_THROUGHPUT        }, 
     { 'u', Model::Result::Type::TASK_UTILIZATION       }, 
     { 'v', Model::Result::Type::VARIANCE               }, 
@@ -216,45 +229,12 @@ static void
 process( std::ostream& output, int argc, char **argv, const std::vector<Model::Result::result_t>& results )
 {
     extern int optind;
+    Model::GnuPlot plot( output, output_file_name, results );
 
     /* Load results, then got through results printing them out. */
-
-    Model::Result::Type y1_axis = Model::Result::Type::NONE;
-    Model::Result::Type y2_axis = Model::Result::Type::NONE;
-    std::string title;
+    
     if ( gnuplot_flag ) {
-	output << "#!/opt/local/bin/gnuplot" << std::endl;
-	output << "set datafile separator \",\"" << std::endl;		/* Use CSV. */
-	if ( !output_file_name.empty() ) {
-	    size_t i = output_file_name.find_last_of( "/" );
-	    size_t j = output_file_name.find_last_of( "." );
-	    title = output_file_name.substr( 0, i ).substr( 0, j );
-	    output << "#set output \"" <<  title << ".svg" << std::endl;
-	    output << "#set terminal svg" << std::endl;
-	}
-
-	/* Go through all results and see if we have no more than two matching types. */
-	for ( std::vector<Model::Result::result_t>::const_iterator result = results.begin(); result != results.end(); ++result ) {
-	    if ( result == results.begin() ) {
-		y1_axis = result->second;
-		output << "set ylabel \"" << Model::Result::__results.at(result->second).name << "\"" << std::endl;
-		if ( !title.empty() ) title.push_back( ' ');
-		title += Model::Result::__results.at(result->second).name;
-	    } else if ( !Model::Result::equal( y1_axis, result->second ) && y2_axis == Model::Result::Type::NONE ) {
-		y2_axis = result->second;
-		// set y2label...
-		output << "set y2label \"" << Model::Result::__results.at(result->second).name << "\"" << std::endl;
-		output << "set y2tics" << std::endl;
-		if ( !title.empty() ) title.push_back( ' ');
-		title += Model::Result::__results.at(result->second).name;
-	    } else if ( !Model::Result::equal( y1_axis, result->second ) && !Model::Result::equal( y2_axis, result->second ) ) {
-		std::cerr << toolname << ": Too many result types to plot starting with " << result->first << std::endl;
-		exit( 1 );
-	    }
-	}
-	
-	output << "set title \"" + title + "\"" << std::endl;
-	output << "$DATA << EOF" << std::endl;
+	plot.preamble();
     } else if ( no_header == 0 ) {
 	output << std::accumulate( results.begin(), results.end(), std::string("Object"), Model::Result::ObjectType ) << std::endl;
 	output << std::accumulate( results.begin(), results.end(), std::string("Name"),   Model::Result::ObjectName ) << std::endl;
@@ -270,24 +250,7 @@ process( std::ostream& output, int argc, char **argv, const std::vector<Model::R
     }
 
     if ( gnuplot_flag ) {
-	output << "EOF" << std::endl;
-	for ( std::vector<Model::Result::result_t>::const_iterator result = results.begin(); result != results.end(); ++result ) {
-	    if ( result == results.begin() ) {
-		output << "plot ";
-	    } else {
-		output << ",\\" << std::endl << "     ";
-	    }
-	    output << "$DATA using 1:" << ((result - results.begin()) + 2) << " with linespoints";
-
-	    if ( y2_axis != Model::Result::Type::NONE && Model::Result::equal( y1_axis, result->second ) ) {
-		output << " axis x1y1";
-	    } else if ( Model::Result::equal( y2_axis, result->second ) ) {
-		output << " axis x1y2";
-	    }
-	    output << " title \"" << Model::Object::__object_type.at(Model::Result::__results.at(result->second).type)
-		   << " " << result->first << " " << Model::Result::__results.at(result->second).name << "\"";
-	}
-	output << std::endl;
+	plot.plot();
     }
 }
 

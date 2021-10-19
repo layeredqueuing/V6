@@ -9,13 +9,15 @@
  *
  * October, 2021
  *
- * $Id: model.h 15037 2021-10-04 16:35:47Z greg $
+ * $Id: model.h 15081 2021-10-18 20:05:23Z greg $
  *
  * ------------------------------------------------------------------------
  */
 
 #if !defined MODEL_H
+#define MODEL_H
 #include <map>
+#include <string>
 
 //#include <lqio/dom_object.h>
 
@@ -68,10 +70,14 @@ namespace Model {
 	    LOSS_PROBABILITY, 
 	    OPEN_WAIT, 
 	    PHASE_UTILIZATION,
+	    PROCESSOR_MULTIPLICITY,
 	    PROCESSOR_UTILIZATION,
 	    PROCESSOR_WAITING,
+	    REQUEST_RATE,
+	    SERVICE_DEMAND,
 	    SERVICE_EXCEEDED, 
 	    SERVICE_TIME,
+	    TASK_MULTIPLICITY,
 	    TASK_THROUGHPUT,
 	    TASK_UTILIZATION,
 	    THROUGHPUT_BOUND,
@@ -98,6 +104,8 @@ namespace Model {
 	static std::string ObjectName( const std::string&, const std::pair<std::string,Model::Result::Type>& );
 	static std::string TypeName( const std::string&, const std::pair<std::string,Model::Result::Type>& );
 	static bool equal( Type, Type );
+	static bool isIndependentVariable( Type );
+	static bool isDependentVariable( Type );
 
     private:
 	const LQIO::DOM::Document& dom() const { return _dom; }
