@@ -26,7 +26,8 @@ Model::GnuPlot::GnuPlot( std::ostream& output, const std::string& output_file_na
     _y1_axis(),
     _y2_axis(),
     _x1_index(1),			   /* Position in _results of x1 variable  */
-    _x2_index(2)			   /* Position in _results of x2 variable  */
+    _x2_index(2),			   /* Position in _results of x2 variable  */
+    _splot_x_index(0,0.)
 {
 }
 
@@ -64,7 +65,6 @@ Model::GnuPlot::preamble()
 	    if ( _x1_axis.second == Result::Type::NONE ) {
 		_x1_axis = *result;
 		_x1_index = result - _results.begin() + 2;
-		_output << "set xlabel \"" << Model::Result::__results.at(result->second).name << "\"" << std::endl;
 	    } else if ( _x2_axis.second == Result::Type::NONE ) {
 		_x2_axis = *result;
 		_x2_index = result - _results.begin() + 2;
@@ -76,20 +76,20 @@ Model::GnuPlot::preamble()
 	    }
 	} else if ( _y1_axis.empty() ) {
 	    _y1_axis.emplace( *result );
-	    _output << "set ylabel \"" << Model::Result::__results.at(result->second).name << "\"" << std::endl;
-	    if ( !title.empty() ) title.push_back( ' ');
+	    if ( !title.empty() ) title.push_back( ' ' );
 	    title += Model::Result::__results.at(result->second).name;
 	} else if ( !Model::Result::equal( _y1_axis.begin()->second, result->second ) && _y2_axis.empty() ) {
 	    _y2_axis.emplace( *result );
 	    // set y2label...
-	    _output << "set y2label \"" << Model::Result::__results.at(result->second).name << "\"" << std::endl;
-	    _output << "set y2tics" << std::endl;
-	    if ( !title.empty() ) title.push_back( ' ');
+	    if ( !title.empty() ) title.push_back( ' ' );
 	    title += Model::Result::__results.at(result->second).name;
 	} else if ( !Model::Result::equal( _y1_axis.begin()->second, result->second ) && !Model::Result::equal( _y2_axis.begin()->second, result->second ) ) {
 	    std::cerr << toolname << ": Too many dependent variables to plot starting with " << result->first << std::endl;
 	    exit( 1 );
 	}
+    }
+    if ( _x2_axis.second != Result::Type::NONE ) {
+	_splot_x_index.first = _x1_index;
     }
 
     _output << "set title \"" + title + "\"" << std::endl;
@@ -102,23 +102,41 @@ void
 Model::GnuPlot::plot()
 {
     _output << "EOF" << std::endl;
+    if ( _y1_axis.empty() ) return;		/* Nothing to plot */
+
+    _output << "set xlabel \"" << Model::Result::__results.at(_x1_axis.second).name << "\"" << std::endl;
+    if ( splot_output() ) {
+	_output << "set ylabel \"" << Model::Result::__results.at(_x2_axis.second).name << "\"" << std::endl
+		<< "set zlabel \"" << Model::Result::__results.at(_y1_axis.begin()->second).name << "\"" << std::endl;
+    } else {
+	_output << "set ylabel \"" << Model::Result::__results.at(_y1_axis.begin()->second).name << "\"" << std::endl;
+    }
+    if ( !_y2_axis.empty() ) {
+	_output << "set ylabel \"" << Model::Result::__results.at(_y2_axis.begin()->second).name << "\"" << std::endl;
+	_output << "set y2tics" << std::endl;
+    }
+
     bool first_line = true;
     for ( std::vector<Model::Result::result_t>::const_iterator result = _results.begin(); result != _results.end(); ++result ) {
-	if ( *result == _x1_axis ) continue;
+	if ( *result == _x1_axis || *result == _x2_axis ) continue;
 	if ( first_line ) {
-	    _output << "plot ";
+	    if ( splot_output() ) {
+		_output << "splot ";
+	    } else {
+		_output << "plot ";
+	    }
 	    first_line = false;
 	} else {
 	    _output << ",\\" << std::endl << "     ";
 	}
-	_output << "$DATA using " << _x1_index << ":"
-		<< ((result - _results.begin()) + 2)
-		<< " with linespoints";
+	_output << "$DATA using " << _x1_index << ":";
+	if ( splot_output() ) {
+	    _output << _x2_index << ":";
+	}
+	_output << (result - _results.begin()) + 2 << " with linespoints";
 
 	/* Search y1 and y2 maps */
-	if ( !_y2_axis.empty() && Model::Result::equal( _y1_axis.begin()->second, result->second ) ) {
-	    _output << " axis x1y1";
-	} else if ( Model::Result::equal( _y2_axis.begin()->second, result->second ) ) {
+	if ( _y2_axis.find( result->first ) != _y2_axis.end() ) {
 	    _output << " axis x1y2";
 	}
 	_output << " title \"" << Model::Object::__object_type.at(Model::Result::__results.at(result->second).type)

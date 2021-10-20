@@ -25,6 +25,8 @@ namespace Model {
 
 	void preamble();
 	void plot();
+	bool splot_output() const { return _splot_x_index.first != 0; }
+	const std::pair<size_t,double>& getSplotXIndex() const { return  _splot_x_index; }
 
     private:
 	std::ostream& _output;
@@ -38,6 +40,7 @@ namespace Model {
 	size_t _x2_index;			/* Position in _results of x2 variable	*/
 	std::map<std::string,size_t> _y1_index;
 	std::map<std::string,size_t> _y2_index;
+	std::pair<size_t,double> _splot_x_index;
     };
 }
 #endif
