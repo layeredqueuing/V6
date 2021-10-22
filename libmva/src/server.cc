@@ -1,5 +1,5 @@
 /*  -*- C++ -*-
- * $Id: server.cc 14895 2021-07-10 13:02:49Z greg $
+ * $Id: server.cc 15090 2021-10-22 16:18:55Z greg $
  *
  * Copyright the Real-Time and Distributed Systems Group,
  * Department of Systems and Computer Engineering,
@@ -39,6 +39,7 @@
 
 #include <cstdlib>
 #include <cmath>
+#include <limits>
 #include "mva.h"
 #include "open.h"
 #include "prob.h"
@@ -1119,7 +1120,7 @@ Server::printWait( std::ostream& output, const unsigned k ) const
 double
 Infinite_Server::mu() const
 {
-    return get_infinity();
+    return std::numeric_limits<double>::infinity();
 }
 
 

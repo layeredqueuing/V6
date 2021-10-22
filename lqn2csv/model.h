@@ -9,7 +9,7 @@
  *
  * October, 2021
  *
- * $Id: model.h 15087 2021-10-20 16:57:44Z greg $
+ * $Id: model.h 15090 2021-10-22 16:18:55Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -115,7 +115,7 @@ namespace Model {
 
     private:
 	const LQIO::DOM::Document& dom() const { return _dom; }
-	const LQIO::DOM::DocumentObject * findObject( const std::string& name, Model::Result::Type type ) const;
+	const LQIO::DOM::DocumentObject * findObject( const std::string& name, Model::Object::Type type ) const;
 	const LQIO::DOM::Phase * findPhase( const LQIO::DOM::Entry *, const std::string& ) const;
 	const LQIO::DOM::Call * findCall( const LQIO::DOM::Phase *, const std::string& ) const;
 	const LQIO::DOM::Activity * findActivity( const LQIO::DOM::Task *, const std::string& ) const;

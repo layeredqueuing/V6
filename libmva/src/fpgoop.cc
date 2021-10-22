@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: fpgoop.cc 14882 2021-07-07 11:09:54Z greg $
+ * $Id: fpgoop.cc 15090 2021-10-22 16:18:55Z greg $
  *
  * Floating point exception handling.  It is all different on all machines.
  * See:
@@ -522,46 +522,6 @@ fp_status_bits()
 
     return 0;
 
-#endif
-}
-
-/* ---------------------------------------------------------------------- */
-
-/*
- * Return value for infinity.  We're assuming IEEE FP here.
- */
-
-double
-get_infinity()
-{
-#if defined(INFINITY) && !defined(__WINNT__)
-    return INFINITY;
-#else
-    union {
-	unsigned char c[8];
-	double f;
-    } x;
-
-#if defined(WORDS_BIGENDIAN)
-    x.c[0] = 0x7f;
-    x.c[1] = 0xf0;
-    x.c[2] = 0x00;
-    x.c[3] = 0x00;
-    x.c[4] = 0x00;
-    x.c[5] = 0x00;
-    x.c[6] = 0x00;
-    x.c[7] = 0x00;
-#else
-    x.c[7] = 0x7f;
-    x.c[6] = 0xf0;
-    x.c[5] = 0x00;
-    x.c[4] = 0x00;
-    x.c[3] = 0x00;
-    x.c[2] = 0x00;
-    x.c[1] = 0x00;
-    x.c[0] = 0x00;
-#endif
-    return x.f;
 #endif
 }
 

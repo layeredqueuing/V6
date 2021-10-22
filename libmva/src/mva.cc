@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: mva.cc 14882 2021-07-07 11:09:54Z greg $
+ * $Id: mva.cc 15092 2021-10-22 17:07:35Z greg $
  *
  * MVA solvers: Exact, Bard-Schweitzer, Linearizer and Linearizer2.
  * Abstract superclass does no operation by itself.
@@ -137,6 +137,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cassert>
+#include <limits>
 #include "mva.h"
 #include "vector.h"
 #include "server.h"
@@ -500,14 +501,14 @@ MVA::step( const Population& N, const unsigned currPri )
 		if ( std::isfinite( Q[m]->R(e,k) ) ) {
 		    sum += Q[m]->R(e,k);
 		} else {
-		    sum = get_infinity();
+		    sum = std::numeric_limits<double>::infinity();
 		    break;
 		}
 	    }
 	}
 
 	if ( sum <= 0.0 ) {
-	    X[n][k] = get_infinity();
+	    X[n][k] = std::numeric_limits<double>::infinity();
 	} else if ( !std::isfinite( sum ) ) {
 	    X[n][k] = 0.;
 	} else {
@@ -2604,7 +2605,7 @@ SchweitzerCommon::initialize()
 	}
 
 	if ( sum <= 0.0 ) {
-	    X[n][k] = get_infinity();
+	    X[n][k] = std::numeric_limits<double>::infinity();
 	} else if ( !std::isfinite( sum ) ) {
 	    X[n][k] = 0.;
 	} else {

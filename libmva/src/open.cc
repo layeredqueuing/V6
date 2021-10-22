@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: open.cc 14882 2021-07-07 11:09:54Z greg $
+ * $Id: open.cc 15092 2021-10-22 17:07:35Z greg $
  *
  * Open Network solver.
  *
@@ -7,7 +7,7 @@
  * Department of Systems and Computer Engineering,
  * Carleton University, Ottawa, Ontario, Canada. K1S 5B6
  *
- * $Date: 2021-07-07 07:09:54 -0400 (Wed, 07 Jul 2021) $
+ * $Date: 2021-10-22 13:07:35 -0400 (Fri, 22 Oct 2021) $
  * ----------------------------------------------------------------------
  * Conventions:
  *    E - (scalar) number of entries for a given station.
@@ -49,9 +49,7 @@
 
 
 #include <cmath>
-#if HAVE_VALUES_H
-#include <values.h>
-#endif
+#include <limits>
 #include "fpgoop.h"
 #include "open.h"
 #include "prob.h"
@@ -121,16 +119,16 @@ Open::convert( const Population& N ) const
 	    if ( std::isfinite( num ) && std::isfinite( den ) ) {
 		*Q[m] *= (den / num);
 	    } else {
-		*Q[m] = get_infinity();
+		*Q[m] = std::numeric_limits<double>::infinity();
 		m_err = m;
 	    }
 	} 
 	catch ( const std::range_error& ) {
-	    *Q[m] = get_infinity();
+	    *Q[m] = std::numeric_limits<double>::infinity();
 	    m_err = m;
 	}
 	catch ( const std::domain_error& ) {
-	    *Q[m] = get_infinity();
+	    *Q[m] = std::numeric_limits<double>::infinity();
 	    m_err = m;
 	}
     }
@@ -161,11 +159,11 @@ Open::solve( const MVA& closedModel, const Population& N )
 	    }
 	} 
 	catch ( const std::range_error& e ) {
-	    *Q[m] = get_infinity();
+	    *Q[m] = std::numeric_limits<double>::infinity();
 	    m_err = m;
 	}
 	catch ( const std::domain_error& e ) {
-	    *Q[m] = get_infinity();
+	    *Q[m] = std::numeric_limits<double>::infinity();
 	    m_err = m;
 	}
     }
@@ -190,11 +188,11 @@ Open::solve()
 	    Q[m]->openWait();
 	} 
 	catch ( const std::range_error& e ) {
-	    *Q[m] = get_infinity();
+	    *Q[m] = std::numeric_limits<double>::infinity();
 	    m_err = m;
 	}
 	catch ( const std::domain_error& e ) {
-	    *Q[m] = get_infinity();
+	    *Q[m] = std::numeric_limits<double>::infinity();
 	    m_err = m;
 	}
     }

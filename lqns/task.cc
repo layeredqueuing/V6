@@ -10,7 +10,7 @@
  * November, 1994
  *
  * ------------------------------------------------------------------------
- * $Id: task.cc 15048 2021-10-07 15:10:18Z greg $
+ * $Id: task.cc 15093 2021-10-22 17:12:53Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -18,6 +18,7 @@
 #include "lqns.h"
 #include <cmath>
 #include <cstdlib>
+#include <limits>
 #include <numeric>
 #include <ostream>
 #include <sstream>
@@ -703,7 +704,7 @@ Task::countCallers( std::set<Task *>& reject ) const
 	if ( hasOpenArrivals() ) {
 	    const_cast<Task *>(this)->isInOpenModel( true );
 	    if ( isInfinite() ) {
-		sum = get_infinity();
+		sum = std::numeric_limits<double>::infinity();
 	    }
 	}
 
@@ -1274,7 +1275,7 @@ Task::computeMaxCustomers( const MVASubmodel& submodel, const Entry * server_ent
 	n = std::min( std::accumulate( entries().begin(), entries().end(), 0.0, Entry::add_max_customers( server_entry ) ), population() )
 	    * server->fanIn(this);
     } else if ( isInfinite() ) {
-	n = get_infinity();
+	n = std::numeric_limits<double>::infinity();
     }
 
     const ChainVector& chain = clientChains( submodel.number() );
