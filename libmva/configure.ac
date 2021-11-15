@@ -1,5 +1,5 @@
 #                                               -*- Autoconf -*-
-# $Id: configure.ac 15092 2021-10-22 17:07:35Z greg $
+# $Id: configure.ac 15098 2021-11-09 02:35:58Z greg $
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
