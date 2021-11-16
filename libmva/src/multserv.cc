@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- * $Id: multserv.cc 15101 2021-11-15 14:52:29Z greg $
+ * $Id: multserv.cc 15103 2021-11-15 15:02:16Z greg $
  *
  * Server definitions for Multiserver MVA.
  * From
@@ -519,7 +519,7 @@ Conway_Multi_Server::meanMinimumService( const Population& n ) const
 
 
 #if	DEBUG_MVA
-std::ostream& 
+std::ostream&
 Conway_Multi_Server::printXE( std::ostream& output, const unsigned int i, const Population& N, const unsigned int k, const double xe, const double q ) const
 {
     output << "XE_{" << closedIndex << "," << k << "," << i << "}" << N << " = " << xe << ", Q* = " << q << std::endl;
@@ -527,7 +527,7 @@ Conway_Multi_Server::printXE( std::ostream& output, const unsigned int i, const 
 }
 
 
-std::ostream& 
+std::ostream&
 Conway_Multi_Server::printXR( std::ostream& output, const Population& N, const unsigned int k, const double xe, const double pb ) const
 {
     output << "XR_{" << closedIndex << "," << k << "}" << N << " = " << xe << ", PB = " << pb << std::endl;
@@ -884,7 +884,7 @@ Markov_Phased_Rolia_PS_Multi_Server::wait( const MVA& solver, const unsigned k, 
 /*----------------------------------------------------------------------*/
 
 void
-Zhou_Multi_Server::wait( const MVA& solver, const unsigned k, const Population & N ) const
+Zhou_Multi_Server::wait( const MVA& solver, const unsigned k, const Population& N ) const
 {
     throw not_implemented( "Zhou_Multi_Server::wait", __FILE__, __LINE__ );
 }
@@ -900,7 +900,7 @@ Zhou_Multi_Server::wait( const MVA& solver, const unsigned k, const Population &
  */
 
 void
-Bruell_Multi_Server::setMarginalProbabilitiesSize( const Population &N )
+Bruell_Multi_Server::setMarginalProbabilitiesSize( const Population& N )
 {
     Population::IteratorOffset next( N, N );
 

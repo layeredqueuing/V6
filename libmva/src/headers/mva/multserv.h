@@ -10,7 +10,7 @@
  * November, 1994
  * November, 2021
  *
- * $Id: multserv.h 15101 2021-11-15 14:52:29Z greg $
+ * $Id: multserv.h 15103 2021-11-15 15:02:16Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -160,7 +160,7 @@ class Conway_Multi_Server : public virtual Server,
 			    public Reiser_Multi_Server {
 
 private:
-    class B_Iterator : public Population::Iterator 
+    class B_Iterator : public Population::Iterator
     {
     public:
 	B_Iterator( const Server& aServer, const Population& N, const unsigned k );
@@ -179,7 +179,7 @@ private:
 	unsigned index;			/* for iterator.		*/
     };
 
-    class A_Iterator : public B_Iterator 
+    class A_Iterator : public B_Iterator
     {
     public:
 	A_Iterator( const Server& aServer, const unsigned i, const Population& N, const unsigned k ): B_Iterator(aServer,N,k), class_i(i) {}
@@ -469,7 +469,7 @@ public:
 /*			   Zhou Multi-Server				*/
 /*----------------------------------------------------------------------*/
 
-class Zhou_Multi_Server : public virtual Server, 
+class Zhou_Multi_Server : public virtual Server,
 			   public Reiser_Multi_Server {
 public:
     Zhou_Multi_Server( const unsigned copies )
