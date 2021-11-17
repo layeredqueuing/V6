@@ -10,7 +10,7 @@
  * November, 1994
  * November, 2021
  *
- * $Id: multserv.h 15103 2021-11-15 15:02:16Z greg $
+ * $Id: multserv.h 15108 2021-11-17 16:45:53Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -92,7 +92,7 @@ protected:
 };
 
 
-/* ------------------ Markov Multi Server with Phases ------------------*/
+/* ------------------ Multi Server with Markov Phases ----------------- */
 
 class Markov_Phased_Reiser_Multi_Server : public virtual Server,
 					  public Reiser_Multi_Server,
@@ -159,6 +159,10 @@ protected:
 class Conway_Multi_Server : public virtual Server,
 			    public Reiser_Multi_Server {
 
+#if defined(TESTMVA)
+    friend int main ( int argc, char * argv[] );
+#endif
+    
 private:
     class B_Iterator : public Population::Iterator
     {
@@ -232,6 +236,8 @@ public:
 
 /* ------------------- Phased Conway Multi Server   ------------------- */
 
+/* --------------------- Phased Conway Multiserver -------------------- */
+
 class Phased_Conway_Multi_Server : public virtual Server,
 				   public Conway_Multi_Server {
 public:
@@ -254,6 +260,8 @@ public:
 
     virtual const char * typeStr() const { return "Phased_Conway_Multi_Server"; }
 };
+
+/* -------------- Conway Multiserver with Markov Phases --------------- */
 
 class Markov_Phased_Conway_Multi_Server : public virtual Server,
 					  public Conway_Multi_Server,
@@ -379,6 +387,8 @@ protected:
     virtual Positive sumOf_SL( const MVA& solver, const Population& N, const unsigned k ) const;
 };
 
+/* ---------------- Rolia Multiserver with Markov Phases -------------- */
+
 class Markov_Phased_Rolia_Multi_Server : public virtual Server,
 					 public Phased_Rolia_Multi_Server,
 					 public Markov_Phased_Server {
@@ -470,7 +480,7 @@ public:
 /*----------------------------------------------------------------------*/
 
 class Zhou_Multi_Server : public virtual Server,
-			   public Reiser_Multi_Server {
+			  public Reiser_Multi_Server {
 public:
     Zhou_Multi_Server( const unsigned copies )
 	: Server(),
@@ -492,6 +502,67 @@ public:
     virtual unsigned int marginalProbabilitiesSize() const { return 0; }	/* No need for marginals	*/
 
     virtual const char * typeStr() const { return "Zhou_Multi_Server"; }
+
+private:
+    virtual Positive sumOf_SL( const MVA& solver, const Population& N, const unsigned k ) const;
+
+    double S_mean( const MVA& solver, const Population& N, const unsigned k ) const;
+    Probability P_mean( const MVA& solver, const Population& N, const unsigned k ) const;
+};
+
+/* ------------------- Zhou Multiserver with Phases ------------------- */
+
+class Phased_Zhou_Multi_Server : public virtual Server,
+				 public Zhou_Multi_Server {
+public:
+    Phased_Zhou_Multi_Server( const unsigned copies )
+	: Server(1,1,MAX_PHASES),
+	  Zhou_Multi_Server(copies,1,1,MAX_PHASES) {}
+    Phased_Zhou_Multi_Server( const unsigned copies, const unsigned p )
+	: Server(1,1,p),
+	  Zhou_Multi_Server(copies,1,1,p) {}
+    Phased_Zhou_Multi_Server( const unsigned copies, const unsigned k, const unsigned p )
+	: Server(1,k,p),
+	  Zhou_Multi_Server(copies,1,k,p) {}
+    Phased_Zhou_Multi_Server( const unsigned copies, const unsigned e, const unsigned k, const unsigned p )
+	: Server(e,k,p),
+	  Zhou_Multi_Server(copies,e,k,p) {}
+
+    virtual void wait( const MVA& solver, const unsigned k, const Population & N ) const;
+    virtual void mixedWait( const MVA& solver, const Population& N ) const { return Zhou_Multi_Server::mixedWait( solver, N ); }
+    virtual void openWait() const { return Zhou_Multi_Server::openWait(); }
+
+    virtual const char * typeStr() const { return "Phased_Zhou_Multi_Server"; }
+};
+
+/* ---------------- Zhou Multiserver with Markov Phases --------------- */
+
+class Markov_Phased_Zhou_Multi_Server : public virtual Server,
+					public Phased_Zhou_Multi_Server,
+					public Markov_Phased_Server {
+public:
+    Markov_Phased_Zhou_Multi_Server( const unsigned copies )
+	: Server(1,1,MAX_PHASES),
+	  Phased_Zhou_Multi_Server(copies,1,1,MAX_PHASES),
+	  Markov_Phased_Server(1,1,MAX_PHASES) {}
+    Markov_Phased_Zhou_Multi_Server( const unsigned copies, const unsigned p )
+	: Server(1,1,p),
+	  Phased_Zhou_Multi_Server(copies,1,1,p),
+	  Markov_Phased_Server(1,1,p) {}
+    Markov_Phased_Zhou_Multi_Server( const unsigned copies, const unsigned k, const unsigned p )
+	: Server(1,k,p),
+	  Phased_Zhou_Multi_Server(copies,1,k,p),
+	  Markov_Phased_Server(1,k,p) {}
+    Markov_Phased_Zhou_Multi_Server( const unsigned copies, const unsigned e, const unsigned k, const unsigned p )
+	: Server(e,k,p),
+	  Phased_Zhou_Multi_Server(copies,e,k,p),
+	  Markov_Phased_Server(e,k,p) {}
+
+    virtual void wait( const MVA& solver, const unsigned k, const Population & N ) const;
+    virtual void mixedWait( const MVA& solver, const Population& N ) const { return Zhou_Multi_Server::mixedWait( solver, N ); }
+    virtual void openWait() const { return Zhou_Multi_Server::openWait(); }
+
+    virtual const char * typeStr() const { return "Markov_Phased_Zhou_Multi_Server"; }
 };
 
 /*----------------------------------------------------------------------*/

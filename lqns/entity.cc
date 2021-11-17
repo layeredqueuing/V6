@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: entity.cc 15092 2021-10-22 17:07:35Z greg $
+ * $Id: entity.cc 15108 2021-11-17 16:45:53Z greg $
  *
  * Everything you wanted to know about a task or processor, but were
  * afraid to ask.
@@ -911,6 +911,7 @@ Entity::initServerStation( MVASubmodel& submodel )
 	}
 
     }
+
     /* Overtaking -- compute for MARKOV overtaking only. */
 
     const std::set<Task *>& clients = submodel.getClients();
