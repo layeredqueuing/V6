@@ -6,8 +6,8 @@
 ACLOCAL_AMFLAGS=-I ../config
 AM_CPPFLAGS	= -I.. -I../lqiolib/src/headers -I../lqx/libsrc/headers -I../libmva/src/headers
 bin_PROGRAMS 	= qnsolver
-qnsolver_SOURCES= closedmodel.cc openmodel.cc model.cc qnsolver.cc runlqx.cc
-noinst_HEADERS	= closedmodel.h openmodel.h model.h runlqx.h
+qnsolver_SOURCES= closedmodel.cc openmodel.cc model.cc pragma.cc qnsolver.cc runlqx.cc
+noinst_HEADERS	= closedmodel.h openmodel.h model.h pragma.h runlqx.h
 
 EXTRA_DIST	= qnsolver.1 
 

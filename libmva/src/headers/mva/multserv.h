@@ -10,7 +10,7 @@
  * November, 1994
  * November, 2021
  *
- * $Id: multserv.h 15108 2021-11-17 16:45:53Z greg $
+ * $Id: multserv.h 15114 2021-11-18 15:57:57Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -506,8 +506,8 @@ public:
 private:
     virtual Positive sumOf_SL( const MVA& solver, const Population& N, const unsigned k ) const;
 
-    double S_mean( const MVA& solver, const Population& N, const unsigned k ) const;
-    Probability P_mean( const MVA& solver, const Population& N, const unsigned k ) const;
+    double S_mean( const MVA& solver, const Population& N ) const;
+    Probability P_mean( const MVA& solver, const Population& N ) const;
 };
 
 /* ------------------- Zhou Multiserver with Phases ------------------- */

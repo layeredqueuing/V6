@@ -38,6 +38,7 @@ namespace LQIO {
 	    void merge( const std::map<std::string,std::string>& list );
 	    void clear();
 	    const std::map<std::string,std::string>& getList() const;
+	    bool empty() const { return getList().empty(); }
 	    size_t size() const { return getList().size(); }
 	    const std::string get( const std::string& ) const;
 	    static const std::set<std::string>* getValues( const std::string& );

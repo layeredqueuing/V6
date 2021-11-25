@@ -43,7 +43,7 @@ public:
     };
 
 public:
-    ClosedModel( Model& parent, BCMP::JMVA_Document& input, Model::Using mva );
+    ClosedModel( Model& parent, BCMP::JMVA_Document& input, Model::Solver mva );
     virtual ~ClosedModel();
 
     bool construct();
@@ -64,7 +64,7 @@ private:
     Population N;			/* Population (by class) 	*/
     Vector<double> Z;			/* Think Time */
     Vector<unsigned> priority;		/* Priority */
-    Model::Using _mva;
+    Model::Solver _mva;
     MVA * _solver;
 };
 #endif

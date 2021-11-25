@@ -1,6 +1,6 @@
 # Process this file with autoconf to produce a configure script.
 # ------------------------------------------------------------------------
-# $Id: configure.ac 14930 2021-07-20 12:00:33Z greg $
+# $Id: configure.ac 15114 2021-11-18 15:57:57Z greg $
 # ------------------------------------------------------------------------
 AC_INIT([petrisrvn],[6.2],[greg@sce.carleton.ca])
 AC_CONFIG_AUX_DIR([../config])
@@ -37,7 +37,7 @@ AC_CHECK_LIB([m], [sqrt])
 
 # Checks for header files.
 AC_HEADER_SYS_WAIT
-AC_CHECK_HEADERS([errno.h fcntl.h fenv.h glob.h ieeefp.h malloc.h stdlib.h string.h unistd.h sys/errno.h sys/param.h sys/types.h sys/times.h sys/utsname.h])
+AC_CHECK_HEADERS([errno.h fcntl.h fenv.h glob.h ieeefp.h malloc.h stdlib.h string.h unistd.h sys/errno.h sys/param.h sys/stat.h sys/types.h sys/times.h sys/utsname.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_HEADER_STDBOOL 
