@@ -1,5 +1,5 @@
 /*
- * $Id: qnsolver.cc 14882 2021-07-07 11:09:54Z greg $
+ * $Id: qnsolver.cc 15134 2021-11-29 23:23:57Z greg $
  */
 
 #include <algorithm>
@@ -35,11 +35,12 @@ const struct option longopts[] =
     { "plot-throughput",    optional_argument, 	0, 't' },
     { "plot-utilization",   required_argument,	0, 'u' },
     { "plot-waiting-time",  required_argument,  0, 'w' },
+    { "multiserver",	    required_argument,  0, 'm' },
+    { "force-multiserver",  no_argument,	0, 'F' },
     { "verbose",            no_argument,        0, 'v' },
     { "help",               no_argument,       	0, 'h' },
-    { "experimental",	    no_argument,	0, 'x' },
     { "export-qnap2",	    no_argument,	0, 'Q' },
-    { "debug-mva",	    no_argument,    	0, 'd' },
+    { "debug-mva",	    no_argument,    	0, 'D' },
     { "debug-xml",	    no_argument, 	0, 'X' },
     { "debug-spex",	    no_argument,	0, 'S' },
     { 0, 0, 0, 0 }
@@ -50,26 +51,26 @@ static std::string opts;
 static std::string opts = "bdefhlo:rstvxQSX";
 #endif
 
-const char * opthelp[]  = {
-    /* "bounds"		  */    "Compute bounds",
-    /* "exact-mva",       */    "Use Exact MVA.",
-    /* "bard-schweitzer", */    "Use Bard-Schweitzer approximate MVA.",
-    /* "linearizer",      */    "Use Linearizer.",
-    /* "fast-linearizer", */    "Use the Fast Linearizer solver.",
-    /* "output",	  */	"Send output to ARG.",
-    /* "plot-queue-length */	"Output gnuplot to plot station queue-length.  ARG specifies a class or station.",
-    /* "plot-response-time" */	"Output gnuplot to plot system response-time (and bounds).", 
-    /* "plot-throughput", */    "Output gnuplot to plot system throughput (and bounds), or for a class or station with ARG.",
-    /* "plot-utilization  */	"Output gnuplot to plot utilization.  ARG specifies a class or station.",
-    /* "plot-waiting-time */	"Output gnuplot to plot station waiting-times.  ARG specifies a class or station.",
-    /* "verbose",         */    "",
-    /* "help",            */    "Show this.",
-    /* "experimental",	  */	"",
-    /* "export-qnap2",	  */	"Export a QNAP2 model.  Do not solve.",
-    /* "debug-mva",       */    "Enable debug code.",
-    /* "debug-xml"	  */    "Debug XML input.",
-    /* "debug-spex"	  */	"Debug SPEX program.",
-    nullptr
+const static std::map<const std::string,const std::string> opthelp  = {
+    { "bounds",		    "Compute bounds" },
+    { "exact-mva",	    "Use Exact MVA." },	
+    { "bard-schweitzer",    "Use Bard-Schweitzer approximate MVA." },
+    { "linearizer",	    "Use Linearizer." },
+    { "fast-linearizer",    "Use the Fast Linearizer solver." },
+    { "output",		    "Send output to ARG." },
+    { "plot-queue-length",  "Output gnuplot to plot station queue-length.  ARG specifies a class or station." },
+    { "plot-response-time", "Output gnuplot to plot system response-time (and bounds)." },
+    { "plot-throughput",    "Output gnuplot to plot system throughput (and bounds), or for a class or station with ARG." },
+    { "plot-utilization",   "Output gnuplot to plot utilization.  ARG specifies a class or station." },
+    { "plot-waiting-time",  "Output gnuplot to plot station waiting-times.  ARG specifies a class or station." },
+    { "multiserver",	    "Use ARG for multiservers.  ARG={conway,reiser,rolia,zhou}." },
+    { "force-multiserver",  "Use the multiserver solution for load independent stations (copies=1)." },
+    { "verbose",	    "" },
+    { "help",		    "Show this." },
+    { "export-qnap2",	    "Export a QNAP2 model.  Do not solve." },
+    { "debug-mva",	    "Enable debug code." },
+    { "debug-xml",	    "Debug XML input." },
+    { "debug-spex",	    "Debug SPEX program." },
 };
 
 static bool verbose_flag = true;			/* Print results		*/
@@ -128,6 +129,10 @@ int main (int argc, char *argv[])
 	    pragmas.insert(LQIO::DOM::Pragma::_mva_,LQIO::DOM::Pragma::_fast_);
 	    break;
 
+	case 'F':
+	    pragmas.insert(LQIO::DOM::Pragma::_force_multiserver_,LQIO::DOM::Pragma::_true_);
+	    break;
+	    
 	case 'h':
 	    usage();
 	    return 0;
@@ -135,7 +140,11 @@ int main (int argc, char *argv[])
 	case 'l':
 	    pragmas.insert(LQIO::DOM::Pragma::_mva_,LQIO::DOM::Pragma::_linearizer_);
 	    break;
-			
+
+	case 'm':
+	    pragmas.insert(LQIO::DOM::Pragma::_multiserver_,optarg);
+	    break;
+	    
 	case 'o':
             output_file_name = optarg;
 	    break;
@@ -211,6 +220,7 @@ int main (int argc, char *argv[])
 	    if ( print_qnap2 ) {
 		std::cout << BCMP::QNAP2_Document("",input.model()) << std::endl;
 	    } else {
+		input.mergePragmas( pragmas.getList() );
 		Pragma::set( input.getPragmaList() );		/* load pragmas here */
 
 		try {
@@ -250,8 +260,7 @@ usage()
 #if HAVE_GETOPT_LONG
     std::cerr << " [option]" << std::endl << std::endl;
     std::cerr << "Options" << std::endl;
-    const char ** p = opthelp;
-    for ( const struct option *o = longopts; (o->name || o->val) && *p; ++o, ++p ) {
+    for ( const struct option *o = longopts; (o->name || o->val); ++o ) {
 	std::string s;
 	if ( o->name ) {
 	    s = "--";
@@ -267,7 +276,7 @@ usage()
 	    std::cerr << "     ";
 	}
 	std::cerr.setf( std::ios::left, std::ios::adjustfield );
-	std::cerr << std::setw(24) << s << *p << std::endl;
+	std::cerr << std::setw(24) << s << opthelp.at(o->name) << std::endl;
     }
 #else
     const char * s;
