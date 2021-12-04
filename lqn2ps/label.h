@@ -1,6 +1,6 @@
 /* -*- c++ -*- node.h	-- Greg Franks
  *
- * $Id: label.h 14882 2021-07-07 11:09:54Z greg $
+ * $Id: label.h 15144 2021-12-02 19:10:29Z greg $
  */
 
 #ifndef _LABEL_H
@@ -406,7 +406,7 @@ public:
     void operator()( const Label::Line& line ) {
 	const std::string& str = line.getStr();
 	if ( str.size() ) {
-	    _point.moveBy( 0, (_self.*_text)( _output, _point, str, line.getFont(), Flags::print[FONT_SIZE].value.i, _justification, line.getColour(), _flags ) );
+	    _point.moveBy( 0, (_self.*_text)( _output, _point, str, line.getFont(), Flags::print[FONT_SIZE].opts.value.i, _justification, line.getColour(), _flags ) );
 	}
     }
 private:
@@ -427,7 +427,7 @@ public:
     void operator()( const Label::Line& line ) {
 	const std::string& str = line.getStr();
 	if ( str.size() ) {
-	    _point.moveBy( 0, (_self.*_text)( _point, str, line.getFont(), Flags::print[FONT_SIZE].value.i, _justification, line.getColour() ) );
+	    _point.moveBy( 0, (_self.*_text)( _point, str, line.getFont(), Flags::print[FONT_SIZE].opts.value.i, _justification, line.getColour() ) );
 	}
     }
 private:

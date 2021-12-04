@@ -1,5 +1,5 @@
 #                                               -*- Autoconf -*-
-# $Id: configure.ac 14569 2021-03-19 13:29:09Z greg $
+# $Id: configure.ac 15144 2021-12-02 19:10:29Z greg $
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
@@ -39,10 +39,8 @@ AC_FUNC_VPRINTF
 AC_CHECK_FUNCS([ctime getopt_long getsubopt pow rint strcasecmp strchr strdup strerror strrchr strftime])
 AC_CHECK_FUNCS([geteuid getpwuid getrusage gettimeofday uname mmap])
 
-# Check for libexpat
 AC_CHECK_HEADERS([expat.h])
 AC_CHECK_LIB([expat], [XML_ParserCreateNS])
-
 AM_CONDITIONAL([EXPAT], [test "x${ac_cv_lib_expat_XML_ParserCreateNS}" = "xyes"] )
 
 # Produce the desired output files

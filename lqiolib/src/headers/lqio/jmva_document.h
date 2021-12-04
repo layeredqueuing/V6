@@ -385,6 +385,7 @@ namespace BCMP {
 	static const XML_Char * Xcustomerclass;
 	static const XML_Char * Xdelaystation;
 	static const XML_Char * Xdescription;
+	static const XML_Char * Xldstation;
 	static const XML_Char * Xlistation;
 	static const XML_Char * XmaxSamples;
 	static const XML_Char * Xmodel;

@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: pragma.cc 14882 2021-07-07 11:09:54Z greg $ *
+ * $Id: pragma.cc 15144 2021-12-02 19:10:29Z greg $ *
  * Pragma processing and definitions.
  *
  * Copyright the Real-Time and Distributed Systems Group,
@@ -101,8 +101,8 @@ void Pragma::setBCMP( const std::string& value )
     if ( pragma != __bcmp_pragma.end() ) {
 	switch ( pragma->second ) {
 	case BCMP::STANDARD:
-	    Flags::print[QUEUEING_MODEL].value.i = 1;
-	    Flags::print[AGGREGATION].value.i = AGGREGATE_ENTRIES;
+	    Flags::print[QUEUEING_MODEL].opts.value.i = 1;
+	    Flags::print[AGGREGATION].opts.value.i = AGGREGATE_ENTRIES;
 	    Flags::bcmp_model = true;
 	    break;
 	default:
@@ -142,13 +142,13 @@ void Pragma::setForceInfinite( const std::string& value )
 
 layering_format Pragma::layering()
 {
-    switch ( Flags::print[LAYERING].value.i ) {
+    switch ( Flags::print[LAYERING].opts.value.i ) {
     case LAYERING_BATCH:
     case LAYERING_HWSW:
     case LAYERING_MOL:
     case LAYERING_SQUASHED:
     case LAYERING_SRVN:
-	return static_cast<layering_format>(Flags::print[LAYERING].value.i);
+	return static_cast<layering_format>(Flags::print[LAYERING].opts.value.i);
 	
     default:
 	return LAYERING_BATCH;
@@ -169,7 +169,7 @@ void Pragma::setLayering(const std::string& value)
 
     const std::map<const std::string,const layering_format>::const_iterator pragma = __layering_pragma.find( value );
     if ( pragma != __layering_pragma.end() ) {
-	Flags::print[LAYERING].value.i = pragma->second;
+	Flags::print[LAYERING].opts.value.i = pragma->second;
     } else {
 	throw std::domain_error( value );
     }

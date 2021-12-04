@@ -1,6 +1,6 @@
 /* srvn2eepic.c	-- Greg Franks Sun Jan 26 2003
  *
- * $Id: main.cc 15071 2021-10-13 13:51:49Z greg $
+ * $Id: option.cc 15144 2021-12-02 19:10:29Z greg $
  */
 
 #include "lqn2ps.h"
@@ -100,57 +100,53 @@ const char * Options::integer [] =
  * Input output format options
  */
 
-const char * Options::io[] =
+const std::map<const file_format,const std::string> Options::io =
 {
-    "eepic",
+    { file_format::EEPIC,	"eepic" },
 #if EMF_OUTPUT
-    "emf",
+    { file_format::EMF,		"emf" },
 #endif
-    "fig",
+    { file_format::FIG,		"fig" },
 #if HAVE_GD_H && HAVE_LIBGD && HAVE_GDIMAGEGIFPTR
-    "gif",
+    { file_format::GIF,		"gif" },
 #endif
 #if JMVA_OUTPUT && HAVE_EXPAT_H
-    "jmva",
+    { file_format::JMVA,	"jmva" },
 #endif
 #if HAVE_GD_H && HAVE_LIBGD && HAVE_LIBJPEG
-    "jpeg",
+    { file_format::JPEG,	"jpeg" },
 #endif
-    "json",
-    "lqx",
-    "null",
-    "out",
+    { file_format::JSON,	"json" },
+    { file_format::LQX,		"lqx" },
+    { file_format::NO_OUTPUT,	"null" },
+    { file_format::OUTPUT,	"out" },
 #if QNAP2_OUTPUT
-    "qnap2",
+    { file_format::QNAP2,	"qnap2" },
 #endif
-    "parseable",
+    { file_format::PARSEABLE,	"parseable" },
 #if defined(PMIF_OUTPUT)
     "pmif",
 #endif
 #if HAVE_GD_H && HAVE_LIBGD && HAVE_LIBPNG
-    "png",
+    { file_format::PNG,		"png" },
 #endif
-    "ps",
-    "pstex",
-#if defined(QNAP_OUTPUT)
-    "qnap",
+    { file_format::POSTSCRIPT,	"ps" },
+    { file_format::PSTEX,	"pstex" },
+    { file_format::RTF,		"rtf" },
+    { file_format::SRVN,	"lqn" },
+#if SVG_OUTPUT
+    { file_format::SVG,		"svg" },
 #endif
-    "rtf",
-    "lqn",
-#if defined(SVG_OUTPUT)
-    "svg",
+#if SXD_OUTPUT
+    { file_format::SXD,		"sxd" },
 #endif
-#if defined(SXD_OUTPUT)
-    "sxd",
+#if TXT_OUTPUT
+    { file_format::TXT,		"txt" },
 #endif
-#if defined(TXT_OUTPUT)
-    "txt",
+#if X11_OUTPUT
+    { file_format::X11,		"x11" },
 #endif
-#if defined(X11_OUTPUT)
-    "x11",
-#endif
-    "xml",
-    nullptr
+    { file_format::XML,		"xml" }
 };
 
 const char * Options::justification[] =
@@ -264,10 +260,10 @@ main(int argc, char *argv[])
 {
     /* We can only initialize integers in the Flags object -- initialize floats here. */
 
-    Flags::print[MAGNIFICATION].value.f = 1.0;
-    Flags::print[BORDER].value.f = 18.0;
-    Flags::print[X_SPACING].value.f = DEFAULT_X_SPACING;
-    Flags::print[Y_SPACING].value.f = DEFAULT_Y_SPACING;
+    Flags::print[MAGNIFICATION].opts.value.f = 1.0;
+    Flags::print[BORDER].opts.value.f = 18.0;
+    Flags::print[X_SPACING].opts.value.f = DEFAULT_X_SPACING;
+    Flags::print[Y_SPACING].opts.value.f = DEFAULT_Y_SPACING;
 
     LQIO::io_vars.init( VERSION, basename( argv[0] ), severity_action, local_error_messages, LSTLCLERRMSG-LQIO::LSTGBLERRMSG );
 
@@ -278,16 +274,16 @@ main(int argc, char *argv[])
     const char * p = strrchr( LQIO::io_vars.toolname(), '2' );
     if ( p ) {
 	p += 1;
-	for ( int j = 0; Options::io[j]; ++j ) {
-	    if ( strncmp( p, Options::io[j], strlen(Options::io[j]) ) == 0 ) {
-		setOutputFormat( j );
+	for ( std::map<const file_format,const std::string>::const_iterator j = Options::io.begin(); j != Options::io.end(); ++j ) {
+	    if ( j->second == p ) {
+		setOutputFormat( j->first );
 		goto found1;
 	    }
 	}
 #if defined(REP2FLAT)
 	if ( strcmp( p, "flat" ) == 0 ) {
-	    setOutputFormat( FORMAT_SRVN );
-	    Flags::print[REPLICATION].value.i = REPLICATION_EXPAND;
+	    setOutputFormat( file_format::SRVN );
+	    Flags::print[REPLICATION].opts.value.i = REPLICATION_EXPAND;
 	    goto found1;
 	}
 #endif
@@ -413,12 +409,12 @@ special( const std::string& parameter, const std::string& value, LQIO::DOM::Prag
 	    break;
 	    
 	case SPECIAL_TASKS_ONLY:
-	    Flags::print[AGGREGATION].value.i = AGGREGATE_ENTRIES;
+	    Flags::print[AGGREGATION].opts.value.i = AGGREGATE_ENTRIES;
 	    if ( Flags::icon_height == DEFAULT_ICON_HEIGHT ) {
 		if ( processor_output() || share_output() ) {
-		    Flags::print[Y_SPACING].value.f = 45;
+		    Flags::print[Y_SPACING].opts.value.f = 45;
 		} else {
-		    Flags::print[Y_SPACING].value.f = 27;
+		    Flags::print[Y_SPACING].opts.value.f = 27;
 		}
 		Flags::icon_height = 18;
 		Flags::entry_height = Flags::icon_height * 0.6;
@@ -466,21 +462,24 @@ get_bool( const std::string& arg, const bool default_value )
 bool
 graphical_output()
 {
-    return Flags::print[OUTPUT_FORMAT].value.i != FORMAT_JSON
-	&& Flags::print[OUTPUT_FORMAT].value.i != FORMAT_LQX
-	&& Flags::print[OUTPUT_FORMAT].value.i != FORMAT_NULL
-	&& Flags::print[OUTPUT_FORMAT].value.i != FORMAT_OUTPUT
-	&& Flags::print[OUTPUT_FORMAT].value.i != FORMAT_PARSEABLE
-#if defined(QNAP_OUTPUT)
-	&& Flags::print[OUTPUT_FORMAT].value.i != FORMAT_QNAP
+    static const std::set<file_format> reject = {
+	file_format::JSON,
+	file_format::LQX,
+	file_format::NO_OUTPUT,
+	file_format::OUTPUT,
+	file_format::PARSEABLE,
+#if QNAP2_OUTPUT
+	file_format::QNAP2,
 #endif
- 	&& Flags::print[OUTPUT_FORMAT].value.i != FORMAT_RTF
-	&& Flags::print[OUTPUT_FORMAT].value.i != FORMAT_SRVN
-#if defined(TXT_OUTPUT)
-	&& Flags::print[OUTPUT_FORMAT].value.i != FORMAT_TXT
+	file_format::RTF,
+	file_format::SRVN,
+#if TXT_OUTPUT
+	file_format::TXT,
 #endif
-	&& Flags::print[OUTPUT_FORMAT].value.i != FORMAT_XML
-	;
+	file_format::XML
+    };
+
+    return std::find( reject.begin(), reject.end(), Flags::print[OUTPUT_FORMAT].opts.value.o ) != reject.end();
 }
 
 
@@ -491,9 +490,9 @@ graphical_output()
 bool
 output_output()
 {
-    return Flags::print[OUTPUT_FORMAT].value.i == FORMAT_OUTPUT
-	|| Flags::print[OUTPUT_FORMAT].value.i == FORMAT_PARSEABLE
-	|| Flags::print[OUTPUT_FORMAT].value.i == FORMAT_RTF;
+    return Flags::print[OUTPUT_FORMAT].opts.value.o == file_format::OUTPUT
+	|| Flags::print[OUTPUT_FORMAT].opts.value.o == file_format::PARSEABLE
+	|| Flags::print[OUTPUT_FORMAT].opts.value.o == file_format::RTF;
 }
 
 
@@ -504,10 +503,10 @@ output_output()
 bool
 input_output()
 {
-    return Flags::print[OUTPUT_FORMAT].value.i == FORMAT_SRVN
-	|| Flags::print[OUTPUT_FORMAT].value.i == FORMAT_JSON
-	|| Flags::print[OUTPUT_FORMAT].value.i == FORMAT_LQX
-	|| Flags::print[OUTPUT_FORMAT].value.i == FORMAT_XML
+    return Flags::print[OUTPUT_FORMAT].opts.value.o == file_format::SRVN
+	|| Flags::print[OUTPUT_FORMAT].opts.value.o == file_format::JSON
+	|| Flags::print[OUTPUT_FORMAT].opts.value.o == file_format::LQX
+	|| Flags::print[OUTPUT_FORMAT].opts.value.o == file_format::XML
 	;
 }
 
@@ -520,40 +519,40 @@ bool
 partial_output()
 {
     return submodel_output() || queueing_output()
-	|| Flags::print[INCLUDE_ONLY].value.r != nullptr;
+	|| Flags::print[INCLUDE_ONLY].opts.value.r != nullptr;
 }
 
 bool
 processor_output()
 {
-    return Flags::print[LAYERING].value.i == LAYERING_PROCESSOR
-	|| Flags::print[LAYERING].value.i == LAYERING_PROCESSOR_TASK
-	|| Flags::print[LAYERING].value.i == LAYERING_TASK_PROCESSOR;
+    return Flags::print[LAYERING].opts.value.i == LAYERING_PROCESSOR
+	|| Flags::print[LAYERING].opts.value.i == LAYERING_PROCESSOR_TASK
+	|| Flags::print[LAYERING].opts.value.i == LAYERING_TASK_PROCESSOR;
 }
 
 bool
 queueing_output()
 {
-    return Flags::print[QUEUEING_MODEL].value.i != 0;
+    return Flags::print[QUEUEING_MODEL].opts.value.i != 0;
 }
 
 
 bool
 share_output()
 {
-    return Flags::print[LAYERING].value.i == LAYERING_SHARE;
+    return Flags::print[LAYERING].opts.value.i == LAYERING_SHARE;
 }
 
 bool
 submodel_output()
 {
-    return Flags::print[SUBMODEL].value.i != 0;
+    return Flags::print[SUBMODEL].opts.value.i != 0;
 }
 
 bool
 difference_output()
 {
-    return Flags::print[COLOUR].value.i == COLOUR_DIFFERENCES;
+    return Flags::print[COLOUR].opts.value.i == COLOUR_DIFFERENCES;
 }
 
 #if defined(REP2FLAT)

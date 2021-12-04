@@ -1,7 +1,7 @@
 /* -*- c++ -*-
  * graphic.h	-- Greg Franks
  *
- * $Id: graphic.h 14882 2021-07-07 11:09:54Z greg $
+ * $Id: graphic.h 15144 2021-12-02 19:10:29Z greg $
  */
 
 #ifndef _GRAPHIC_H
@@ -530,7 +530,7 @@ private:
     static ColourManip setfill( const Graphic::colour_type aColour ) { return ColourManip( SVG::setfill_str, aColour ); }
     static ColourManip setcolour( const Graphic::colour_type aColour ) { return ColourManip( SVG::setcolour_str, aColour ); }
     static ColourManip stroke( const Graphic::colour_type aColour ) { return ColourManip( SVG::stroke_str, aColour ); }
-    static FontManip setfont( const Graphic::font_type aFont ) { return FontManip( setfont_str, aFont, Flags::print[FONT_SIZE].value.i ); }
+    static FontManip setfont( const Graphic::font_type aFont ) { return FontManip( setfont_str, aFont, Flags::print[FONT_SIZE].opts.value.i ); }
     static JustificationManip justify( const justification_type justification ) { return JustificationManip( justify_str, justification ); }
     static LineStyleManip linestyle( const Graphic::linestyle_type aStyle ) { return LineStyleManip( SVG::linestyle_str, aStyle ); }
     static PointManip moveto( const Point& aPoint ) { return PointManip( point, aPoint ); }

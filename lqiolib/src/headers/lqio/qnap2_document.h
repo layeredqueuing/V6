@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- *  $Id: qnap2_document.h 14594 2021-04-08 11:10:26Z greg $
+ *  $Id: qnap2_document.h 15144 2021-12-02 19:10:29Z greg $
  *
  *  Created by Greg Franks 2020/12/28
  */
@@ -50,6 +50,7 @@ namespace BCMP {
     private:
 	struct getIntegerVariables {
 	    getIntegerVariables( const Model& model, std::set<const LQIO::DOM::ExternalVariable *>& symbol_table ) : _model(model), _symbol_table(symbol_table) {}
+	    std::string operator()( const std::string&, const Model::Station::pair_t& m ) const;
 	    std::string operator()( const std::string&, const Model::Chain::pair_t& k ) const;
 	private:
 	    const Model& model() const { return _model; }

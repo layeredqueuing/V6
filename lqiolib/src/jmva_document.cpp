@@ -557,12 +557,12 @@ namespace BCMP {
 	if ( strcasecmp( element, Xdelaystation ) == 0 ) {
 	    _stack.push( parse_stack_t(element,&JMVA_Document::startStation,Object(createStation( Model::Station::Type::DELAY, attributes )) ) );
 	} else if ( strcasecmp( element, Xlistation ) == 0 ) {
-	    const LQIO::DOM::ExternalVariable * servers = getVariableAttribute( attributes, Xservers, 1 );
-	    if ( LQIO::DOM::ExternalVariable::isDefault( servers, 1.0 ) ) {
-		_stack.push( parse_stack_t(element,&JMVA_Document::startStation,Object(createStation( Model::Station::Type::LOAD_INDEPENDENT, attributes )) ) );
-	    } else {
-		_stack.push( parse_stack_t(element,&JMVA_Document::startStation,Object(createStation( Model::Station::Type::MULTISERVER, attributes )) ) );
+	    if ( !LQIO::DOM::ExternalVariable::isDefault( getVariableAttribute( attributes, Xservers, 1 ), 1.0 ) ) {
+		solution_error( LQIO::ERR_INVALID_PARAMETER, Xservers, Xlistation, XML::getStringAttribute( attributes, Xname ), "Not equal to 1" );
 	    }
+	    _stack.push( parse_stack_t(element,&JMVA_Document::startStation,Object(createStation( Model::Station::Type::LOAD_INDEPENDENT, attributes )) ) );
+	} else if ( strcasecmp( element, Xldstation ) == 0 ) {
+	    _stack.push( parse_stack_t(element,&JMVA_Document::startStation,Object(createStation( Model::Station::Type::MULTISERVER, attributes )) ) );
 	} else { // multiserver???
 	    throw LQIO::element_error( element );
 	}
@@ -1658,19 +1658,13 @@ namespace BCMP {
     JMVA_Document::printStation::operator()( const Model::Station::pair_t& m ) const
     {
 	const BCMP::Model::Station& station = m.second;
-	std::string element;
-	switch ( station.type() ) {
-	case Model::Station::Type::DELAY:
-	    element = Xdelaystation;
-	    break;
-	case Model::Station::Type::MULTISERVER:
-	case Model::Station::Type::LOAD_INDEPENDENT:
-	    element = Xlistation;
-	    break;
-	default:
-	    throw std::range_error( "JMVA_Document::printStation::operator(): Undefined station type." );
-	}
-	
+	static const std::map<Model::Station::Type,const char * const> type = {
+	    { Model::Station::Type::DELAY, Xdelaystation },
+	    { Model::Station::Type::MULTISERVER, Xldstation },
+	    { Model::Station::Type::LOAD_INDEPENDENT, Xlistation }
+	};
+	const char * const element = type.at(station.type());
+
 	_output << XML::start_element( element ) << XML::attribute( Xname, m.first );
 	if ( station.copies() != nullptr ) _output << XML::attribute( Xservers, *station.copies() );
 	_output << ">" << std::endl;
@@ -1901,6 +1895,7 @@ namespace BCMP {
     const XML_Char * JMVA_Document::Xdelaystation	= "delaystation";
     const XML_Char * JMVA_Document::Xdescription	= "description";
     const XML_Char * JMVA_Document::Xlistation		= "listation";
+    const XML_Char * JMVA_Document::Xldstation		= "ldstation";
     const XML_Char * JMVA_Document::XmaxSamples		= "maxSamples";
     const XML_Char * JMVA_Document::Xmodel		= "model";
     const XML_Char * JMVA_Document::Xmultiplicity	= "multiplicity";

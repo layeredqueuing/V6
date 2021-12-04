@@ -1,6 +1,6 @@
 /* element.cc	-- Greg Franks Wed Feb 12 2003
  *
- * $Id: element.cc 14882 2021-07-07 11:09:54Z greg $
+ * $Id: element.cc 15144 2021-12-02 19:10:29Z greg $
  */
 
 #include "element.h"
@@ -96,7 +96,7 @@ Element::addPath( const unsigned aPath )
 bool
 Element::pathTest() const
 {
-    return (Flags::print[CHAIN].value.i == 0 && isReachable()) || hasPath( Flags::print[CHAIN].value.i ) != 0;
+    return (Flags::print[CHAIN].opts.value.i == 0 && isReachable()) || hasPath( Flags::print[CHAIN].opts.value.i ) != 0;
 }
 
 

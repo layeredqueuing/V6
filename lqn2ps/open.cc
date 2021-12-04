@@ -1,6 +1,6 @@
 /* open.cc	-- Greg Franks Tue Feb 18 2003
  *
- * $Id: open.cc 14882 2021-07-07 11:09:54Z greg $
+ * $Id: open.cc 15144 2021-12-02 19:10:29Z greg $
  */
 
 #include "lqn2ps.h"
@@ -105,7 +105,7 @@ OpenArrivalSource::setChain( unsigned k, const callPredicate aFunc )
 OpenArrivalSource&
 OpenArrivalSource::aggregate()
 {
-    switch ( Flags::print[AGGREGATION].value.i ) {
+    switch ( Flags::print[AGGREGATION].opts.value.i ) {
     case AGGREGATE_ENTRIES:
 	for ( std::vector<OpenArrival *>::const_iterator call = calls().begin(); call != calls().end(); ++call ) {
 	    Task * dstTask = const_cast<Task *>((*call)->dstTask());
@@ -190,11 +190,11 @@ OpenArrivalSource::label()
     for ( std::vector<OpenArrival *>::const_iterator call = calls().begin(); call != calls().end(); ++call ) {
 	if ( queueing_output() ) {
 	    bool print_goop = false;
-	    if ( Flags::print[INPUT_PARAMETERS].value.b ) {
+	    if ( Flags::print[INPUT_PARAMETERS].opts.value.b ) {
 		*myLabel << (*call)->dstName() << " (" << (*call)->openArrivalRate() << ")";
 		myLabel->newLine();
 	    }
-	    if ( Flags::have_results && Flags::print[WAITING].value.b ) {
+	    if ( Flags::have_results && Flags::print[WAITING].opts.value.b ) {
 		*myLabel << (*call)->dstName() << "=" << opt_pct((*call)->openWait());
 		myLabel->newLine();
 	    }
