@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: processor.cc 15144 2021-12-02 19:10:29Z greg $
+ * $Id: processor.cc 15171 2021-12-08 03:02:09Z greg $
  *
  * Everything you wanted to know about a task, but were afraid to ask.
  *
@@ -13,15 +13,9 @@
  */
 
 #include "lqn2ps.h"
-#include <cmath>
 #include <algorithm>
-#include <limits.h>
-#if HAVE_VALUES_H
-#include <values.h>
-#endif
-#if HAVE_FLOAT_H
-#include <float.h>
-#endif
+#include <cmath>
+#include <limits>
 #include <lqio/dom_document.h>
 #include <lqio/dom_processor.h>
 #include <lqio/error.h>
@@ -70,7 +64,7 @@ Processor::Processor( const LQIO::DOM::Processor* dom )
       _shares(),
       _groupIsSelected(false)
 { 
-    if ( Flags::print[PROCESSORS].opts.value.i == PROCESSOR_NONE ) {
+    if ( Flags::print[PROCESSORS].opts.value.p == Processors::NONE ) {
 	isSelected(false);
     }
     if ( !isMultiServer() && scheduling() != SCHEDULE_DELAY && !Pragma::defaultProcessorScheduling() ) {
@@ -160,7 +154,7 @@ Processor::utilization() const
 size_t
 Processor::taskDepth() const
 { 
-    size_t minLevel = UINT_MAX;
+    size_t minLevel = std::numeric_limits<std::size_t>::max();
 
     for ( std::set<Task *>::const_iterator nextTask = tasks().begin(); nextTask != tasks().end(); ++nextTask ) {
 	const Task& aTask = **nextTask;
@@ -178,7 +172,7 @@ Processor::taskDepth() const
 double
 Processor::meanLevel() const
 {
-    size_t minLevel = UINT_MAX;
+    size_t minLevel = std::numeric_limits<std::size_t>::max();
     size_t maxLevel = 0;
     for ( std::set<Task *>::const_iterator nextTask = tasks().begin(); nextTask != tasks().end(); ++nextTask ) {
 	const Task& aTask = **nextTask;
@@ -212,14 +206,14 @@ Processor::hasPriorities() const
 bool
 Processor::isInteresting() const
 {
-    return Flags::print[PROCESSORS].opts.value.i == PROCESSOR_ALL
-	|| (Flags::print[PROCESSORS].opts.value.i == PROCESSOR_DEFAULT 
+    return Flags::print[PROCESSORS].opts.value.p == Processors::ALL
+	|| (Flags::print[PROCESSORS].opts.value.p == Processors::DEFAULT 
 	    && !isInfinite() 
 	    && clientsCanQueue() )
-	|| (Flags::print[PROCESSORS].opts.value.i == PROCESSOR_NONINFINITE
+	|| (Flags::print[PROCESSORS].opts.value.p == Processors::NONINFINITE
 	    && !isInfinite() )
 #if defined(TXT_OUTPUT)
-	|| Flags::print[OUTPUT_FORMAT].opts.value.o == file_format::TXT
+	|| Flags::print[OUTPUT_FORMAT].opts.value.f == File_Format::TXT
 #endif
 	|| input_output();
 }
@@ -279,7 +273,7 @@ Processor::nClients() const
     for ( std::set<Task *>::const_iterator nextTask = tasks().begin(); nextTask != tasks().end(); ++nextTask ) {
 	const Task& aTask = **nextTask;
 	if ( aTask.isInfinite() ) {
-	    return UINT_MAX;
+	    return std::numeric_limits<unsigned int>::max();
 	}
 	const LQIO::DOM::ExternalVariable * copies = dynamic_cast<const LQIO::DOM::Task *>(aTask.getDOM())->getCopies();
 	double value = 1;
@@ -297,7 +291,7 @@ double
 Processor::getIndex() const
 {
     std::vector<Task *> clients;
-    double anIndex = MAXDOUBLE;
+    double anIndex = std::numeric_limits<double>::max();
     this->clients( clients );
 
     for( std::vector<Task *>::const_iterator client = clients.begin(); client != clients.end(); ++client ) {
@@ -376,8 +370,8 @@ Processor::colour() const
     if ( isSurrogate() ) {
 	return Graphic::GREY_10;
     }
-    switch ( Flags::print[COLOUR].opts.value.i ) {
-    case COLOUR_SERVER_TYPE:
+    switch ( Flags::print[COLOUR].opts.value.c ) {
+    case Colouring::SERVER_TYPE:
 	return Graphic::BLUE;
     }
     return Entity::colour();
@@ -429,7 +423,7 @@ Processor::label()
     }
     if ( Flags::have_results && Flags::print[PROCESSOR_UTILIZATION].opts.value.b ) {
 	myLabel->newLine() << begin_math( &Label::rho ) << "=" << opt_pct(utilization()) << end_math();
-	if ( hasBogusUtilization() && Flags::print[COLOUR].opts.value.i != COLOUR_OFF ) {
+	if ( hasBogusUtilization() && Flags::print[COLOUR].opts.value.c != Colouring::NONE ) {
 	    myLabel->colour(Graphic::RED);
 	}
     }
@@ -684,7 +678,7 @@ proc_scheduling_of_str( std::ostream& output, const Processor & processor )
 bool
 Processor::compare( const void * n1, const void *n2 )
 {
-    if ( Flags::sort == NO_SORT ) {
+    if ( Flags::sort == Sorting::NONE ) {
 	return false;
     }
     const Processor * p1 = *static_cast<Processor **>(const_cast<void *>(n1));
@@ -694,8 +688,8 @@ Processor::compare( const void * n1, const void *n2 )
     } else if ( p1->taskDepth() - p2->taskDepth() != 0 ) {
 	return p1->taskDepth() < p2->taskDepth();
     } else switch ( Flags::sort ) {
-    case REVERSE_SORT: return p2->name() > p1->name();
-    case FORWARD_SORT: return p1->name() < p2->name();
+	case Sorting::REVERSE: return p2->name() > p1->name();
+	case Sorting::FORWARD: return p1->name() < p2->name();
     default: return false;
     }
 }

@@ -1,8 +1,8 @@
 /* -*- c++ -*-
  * lqn2ps.h	-- Greg Franks
  *
- * $Id: lqn2ps.h 15144 2021-12-02 19:10:29Z greg $
- *
+ * $Id: lqn2ps.h 15171 2021-12-08 03:02:09Z greg $
+ * ------------------------------------------------------------------------
  */
 
 #ifndef _LQN2PS_H
@@ -30,16 +30,7 @@
 #include <regex>
 #include <lqio/input.h>
 #include <lqio/dom_extvar.h>
-#if defined(HAVE_VALUES_H)
-#include <values.h>
-#endif
-#if defined(HAVE_FLOAT_H)
-#include <float.h>
-#endif
-
-#if !defined(MAXDOUBLE)
-#define MAXDOUBLE FLT_MAX
-#endif
+#include "option.h"
 
 namespace LQIO {
     namespace DOM {
@@ -62,7 +53,7 @@ extern std::string command_line;
 bool process_special( const char * p, LQIO::DOM::Pragma& );
 bool special( const std::string& parameter, const std::string& value, LQIO::DOM::Pragma& );
 
-const unsigned int MAX_PHASES	    = 3;	/* Number of Phases.		*/
+const unsigned int MAX_PHASES	    = 3;		/* Number of Phases.		*/
 
 const double PTS_PER_INCH	    = 72.0;
 const double DEFAULT_X_SPACING	    = 9.0;
@@ -81,201 +72,15 @@ const int min_fontsize 		    = 6;
 const int max_fontsize              = 36;
 const unsigned int MAX_CONFIDENCE   = 2;
 const unsigned N_SEMAPHORE_ENTRIES  = 2;
-const unsigned N_RWLOCK_ENTRIES		= 4;
+const unsigned N_RWLOCK_ENTRIES	    = 4;
 const double EPSILON = 0.000001;
 
 extern std::string command_line;
 
 typedef enum {
-    AGGREGATE_NONE,
-    AGGREGATE_SEQUENCES,
-    AGGREGATE_ACTIVITIES,
-    AGGREGATE_PHASES,
-    AGGREGATE_ENTRIES,
-    AGGREGATE_THREADS
-} aggregation_type;
-
-typedef enum {
     TIMEBENCH_STYLE,
     JLQNDEF_STYLE
 } graphical_output_style_type;
-
-enum class file_format {
-    EEPIC,
-#if defined(EMF_OUTPUT)
-    EMF,
-#endif
-    FIG,
-#if HAVE_GD_H && HAVE_LIBGD && HAVE_GDIMAGEGIFPTR
-    GIF,
-#endif
-#if JMVA_OUTPUT
-    JMVA,
-#endif
-#if HAVE_GD_H && HAVE_LIBGD && HAVE_LIBJPEG
-    JPEG,
-#endif
-    JSON,
-    LQX,
-    NO_OUTPUT,
-    OUTPUT,
-#if QNAP2_OUTPUT
-    QNAP2,
-#endif
-    PARSEABLE,
-#if defined(PMIF_OUTPUT)
-    FORMAT_PMIF,
-#endif
-#if HAVE_GD_H && HAVE_LIBGD && HAVE_LIBPNG
-    PNG,
-#endif
-    POSTSCRIPT,
-    PSTEX,
-    RTF,
-    SRVN,
-#if defined(SVG_OUTPUT)
-    SVG,
-#endif
-#if defined(SXD_OUTPUT)
-    SXD,
-#endif
-#if defined(TXT_OUTPUT)
-    TXT,
-#endif
-#if defined(X11_OUTPUT)
-    X11,
-#endif
-    XML,
-    UNKNOWN
-};
-
-typedef enum {
-    LAYERING_BATCH,
-    LAYERING_GROUP,
-    LAYERING_HWSW,
-    LAYERING_MOL,
-    LAYERING_PROCESSOR,
-    LAYERING_PROCESSOR_TASK,
-    LAYERING_SHARE,
-    LAYERING_SQUASHED,
-    LAYERING_SRVN,
-    LAYERING_TASK_PROCESSOR
-} layering_format;
-
-typedef enum {
-    PROCESSOR_NONE,
-    PROCESSOR_DEFAULT,
-    PROCESSOR_NONINFINITE,
-    PROCESSOR_ALL
-} processor_format;
-
-typedef enum {
-    DEFAULT_JUSTIFY,
-    CENTER_JUSTIFY,
-    LEFT_JUSTIFY,
-    RIGHT_JUSTIFY,
-    ALIGN_JUSTIFY,		/* For Nodes		*/
-    ABOVE_JUSTIFY		/* For labels on Arcs.	*/
-} justification_type;
-
-typedef enum {
-    KEY_NONE,
-    KEY_TOP_LEFT,
-    KEY_TOP_RIGHT,
-    KEY_BOTTOM_LEFT,
-    KEY_BOTTOM_RIGHT,
-    KEY_BELOW_LEFT,
-    KEY_ABOVE_LEFT,
-    KEY_ON
-} key_type;
-
-typedef enum {
-    REPLICATION_NOP,
-    REPLICATION_REMOVE,
-    REPLICATION_EXPAND,
-    REPLICATION_RETURN
-} replication_type;
-
-typedef enum {
-    FORWARD_SORT,
-    REVERSE_SORT,
-    TOPILOGICAL_SORT,
-    NO_SORT,
-    INVALID_SORT
-} sort_type;
-
-typedef enum {
-    SPECIAL_ANNOTATE,
-    SPECIAL_ARROW_SCALING,
-    SPECIAL_BCMP,
-    SPECIAL_CLEAR_LABEL_BACKGROUND,
-    SPECIAL_EXHAUSTIVE_TOPOLOGICAL_SORT,
-    SPECIAL_FLATTEN_SUBMODEL,
-    SPECIAL_FORCE_INFINITE,
-    SPECIAL_FORWARDING_DEPTH,
-    SPECIAL_GROUP,
-    SPECIAL_LAYER_NUMBER,
-    SPECIAL_NO_ALIGNMENT_BOX,
-    SPECIAL_NO_ASYNC_TOPOLOGICAL_SORT,
-    SPECIAL_NO_CV_SQR,
-    SPECIAL_NO_PHASE_TYPE,
-    SPECIAL_NO_REF_TASK_CONVERSION,
-    SPECIAL_PRUNE,
-    SPECIAL_PROCESSOR_SCHEDULING,
-    SPECIAL_QUORUM_REPLY,
-    SPECIAL_RENAME,
-    SPECIAL_SORT,
-    SPECIAL_SQUISH_ENTRY_NAMES,
-    SPECIAL_SPEX_HEADER,
-    SPECIAL_SUBMODEL_CONTENTS,
-    SPECIAL_TASKS_ONLY,	
-    SPECIAL_TASK_SCHEDULING
-} special_type;
-
-typedef enum {
-    COLOUR_OFF,
-    COLOUR_RESULTS,		/* Default */
-    COLOUR_LAYERS,		/* Each layer gets its own colour */
-    COLOUR_CLIENTS,		/* Each client chaing gets its own colour */
-    COLOUR_SERVER_TYPE,		/* client, server, etc... */
-    COLOUR_CHAINS,		/* Useful for queueing output only */
-    COLOUR_DIFFERENCES		/* Results are differences */
-} colouring_type;
-	
-struct option_type
-{
-    const char * name;
-    const int c;
-    const char * arg;
-    struct {
-	union p {		/* Parameter */
-	    p(int _i_) : i(_i_) {}
-	    p(const char ** _a_ ) : a(_a_) {}
-	    p(const std::map<const file_format,const std::string>* _m_) : m(_m_) {}
-	    const int i;
-	    const char ** a;
-	    const std::map<const file_format,const std::string>* m;
-	} param;
-	union a {		/* Argument */
-	    a() : s(nullptr) {}
-	    a(file_format _o_) : o(_o_) {}
-	    a(int _i_) : i(_i_) {}
-	    a(bool _b_) : b(_b_) {}
-	    a(std::regex * _r_) : r(_r_) {}
-	    a(char * _s_) : s(_s_) {}
-	    a(double _f_) : f(_f_) {}
-	    file_format o;
-	    int i;
-	    bool b;
-	    std::regex * r;
-	    char * s;
-	    double f;
-	} value;
-    } opts;
-    const bool result;
-    const char * msg;
-};
-
 
 /*
  * This enumeration must be the same size and in the same order as
@@ -375,40 +180,15 @@ struct Flags
     static double icon_height;
     static double icon_slope;
     static double icon_width;
-    static justification_type activity_justification;
-    static justification_type label_justification;
-    static justification_type node_justification;
+    static Justification activity_justification;
+    static Justification label_justification;
+    static Justification node_justification;
     static graphical_output_style_type graphical_output_style;
-    static option_type print[];
+    static Options::Type print[];
     static std::regex * client_tasks;
-    static sort_type sort;
+    static Sorting sort;
     static unsigned long span;
     static const unsigned int size;
-};
-
-class Options
-{
-private:
-    Options();
-    Options( const Options& );
-    Options& operator=( const Options& );
-
-public:
-    static const std::map<const file_format,const std::string> io;
-    static const char * layering[];
-    static const char * colouring[];
-    static const char * processor[];
-    static const char * activity[];
-    static const char * justification[];
-    static const char * integer[];
-    static const char * key[];
-    static const char * real[];
-    static const char * replication[];
-    static const char * string[];
-    static const char * sort[];
-    static const char * special[];
-
-    static size_t find_if( const char**, const std::string& );
 };
 
 /* ------------------------------------------------------------------------ */
@@ -615,7 +395,7 @@ typedef LQIO::DOM::DocumentObject& (LQIO::DOM::DocumentObject::*set_function)( c
 
 
 int lqn2ps( int argc, char *argv[] );
-void setOutputFormat( const file_format );
+void setOutputFormat( const File_Format );
 
 bool graphical_output();
 bool output_output();
@@ -627,7 +407,7 @@ bool submodel_output();			/* true if generating a submodel */
 bool difference_output();		/* true if print differences */
 bool share_output();			/* true if sorting by processor share */
 int set_indent( int anInt );
-inline double normalized_font_size() { return Flags::print[FONT_SIZE].opts.value.i / Flags::print[MAGNIFICATION].opts.value.f; }
+inline double normalized_font_size() { return Flags::print[FONT_SIZE].opts.value.i / Flags::print[MAGNIFICATION].opts.value.d; }
 
 IntegerManip indent( const int anInt );				/* See main.cc */
 IntegerManip temp_indent( const int anInt );			/* See main.cc */

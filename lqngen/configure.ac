@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 # $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqngen/configure.ac $
 # ------------------------------------------------------------------------
-# $Id: configure.ac 14882 2021-07-07 11:09:54Z greg $
+# $Id: configure.ac 15157 2021-12-06 19:18:24Z greg $
 # ------------------------------------------------------------------------
 AC_PREREQ([2.69])
 AC_INIT([lqngen],[6.2],[greg@sce.carleton.ca])
@@ -45,7 +45,7 @@ AM_CONDITIONAL([HAVE_PS2PDF], test -n "$XPS2PDF")
 # ----------------------------------------------------------------------
 # Checks for header files.
 #
-AC_CHECK_HEADERS([limits.h values.h])
+AC_CHECK_HEADERS([values.h])
 AC_CHECK_HEADERS([getopt.h])
 
 # Checks for typedefs, structures, and compiler characteristics.

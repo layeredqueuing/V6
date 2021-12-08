@@ -22,9 +22,6 @@
 #include <iostream>
 #include <map>
 #include <numeric>
-#if HAVE_IEEEFP_H
-#include <ieeefp.h>
-#endif
 #include <lqio/input.h>
 #include <lqio/error.h>
 #include <mva/fpgoop.h>

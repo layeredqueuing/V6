@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: flags.h 15054 2021-10-08 12:08:59Z greg $
+ * $Id: flags.h 15150 2021-12-03 16:30:06Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -30,7 +30,7 @@ extern struct FLAGS {
     unsigned rtf_output:1;			/* -r: Generate RTF output file.	*/
     unsigned verbose:1;				/* -v: Be chatty.			*/
     unsigned xml_output:1;			/* -x: Ouptut XML output		*/
-    unsigned debug_spex:1;			/* --debug-spex: Ouptut LQX		*/
+    unsigned print_lqx:1;			/* --debug-spex: Ouptut LQX		*/
     unsigned average_variance:1;		/* Use average variance values.		*/
     unsigned trace_activities:1;		/* Print out activity stuff.		*/
     unsigned trace_cfs:1;			/* Print out cfs computation.		*/

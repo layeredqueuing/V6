@@ -10,7 +10,7 @@
  * Activities are arcs in the graph that do work.
  * Nodes are points in the graph where splits and joins take place.
  *
- * $Id: actlist.cc 14996 2021-09-27 14:14:50Z greg $
+ * $Id: actlist.cc 15157 2021-12-06 19:18:24Z greg $
  */
 
 #include <sstream>
@@ -19,6 +19,8 @@
 #include <numeric>
 #include <parasol.h>
 #include "lqsim.h"
+#include <stdarg.h>
+#include <string.h>
 #include <assert.h>
 #include <lqio/error.h>
 #include <lqio/input.h>

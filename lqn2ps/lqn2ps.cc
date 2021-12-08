@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: lqn2ps.cc 15144 2021-12-02 19:10:29Z greg $
+ * $Id: lqn2ps.cc 15171 2021-12-08 03:02:09Z greg $
  *
  * Command line processing.
  *
@@ -22,25 +22,18 @@
 #include <errno.h>
 #include <cstring>
 #include <sstream>
+#include <libgen.h>
 #include <lqio/filename.h>
 #if !HAVE_GETSUBOPT
 #include <lqio/getsbopt.h>
 #endif
 #include <lqio/dom_document.h>
-#include <lqio/srvn_results.h>
 #include <lqio/srvn_spex.h>
-#include "activity.h"
-#include "entry.h"
+#include "runlqx.h"
 #include "errmsg.h"
 #include "getopt2.h"
-#include "graphic.h"
-#include "help.h"
-#include "layer.h"
 #include "model.h"
-#include "pragma.h"
-#include "processor.h"
-#include "runlqx.h"
-#include "task.h"
+#include "help.h"
 
 extern "C" int LQIO_debug;
 extern "C" int resultdebug;
@@ -48,8 +41,7 @@ extern "C" int resultdebug;
 bool SolverInterface::Solve::solveCallViaLQX = false;/* Flag when a solve() call was made */
 
 static bool setAllResultOptions( const bool yesOrNo );
-static file_format get_file_format( const std::string& );
-static char * parse_file_name = 0;
+static char * parse_file_name = nullptr;
 
 #if (defined(linux) || defined(__linux__)) && !defined(__USE_XOPEN_EXTENDED)
 extern "C" int getsubopt (char **, char * const *, char **);
@@ -69,32 +61,32 @@ extern "C" int getsubopt (char **, char * const *, char **);
  * result output and false otherwise. 
  */
 
-option_type Flags::print[] = {
+Options::Type Flags::print[] = {
 /*    name                      c   arg                    opts                     (init) value        result msg */
-    { "aggregate",             'A', "objects",             {Options::activity,      AGGREGATE_NONE},    false, "Aggregate sequences,activities,phases,entries,threads,all into parent object." },
-    { "border",                'B', "border",              {Options::real,          0},                 false, "Set the border (in points)." },
-    { "colour",                'C', "colour",              {Options::colouring,     COLOUR_RESULTS},    false, "Colour output." },
+    { "aggregate",             'A', "objects",             {&Options::aggregate,    Aggregate::NONE},   false, "Aggregate sequences,activities,phases,entries,threads,all into parent object." },
+    { "border",                'B', "border",              {&Options::real,	    static_cast<std::string *>(nullptr)},	false, "Set the border (in points)." },
+    { "colour",                'C', "colour",              {&Options::colouring,    Colouring::RESULTS},false, "Colour output." },
     { "diff-file",	       'D', "filename",            {0,                      0},			false, "Load parseable results generated using srvndiff --difference from filename." },
-    { "font-size",             'F', "font-size",           {Options::integer,       9},                 false, "Set the font size (from 6 to 36 points)." },
-    { "input-format",	       'I', "format",		   {&Options::io,	    file_format::UNKNOWN}, false, "Input file format." },
+    { "font-size",             'F', "font-size",           {&Options::integer,      9},                 false, "Set the font size (from 6 to 36 points)." },
+    { "input-format",	       'I', "ARG",		   {&Options::file_format,  File_Format::UNKNOWN}, false, "Input file format." },
     { "help",                  'H', 0,                     {0,                      0},                 false, "Print help." },
-    { "justification",         'J', "object=justification",{Options::justification, DEFAULT_JUSTIFY},   false, "Justification." },
-    { "key",                   'K', "key",                 {Options::key,           0},                 false, "Print key." },             
-    { "layering",              'L', "layering",            {Options::layering,      LAYERING_BATCH},    false, "Layering." },
-    { "magnification",         'M', "magnification",       {Options::real,          0},                 false, "Magnification." },
-    { "precision",             'N', "precision",           {Options::integer,       3},                 false, "Number of digits of output precision." },
-    { "format",                'O', "format",              {&Options::io,           file_format::POSTSCRIPT}, false, "Output file format." },
-    { "processors",            'P', "processors",          {Options::processor,     PROCESSOR_DEFAULT}, false, "Print processors." },
-    { "queueing-model",        'Q', "queueing-model",      {Options::integer,       0},                 false, "Print queueing model <n>." },
-#if defined(REP2FLAT)
-    { "replication",           'R', "operation",           {Options::replication,   REPLICATION_NOP},   false, "Transform replication." },
+    { "justification",         'J', "object=ARG",	   {&Options::justification,Justification::DEFAULT},   false, "Justification." },
+    { "key",                   'K', "key",                 {&Options::key_position, 0},                 false, "Print key." },             
+    { "layering",              'L', "layering",            {&Options::layering,     Layering::BATCH},   false, "Layering." },
+    { "magnification",         'M', "magnification",       {&Options::real,         0.0},               false, "Magnification." },
+    { "precision",             'N', "precision",           {&Options::integer,      3},                 false, "Number of digits of output precision." },
+    { "format",                'O', "format",              {&Options::file_format,  File_Format::POSTSCRIPT}, false, "Output file format." },
+    { "processors",            'P', "processors",          {&Options::processors,   Processors::DEFAULT}, false, "Print processors." },
+    { "queueing-model",        'Q', "queueing-model",      {&Options::integer,      0},                 false, "Print queueing model <n>." },
+#if REP2FLAT
+    { "replication",           'R', "ARG",	           {&Options::replication,  Replication::NONE}, false, "Transform replication." },
 #endif
-    { "submodel",              'S', "submodel",            {Options::integer,	    0},                 false, "Print submodel <n>." },
+    { "submodel",              'S', "submodel",            {&Options::integer,	    0},                 false, "Print submodel <n>." },
     { "version",               'V', 0,                     {0,                      INIT_FALSE},        false, "Tool version." },
     { "warnings",              'W', 0,                     {0,                      INIT_FALSE},        false, "Suppress warnings." },
-    { "x-spacing",             'X', "spacing[,width]",     {Options::real,          0},                 false, "X spacing [and task width] (points)." },
-    { "y-spacing",             'Y', "spacing[,height]",    {Options::real,          0},                 false, "Y spacing [and task height] (points)." },
-    { "special",               'Z', "special[=arg]",       {Options::special,       0},                 false, "Special option." },
+    { "x-spacing",             'X', "spacing[,width]",     {&Options::real,         0.0},               false, "X spacing [and task width] (points)." },
+    { "y-spacing",             'Y', "spacing[,height]",    {&Options::real,         0.0},               false, "Y spacing [and task height] (points)." },
+    { "special",               'Z', "ARG[=value]",	   {&Options::special,      Special::NONE},     false, "Special option." },
     { "open-wait",             'a', 0,                     {0,                      INIT_TRUE},         true,  "Print queue length results for open arrivals." },
     { "throughput-bounds",     'b', 0,                     {0,                      INIT_FALSE},        true,  "Print task throughput bounds." },
     { "confidence-intervals",  'c', 0,                     {0,                      INIT_FALSE},        true,  "Print confidence intervals." },
@@ -104,9 +96,9 @@ option_type Flags::print[] = {
     { "hold-times",            'h', 0,                     {0,                      INIT_FALSE},        true,  "Print hold times." },
     { "input-parameters",      'i', 0,                     {0,                      INIT_TRUE},         false, "Print input parameters." },
     { "join-delays",           'j', 0,                     {0,                      INIT_TRUE},         true,  "Print join delay results." },
-    { "chain",                 'k', "client",              {Options::integer,       0},                 false, "Print all paths from client <n>." },
+    { "chain",                 'k', "client",              {&Options::integer,      0},                 false, "Print all paths from client <n>." },
     { "loss-probability",      'l', 0,                     {0,                      INIT_TRUE},         true,  "Print message loss probabilities." },
-    { "output",                'o', "filename",            {Options::string,        0},                 false, "Redirect output to filename." },
+    { "output",                'o', "filename",            {&Options::string,       static_cast<std::string *>(nullptr)},	false, "Redirect output to filename." },
     { "processor-utilization", 'p', 0,                     {0,                      INIT_TRUE},         true,  "Print processor utilization results." },
     { "processor-queueing",    'q', 0,                     {0,                      INIT_TRUE},         true,  "Print processor waiting time results." },
     { "results",               'r', 0,                     {0,                      INIT_TRUE},         false, "Print results." },
@@ -116,15 +108,15 @@ option_type Flags::print[] = {
     { "variance",              'v', 0,                     {0,                      INIT_FALSE},        true,  "Print execution time variance results." },
     { "waiting",               'w', 0,                     {0,                      INIT_TRUE},         true,  "Print waiting time results." },
     { "service-exceeded",      'x', 0,                     {0,                      INIT_FALSE},        true,  "Print maximum execution time exceeded." },
-    { "comment",	   768+'#', 0,			   {0,      		    INIT_FALSE},	true,  "Print model comment." },
-    { "solver-info",	   768+'!', 0,                     {0,      		    INIT_FALSE},	true,  "Print solver information." },
+    { "comment",	 0x300+'#', 0,			   {0,      		    INIT_FALSE},	true,  "Print model comment." },
+    { "solver-info",	   512+'!', 0,                     {0,      		    INIT_FALSE},	true,  "Print solver information." },
     { "verbose",           512+'V', 0,                     {0,                      INIT_FALSE},        false, "Verbose output." },
     { "ignore-errors",     512+'E', 0,			   {0,      		    INIT_FALSE},        false, "Ignore errors during model checking phase." },
     { "task-service-time", 512+'P', 0,                     {0,                      INIT_FALSE},        false, "Print task service times (for --tasks-only)." },
     { "run-lqx",	   512+'l', 0,			   {0,       		    INIT_FALSE},	false, "\"Run\" the LQX program instantiating variables and generating model files." },
     { "reload-lqx",	   512+'r', 0,			   {0,      		    INIT_FALSE},	false, "\"Run\" the LQX program reloading results generated earlier." },
     { "output-lqx",	   512+'o', 0,			   {0,      		    INIT_FALSE},	false, "Convert SPEX to LQX for XML output." },	
-    { "include-only",      512+'I', "regexp",              {Options::string,        0},                 false, "Include only objects with name matching <regexp>" },
+    { "include-only",      512+'I', "regexp",              {&Options::string,       static_cast<std::string *>(nullptr)},	false, "Include only objects with name matching <regexp>" },
 
     /* -- below here is not stored in flag_values enumeration -- */
 
@@ -142,14 +134,14 @@ option_type Flags::print[] = {
     { "rename",            512+'N', 0,                     {0,                      0},                 false, "Rename all objects." },
     { "tasks-only",        512+'t', 0,                     {0,                      0},                 false, "Print tasks only." },
 #if BUG_270
-    { "no-bcmp",	   512+'B', 0,			   {0,			    0},			false, "Do not perform BCMP model conversion." },
+    { "bcmp",		 0x300+'B', 0,			   {0,			    0},			false, "[Don't] perform BCMP model conversion." },
 #endif
     /* Miscellaneous */
     { "no-activities",	   512+'A', 0,			   {0,			    0},			false, "Don't print activities." },
     { "no-colour",	   512+'C', 0,			   {0,			    0},		        false, "Use grey scale when colouring result." },
     { "no-header",	   512+'H', 0,			   {0,			    0},			false, "Do not output the variable name header on SPEX results." },
-    { "surrogates",        768+'z', 0,                     {0,                      0},                 false, "[Don't] Add surrogate tasks for submodel/include-only output." },
-#if defined(REP2FLAT)
+    { "surrogates",      0x300+'z', 0,                     {0,                      0},                 false, "[Don't] add surrogate tasks for submodel/include-only output." },
+#if REP2FLAT
     { "merge-replicas",    512+'R', 0,                     {0,                      0},                 false, "Merge replicas from a flattened model back to a replicated model." },
 #endif
     { "jlqndef",	   512+'j', 0,                     {0,                      0},			false, "Use jlqnDef-style icons (rectangles)." },
@@ -177,8 +169,6 @@ static void makeopts( std::string& opts );
 #endif
 
 static char copyrightDate[20];
-static void process( const std::string& inputFileName,  const std::string& output_file_name, int model_no );
-
 static LQIO::DOM::Pragma pragmas;
 
 /*----------------------------------------------------------------------*/
@@ -186,16 +176,56 @@ static LQIO::DOM::Pragma pragmas;
 /*----------------------------------------------------------------------*/
 
 int
+main(int argc, char *argv[])
+{
+    /* We can only initialize integers in the Flags object -- initialize floats here. */
+
+    Flags::print[MAGNIFICATION].opts.value.d = 1.0;
+    Flags::print[BORDER].opts.value.d = 18.0;
+    Flags::print[X_SPACING].opts.value.d = DEFAULT_X_SPACING;
+    Flags::print[Y_SPACING].opts.value.d = DEFAULT_Y_SPACING;
+
+    LQIO::io_vars.init( VERSION, basename( argv[0] ), severity_action, local_error_messages, LSTLCLERRMSG-LQIO::LSTGBLERRMSG );
+
+    command_line += LQIO::io_vars.lq_toolname;
+
+    /* If we are invoked as lqn2xxx or rep2flat, then enable other options. */
+
+    const char * p = strrchr( LQIO::io_vars.toolname(), '2' );
+    if ( p ) {
+	p += 1;
+	for ( std::map<const File_Format,const std::string>::const_iterator j = Options::file_format.begin(); j != Options::file_format.end(); ++j ) {
+	    if ( j->second == p ) {
+		setOutputFormat( j->first );
+		goto found1;
+	    }
+	}
+#if REP2FLAT
+	if ( strcmp( p, "flat" ) == 0 ) {
+	    setOutputFormat( File_Format::SRVN );
+	    Flags::print[REPLICATION].opts.value.r = Replication::EXPAND;
+	    goto found1;
+	}
+#endif
+	std::cerr << LQIO::io_vars.lq_toolname << ": command not found." << std::endl;
+	exit( 1 );
+    found1: ;
+    }
+
+    return lqn2ps( argc, argv );
+}
+
+
+
+int
 lqn2ps( int argc, char *argv[] )
 {
     extern char *optarg;
     extern int optind;
     char * options;
-    char * value;
-    int arg;
     std::string output_file_name = "";
 
-    sscanf( "$Date: 2021-12-02 14:10:29 -0500 (Thu, 02 Dec 2021) $", "%*s %s %*s", copyrightDate );
+    sscanf( "$Date: 2021-12-07 22:02:09 -0500 (Tue, 07 Dec 2021) $", "%*s %s %*s", copyrightDate );
 
     static std::string opts = "";
 #if HAVE_GETOPT_H
@@ -218,7 +248,7 @@ lqn2ps( int argc, char *argv[] )
 	command_line += " ";
 #if HAVE_GETOPT_LONG
 	if ( (c & 0xff00) != 0 ) {
-	    for ( option_type * f = Flags::print; f->name; ++f ) {
+	    for ( Options::Type * f = Flags::print; f->name; ++f ) {
 		if ( f->c == c ) {
 		    command_line += "-";		/* Can't use "--" in XML output */
 		    command_line += f->name;
@@ -243,41 +273,29 @@ lqn2ps( int argc, char *argv[] )
 
 	switch( c ) {
 	case 'A':
-	    options = optarg;
-	    arg = getsubopt( &options, const_cast<char * const *>(Options::activity), &value );
-	    if ( arg < 0 ) {
-		invalid_option( c, optarg );
-		exit( 1 );
-	    }
-	    Flags::print[AGGREGATION].opts.value.i = arg;
+	    Flags::print[AGGREGATION].opts.value.a = Options::get_aggregate( optarg );
 	    break;
 	    
 	case 512+'A':;
-	    Flags::print[AGGREGATION].opts.value.i = AGGREGATE_ACTIVITIES;
+	    Flags::print[AGGREGATION].opts.value.a = Aggregate::ACTIVITIES;
 	    Flags::print[PRINT_AGGREGATE].opts.value.b = true;
 	    break;
 	    
 	case 'B':
-	    Flags::print[BORDER].opts.value.f = strtod( optarg, &endptr );
-	    if ( Flags::print[BORDER].opts.value.f < 0.0 || *endptr != '\0' ) {
+	    Flags::print[BORDER].opts.value.d = strtod( optarg, &endptr );
+	    if ( Flags::print[BORDER].opts.value.d < 0.0 || *endptr != '\0' ) {
 		invalid_option( c, optarg );
 		exit( 1 );
 	    } 
 	    break;
 
-	case 512+'B':
-	    pragmas.insert(LQIO::DOM::Pragma::_bcmp_,LQIO::DOM::Pragma::_false_);
+	case 0x300+'B':
+	    pragmas.insert(LQIO::DOM::Pragma::_bcmp_,(enable ? LQIO::DOM::Pragma::_true_ : LQIO::DOM::Pragma::_false_));
 	    break;
 	    
 	case 'C':
-	    options = optarg;
-	    arg = getsubopt( &options, const_cast<char * const *>(Options::colouring), &value );
-	    if ( arg < 0 ) {
-		invalid_option( c, optarg );
-		exit( 1 );
-	    }
-	    Flags::print[COLOUR].opts.value.i = arg;
-	    if ( arg == COLOUR_DIFFERENCES && Flags::print[PRECISION].opts.value.i == 3 ) {
+	    Flags::print[COLOUR].opts.value.c = Options::get_colouring( optarg );
+	    if ( Flags::print[COLOUR].opts.value.c == Colouring::DIFFERENCES && Flags::print[PRECISION].opts.value.i == 3 ) {
 		Flags::print[PRECISION].opts.value.i = 1;
 	    }
 	    break;
@@ -291,7 +309,7 @@ lqn2ps( int argc, char *argv[] )
 	    break;
 
 	case 'D':
-	    Flags::print[COLOUR].opts.value.i = COLOUR_DIFFERENCES;
+	    Flags::print[COLOUR].opts.value.c = Colouring::DIFFERENCES;
 	    if ( Flags::print[PRECISION].opts.value.i == 3 ) {
 		Flags::print[PRECISION].opts.value.i = 2;
 	    }
@@ -339,8 +357,8 @@ lqn2ps( int argc, char *argv[] )
 	    exit(0);
 
 	case 512+'h':
-	    Flags::print[PROCESSORS].opts.value.i = PROCESSOR_ALL;
-	    Flags::print[LAYERING].opts.value.i = LAYERING_HWSW;
+	    Flags::print[PROCESSORS].opts.value.p = Processors::ALL;
+	    Flags::print[LAYERING].opts.value.l = Layering::HWSW;
 	    break;
 	    
 	case 512+'H':
@@ -350,7 +368,7 @@ lqn2ps( int argc, char *argv[] )
 
 	case 'I':
 	    try {
-		Flags::print[INPUT_FORMAT].opts.value.o = get_file_format( value );
+		Flags::print[INPUT_FORMAT].opts.value.f = Options::get_file_format( optarg );
 	    }
 	    catch ( const std::invalid_argument& e ) {
 		invalid_option( c, optarg );
@@ -359,35 +377,27 @@ lqn2ps( int argc, char *argv[] )
 	    break;
 
 	case 512+'I':
-	    Flags::print[INCLUDE_ONLY].opts.value.r = new std::regex( optarg );
+	    Flags::print[INCLUDE_ONLY].opts.value.m = new std::regex( optarg );
 	    break;
 
 	case 'J':
 	    options = optarg;
 	    while ( *options ) {
-		arg = getsubopt( &options, const_cast<char * const *>(Options::justification), &value );
-		justification_type justify;
+		static char const * object[] = { "nodes", "labels", "activities" };
+
+		char * value = nullptr;
+		int arg = getsubopt( &options, const_cast<char **>(object), &value );
+		Justification justify;
 
 		if ( !value ) {
-		    justify = DEFAULT_JUSTIFY;
-		} else if ( strcmp( value, "center" ) == 0 ) {
-		    justify = CENTER_JUSTIFY;
-		} else if ( strcmp( value, "left" ) == 0 ) {
-		    justify = LEFT_JUSTIFY;
-		} else if ( strcmp( value, "right" ) == 0 ){
-		    justify = RIGHT_JUSTIFY;
-		} else if ( strcmp( value, "align" ) == 0 ){
-		    justify = ALIGN_JUSTIFY;
-		} else if ( strcmp( value, "above" ) == 0 ){
-		    justify = ABOVE_JUSTIFY;
+		    justify = Justification::DEFAULT;
 		} else {
-		    invalid_option( c, optarg );
-		    exit( 1 );
+		    justify = Options::get_justification( value );
 		}
 
 		switch ( arg ) {
 		case 0:	
-		    if ( justify != ABOVE_JUSTIFY ) {
+		    if ( justify != Justification::ABOVE ) {
 			Flags::node_justification = justify; 
 		    } else {
 			std::cerr << LQIO::io_vars.lq_toolname << ": -J" << optarg << "is invalid." << std::endl;
@@ -395,7 +405,7 @@ lqn2ps( int argc, char *argv[] )
 		    }
 		    break;   
 		case 1:	
-		    if ( justify != ALIGN_JUSTIFY ) {
+		    if ( justify != Justification::ALIGN ) {
 			Flags::label_justification = justify; 
 		    } else {
 			std::cerr << LQIO::io_vars.lq_toolname << ": -J" << optarg << "is invalid." << std::endl;
@@ -403,7 +413,7 @@ lqn2ps( int argc, char *argv[] )
 		    }
 		    break;
 		case 2:	
-		    if ( justify != ABOVE_JUSTIFY ) {
+		    if ( justify != Justification::ABOVE ) {
 			Flags::activity_justification = justify; 
 		    } else {
 			std::cerr << LQIO::io_vars.lq_toolname << ": -J" << optarg << "is invalid." << std::endl;
@@ -420,7 +430,7 @@ lqn2ps( int argc, char *argv[] )
 	case 512+'j':
 	    Flags::graphical_output_style = JLQNDEF_STYLE;
 	    Flags::icon_slope = 0;
-	    Flags::print[Y_SPACING].opts.value.f = 45;
+	    Flags::print[Y_SPACING].opts.value.d = 45;
 	    break;
 
 	case 512+'J':
@@ -428,18 +438,7 @@ lqn2ps( int argc, char *argv[] )
 	    break;
 
 	case 'K':
-	    options = optarg;
-	    arg = getsubopt( &options, const_cast<char * const *>(Options::key), &value );
-	    switch ( arg ) {
-	    case KEY_ON:           Flags::print[KEY].opts.value.i = KEY_BOTTOM_LEFT; break;
-	    default:
-		if ( arg < KEY_ON ) {
-		    Flags::print[KEY].opts.value.i = arg; break;
-		} else {
-		    invalid_option( c, optarg );
-		    exit( 1 );
-		}
-	    }
+	    Flags::print[KEY].opts.value.k = Options::get_key_position( optarg );
 	    break;
 
 	case 'k':
@@ -448,50 +447,53 @@ lqn2ps( int argc, char *argv[] )
 		invalid_option( c, optarg );
 		exit( 1 );
 	    }
-	    Flags::print[PROCESSORS].opts.value.i = PROCESSOR_ALL;
+	    Flags::print[PROCESSORS].opts.value.p = Processors::ALL;
 	    break;
 
 	case 'L':
-	    options = optarg;
-	    while ( *options ) {
-		arg = getsubopt( &options, const_cast<char * const *>(Options::layering), &value );
-		Flags::print[LAYERING].opts.value.i = arg;
+	    try {
+		Layering arg = Options::get_layering( optarg );
+		Flags::print[LAYERING].opts.value.l = arg;
 
 		switch ( arg ) {
-		case LAYERING_HWSW:
-		case LAYERING_MOL:
-		case LAYERING_SQUASHED:
-		case LAYERING_SRVN:
-		    pragmas.insert(LQIO::DOM::Pragma::_layering_,Options::layering[arg]);
-		    Flags::print[PROCESSORS].opts.value.i = PROCESSOR_ALL;
+		case Layering::HWSW:
+		case Layering::MOL:
+		case Layering::SQUASHED:
+		case Layering::SRVN:
+		    pragmas.insert(LQIO::DOM::Pragma::_layering_,Options::layering.at(arg));
+		    Flags::print[PROCESSORS].opts.value.p = Processors::ALL;
 		    break;
 
-		case LAYERING_BATCH:
-		    pragmas.insert(LQIO::DOM::Pragma::_layering_,Options::layering[arg]);
+		case Layering::BATCH:
+		    pragmas.insert(LQIO::DOM::Pragma::_layering_,Options::layering.at(arg));
 		    break;
 
 		    /* Non-pragma layering */
-		case LAYERING_PROCESSOR_TASK:
-		case LAYERING_TASK_PROCESSOR:
-		    Flags::print[PROCESSORS].opts.value.i = PROCESSOR_ALL;
+		case Layering::PROCESSOR_TASK:
+		case Layering::TASK_PROCESSOR:
+		    Flags::print[PROCESSORS].opts.value.p = Processors::ALL;
 		    break;
 
-		case LAYERING_PROCESSOR:
-		case LAYERING_SHARE:
-		    Flags::print[PROCESSORS].opts.value.i = PROCESSOR_NONE;
+		case Layering::PROCESSOR:
+		case Layering::SHARE:
+		    Flags::print[PROCESSORS].opts.value.p = Processors::NONE;
 		    break;
 
-		case LAYERING_GROUP:
-		    if ( value ) {
-			Model::add_group( value );
+		case Layering::GROUP:
+		    if ( optarg ) {
+			Model::add_group( optarg );
 		    }
-		    Flags::print[PROCESSORS].opts.value.i = PROCESSOR_ALL;
+		    Flags::print[PROCESSORS].opts.value.p = Processors::ALL;
 		    break;
 
 		default:
 		    invalid_option( c, optarg );
 		    exit( 1 );
 		}
+	    }
+	    catch ( const std::invalid_argument& e ) {
+		invalid_option( c, optarg );
+		exit( 1 );
 	    }
 	    break;
 
@@ -504,8 +506,8 @@ lqn2ps( int argc, char *argv[] )
 	    break;
 
 	case 'M':
-	    Flags::print[MAGNIFICATION].opts.value.f = strtod( optarg, &endptr );
-	    if ( *endptr != '\0' || Flags::print[MAGNIFICATION].opts.value.f <= 0.0 ) {
+	    Flags::print[MAGNIFICATION].opts.value.d = strtod( optarg, &endptr );
+	    if ( *endptr != '\0' || Flags::print[MAGNIFICATION].opts.value.d <= 0.0 ) {
 		invalid_option( c, optarg );
 		exit( 1 );
 	    } 
@@ -516,8 +518,8 @@ lqn2ps( int argc, char *argv[] )
 	    exit(0);
 
 	case 512+'m':
-	    Flags::print[PROCESSORS].opts.value.i = PROCESSOR_ALL;
-	    Flags::print[LAYERING].opts.value.i = LAYERING_MOL;
+	    Flags::print[PROCESSORS].opts.value.p = Processors::ALL;
+	    Flags::print[LAYERING].opts.value.l = Layering::MOL;
 	    break;
 	    
 	case 'N':
@@ -543,7 +545,7 @@ lqn2ps( int argc, char *argv[] )
 	    
 	case 'O':
 	    try {
-		setOutputFormat( get_file_format( optarg ) );
+		setOutputFormat( Options::get_file_format( optarg ) );
 	    }
 	    catch ( const std::invalid_argument& e ) {
 		invalid_option( c, optarg );
@@ -552,23 +554,17 @@ lqn2ps( int argc, char *argv[] )
 	    break;
 
 	case 512+'o':
-	    Flags::print[OUTPUT_FORMAT].opts.value.o = file_format::LQX;
-	    setOutputFormat( file_format::LQX );
+	    Flags::print[OUTPUT_FORMAT].opts.value.f = File_Format::LQX;
+	    setOutputFormat( File_Format::LQX );
 	    break;
 	    
 	case 'P':
-	    options = optarg;
-	    arg = getsubopt( &options, const_cast<char * const *>(Options::processor), &value );
-	    if ( arg < 0 ) {
-		invalid_option( c, optarg );
-		exit( 1 );
-	    } 
-	    Flags::print[PROCESSORS].opts.value.i = arg;
+	    Flags::print[PROCESSORS].opts.value.p = Options::get_processors( optarg );
 	    break;
 	    
 	case 512+'P':
 //	    pragma( "tasks-only", "" );
-	    Flags::print[AGGREGATION].opts.value.i = AGGREGATE_ENTRIES;
+	    Flags::print[AGGREGATION].opts.value.a = Aggregate::ENTRIES;
 	    Flags::print[PRINT_AGGREGATE].opts.value.b = true;
 	    break;
 
@@ -584,24 +580,18 @@ lqn2ps( int argc, char *argv[] )
 	    Flags::print[RESULTS].opts.value.b = setAllResultOptions( enable );
 	    break;
 
-#if defined(REP2FLAT)
+#if REP2FLAT
 	case 'R':
-	    options = optarg;
-	    arg = getsubopt( &options, const_cast<char * const *>(Options::replication), &value );
-	    if ( arg < 0 ) {
-		invalid_option( c, optarg );
-		exit( 1 );
-	    }
-	    Flags::print[REPLICATION].opts.value.i = arg;
+	    Flags::print[REPLICATION].opts.value.r = Options::get_replication( optarg );
 	    break;
 
 	case 512+'R':
-	    Flags::print[REPLICATION].opts.value.i = REPLICATION_RETURN;
+	    Flags::print[REPLICATION].opts.value.r = Replication::RETURN;
 	    break;
 #endif
 
 	case 512+'r':
-	    Flags::print[RUN_LQX].opts.value.b 	= true;		    /* Reload lqx */
+	    Flags::print[RUN_LQX].opts.value.b 		= true;		    /* Reload lqx */
 	    Flags::print[RELOAD_LQX].opts.value.b	= true;
 	    break;
 
@@ -611,11 +601,11 @@ lqn2ps( int argc, char *argv[] )
 		invalid_option( c, optarg );
 		exit( 1 );
 	    }
-	    Flags::print[PROCESSORS].opts.value.i = PROCESSOR_ALL;
+	    Flags::print[PROCESSORS].opts.value.p = Processors::ALL;
 	    break;
 
 	case 512+'s':
-	    Flags::sort = NO_SORT;
+	    Flags::sort = Sorting::NONE;
 	    break;
 
 	case 512+'t':
@@ -632,8 +622,8 @@ lqn2ps( int argc, char *argv[] )
 	    break;
 
 	case 512+'w':
-	    Flags::print[PROCESSORS].opts.value.i = PROCESSOR_ALL;
-	    Flags::print[LAYERING].opts.value.i = LAYERING_SRVN;
+	    Flags::print[PROCESSORS].opts.value.p = Processors::ALL;
+	    Flags::print[LAYERING].opts.value.l = Layering::SRVN;
 	    break;
 	    
 	case 'W':
@@ -641,7 +631,7 @@ lqn2ps( int argc, char *argv[] )
 	    break;
 
 	case 'X':
-	    switch ( sscanf( optarg, "%lf,%lf", &Flags::print[X_SPACING].opts.value.f, &Flags::icon_width ) ) {
+	    switch ( sscanf( optarg, "%lf,%lf", &Flags::print[X_SPACING].opts.value.d, &Flags::icon_width ) ) {
 	    case 1: break;
 
 	    default:
@@ -662,7 +652,7 @@ lqn2ps( int argc, char *argv[] )
 	    break;
 
 	case 'Y':
-	    switch ( sscanf( optarg, "%lf,%lf", &Flags::print[Y_SPACING].opts.value.f, &Flags::icon_height ) ) {
+	    switch ( sscanf( optarg, "%lf,%lf", &Flags::print[Y_SPACING].opts.value.d, &Flags::icon_height ) ) {
 	    case 1: break;
 
 	    default:
@@ -690,20 +680,20 @@ lqn2ps( int argc, char *argv[] )
 	    Flags::surrogates = false;
 	    break;
 
-	case 768+'z':
-	    Flags::surrogates = true;
+	case 0x300+'z':
+	    Flags::surrogates = enable;
 	    break;
 
 	case 512+'Z':
 	    resultdebug = true;
 	    break;
 
-	case 768+'#':
-	    Flags::print[MODEL_COMMENT].opts.value.b = true;
+	case 0x300+'#':
+	    Flags::print[MODEL_COMMENT].opts.value.b = enable;
 	    break;
 	    
-	case 768+'!':
-	    Flags::print[SOLVER_INFO].opts.value.b = true;
+	case 512+'!':
+	    Flags::print[SOLVER_INFO].opts.value.b = enable;
 	    break;
 	    
 	default:
@@ -737,21 +727,25 @@ lqn2ps( int argc, char *argv[] )
 	
     /* Check for sensible combinations of options. */
 
+    if ( Flags::bcmp_model ) {
+	Flags::surrogates = false;					/* Never add surrogates */
+    }
+
     if ( Flags::annotate_input && !input_output() ) {
-	std::cerr << LQIO::io_vars.lq_toolname << ": -Z " << Options::special[SPECIAL_ANNOTATE] 
-		  << " and " << Options::io.at(Flags::print[OUTPUT_FORMAT].opts.value.o)
+	std::cerr << LQIO::io_vars.lq_toolname << ": -Z " << Options::special.at(Special::ANNOTATE)
+		  << " and " << Options::file_format.at(Flags::print[OUTPUT_FORMAT].opts.value.f)
 		  << " output are mutually exclusive." << std::endl;
 	Flags::annotate_input = false;
     }
 
-    if ( Flags::print[AGGREGATION].opts.value.i == AGGREGATE_ENTRIES && !(graphical_output() || queueing_output()) ) {
-	std::cerr << LQIO::io_vars.lq_toolname << ": -Z" << Options::special[SPECIAL_TASKS_ONLY] 
-		  << " and " <<  Options::io.at(Flags::print[OUTPUT_FORMAT].opts.value.o)
+    if ( Flags::print[AGGREGATION].opts.value.a == Aggregate::ENTRIES && !(graphical_output() || queueing_output()) ) {
+	std::cerr << LQIO::io_vars.lq_toolname << ": -Z" << Options::special.at(Special::TASKS_ONLY)
+		  << " and " <<  Options::file_format.at(Flags::print[OUTPUT_FORMAT].opts.value.f)
 		  << " output are mutually exclusive." << std::endl;
 	exit( 1 );
     }
 
-    if ( Flags::print[INCLUDE_ONLY].opts.value.r && submodel_output() ) {
+    if ( Flags::print[INCLUDE_ONLY].opts.value.m != nullptr && submodel_output() ) {
 	std::cerr << LQIO::io_vars.lq_toolname << ": -I<regexp> "
 	     << "and -S" <<  Flags::print[SUBMODEL].opts.value.i 
 	     << " are mutually exclusive." << std::endl;
@@ -766,7 +760,7 @@ lqn2ps( int argc, char *argv[] )
 
     if ( queueing_output() ) {
 	Flags::arrow_scaling *= 0.75;
-//	Flags::print[PROCESSORS].opts.value.i = PROCESSOR_ALL;
+//	Flags::print[PROCESSORS].opts.value.p = Processors::ALL;
 
 	if ( submodel_output() ) {
 	    std::cerr << LQIO::io_vars.lq_toolname << ": -Q" << Flags::print[QUEUEING_MODEL].opts.value.i
@@ -775,52 +769,55 @@ lqn2ps( int argc, char *argv[] )
 	    exit( 1 );
 	} else if ( !graphical_output() 
 #if QNAP2_OUTPUT
-		    && Flags::print[OUTPUT_FORMAT].opts.value.o != file_format::QNAP2
+		    && Flags::print[OUTPUT_FORMAT].opts.value.f != File_Format::QNAP2
 #endif
-		    && Flags::print[OUTPUT_FORMAT].opts.value.o != file_format::LQX
-		    && Flags::print[OUTPUT_FORMAT].opts.value.o != file_format::XML
-		    && Flags::print[OUTPUT_FORMAT].opts.value.o != file_format::JSON
+#if JMVA_OUTPUT && HAVE_EXPAT_H
+		    && Flags::print[OUTPUT_FORMAT].opts.value.f != File_Format::JMVA
+#endif
+		    && Flags::print[OUTPUT_FORMAT].opts.value.f != File_Format::LQX
+		    && Flags::print[OUTPUT_FORMAT].opts.value.f != File_Format::XML
+		    && Flags::print[OUTPUT_FORMAT].opts.value.f != File_Format::JSON
 	    ) {
 	    std::cerr << LQIO::io_vars.lq_toolname << ": -Q" << Flags::print[QUEUEING_MODEL].opts.value.i
-		      << " and " << Options::io.at(Flags::print[OUTPUT_FORMAT].opts.value.o)
+		      << " and " << Options::file_format.at(Flags::print[OUTPUT_FORMAT].opts.value.f)
 		      << " output are mutually exclusive." << std::endl;
 	    exit( 1 );
-	} else if ( Flags::print[AGGREGATION].opts.value.i != AGGREGATE_ENTRIES && !graphical_output() ) {
-	    Flags::print[AGGREGATION].opts.value.i = AGGREGATE_ENTRIES;
+	} else if ( Flags::print[AGGREGATION].opts.value.a != Aggregate::ENTRIES && !graphical_output() ) {
+	    Flags::print[AGGREGATION].opts.value.a = Aggregate::ENTRIES;
 	    std::cerr << LQIO::io_vars.lq_toolname << ": aggregating entries to tasks with " 
-		      << Options::io.at(Flags::print[OUTPUT_FORMAT].opts.value.o) << " output." << std::endl;
+		      << Options::file_format.at(Flags::print[OUTPUT_FORMAT].opts.value.f) << " output." << std::endl;
 	}
 #if QNAP2_OUTPUT
-	if ( Flags::print[OUTPUT_FORMAT].opts.value.o == file_format::QNAP2 ) {
+	if ( Flags::print[OUTPUT_FORMAT].opts.value.f == File_Format::QNAP2 ) {
 	    Flags::squish_names	= true;
 	}
 #endif
     }
 
-    if ( Flags::print[OUTPUT_FORMAT].opts.value.o == file_format::SRVN && !partial_output() ) {
+    if ( Flags::print[OUTPUT_FORMAT].opts.value.f == File_Format::SRVN && !partial_output() ) {
 	Flags::print[RESULTS].opts.value.b = false;	/* Ignore results */
     }
 
     if ( Flags::flatten_submodel && !(submodel_output() || queueing_output()) ) {
-	std::cerr << LQIO::io_vars.lq_toolname << ": -Z" << Options::special[SPECIAL_FLATTEN_SUBMODEL]
+	std::cerr << LQIO::io_vars.lq_toolname << ": -Z" << Options::special.at(Special::FLATTEN_SUBMODEL)
 	     << " can only be used with either -Q<n> -S<n>." << std::endl;
 	exit( 1 );
     }
 
-    if ( submodel_output() && Flags::print[LAYERING].opts.value.i == LAYERING_SQUASHED ) {
-	std::cerr << LQIO::io_vars.lq_toolname << ": -L" << Options::layering[LAYERING_SQUASHED]
+    if ( submodel_output() && Flags::print[LAYERING].opts.value.l == Layering::SQUASHED ) {
+	std::cerr << LQIO::io_vars.lq_toolname << ": -L" << Options::layering.at(Layering::SQUASHED)
 	     << " can only be used with full models." << std::endl;
 	exit( 1 );
     }
 
-    if ( Flags::print[PROCESSORS].opts.value.i == PROCESSOR_NONE 
-	 || Flags::print[LAYERING].opts.value.i == LAYERING_PROCESSOR
-	 || Flags::print[LAYERING].opts.value.i == LAYERING_SHARE ) {
+    if ( Flags::print[PROCESSORS].opts.value.p == Processors::NONE 
+	 || Flags::print[LAYERING].opts.value.l == Layering::PROCESSOR
+	 || Flags::print[LAYERING].opts.value.l == Layering::SHARE ) {
 	Flags::print[PROCESSOR_QUEUEING].opts.value.b = false;
     }
 
     if ( Flags::bcmp_model ) {
-	Flags::print[AGGREGATION].opts.value.i = AGGREGATE_ENTRIES;
+	Flags::print[AGGREGATION].opts.value.a = Aggregate::ENTRIES;
     }
 
     /*
@@ -828,18 +825,18 @@ lqn2ps( int argc, char *argv[] )
      * but it does use points for it's labels.
      */
 
-    Flags::print[FONT_SIZE].opts.value.i = (int)(Flags::print[FONT_SIZE].opts.value.i * Flags::print[MAGNIFICATION].opts.value.f + 0.5);
+    Flags::print[FONT_SIZE].opts.value.i = (int)(Flags::print[FONT_SIZE].opts.value.i * Flags::print[MAGNIFICATION].opts.value.d + 0.5);
 
 #if HAVE_GD_H && HAVE_LIBGD
-    switch( Flags::print[OUTPUT_FORMAT].opts.value.i ) {
+    switch( Flags::print[OUTPUT_FORMAT].opts.value.f ) {
 #if HAVE_GDIMAGEGIFPTR
-    case file_format::GIF:
+    case File_Format::GIF:
 #endif
 #if HAVE_LIBJPEG
-    case file_format::JPEG:
+    case File_Format::JPEG:
 #endif
 #if HAVE_LIBPNG
-    case file_format::PNG:
+    case File_Format::PNG:
 #endif
 	GD::testForTTF();	/* Font selection changes */
 	break;
@@ -855,21 +852,21 @@ lqn2ps( int argc, char *argv[] )
 #endif
 
     if ( output_file_name == "-" ) {
-	switch( Flags::print[OUTPUT_FORMAT].opts.value.o ) {
+	switch( Flags::print[OUTPUT_FORMAT].opts.value.f ) {
 #if defined(EMF_OUTPUT)
-	case file_format::EMF:
+	case File_Format::EMF:
 	    if ( LQIO::Filename::isRegularFile( fileno( stdout ) ) == 0 ) {
 		std::cerr << LQIO::io_vars.lq_toolname << ": Cannot write " 
-			  << Options::io.at(Flags::print[OUTPUT_FORMAT].opts.value.o) 
+			  << Options::file_format.at(Flags::print[OUTPUT_FORMAT].opts.value.f) 
 			  << " to stdout - stdout is not a regular file."  << std::endl;
 		exit( 1 );
 	    }
 	    break;
 #endif
 #if defined(SXD_OUTPUT)
-	case file_format::SXD:
+	case File_Format::SXD:
 	    std::cerr << LQIO::io_vars.lq_toolname << ": Cannot write " 
-		      << Options::io.at(Flags::print[OUTPUT_FORMAT].opts.value.o) 
+		      << Options::file_format.at(Flags::print[OUTPUT_FORMAT].opts.value.f) 
 		      << " to stdout."  << std::endl;
 	    exit( 1 );
 	    break;
@@ -878,15 +875,15 @@ lqn2ps( int argc, char *argv[] )
     }
 
     if ( optind == argc ) {
-	process( "-", output_file_name, 1 );
+	Model::create( "-", output_file_name, parse_file_name, 1 );
     } else {
 	for ( int i = 1; optind < argc; ++optind, ++i ) {
-	    process( argv[optind], output_file_name, i );
+	    Model::create( argv[optind], output_file_name, parse_file_name, i );
 	}
     }
 
-    if ( Flags::print[INCLUDE_ONLY].opts.value.r ) {
-	delete Flags::print[INCLUDE_ONLY].opts.value.r;
+    if ( Flags::print[INCLUDE_ONLY].opts.value.m != nullptr ) {
+	delete Flags::print[INCLUDE_ONLY].opts.value.m;
     }
     if ( Flags::client_tasks ) {
 	delete Flags::client_tasks;
@@ -898,196 +895,6 @@ lqn2ps( int argc, char *argv[] )
     }
 #endif
     return 0;
-}
-
-
-/*
- * Process input and save.
- */
-
-static void
-process( const std::string& input_file_name, const std::string& output_file_name, int model_no )
-{
-    Flags::have_results = false;		/* Reset for each run. */
-    Flags::instantiate  = false;
-
-    LQIO::io_vars.reset();
-
-    ::Task::reset();
-    ::Entry::reset();
-    ::Call::reset();
-    ::Activity::reset();
-
-    LQIO::DOM::Document::InputFormat input_format = LQIO::DOM::Document::InputFormat::AUTOMATIC;
-    switch ( Flags::print[INPUT_FORMAT].opts.value.o ) {
-    case file_format::LQX:
-    case file_format::XML:
-	input_format = LQIO::DOM::Document::InputFormat::XML;
-	break;
-    case file_format::JSON:
-	input_format = LQIO::DOM::Document::InputFormat::JSON;
-	break;
-    case file_format::SRVN:
-	input_format = LQIO::DOM::Document::InputFormat::LQN;
-	break;
-    }
-
-    /* This is a departure from before -- we begin by loading a model.  Load results if possible (except if overridden with a parseable output filename */
-
-    unsigned int errorCode;
-    LQIO::DOM::Document* document = LQIO::DOM::Document::load( input_file_name, input_format, errorCode, parse_file_name == 0 && Flags::print[RESULTS].opts.value.b );
-    if ( !document ) {
-	std::cerr << LQIO::io_vars.lq_toolname << ": Input model was not loaded successfully." << std::endl;
-	LQIO::io_vars.error_count += 1;
-	return;
-    }
-    if ( parse_file_name && Flags::print[RESULTS].opts.value.b ) {
-	try {
-	    Flags::have_results = LQIO::SRVN::loadResults( parse_file_name );
-	} 
-	catch ( const std::runtime_error &error ) {
-	    std::cerr << LQIO::io_vars.lq_toolname << ": Cannot load results file " << parse_file_name << " - " << error.what() << "." << std::endl;
-	    Flags::have_results = false;
-	    if ( output_output() ) return;
-	}
-	if ( !Flags::have_results ) {
-	    std::cerr << LQIO::io_vars.lq_toolname << ": Cannot load results file " << parse_file_name << " - " << strerror( errno ) << "." << std::endl;
-	    if ( output_output() ) return;
-	}
-    } else {
-	Flags::have_results = Flags::print[RESULTS].opts.value.b && document->hasResults();
-    }
-
-    /* Now fold, mutiliate and spindle */
-
-    if ( queueing_output() ) {
-//	pragmas.insert(LQIO::DOM::Pragma::_bcmp_,LQIO::DOM::Pragma::_true_);
-    }
-    document->mergePragmas( pragmas.getList() );       	/* Save pragmas -- prepare will process */
-    Pragma::set( document->getPragmaList() );
-    
-#if defined(BUG_270)
-    if ( !queueing_output()
-	 && (   Flags::print[OUTPUT_FORMAT].opts.value.o == file_format::JMVA
-	     || Flags::print[OUTPUT_FORMAT].opts.value.o == file_format::QNAP2) ) {
-	std::cerr << LQIO::io_vars.lq_toolname << ": -O" << Options::io.at(Flags::print[OUTPUT_FORMAT].opts.value.o)
-		  << " must be used with -Q<submodel>." << std::endl;
-	exit( 1 );
-    }
-#endif
-    Model::prepare( document );				/* This creates the various objects 	*/
-#if BUG_270
-    if ( Flags::prune ) {		/* Never prune if generating LQN	*/
-	Model::prune();
-    }
-#endif
-    const unsigned n_layers = Model::topologicalSort();
-
-    Model * aModel;
-    switch ( Flags::print[LAYERING].opts.value.i ) {
-    case LAYERING_BATCH:
-	aModel = new Batch_Model( document, input_file_name, output_file_name, n_layers );
-	break;
-    case LAYERING_GROUP:
-    case LAYERING_SHARE:		/* ??? */
-	aModel = new BatchGroup_Model( document, input_file_name, output_file_name, n_layers );
-	break;
-    case LAYERING_HWSW:
-	aModel = new HWSW_Model( document, input_file_name, output_file_name, n_layers );
-	break;
-    case LAYERING_SRVN:
-	aModel = new SRVN_Model( document, input_file_name, output_file_name, n_layers );
-	break;
-    case LAYERING_PROCESSOR:
-	aModel = new BatchProcessor_Model( document, input_file_name, output_file_name, n_layers );
-	break;
-    case LAYERING_PROCESSOR_TASK:
-    case LAYERING_TASK_PROCESSOR:
-	aModel = new ProcessorTask_Model( document, input_file_name, output_file_name, n_layers );
-	break;
-    case LAYERING_SQUASHED:
-	aModel = new Squashed_Model( document, input_file_name, output_file_name );
-	break;
-    case LAYERING_MOL:
-	aModel = new MOL_Model( document, input_file_name, output_file_name, n_layers );
-	break;
-    default:	
-	abort();
-    }
-
-    aModel->setModelNumber( model_no );
-
-    if ( aModel->process() ) {		/* This layerizes and renders the model */
-	LQX::Program * program = 0;
-
-	try {
-	    program = document->getLQXProgram();
-	    if ( program && Flags::print[RUN_LQX].opts.value.b ) {
-		Flags::instantiate  = true;
-
-		if (program == NULL) {
-		    LQIO::solution_error( LQIO::ERR_LQX_COMPILATION, input_file_name.c_str() );
-		} else { 
-		    /* Attempt to run the program */
-		    document->registerExternalSymbolsWithProgram(program);
-		    if ( Flags::print[RELOAD_LQX].opts.value.b ) {
-			program->getEnvironment()->getMethodTable()->registerMethod(new SolverInterface::Solve(document, &Model::reload, aModel));
-		    } else {
-			program->getEnvironment()->getMethodTable()->registerMethod(new SolverInterface::Solve(document, &Model::store, aModel));
-		    }
-		    LQIO::RegisterBindings(program->getEnvironment(), document);
-	
-		    int status = 0;
-		    FILE * output = 0;
-		    if ( output_file_name.size() > 0 && output_file_name != "-" && LQIO::Filename::isRegularFile(output_file_name) ) {
-			output = fopen( output_file_name.c_str(), "w" );
-			if ( !output ) {
-			    solution_error( LQIO::ERR_CANT_OPEN_FILE, output_file_name.c_str(), strerror( errno ) );
-			    status = FILEIO_ERROR;
-			} else {
-			    program->getEnvironment()->setDefaultOutput( output );	/* Default is stdout */
-			}
-		    }
-
-		    if ( Flags::dump_graphviz ) {
-			program->getGraphvizRepresentation( std::cout );
-		    } else if ( status == 0 ) {
-			/* Invoke the LQX program itself */
-			if ( !program->invoke() ) {
-			    LQIO::solution_error( LQIO::ERR_LQX_EXECUTION, input_file_name.c_str() );
-			} else if ( !SolverInterface::Solve::solveCallViaLQX ) {
-			    /* There was no call to solve the LQX */
-			    LQIO::solution_error( LQIO::ADV_LQX_IMPLICIT_SOLVE, input_file_name.c_str() );
-			    std::vector<LQX::SymbolAutoRef> args;
-			    program->getEnvironment()->invokeGlobalMethod("solve", &args);
-			}
-		    }
-		    if ( output ) {
-			fclose( output );
-		    }
-		}
-	    } else {
-		aModel->store();	/* This prints out the current values */
-	    }
-	    if ( program ) {
-		delete program;
-	    }
-	}
-#if !(__GNUC__ && __GNUC__ < 3)
-	catch ( const std::ios_base::failure &error ) {
-	    std::cerr << LQIO::io_vars.lq_toolname << ": " << error.what() << std::endl;
-	}
-#endif
-	catch ( const std::domain_error& error ) {
-	    std::cerr << LQIO::io_vars.lq_toolname << ": " << error.what() << std::endl;
-	}
-	catch ( const std::runtime_error &error ) {
-	    std::cerr << LQIO::io_vars.lq_toolname << ": " << error.what() << std::endl;
-	}
-    }
-
-    delete document;
-    delete aModel;
 }
 
 #if HAVE_GETOPT_H
@@ -1105,7 +912,7 @@ makeopts( std::string& opts, std::vector<struct option>& longopts )
 	longopts[k].has_arg = (Flags::print[i].arg != 0 ? required_argument : no_argument);
 	longopts[k].name    = strdup(Flags::print[i].name);
 	longopts[k].val     = Flags::print[i].c;
-	if ( (Flags::print[i].c & 0xff00) == 0 && islower( Flags::print[i].c ) && Flags::print[i].arg == 0 ) {
+	if ( (Flags::print[i].c & ~0x7f) == 0 && std::islower( Flags::print[i].c ) && Flags::print[i].arg == 0 ) {
 	    /* These are the +/- options */
 	    longopts[k].val |= 0x0100;					/* + case is > 256 */
 	    k += 1;
@@ -1144,60 +951,47 @@ makeopts( string& opts )
 #endif
 
 
-static file_format
-get_file_format( const std::string& value )
-{
-    for ( std::map<const file_format,const std::string>::const_iterator i = Options::io.begin(); i != Options::io.end(); ++i ) {
-	if ( value == i->second ) return i->first;
-    }
-    throw std::invalid_argument( value );
-}
-
-
 void
-setOutputFormat( const file_format f ) 
+setOutputFormat( const File_Format f ) 
 {
-    Flags::print[OUTPUT_FORMAT].opts.value.o = f;
+    Flags::print[OUTPUT_FORMAT].opts.value.f = f;
 
     switch ( f ) {
-    case file_format::OUTPUT:
-    case file_format::PARSEABLE:
-    case file_format::RTF:
-    case file_format::JSON:
-    case file_format::LQX:
-    case file_format::XML:
-	Flags::print[LAYERING].opts.value.i = LAYERING_PROCESSOR;	/* Order by processors */
-	Flags::print[PROCESSORS].opts.value.i = PROCESSOR_ALL;  	/* Print all processors. */
+    case File_Format::OUTPUT:
+    case File_Format::PARSEABLE:
+    case File_Format::RTF:
 	Flags::print[PRECISION].opts.value.i = 7;			/* Increase default precision */
 	Flags::print[INPUT_PARAMETERS].opts.value.b = true;     	/* input parameters. */
 	Flags::print[CONFIDENCE_INTERVALS].opts.value.b = true; 	/* Confidence Intervals */
-	Flags::surrogates = true;				/* Always add surrogates */
 	setAllResultOptions( true );
+	/* Fall through */
+    case File_Format::JSON:
+    case File_Format::LQX:
+    case File_Format::XML:
+    case File_Format::SRVN:
+	Flags::print[PROCESSORS].opts.value.p = Processors::ALL;  	/* Print all processors. */
+	Flags::print[LAYERING].opts.value.l = Layering::PROCESSOR;	/* Order by processors */
+	Flags::surrogates = true;					/* Always add surrogates */
 	break;
 
-    case file_format::SRVN:
-	Flags::print[LAYERING].opts.value.i = LAYERING_PROCESSOR;	/* Order by processors */
-	Flags::surrogates = true;				/* Always add surrogates */
-	break;
-
-    case file_format::NO_OUTPUT:
+    case File_Format::NO_OUTPUT:
 	break;
 
 #if JMVA_OUTPUT && HAVE_EXPAT_H
-    case file_format::JMVA:
-	Flags::bcmp_model = true;				/* No entries. */
+    case File_Format::JMVA:
+	Flags::bcmp_model = true;					/* No entries. */
 	break;
 #endif
 #if QNAP2_OUTPUT
-    case file_format::QNAP2:
+    case File_Format::QNAP2:
 #warning .. need to separate by class and station
-	Flags::squish_names = true;				/* Always */ 
-	Flags::bcmp_model = true;				/* No entries. */
+	Flags::squish_names = true;					/* Always */ 
+	Flags::bcmp_model = true;					/* No entries. */
 	break;
 #endif
 	
 #if defined(X11_OUTPUT)
-    case file_format::X11:
+    case File_Format::X11:
 	break;
 #endif
     }

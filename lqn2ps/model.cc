@@ -1,36 +1,32 @@
 /* model.cc	-- Greg Franks Mon Feb  3 2003
  *
- * $Id: model.cc 15144 2021-12-02 19:10:29Z greg $
+ * $Id: model.cc 15171 2021-12-08 03:02:09Z greg $
  *
  * Load, slice, and dice the lqn model.
  */
 
 #include "lqn2ps.h"
-#if HAVE_UNISTD_H
-#include <unistd.h>
-#endif
 #include <algorithm>
-#include <fstream>
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
-#include <stdexcept>
 #include <cstring>
 #include <errno.h>
-#include <cmath>
+#include <fstream>
+#include <limits>
 #include <sstream>
+#include <stdexcept>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <time.h>
-#if HAVE_FLOAT_H
-#include <float.h>
-#endif
-#if HAVE_VALUES_H
-#include <values.h>
+#if HAVE_UNISTD_H
+#include <unistd.h>
 #endif
 #if defined(X11_OUTPUT)
 #include <sys/stat.h>
 #endif
 #include <lqio/dom_document.h>
+#include <lqio/srvn_results.h>
 #include <lqio/srvn_output.h>
 #include <lqio/srvn_spex.h>
 #include "model.h"
@@ -70,11 +66,6 @@ private:
 Model * Model::__model = 0;
 std::vector<Entity *> Model::__zombies;
 
-unsigned Model::iteration_limit   = 50;
-unsigned Model::print_interval    = 10;
-double Model::convergence_value   = 0.00001;
-double Model::underrelaxation     = 0.9;
-
 unsigned Model::openArrivalCount  = 0;
 unsigned Model::forwardingCount	  = 0;
 unsigned Model::rendezvousCount[MAX_PHASES+1];
@@ -97,8 +88,6 @@ Model::Stats Model::stats[Model::N_STATS];
 
 static CommentManip print_comment( const char * aPrefix, const LQIO::DOM::ExternalVariable& );
 static DoubleManip to_inches( const double );
-
-const char * Model::XMLSchema_instance = "http://www.w3.org/2001/XMLSchema-instance";
 
 /*
  * Compare two entities by their submodel.
@@ -209,7 +198,7 @@ Model::~Model()
 
     /* Reset Flags */
 
-    Flags::print[LAYERING].opts.value.i = LAYERING_BATCH;
+    Flags::print[LAYERING].opts.value.l = Layering::BATCH;
     LQIO::io_vars.severity_level = LQIO::NO_ERROR;
     Flags::bcmp_model = false;
     __model = nullptr;
@@ -327,6 +316,197 @@ Model::group_by_submodel()
     }
 }
 
+/*
+ * Process input and save.
+ */
+
+void
+Model::create( const std::string& input_file_name, const std::string& output_file_name, const std::string& parse_file_name, int model_no )
+{
+    Flags::have_results = false;		/* Reset for each run. */
+    Flags::instantiate  = false;
+
+    LQIO::io_vars.reset();
+
+    ::Task::reset();
+    ::Entry::reset();
+    ::Call::reset();
+    ::Activity::reset();
+
+    LQIO::DOM::Document::InputFormat input_format = LQIO::DOM::Document::InputFormat::AUTOMATIC;
+    switch ( Flags::print[INPUT_FORMAT].opts.value.f ) {
+    case File_Format::LQX:
+    case File_Format::XML:
+	input_format = LQIO::DOM::Document::InputFormat::XML;
+	break;
+    case File_Format::JSON:
+	input_format = LQIO::DOM::Document::InputFormat::JSON;
+	break;
+    case File_Format::SRVN:
+	input_format = LQIO::DOM::Document::InputFormat::LQN;
+	break;
+    }
+
+    /* This is a departure from before -- we begin by loading a model.  Load results if possible (except if overridden with a parseable output filename */
+
+    unsigned int errorCode;
+    LQIO::DOM::Document* document = LQIO::DOM::Document::load( input_file_name, input_format, errorCode, parse_file_name.empty() && Flags::print[RESULTS].opts.value.b );
+    if ( !document ) {
+	std::cerr << LQIO::io_vars.lq_toolname << ": Input model was not loaded successfully." << std::endl;
+	LQIO::io_vars.error_count += 1;
+	return;
+    }
+    if ( !parse_file_name.empty() && Flags::print[RESULTS].opts.value.b ) {
+	try {
+	    Flags::have_results = LQIO::SRVN::loadResults( parse_file_name );
+	} 
+	catch ( const std::runtime_error &error ) {
+	    std::cerr << LQIO::io_vars.lq_toolname << ": Cannot load results file " << parse_file_name << " - " << error.what() << "." << std::endl;
+	    Flags::have_results = false;
+	    if ( output_output() ) return;
+	}
+	if ( !Flags::have_results ) {
+	    std::cerr << LQIO::io_vars.lq_toolname << ": Cannot load results file " << parse_file_name << " - " << strerror( errno ) << "." << std::endl;
+	    if ( output_output() ) return;
+	}
+    } else {
+	Flags::have_results = Flags::print[RESULTS].opts.value.b && document->hasResults();
+    }
+
+    /* Now fold, mutiliate and spindle */
+
+    if ( queueing_output() ) {
+//	pragmas.insert(LQIO::DOM::Pragma::_bcmp_,LQIO::DOM::Pragma::_true_);
+    }
+    document->mergePragmas( pragmas.getList() );       	/* Save pragmas -- prepare will process */
+    Pragma::set( document->getPragmaList() );
+    
+#if BUG_270
+    if ( !queueing_output()
+	 && (   Flags::print[OUTPUT_FORMAT].opts.value.f == File_Format::JMVA
+	     || Flags::print[OUTPUT_FORMAT].opts.value.f == File_Format::QNAP2) ) {
+	std::cerr << LQIO::io_vars.lq_toolname << ": -O" << Options::file_format.at(Flags::print[OUTPUT_FORMAT].opts.value.f)
+		  << " must be used with -Q<submodel>." << std::endl;
+	exit( 1 );
+    }
+#endif
+    Model::prepare( document );				/* This creates the various objects 	*/
+#if BUG_270
+    if ( Flags::prune ) {		/* Never prune if generating LQN	*/
+	Model::prune();
+    }
+#endif
+    const unsigned n_layers = Model::topologicalSort();
+
+    Model * aModel;
+    switch ( Flags::print[LAYERING].opts.value.l ) {
+    case Layering::BATCH:
+	aModel = new Batch_Model( document, input_file_name, output_file_name, n_layers );
+	break;
+    case Layering::GROUP:
+    case Layering::SHARE:		/* ??? */
+	aModel = new BatchGroup_Model( document, input_file_name, output_file_name, n_layers );
+	break;
+    case Layering::HWSW:
+	aModel = new HWSW_Model( document, input_file_name, output_file_name, n_layers );
+	break;
+    case Layering::SRVN:
+	aModel = new SRVN_Model( document, input_file_name, output_file_name, n_layers );
+	break;
+    case Layering::PROCESSOR:
+	aModel = new BatchProcessor_Model( document, input_file_name, output_file_name, n_layers );
+	break;
+    case Layering::PROCESSOR_TASK:
+    case Layering::TASK_PROCESSOR:
+	aModel = new ProcessorTask_Model( document, input_file_name, output_file_name, n_layers );
+	break;
+    case Layering::SQUASHED:
+	aModel = new Squashed_Model( document, input_file_name, output_file_name );
+	break;
+    case Layering::MOL:
+	aModel = new MOL_Model( document, input_file_name, output_file_name, n_layers );
+	break;
+    default:	
+	abort();
+    }
+
+    aModel->setModelNumber( model_no );
+
+    if ( aModel->process() ) {		/* This layerizes and renders the model */
+	LQX::Program * program = 0;
+
+	try {
+	    program = document->getLQXProgram();
+	    if ( program && Flags::print[RUN_LQX].opts.value.b ) {
+		Flags::instantiate  = true;
+
+		if (program == NULL) {
+		    LQIO::solution_error( LQIO::ERR_LQX_COMPILATION, input_file_name.c_str() );
+		} else { 
+		    /* Attempt to run the program */
+		    document->registerExternalSymbolsWithProgram(program);
+		    if ( Flags::print[RELOAD_LQX].opts.value.b ) {
+			program->getEnvironment()->getMethodTable()->registerMethod(new SolverInterface::Solve(document, &Model::reload, aModel));
+		    } else {
+			program->getEnvironment()->getMethodTable()->registerMethod(new SolverInterface::Solve(document, &Model::store, aModel));
+		    }
+		    LQIO::RegisterBindings(program->getEnvironment(), document);
+	
+		    int status = 0;
+		    FILE * output = 0;
+		    if ( output_file_name.size() > 0 && output_file_name != "-" && LQIO::Filename::isRegularFile(output_file_name) ) {
+			output = fopen( output_file_name.c_str(), "w" );
+			if ( !output ) {
+			    solution_error( LQIO::ERR_CANT_OPEN_FILE, output_file_name.c_str(), strerror( errno ) );
+			    status = FILEIO_ERROR;
+			} else {
+			    program->getEnvironment()->setDefaultOutput( output );	/* Default is stdout */
+			}
+		    }
+
+		    if ( Flags::dump_graphviz ) {
+			program->getGraphvizRepresentation( std::cout );
+		    } else if ( status == 0 ) {
+			/* Invoke the LQX program itself */
+			if ( !program->invoke() ) {
+			    LQIO::solution_error( LQIO::ERR_LQX_EXECUTION, input_file_name.c_str() );
+			} else if ( !SolverInterface::Solve::solveCallViaLQX ) {
+			    /* There was no call to solve the LQX */
+			    LQIO::solution_error( LQIO::ADV_LQX_IMPLICIT_SOLVE, input_file_name.c_str() );
+			    std::vector<LQX::SymbolAutoRef> args;
+			    program->getEnvironment()->invokeGlobalMethod("solve", &args);
+			}
+		    }
+		    if ( output ) {
+			fclose( output );
+		    }
+		}
+	    } else {
+		aModel->store();	/* This prints out the current values */
+	    }
+	    if ( program ) {
+		delete program;
+	    }
+	}
+#if !(__GNUC__ && __GNUC__ < 3)
+	catch ( const std::ios_base::failure &error ) {
+	    std::cerr << LQIO::io_vars.lq_toolname << ": " << error.what() << std::endl;
+	}
+#endif
+	catch ( const std::domain_error& error ) {
+	    std::cerr << LQIO::io_vars.lq_toolname << ": " << error.what() << std::endl;
+	}
+	catch ( const std::runtime_error &error ) {
+	    std::cerr << LQIO::io_vars.lq_toolname << ": " << error.what() << std::endl;
+	}
+    }
+
+    delete document;
+    delete aModel;
+}
+
+
+
 bool
 Model::prepare( const LQIO::DOM::Document * document )
 {
@@ -412,7 +592,7 @@ Model::prepare( const LQIO::DOM::Document * document )
 	/* Handle open arrivals */
 
 	if ( entry->hasOpenArrivalRate() ) {
-	    newEntry->isCalled( OPEN_ARRIVAL_REQUEST );
+	    newEntry->isCalledBy( request_type::OPEN_ARRIVAL );
 	}
 
 	/* Go over all of the entry's phases and add the calls */
@@ -475,17 +655,17 @@ Model::process()
     if ( !generate() ) return false;
     if ( !check() ) return false;
 
-#if defined(REP2FLAT)
-    switch ( Flags::print[REPLICATION].opts.value.i ) {
-    case REPLICATION_EXPAND: expand(); /* Fall through to call removeReplication()! */
-    case REPLICATION_REMOVE: removeReplication(); break;
-    case REPLICATION_RETURN: returnReplication(); break;
+#if REP2FLAT
+    switch ( Flags::print[REPLICATION].opts.value.r ) {
+    case Replication::EXPAND: expand(); /* Fall through to call removeReplication()! */
+    case Replication::REMOVE: removeReplication(); break;
+    case Replication::RETURN: returnReplication(); break;
     }
 #endif
 
     /* Simplify model if requested. */
 
-    if ( Flags::print[AGGREGATION].opts.value.i != AGGREGATE_NONE ) {
+    if ( Flags::print[AGGREGATION].opts.value.a != Aggregate::NONE ) {
 	for_each( Task::__tasks.begin(), Task::__tasks.end(), ::Exec<Entity>( &Entity::aggregate ) );
     }
 
@@ -498,7 +678,7 @@ Model::process()
 
     /* Simplify to tasks (for queueing models) */
 
-    if ( Flags::print[AGGREGATION].opts.value.i == AGGREGATE_ENTRIES ) {
+    if ( Flags::print[AGGREGATION].opts.value.a == Aggregate::ENTRIES ) {
 	for_each( _layers.begin(), _layers.end(), ::Exec<Layer>( &Layer::aggregate ) );
     }
 
@@ -506,8 +686,8 @@ Model::process()
 	printSummary( std::cerr );
     } 
 
-    if ( !Flags::have_results && Flags::print[COLOUR].opts.value.i == COLOUR_RESULTS ) {
-	Flags::print[COLOUR].opts.value.i = COLOUR_OFF;
+    if ( !Flags::have_results && Flags::print[COLOUR].opts.value.c == Colouring::RESULTS ) {
+	Flags::print[COLOUR].opts.value.c = Colouring::NONE;
     }
 
     if ( share_output() ) {
@@ -525,15 +705,15 @@ Model::process()
 	squish();
     }
 
-    Processor * surrogate_processor = 0;
-    Task * surrogate_task = 0;
+    Processor * surrogate_processor = nullptr;
+    Task * surrogate_task = nullptr;
 
     const unsigned layer = Flags::print[QUEUEING_MODEL].opts.value.i | Flags::print[SUBMODEL].opts.value.i;
     if ( layer > 0 ) {
  	if ( !selectSubmodel( layer ) ) {
 	    std::cerr << LQIO::io_vars.lq_toolname << ": Submodel " << layer << " is too big." << std::endl;
 	    return false;
-	} else if ( Flags::print[LAYERING].opts.value.i != LAYERING_SRVN ) {
+	} else if ( Flags::print[LAYERING].opts.value.l != Layering::SRVN ) {
  	    _layers.at(layer).generateSubmodel();
 	    if ( Flags::surrogates ) {
 		_layers[layer].transmorgrify( _document, surrogate_processor, surrogate_task );
@@ -541,7 +721,7 @@ Model::process()
 		_layers.at(layer).sort( (compare_func_ptr)(&Entity::compare) ).format( 0 ).justify( Entry::__entries.size() * Flags::entry_width );
 	    }
 	}
-    } else if ( Flags::print[INCLUDE_ONLY].opts.value.r && Flags::surrogates ) {
+    } else if ( Flags::print[INCLUDE_ONLY].opts.value.m != nullptr && Flags::surrogates ) {
 
 	/* Call transmorgrify on all layers */
 	
@@ -587,7 +767,7 @@ Model::process()
 	/* Compensate for labels */
 
 	if ( Flags::print_layer_number ) {
-	    _extent.moveBy( Flags::print[X_SPACING].opts.value.f + _layers.back().labelWidth() + 5, 0 );
+	    _extent.moveBy( Flags::print[X_SPACING].opts.value.d + _layers.back().labelWidth() + 5, 0 );
 	}
 
 	/* Compensate for processor/group boxes. */
@@ -620,18 +800,18 @@ Model::process()
     	if ( _key ) {
 	    _key->label().moveTo( _origin.x(), _origin.y() );
 
-	    switch ( Flags::print[KEY].opts.value.i ) {
-	    case KEY_TOP_LEFT:	    _key->moveBy( 0, _extent.y() - _key->height() ); break;
-	    case KEY_TOP_RIGHT:	    _key->moveBy( _extent.x() - _key->width(), _extent.y() - _key->height() ); break;
-	    case KEY_BOTTOM_LEFT:   break;
-	    case KEY_BOTTOM_RIGHT:  _key->moveBy( _extent.x() - _key->width(), 0 ); break;
-	    case KEY_BELOW_LEFT:
+	    switch ( Flags::print[KEY].opts.value.k ) {
+	    case Key_Position::TOP_LEFT:      _key->moveBy( 0, _extent.y() - _key->height() ); break;
+	    case Key_Position::TOP_RIGHT:     _key->moveBy( _extent.x() - _key->width(), _extent.y() - _key->height() ); break;
+	    case Key_Position::BOTTOM_LEFT:   break;
+	    case Key_Position::BOTTOM_RIGHT:  _key->moveBy( _extent.x() - _key->width(), 0 ); break;
+	    case Key_Position::BELOW_LEFT:
 		moveBy( 0, _key->height() );
 		_origin.moveBy( 0, -_key->height() );
 		_key->moveBy( 0, -_key->height() );
 		_extent.moveBy( 0, _key->height() );
 		break;
-	    case KEY_ABOVE_LEFT:
+	    case Key_Position::ABOVE_LEFT:
 		_key->moveBy( 0, _extent.y() );
 		_extent.moveBy( 0, _key->height() );
 		break;
@@ -708,8 +888,8 @@ Model::store()
 	}
 
 	if ( _inputFileName == filename() && input_output() ) {
-#if defined(REP2FLAT)
-	    if ( Flags::print[REPLICATION].opts.value.i == REPLICATION_EXPAND ) {
+#if REP2FLAT
+	    if ( Flags::print[REPLICATION].opts.value.r == Replication::EXPAND ) {
 		std::string ext = ".";		// look for .ext
 		ext += extension;
 		const size_t pos = filename.rfind( ext );
@@ -721,15 +901,15 @@ Model::store()
 		    throw std::runtime_error( msg.str() );
 		}
 	    } else if ( partial_output()
-			|| Flags::print[AGGREGATION].opts.value.i != AGGREGATE_NONE
-			|| Flags::print[REPLICATION].opts.value.i != REPLICATION_NOP ) {
+			|| Flags::print[AGGREGATION].opts.value.a != Aggregate::NONE
+			|| Flags::print[REPLICATION].opts.value.r != Replication::NONE ) {
 		std::ostringstream msg;
 		msg << "Cannot overwrite input file " << filename() << " with a subset of original model.";
 		throw std::runtime_error( msg.str() );
 	    }
 #else
 	    if ( partial_output()
-		 || Flags::print[AGGREGATION].opts.value.i != AGGREGATE_NONE ) {
+		 || Flags::print[AGGREGATION].opts.value.a != Aggregate::NONE ) {
 		ostringstream msg;
 		msg << "Cannot overwrite input file " << filename() << " with a subset of original model.";
 		throw runtime_error( msg.str() );
@@ -740,9 +920,9 @@ Model::store()
 	filename.backup();
 
 	std::ofstream output;
-	switch( Flags::print[OUTPUT_FORMAT].opts.value.o ) {
-#if defined(EMF_OUTPUT)
-	case file_format::EMF:
+	switch( Flags::print[OUTPUT_FORMAT].opts.value.f ) {
+#if EMF_OUTPUT
+	case File_Format::EMF:
 	    if ( LQIO::Filename::isRegularFile( filename() ) == 0 ) {
 		std::ostringstream msg;
 		msg << "Cannot open output file " << filename() << " - not a regular file.";
@@ -754,13 +934,13 @@ Model::store()
 #endif
 #if HAVE_GD_H && HAVE_LIBGD
 #if HAVE_GDIMAGEGIFPTR
-	case file_format::GIF:
+	case File_Format::GIF:
 #endif
 #if HAVE_LIBJPEG
-	case file_format::JPEG:
+	case File_Format::JPEG:
 #endif
 #if HAVE_LIBPNG
-	case file_format::PNG:
+	case File_Format::PNG:
 #endif
 	    output.open( filename().c_str(), std::ios::out|std::ios::binary );	/* NO \r's in output for windoze */
 	    break;
@@ -819,19 +999,19 @@ std::string
 Model::getExtension()
 {
     /* Extension exceptions (except SRVN) */
-    static const std::map<const file_format,const std::string> exceptions = {
-	{ file_format::EEPIC,	    "tex" },
-	{ file_format::PSTEX,       "fig" },
-	{ file_format::PARSEABLE,   "p" },
-	{ file_format::LQX, 	    "lqnx" },
-	{ file_format::XML, 	    "lqnx" }
+    static const std::map<const File_Format,const std::string> exceptions = {
+	{ File_Format::EEPIC,	    "tex" },
+	{ File_Format::PSTEX,       "fig" },
+	{ File_Format::PARSEABLE,   "p" },
+	{ File_Format::LQX, 	    "lqnx" },
+	{ File_Format::XML, 	    "lqnx" }
     };
 
-    std::map<const file_format,const std::string>::const_iterator i;
-    const file_format o = Flags::print[OUTPUT_FORMAT].opts.value.o;
+    std::map<const File_Format,const std::string>::const_iterator i;
+    const File_Format o = Flags::print[OUTPUT_FORMAT].opts.value.f;
 
     /* Non standard files names are retained (in theory) */
-    if ( Flags::print[OUTPUT_FORMAT].opts.value.o == file_format::SRVN ) {
+    if ( Flags::print[OUTPUT_FORMAT].opts.value.f == File_Format::SRVN ) {
 	std::size_t i = _inputFileName.find_last_of( '.' );
 	if ( i != std::string::npos ) {
 	    std::string ext = _inputFileName.substr( i+1 );
@@ -843,7 +1023,7 @@ Model::getExtension()
 	return "lqn";
     } else if ( (i = exceptions.find(o)) != exceptions.end() ) {
 	return i->second;
-    } else if ( (i = Options::io.find(o)) != Options::io.end() ) {
+    } else if ( (i = Options::file_format.find(o)) != Options::file_format.end() ) {
 	return i->second;
     } else {
 	std::runtime_error( "Unknown output format." );
@@ -1055,18 +1235,18 @@ Model::format()
 	_origin.min( layer->x(), layer->y() );
 	_extent.max( layer->x() + layer->width(), layer->y() + layer->height() );
 
-	start_y += (layer->height() + Flags::print[Y_SPACING].opts.value.f);
+	start_y += (layer->height() + Flags::print[Y_SPACING].opts.value.d);
     }
 
     justify();
     align();
 
     switch ( Flags::node_justification ) {
-    case DEFAULT_JUSTIFY:
-    case ALIGN_JUSTIFY:
-	if ( Flags::print[LAYERING].opts.value.i == LAYERING_BATCH
-	     || Flags::print[LAYERING].opts.value.i == LAYERING_HWSW
-	     || Flags::print[LAYERING].opts.value.i == LAYERING_MOL ) {
+    case Justification::DEFAULT:
+    case Justification::ALIGN:
+	if ( Flags::print[LAYERING].opts.value.l == Layering::BATCH
+	     || Flags::print[LAYERING].opts.value.l == Layering::HWSW
+	     || Flags::print[LAYERING].opts.value.l == Layering::MOL ) {
 	    alignEntities();
 	}
 	break;
@@ -1074,7 +1254,7 @@ Model::format()
 
     for ( std::vector<Layer>::reverse_iterator layer = _layers.rbegin(); layer != _layers.rend(); ++layer ) {
 	if ( !*layer ) continue;
-	layer->moveLabelTo( right() + Flags::print[X_SPACING].opts.value.f, layer->height() / 2.0 );
+	layer->moveLabelTo( right() + Flags::print[X_SPACING].opts.value.d, layer->height() / 2.0 );
     }
     return *this;
 }
@@ -1089,13 +1269,13 @@ Model::format( Layer& serverLayer )
     }
 
     double start_y = serverLayer.y();
-    _origin.moveTo( MAXDOUBLE, MAXDOUBLE );
+    _origin.moveTo( std::numeric_limits<double>::max(), std::numeric_limits<double>::max() );
     _extent.moveTo( 0, 0 );
 
     serverLayer.format( start_y ).sort( (compare_func_ptr)(Entity::compareCoord) );
     _origin.min( serverLayer.x(), serverLayer.y() );
     _extent.max( serverLayer.x() + serverLayer.width(), serverLayer.y() + serverLayer.height() );
-    start_y += ( serverLayer.x() + serverLayer.height() + Flags::print[Y_SPACING].opts.value.f);
+    start_y += ( serverLayer.x() + serverLayer.height() + Flags::print[Y_SPACING].opts.value.d);
 
     clientLayer.format( start_y ).sort( (compare_func_ptr)(&Entity::compareCoord) );
     _origin.min( clientLayer.x(), clientLayer.y() );
@@ -1176,7 +1356,7 @@ Model::finalScaleTranslate()
      * other formats with clipping rectangles. Add a border.
      */
 
-    const double offset = Flags::print[BORDER].opts.value.f;
+    const double offset = Flags::print[BORDER].opts.value.d;
     const double x_offset = offset - left();
     const double y_offset = offset - bottom();		/* Shift to origin */
     _origin.moveTo( 0, 0 );
@@ -1192,45 +1372,45 @@ Model::finalScaleTranslate()
 
     /* Rescale for output format. */
 
-    switch ( Flags::print[OUTPUT_FORMAT].opts.value.o ) {
-    case file_format::EEPIC:
+    switch ( Flags::print[OUTPUT_FORMAT].opts.value.f ) {
+    case File_Format::EEPIC:
 	*this *= EEPIC_SCALING;
 	break;
 
 #if defined(EMF_OUTPUT)
-    case file_format::EMF:
+    case File_Format::EMF:
 	translateScale( EMF_SCALING );
 	break;
 #endif
 
-    case file_format::FIG:
-    case file_format::PSTEX:
+    case File_Format::FIG:
+    case File_Format::PSTEX:
 	translateScale( FIG_SCALING );
 	break;
 
 #if HAVE_GD_H && HAVE_LIBGD
 #if HAVE_GDIMAGEGIFPTR
-    case file_format::GIF:
+    case File_Format::GIF:
 #endif
 #if HAVE_LIBJPEG
-    case file_format::JPEG:
+    case File_Format::JPEG:
 #endif
 #if HAVE_LIBPNG
-    case file_format::PNG:
+    case File_Format::PNG:
 #endif
 	translateScale( GD_SCALING );
 	break;
 #endif	/* HAVE_LIBGD */
 
 #if defined(SVG_OUTPUT)
-    case file_format::SVG:
+    case File_Format::SVG:
 	/* TeX's origin is lower left corner.  SVG's is upper right.  Fix and scale */
 	translateScale( SVG_SCALING );
 	break;
 #endif
 
 #if defined(SXD_OUTPUT)
-    case file_format::SXD:
+    case File_Format::SXD:
 	/* TeX's origin is lower left corner.  SXD's is upper right.  Fix and scale */
 	translateScale( SXD_SCALING );
 	break;
@@ -1240,8 +1420,8 @@ Model::finalScaleTranslate()
 
     /* Final scaling */
 
-    if ( Flags::print[MAGNIFICATION].opts.value.f != 1.0 ) {
-	*this *= Flags::print[MAGNIFICATION].opts.value.f;
+    if ( Flags::print[MAGNIFICATION].opts.value.d != 1.0 ) {
+	*this *= Flags::print[MAGNIFICATION].opts.value.d;
     }
 
     return *this;
@@ -1390,103 +1570,65 @@ Model::accumulateEntryStats( const std::string& filename ) const
  * Print out the model.
  */
 
+typedef std::ostream& (Model::*print_func)( std::ostream& output ) const;
+
 std::ostream&
 Model::print( std::ostream& output ) const
 {
-    if ( Flags::print_comment && Flags::print[OUTPUT_FORMAT].opts.value.o != file_format::TXT) {
+    const std::map<const File_Format, print_func> print_funcs = {
+	{ File_Format::EEPIC,	    &Model::printEEPIC },
+#if EMF_OUTPUT
+	{ File_Format::EMF,	    &Model::printEMF },
+#endif
+	{ File_Format::FIG,	    &Model::printFIG },
+	{ File_Format::PSTEX,	    &Model::printFIG },
+#if HAVE_GD_H && HAVE_LIBGD && HAVE_GDIMAGEGIFPTR
+	{ File_Format::GIF,	    &Model::printGIF },
+#endif
+#if HAVE_GD_H && HAVE_LIBGD && HAVE_LIBJPEG
+	{ File_Format::JPEG,	    &Model::printJPG },
+#endif
+#if JMVA_OUTPUT && HAVE_EXPAT_H
+	{ File_Format::JMVA,	    &Model::printBCMP },
+#endif
+	{ File_Format::JSON,	    &Model::printJSON },
+	{ File_Format::NO_OUTPUT,   &Model::printNOP },
+#if HAVE_GD_H && HAVE_LIBGD && HAVE_LIBPNG
+	{ File_Format::PNG,	    &Model::printPNG },
+#endif
+	{ File_Format::OUTPUT,	    &Model::printOutput },
+	{ File_Format::PARSEABLE,   &Model::printParseable },
+	{ File_Format::POSTSCRIPT,  &Model::printPostScript },
+#if QNAP2_OUTPUT
+	{ File_Format::QNAP2,	    &Model::printBCMP },
+#endif
+	{ File_Format::RTF,	    &Model::printRTF },
+#if SVG_OUTPUT
+	{ File_Format::SVG,	    &Model::printSVG },
+#endif
+#if SXD_OUTPUT
+	{ File_Format::SXD,	    &Model::printSXD },
+#endif
+#if TXT_OUTPUT
+	{ File_Format::TXT,	    &Model::printTXT },
+#endif
+	{ File_Format::SRVN,	    &Model::printInput },
+	{ File_Format::LQX,	    &Model::printLQX },
+	{ File_Format::XML,	    &Model::printXML },
+#if X11_OUTPUT
+	{ File_Format::X11:	    &Model::printX11 },
+#endif
+    };
+
+    if ( Flags::print_comment && Flags::print[OUTPUT_FORMAT].opts.value.f != File_Format::TXT) {
 	const std::string comment( getDOM()->getModelCommentString() );
 	if ( !comment.empty() ) {
 	    std::cout << _inputFileName << ": " << comment << std::endl;
 	}
     }
 
-    switch( Flags::print[OUTPUT_FORMAT].opts.value.o ) {
-    case file_format::EEPIC:
-	printEEPIC( output );
-	break;
-#if defined(EMF_OUTPUT)
-    case file_format::EMF:
-	printEMF( output );
-	break;
-#endif
-    case file_format::FIG:
-    case file_format::PSTEX:
-	printFIG( output );
-	break;
-#if HAVE_GD_H && HAVE_LIBGD && HAVE_GDIMAGEGIFPTR
-    case file_format::GIF:
-	printGD( output, &GD::outputGIF );
-	break;
-#endif
-#if HAVE_GD_H && HAVE_LIBGD && HAVE_LIBJPEG
-    case file_format::JPEG:
-	printGD( output, &GD::outputJPG );
-	break;
-#endif
-#if JMVA_OUTPUT && HAVE_JMVA
-    case file_format::JMVA:
-	printBCMP( output );
-	break;
-#endif
-    case file_format::JSON:
-	printJSON( output );
-	break;
-    case file_format::NO_OUTPUT:
-	break;
-#if HAVE_GD_H && HAVE_LIBGD && HAVE_LIBPNG
-    case file_format::PNG:
-	printGD( output, &GD::outputPNG );
-	break;
-#endif
-    case file_format::OUTPUT:
-	if ( Flags::print[PRECISION].opts.value.i >= 0 ) {
-	    output.precision(Flags::print[PRECISION].opts.value.i);
-	}
-	printOutput( output );
-	break;
-    case file_format::PARSEABLE:
-	printParseable( output );
-	break;
-    case file_format::POSTSCRIPT:
-	printPostScript( output );
-	break;
-#if QNAP2_OUTPUT
-    case file_format::QNAP2:
-	printBCMP( output );
-	break;
-#endif
-    case file_format::RTF:
-	printRTF( output );
-	break;
-#if defined(SVG_OUTPUT)
-    case file_format::SVG:
-	printSVG( output );
-	break;
-#endif
-#if defined(SXD_OUTPUT)
-    case file_format::SXD:
-	printSXD( output );
-	break;
-#endif
-#if defined(TXT_OUTPUT)
-    case file_format::TXT:
-	printTXT( output );
-	break;
-#endif
-    case file_format::SRVN:
-	printInput( output  );
-	break;
-    case file_format::LQX:
-	LQIO::Spex::clear();		/* removes spex, so LQX will output. */
-    case file_format::XML:
-	printXML( output );
-	break;
-#if defined(X11_OUTPUT)
-    case file_format::X11:
-	printX11( output );
-	break;
-#endif
-    }
+    const print_func f = print_funcs.at(Flags::print[OUTPUT_FORMAT].opts.value.f);
+    (this->*f)( output );
 
     return output;
 }
@@ -1658,6 +1800,30 @@ Model::printFIG( std::ostream& output ) const
 
 
 #if HAVE_GD_H && HAVE_LIBGD
+#if HAVE_GDIMAGEGIFPTR
+std::ostream&
+Model::printGIF( std::ostream& output ) const
+{
+    return printGD( output, &GD::outputGIF );
+}
+#endif
+
+#if HAVE_LIBJPEG
+std::ostream&
+Model::printJPG( std::ostream& output ) const
+{
+    return printGD( output, &GD::outputJPG );
+}
+#endif
+
+#if HAVE_LIBPNG
+std::ostream&
+Model::printPNG( std::ostream& output ) const
+{
+    return printGD( output, &GD::outputPNG );
+}
+#endif
+
 std::ostream&
 Model::printGD( std::ostream& output, outputFuncPtr func ) const
 {
@@ -1833,6 +1999,9 @@ Model::printInput( std::ostream& output ) const
 std::ostream&
 Model::printOutput( std::ostream& output ) const
 {
+    if ( Flags::print[PRECISION].opts.value.i >= 0 ) {
+	output.precision(Flags::print[PRECISION].opts.value.i);
+    }
     LQIO::SRVN::Output srvn( *getDOM(), remapEntities(), Flags::print[CONFIDENCE_INTERVALS].opts.value.b, Flags::print[VARIANCE].opts.value.b, Flags::print[HISTOGRAMS].opts.value.b );
     srvn.print( output );
     return output;
@@ -1902,9 +2071,16 @@ Model::printJSON( std::ostream& output ) const
 
 
 std::ostream&
+Model::printLQX( std::ostream& output ) const
+{
+    LQIO::Spex::clear();		/* removes spex, so LQX will output. */
+    return printXML( output );
+}
+    
+std::ostream&
 Model::printXML( std::ostream& output ) const
 {
-    remapEntities();		/* Reorder to our order */
+    remapEntities();			/* Reorder to our order */
     _document->print( output, LQIO::DOM::Document::OutputFormat::XML );	/* Don't output LQX code if running. */
     return output;
 }
@@ -1938,7 +2114,7 @@ Model::printLayers( std::ostream& output ) const
 	for ( std::vector<Layer>::const_iterator layer = _layers.begin(); layer != _layers.end(); ++layer ) {
 	    if ( !*layer ) continue;
 #if defined(TXT_OUTPUT)
-	    if ( Flags::print[OUTPUT_FORMAT].opts.value.o == file_format::TXT ) {
+	    if ( Flags::print[OUTPUT_FORMAT].opts.value.f == File_Format::TXT ) {
 		output << "---------- Layer " << layer->number() << " ----------" << std::endl;
 	    }
 #endif
@@ -2307,7 +2483,7 @@ Model::printSummary( std::ostream& output ) const
 /* ------------------------------------------------------------------------ */
 
 Model::Stats::Stats()
-    : n(0), x(0), x_sqr(0), log_x(0), one_x(0), min(MAXDOUBLE), max(-MAXDOUBLE), f(nullptr)
+    : n(0), x(0), x_sqr(0), log_x(0), one_x(0), min(std::numeric_limits<double>::max()), max(-std::numeric_limits<double>::max()), f(nullptr)
 {
     min_filename = "";
     max_filename = "";
@@ -2393,27 +2569,27 @@ print_comment_str( std::ostream& output, const char * prefix, const LQIO::DOM::E
 static std::ostream&
 to_inches_str( std::ostream& output, const double value )
 {
-    switch ( Flags::print[OUTPUT_FORMAT].opts.value.o ) {
-    case file_format::FIG:
-    case file_format::PSTEX:
+    switch ( Flags::print[OUTPUT_FORMAT].opts.value.f ) {
+    case File_Format::FIG:
+    case File_Format::PSTEX:
 	output << value / (FIG_SCALING * PTS_PER_INCH);
 	break;
 
-    case file_format::EEPIC:
+    case File_Format::EEPIC:
 	output << value / (EEPIC_SCALING * PTS_PER_INCH);
 	break;
 #if defined(EMF_OUTPUT)
-    case file_format::EMF:
+    case File_Format::EMF:
 	output << value / (EMF_SCALING * PTS_PER_INCH);
 	break;
 #endif
 #if defined(SVG_OUTPUT)
-    case file_format::SVG:
+    case File_Format::SVG:
 	output << value / (SVG_SCALING * PTS_PER_INCH);
 	break;
 #endif
 #if defined(SXD_OUTPUT)
-    case file_format::SXD:
+    case File_Format::SXD:
 	output << value / (SXD_SCALING * PTS_PER_INCH);
 	break;
 #endif
@@ -2586,7 +2762,7 @@ Group_Model::Justify::operator()( Group * group )
      * scheduling) are ignored if they have no default tasks */
     
     if ( _x > 0 ) {
-	_x += Flags::print[X_SPACING].opts.value.f;
+	_x += Flags::print[X_SPACING].opts.value.d;
     }
     if ( !group->isPseudoGroup() ) {
 	group->moveGroupBy( _x, 0.0 );
@@ -2643,7 +2819,7 @@ ProcessorTask_Model::justify()
 
     /* Set max width */
 
-    _extent.x( procWidthPts + Flags::print[X_SPACING].opts.value.f + taskWidthPts );
+    _extent.x( procWidthPts + Flags::print[X_SPACING].opts.value.d + taskWidthPts );
 
     /* Now, move all tasks */
 
@@ -2652,23 +2828,23 @@ ProcessorTask_Model::justify()
 	const unsigned int i = layer->number();
 
 	switch ( Flags::node_justification ) {
-	case ALIGN_JUSTIFY:
-	case CENTER_JUSTIFY:
-	    justify2( procLayer[i], taskLayer[i], (right() - (taskLayer[i].width() + procLayer[i].width() + Flags::print[X_SPACING].opts.value.f)) / 2.0 );
+	case Justification::ALIGN:
+	case Justification::CENTER:
+	    justify2( procLayer[i], taskLayer[i], (right() - (taskLayer[i].width() + procLayer[i].width() + Flags::print[X_SPACING].opts.value.d)) / 2.0 );
 	    break;
-	case RIGHT_JUSTIFY:
-	    justify2( procLayer[i], taskLayer[i],  right() - (taskLayer[i].width() + procLayer[i].width() + Flags::print[X_SPACING].opts.value.f) );
+	case Justification::RIGHT:
+	    justify2( procLayer[i], taskLayer[i],  right() - (taskLayer[i].width() + procLayer[i].width() + Flags::print[X_SPACING].opts.value.d) );
 	    break;
-	case LEFT_JUSTIFY:
+	case Justification::LEFT:
 	    justify2( procLayer[i], taskLayer[i],  0.0 );
 	    break;
-	case DEFAULT_JUSTIFY:
-	    if ( Flags::print[LAYERING].opts.value.i == LAYERING_PROCESSOR_TASK ) {
-		procLayer[i].justify( procWidthPts, RIGHT_JUSTIFY );
-		taskLayer[i].justify( taskWidthPts, LEFT_JUSTIFY ).moveBy( procWidthPts + Flags::print[X_SPACING].opts.value.f, 0.0 );
+	case Justification::DEFAULT:
+	    if ( Flags::print[LAYERING].opts.value.l == Layering::PROCESSOR_TASK ) {
+		procLayer[i].justify( procWidthPts, Justification::RIGHT );
+		taskLayer[i].justify( taskWidthPts, Justification::LEFT ).moveBy( procWidthPts + Flags::print[X_SPACING].opts.value.d, 0.0 );
 	    } else {
-		taskLayer[i].justify( taskWidthPts, RIGHT_JUSTIFY );
-		procLayer[i].justify( procWidthPts, LEFT_JUSTIFY ).moveBy( taskWidthPts + Flags::print[X_SPACING].opts.value.f, 0.0 );
+		taskLayer[i].justify( taskWidthPts, Justification::RIGHT );
+		procLayer[i].justify( procWidthPts, Justification::LEFT ).moveBy( taskWidthPts + Flags::print[X_SPACING].opts.value.d, 0.0 );
 	    }
 	    break;
 	}
@@ -2681,12 +2857,12 @@ ProcessorTask_Model::justify()
 const Model&
 ProcessorTask_Model::justify2( Layer &procLayer, Layer &taskLayer, const double offset ) const
 {
-    if ( Flags::print[LAYERING].opts.value.i == LAYERING_PROCESSOR_TASK ) {
+    if ( Flags::print[LAYERING].opts.value.l == Layering::PROCESSOR_TASK ) {
 	procLayer.moveBy( offset, 0.0 );
-	taskLayer.moveBy( offset + procLayer.width() + Flags::print[X_SPACING].opts.value.f, 0.0 );
+	taskLayer.moveBy( offset + procLayer.width() + Flags::print[X_SPACING].opts.value.d, 0.0 );
     } else {
 	taskLayer.moveBy( offset, 0.0 );
-	procLayer.moveBy( offset + taskLayer.width() + Flags::print[X_SPACING].opts.value.f, 0.0 );
+	procLayer.moveBy( offset + taskLayer.width() + Flags::print[X_SPACING].opts.value.d, 0.0 );
     }
     return *this;
 }

@@ -1,13 +1,14 @@
 /* -*- c++ -*-
  * layer.h	-- Greg Franks
  *
- * $Id: layer.h 14882 2021-07-07 11:09:54Z greg $
+ * $Id: layer.h 15171 2021-12-08 03:02:09Z greg $
  */
 
 #ifndef _LQN2PS_LAYER_H
 #define _LQN2PS_LAYER_H
 
 #include "lqn2ps.h"
+#include <limits>
 #include <vector>
 #include <lqio/bcmp_document.h>
 #include "entity.h"
@@ -35,7 +36,7 @@ private:
     class Position
     {
     public:
-	Position( taskFPtr f, double y=MAXDOUBLE ) : _f(f), _x(0.0), _y(y), _h(0.0) {}
+	Position( taskFPtr f, double y=std::numeric_limits<double>::max() ) : _f(f), _x(0.0), _y(y), _h(0.0) {}
 	void operator()( Entity * );
 	double x() const { return _x; }
 	double y() const { return _y; }
@@ -102,7 +103,7 @@ public:
     Layer& depth(  unsigned );
     Layer& fill( double );
     Layer& justify( double );
-    Layer& justify( double,  justification_type );
+    Layer& justify( double,  Justification );
     Layer& align();
     Layer& alignEntities();
     Layer& shift( unsigned index, double amount );

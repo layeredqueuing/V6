@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- *  $Id: qnap2_document.h 15144 2021-12-02 19:10:29Z greg $
+ *  $Id: qnap2_document.h 15147 2021-12-03 14:27:24Z greg $
  *
  *  Created by Greg Franks 2020/12/28
  */
@@ -121,7 +121,7 @@ namespace BCMP {
 
 	struct printSPEXScalars {
 	    printSPEXScalars( std::ostream& output ) : _output(output) {}
-	    void operator()( const std::pair<std::string, const LQX::SyntaxTreeNode *>& ) const;
+	    void operator()( const std::string& ) const;
 	private:
 	    std::ostream& _output;
 	};

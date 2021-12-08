@@ -4,23 +4,17 @@
  * this is all the stuff printed after the ':'.  For xml output, this
  * is all of the precendence stuff.
  * 
- * $Id: actlist.cc 15144 2021-12-02 19:10:29Z greg $
+ * $Id: actlist.cc 15171 2021-12-08 03:02:09Z greg $
  */
 
 
-#include "actlist.h"
-#include <cmath>
 #include <algorithm>
+#include <cmath>
 #include <cstdlib>
-#include <limits.h>
-#if HAVE_VALUES_H
-#include <values.h>
-#endif
-#if HAVE_FLOAT_H
-#include <float.h>
-#endif
+#include <limits>
 #include <lqio/error.h>
 #include <lqio/dom_actlist.h>
+#include "actlist.h"
 #include "task.h"
 #include "entry.h"
 #include "activity.h"
@@ -303,7 +297,7 @@ ForkActivityList::getIndex() const
     if ( prev() ) {
 	return prev()->getIndex();
     } else {
-	return MAXDOUBLE;
+	return std::numeric_limits<double>::max();
     }
 }
 
@@ -405,8 +399,8 @@ JoinActivityList::aggregate( Entry * anEntry, const unsigned curr_p, unsigned& n
     if ( next() ) {
 	double count = next()->aggregate( anEntry, curr_p, next_p, rate, activityStack, aFunc );
 	if ( aFunc == &Activity::aggregateService
-	     && (Flags::print[AGGREGATION].opts.value.i == AGGREGATE_SEQUENCES
-		 || Flags::print[AGGREGATION].opts.value.i == AGGREGATE_THREADS)
+	     && (Flags::print[AGGREGATION].opts.value.a == Aggregate::SEQUENCES
+		 || Flags::print[AGGREGATION].opts.value.a == Aggregate::THREADS)
 	     && dynamic_cast<ForkActivityList *>(next())
 	     && !dynamic_cast<RepeatActivityList *>(next()) ) {
 
@@ -441,7 +435,7 @@ JoinActivityList::getIndex() const
     if ( myActivity ) {
 	return myActivity->index();
     } else {
-	return MAXDOUBLE;
+	return std::numeric_limits<double>::max();
     }
 }
 
@@ -662,7 +656,7 @@ AndOrForkActivityList::getIndex() const
     if ( prev() ) {
 	return prev()->getIndex();
     } else {
-	return MAXDOUBLE;
+	return std::numeric_limits<double>::max();
     }
 }
 
@@ -861,7 +855,7 @@ OrForkActivityList::aggregate( Entry * anEntry, const unsigned curr_p, unsigned&
 
     if ( aFunc == &Activity::aggregateService
 	 && joinList->size() == size()
-	 && Flags::print[AGGREGATION].opts.value.i == AGGREGATE_THREADS
+	 && Flags::print[AGGREGATION].opts.value.a == Aggregate::THREADS
 	 && dynamic_cast<OrJoinActivityList *>(joinList)
 	 && dynamic_cast<ForkActivityList *>(joinList->next())
 	 && !dynamic_cast<RepeatActivityList *>(joinList->next()) ) {
@@ -1134,7 +1128,7 @@ AndOrJoinActivityList::backtrack( const std::deque<const AndForkActivityList *>&
 double
 AndOrJoinActivityList::getIndex() const
 {
-    double anIndex = MAXDOUBLE;
+    double anIndex = std::numeric_limits<double>::max();
     for ( std::vector<Activity *>::const_iterator activity = activityList().begin(); activity != activityList().end(); ++activity ) {
 	anIndex = std::min( anIndex, (*activity)->index() );
     }
@@ -1490,7 +1484,7 @@ AndJoinActivityList&
 AndJoinActivityList::moveSrcTo( const Point& src, Activity * anActivity )
 {
     AndOrJoinActivityList::moveSrcTo( src, anActivity );
-    _label->moveTo( myNode->center() ).moveBy( radius(), 0.0 ).justification( LEFT_JUSTIFY );
+    _label->moveTo( myNode->center() ).moveBy( radius(), 0.0 ).justification( Justification::LEFT );
     return *this;
 }
 

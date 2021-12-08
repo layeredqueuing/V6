@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: pragma.h 14882 2021-07-07 11:09:54Z greg $
+ * $Id: pragma.h 15157 2021-12-06 19:18:24Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -24,6 +24,8 @@
 #include "lqn2ps.h"
 
 /* -------------------------------------------------------------------- */
+
+extern LQIO::DOM::Pragma pragmas;
 
 class Pragma {
 
@@ -45,7 +47,7 @@ private:
 public:
     static BCMP getBCMP();
     static bool forceInfinite( ForceInfinite );
-    static layering_format layering();
+    static Layering layering();
     static bool defaultProcessorScheduling() { assert( __cache != nullptr ); return __cache->_default_processor_scheduling; }
     static scheduling_type processorScheduling() { assert( __cache != nullptr ); return __cache->_processor_scheduling; }
     static bool prune();

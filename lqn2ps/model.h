@@ -1,7 +1,7 @@
 /* -*- c++ -*-
  * model.h	-- Greg Franks
  *
- * $Id: model.h 14882 2021-07-07 11:09:54Z greg $
+ * $Id: model.h 15171 2021-12-08 03:02:09Z greg $
  */
 
 #ifndef _MODEL_H
@@ -49,7 +49,6 @@ class Model
 		   OPEN_ARRIVALS_PER_ENTRY, OPEN_ARRIVAL_RATE_PER_ENTRY,
 		   FORWARDING_PER_ENTRY, FORWARDING_PROBABILITY_PER_CALL,	/* OUT */
 		   N_STATS } MODEL_STATS;
-    typedef enum { REAL_TIME, USER_TIME, SYS_TIME } TIME_VALUES;
 public:
     static const unsigned CLIENT_LEVEL = 0;
     static const unsigned SERVER_LEVEL = 1;
@@ -57,11 +56,6 @@ public:
 
 public:
     /* default values */
-    static unsigned iteration_limit;
-    static unsigned print_interval;
-    static double convergence_value;
-    static double underrelaxation;
-
     static int maxModelNumber;
 
     static bool deterministicPhasesPresent;
@@ -74,8 +68,6 @@ public:
     static bool variancePresent;
 
 private:
-    static const char * XMLSchema_instance;
-
     struct Count {
 	Count() : _tasks(0), _processors(0), _entries(0), _activities(0) {}
 	Count& operator=( unsigned int value );
@@ -155,6 +147,7 @@ public:
 
     Model& setModelNumber( unsigned int n ) { _modelNumber = n; return *this; }
 
+    static void create( const std::string& inputFileName,  const std::string& output_file_name, const std::string& parse_file_name, int model_no );
     bool load( const char * );
     bool process();
     bool store();
@@ -236,12 +229,21 @@ private:
     std::ostream& printBCMP( std::ostream& output ) const;
 #endif
     std::ostream& printEEPIC( std::ostream& output ) const;
-#if defined(EMF_OUTPUT)
+#if EMF_OUTPUT
     std::ostream& printEMF( std::ostream& output ) const;
 #endif
     std::ostream& printFIG( std::ostream& output ) const;
 #if HAVE_LIBGD
     std::ostream& printGD( std::ostream& output, outputFuncPtr func ) const;
+#if HAVE_GDIMAGEGIFPTR
+    std::ostream& printGIF( std::ostream& output ) const;
+#endif
+#if HAVE_LIBJPEG
+    std::ostream& printJPG( std::ostream& output ) const;
+#endif
+#if HAVE_LIBPNG
+    std::ostream& printPNG( std::ostream& output ) const;
+#endif
 #endif
     std::ostream& printPostScript( std::ostream& output ) const;
 #if defined(SVG_OUTPUT)
@@ -264,9 +266,11 @@ private:
 #endif
     std::ostream& printInput( std::ostream& output ) const;
     std::ostream& printOutput( std::ostream& output ) const;
+    std::ostream& printNOP( std::ostream& output ) const { return output; }
     std::ostream& printParseable( std::ostream& output ) const;
     std::ostream& printRTF( std::ostream& output ) const;
     std::ostream& printJSON( std::ostream& output ) const;
+    std::ostream& printLQX( std::ostream& output ) const;
     std::ostream& printXML( std::ostream& output ) const;
 
     std::ostream& printLayers( std::ostream& ) const;

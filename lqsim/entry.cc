@@ -12,7 +12,7 @@
  *
  * $URL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqsim/entry.cc $
  *
- * $Id: entry.cc 15001 2021-09-27 22:12:07Z greg $
+ * $Id: entry.cc 15157 2021-12-06 19:18:24Z greg $
  */
 
 #include <parasol.h>
@@ -20,7 +20,6 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
-#include <limits.h>
 #include <lqio/input.h>
 #include <lqio/error.h>
 #include "activity.h"

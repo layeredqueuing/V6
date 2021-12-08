@@ -1,18 +1,13 @@
 /* group.cc	-- Greg Franks Thu Mar 24 2005
  *
- * $Id: group.cc 15144 2021-12-02 19:10:29Z greg $
+ * $Id: group.cc 15157 2021-12-06 19:18:24Z greg $
  */
 
-#include "group.h"
 #include <algorithm>
 #include <cstring>
 #include <cstdlib>
-#if HAVE_FLOAT_H
-#include <float.h>
-#endif
-#if HAVE_VALUES_H
-#include <values.h>
-#endif
+#include <limits>
+#include "group.h"
 #include "element.h"
 #include "node.h"
 #include "label.h"
@@ -61,7 +56,7 @@ Group::format()
 
     /* Now, move all entities for this processor together */
 
-    origin( MAXDOUBLE, MAXDOUBLE ).extent( 0, 0 );
+    origin( std::numeric_limits<double>::max(), std::numeric_limits<double>::max() ).extent( 0, 0 );
     for ( std::vector<Layer>::reverse_iterator layer = _layers.rbegin(); layer != _layers.rend(); ++layer ) {
 	if ( !*layer ) continue;
 	layer->reformat();
@@ -87,7 +82,7 @@ Group::populate()
 	if ( (*processor)->hasGroup() || !match((*processor)->name()) ) continue;
 	(*processor)->hasGroup( true );
 
-	if ( Flags::print[LAYERING].opts.value.i == LAYERING_PROCESSOR ) {
+	if ( Flags::print[LAYERING].opts.value.l == Layering::PROCESSOR ) {
 	    penColour( (*processor)->colour() == Graphic::GREY_10 ? Graphic::BLACK : (*processor)->colour() );
 	    fillColour( (*processor)->colour() );
 	}
@@ -352,7 +347,7 @@ GroupByShareDefault::format()
      * origin and extent as necessary.  If we have any tasks as part
      * of the default, then we will have set our own bounds. */
 
-    origin( MAXDOUBLE, MAXDOUBLE ).extent( 0., 0.);
+    origin( std::numeric_limits<double>::max(), std::numeric_limits<double>::max() ).extent( 0., 0.);
     for ( std::vector<Group *>::iterator group = Group::__groups.begin(); group != Group::__groups.end(); ++group ) {
 	if ( !dynamic_cast<GroupByShareGroup *>( (*group) ) || (*group)->processor() != processor() ) continue;
 
@@ -361,7 +356,7 @@ GroupByShareDefault::format()
     }
 
     if ( isUsed() ) {
-	const double newX = width() + + Flags::print[X_SPACING].opts.value.f;
+	const double newX = width() + Flags::print[X_SPACING].opts.value.d;
 	for ( std::vector<Layer>::iterator layer = _layers.begin(); layer != _layers.end(); ++layer ) {
 	    if ( !*layer ) continue;
 	    layer->moveBy( newX, 0 );
@@ -446,7 +441,7 @@ GroupSquashed::GroupSquashed( unsigned int nLayers, const std::string& s, const 
 GroupSquashed&
 GroupSquashed::format()
 {
-    origin( MAXDOUBLE, MAXDOUBLE ).extent( 0, 0 );
+    origin( std::numeric_limits<double>::max(), std::numeric_limits<double>::max() ).extent( 0, 0 );
     originMin( std::min( layer_1.x(), layer_2.x() ), std::min( layer_1.y(), layer_2.y() ) );
     extentMax( std::max( layer_1.x() + layer_1.width(), layer_2.x() + layer_2.width() ),
 	       std::max( layer_1.y() + layer_1.height(), layer_2.y() + layer_2.height() ) );

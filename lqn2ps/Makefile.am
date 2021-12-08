@@ -23,7 +23,7 @@ lqn2ps_SOURCES 	= activity.cc actlayer.cc actlist.cc arc.cc call.cc element.cc e
 
 noinst_HEADERS 	= actlayer.h activity.h actlist.h arc.h call.h element.h entity.h entry.h errmsg.h \
 		getopt2.h graphic.h group.h help.h key.h label.h layer.h lqn2ps.h model.h node.h \
-		open.h phase.h point.h pragma.h processor.h runlqx.h share.h task.h 
+		open.h option.h phase.h point.h pragma.h processor.h runlqx.h share.h task.h 
 
 EXTRA_DIST	= lqn2ps.1 
 

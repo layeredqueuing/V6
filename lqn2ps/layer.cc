@@ -1,6 +1,6 @@
 /* layer.cc	-- Greg Franks Tue Jan 28 2003
  *
- * $Id: layer.cc 15144 2021-12-02 19:10:29Z greg $
+ * $Id: layer.cc 15171 2021-12-08 03:02:09Z greg $
  *
  * A layer consists of a set of tasks with the same nesting depth from
  * reference tasks.  Reference tasks are in layer 1, the immediate
@@ -11,12 +11,6 @@
 #include "lqn2ps.h"
 #include <cstdlib>
 #include <algorithm>
-#if HAVE_VALUES_H
-#include <values.h>
-#endif
-#if HAVE_FLOAT_H
-#include <float.h>
-#endif
 #include <lqio/error.h>
 #include <lqio/srvn_output.h>
 #include <lqio/dom_document.h>
@@ -244,7 +238,7 @@ Layer&
 Layer::moveLabelTo( const double xx, const double yy )
 {
     if ( Flags::print_layer_number ) {
-	_label->justification( LEFT_JUSTIFY ).moveTo( xx, y() + yy );
+	_label->justification( Justification::LEFT ).moveTo( xx, y() + yy );
     } else if ( submodel_output() ) {
 	_label->moveTo( _origin.x() + _extent.x() / 2.0, _origin.y() - Flags::print[FONT_SIZE].opts.value.i * 1.2 );
     }
@@ -289,7 +283,7 @@ Layer::fill( const double maxWidthPts )
 {
     const double width = for_each( entities().begin(), entities().end(), Sum<Element,double>( &Element::width ) ).sum();
     const double fill = std::max( 0.0, (maxWidthPts - width) / static_cast<double>(entities().size() + 1) );
-    if ( fill < Flags::print[X_SPACING].opts.value.f ) return *this;		/* Don't bother... */
+    if ( fill < Flags::print[X_SPACING].opts.value.d ) return *this;		/* Don't bother... */
 
     _origin.x( fill );
 
@@ -315,18 +309,18 @@ Layer::justify( const double width )
 
 
 Layer&
-Layer::justify( const double maxWidthPts, const justification_type justification )
+Layer::justify( const double maxWidthPts, const Justification justification )
 {
     switch ( justification ) {
-    case ALIGN_JUSTIFY:
-    case DEFAULT_JUSTIFY:
-    case CENTER_JUSTIFY:
+    case Justification::ALIGN:
+    case Justification::DEFAULT:
+    case Justification::CENTER:
 	moveBy( (maxWidthPts - width())/2, 0.0 );
 	break;
-    case RIGHT_JUSTIFY:
+    case Justification::RIGHT:
 	moveBy( (maxWidthPts - width()), 0.0 );
 	break;
-    case LEFT_JUSTIFY:
+    case Justification::LEFT:
 	moveBy( 0.0, 0.0 );		/* Force recomputation of slopes */
 	break;
     default:
@@ -391,7 +385,7 @@ Layer::shift( unsigned i, double amount )
 	    _entities[i]->moveBy( amount, 0 );
 	    _origin.moveBy( amount, 0 );
 	} else {
-	    _entities[i]->moveBy( std::min( std::max( (_entities[i-1]->right() + Flags::print[X_SPACING].opts.value.f) - _entities[i]->left(), amount ), 0.0 ), 0 );
+	    _entities[i]->moveBy( std::min( std::max( (_entities[i-1]->right() + Flags::print[X_SPACING].opts.value.d) - _entities[i]->left(), amount ), 0.0 ), 0 );
 	}
 	if ( Flags::debug ) std::cerr << " to (" << _entities.at(i)->left() << "," << _entities.at(i)->bottom() << ")" << std::endl;
 	_origin.x( _entities.front()->left() );
@@ -406,7 +400,7 @@ Layer::shift( unsigned i, double amount )
 	if ( i + 1 == size() ) {
 	    _entities[i]->moveBy( amount, 0 );
 	} else {
-	    _entities[i]->moveBy( std::max( std::min( _entities[i+1]->left() - (_entities[i]->right() + Flags::print[X_SPACING].opts.value.f), amount ), 0.0 ), 0 );
+	    _entities[i]->moveBy( std::max( std::min( _entities[i+1]->left() - (_entities[i]->right() + Flags::print[X_SPACING].opts.value.d), amount ), 0.0 ), 0 );
 	}
 	if ( Flags::debug ) std::cerr << " to (" << _entities.at(i)->left() << "," << _entities.at(i)->bottom() << ")" << std::endl;
 	_origin.x( _entities.front()->left() );
@@ -444,9 +438,9 @@ Layer::label()
 void Layer::Position::operator()( Entity * entity )
 {
     if ( !entity->isSelectedIndirectly() ) return;
-    if ( _x != 0.0 ) _x += Flags::print[X_SPACING].opts.value.f;
+    if ( _x != 0.0 ) _x += Flags::print[X_SPACING].opts.value.d;
     Task * aTask = dynamic_cast<Task *>(entity);
-    if ( aTask && Flags::print[AGGREGATION].opts.value.i != AGGREGATE_ENTRIES ) {
+    if ( aTask && Flags::print[AGGREGATION].opts.value.a != Aggregate::ENTRIES ) {
 	(aTask->*_f)();
     }
     if ( Flags::debug ) std::cerr << "  Layer::Position move " << entity->name() << " to (" << _x << "," << entity->bottom() << ")" << std::endl;
@@ -464,7 +458,7 @@ Layer&
 Layer::selectSubmodel()
 {
     for ( std::vector<Entity *>::const_iterator entity = entities().begin(); entity != entities().end(); ++entity ) {
-	if ( !(*entity)->isProcessor() || Flags::print[PROCESSORS].opts.value.i != PROCESSOR_NONE ) {
+	if ( !(*entity)->isProcessor() || Flags::print[PROCESSORS].opts.value.p != Processors::NONE ) {
 	    (*entity)->isSelected( true );		/* Enable arc drawing to this entity */
 	}
     }
@@ -943,12 +937,12 @@ std::ostream& Layer::printBCMPQueueingNetwork( std::ostream& output ) const
 {
     /* Create them model type then print. */
 
-    switch ( Flags::print[OUTPUT_FORMAT].opts.value.o ) {
+    switch ( Flags::print[OUTPUT_FORMAT].opts.value.f ) {
 #if JMVA_OUTPUT && HAVE_EXPAT_H
-    case file_format::JMVA:	output << BCMP::JMVA_Document("",_bcmp_model);	break;
+    case File_Format::JMVA:	output << BCMP::JMVA_Document("",_bcmp_model);	break;
 #endif
 #if QNAP2_OUTPUT
-    case file_format::QNAP2:	output << BCMP::QNAP2_Document("",_bcmp_model);	break;
+    case File_Format::QNAP2:	output << BCMP::QNAP2_Document("",_bcmp_model);	break;
 #endif
     default:
 	break;

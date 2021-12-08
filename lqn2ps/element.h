@@ -2,7 +2,7 @@
  * element.h	-- Greg Franks
  *
  * ------------------------------------------------------------------------
- * $Id: element.h 14882 2021-07-07 11:09:54Z greg $
+ * $Id: element.h 15157 2021-12-06 19:18:24Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -22,7 +22,7 @@ class Call;
 class Task;
 class Element;
 
-typedef enum { NOT_CALLED, RENDEZVOUS_REQUEST, SEND_NO_REPLY_REQUEST, OPEN_ARRIVAL_REQUEST } requesting_type;
+enum class request_type { NOT_CALLED, RENDEZVOUS, SEND_NO_REPLY, OPEN_ARRIVAL };
 typedef bool (Element::*chainTestFunc)( unsigned ) const;
 
 class Element

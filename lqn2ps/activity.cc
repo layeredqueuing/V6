@@ -1,6 +1,6 @@
 /* activity.cc	-- Greg Franks Thu Apr  3 2003
  *
- * $Id: activity.cc 15144 2021-12-02 19:10:29Z greg $
+ * $Id: activity.cc 15171 2021-12-08 03:02:09Z greg $
  */
 
 #include "activity.h"
@@ -8,16 +8,10 @@
 #include <cstdarg>
 #include <cstring>
 #include <cmath>
+#include <limits>
 #include <vector>
 #include <algorithm>
 #include <numeric>
-#include <limits.h>
-#if HAVE_VALUES_H
-#include <values.h>
-#endif
-#if HAVE_FLOAT_H
-#include <float.h>
-#endif
 #include <lqio/error.h>
 #include <lqio/input.h>
 #include <lqio/dom_activity.h>
@@ -199,7 +193,7 @@ Activity::rendezvous ( const Entry * toEntry )  const
 Activity&
 Activity::rendezvous (Entry * toEntry, const LQIO::DOM::Call * value )
 {
-    if ( value && toEntry->isCalled( RENDEZVOUS_REQUEST ) ) {
+    if ( value && toEntry->isCalledBy( request_type::RENDEZVOUS ) ) {
 	Model::rendezvousCount[0] += 1;
 
 	Call * aCall = findOrAddCall( toEntry );
@@ -224,7 +218,7 @@ Activity::sendNoReply ( const Entry * toEntry ) const
 Activity&
 Activity::sendNoReply (Entry * toEntry, const LQIO::DOM::Call * value )
 {
-    if ( value && toEntry->isCalled( SEND_NO_REPLY_REQUEST ) ) {
+    if ( value && toEntry->isCalledBy( request_type::SEND_NO_REPLY ) ) {
 	Model::sendNoReplyCount[0] += 1;
 
 	Call * aCall = findOrAddCall( toEntry );
@@ -422,7 +416,7 @@ Activity::findActivityChildren( std::deque<const Activity *>& activityStack, std
 	if ( p == 2 ) {
 	    LQIO::solution_error( LQIO::ERR_DUPLICATE_REPLY, owner()->name().c_str(), name().c_str(), srcEntry->name().c_str() );
 	}
-	if (  srcEntry->isCalled() == SEND_NO_REPLY_REQUEST || srcEntry->isCalled() == OPEN_ARRIVAL_REQUEST ) {
+	if (  srcEntry->requestType() == request_type::SEND_NO_REPLY || srcEntry->requestType() == request_type::OPEN_ARRIVAL ) {
 	    LQIO::solution_error( LQIO::ERR_REPLY_SPECIFIED_FOR_SNR_ENTRY, owner()->name().c_str(), name().c_str(), srcEntry->name().c_str() );
 	}
 	p = 2;
@@ -463,7 +457,7 @@ Activity::getIndex() const
     } else if ( inputFrom() ) {
 	anIndex = inputFrom()->getIndex();
     } else {
-	anIndex = MAXDOUBLE;
+	anIndex = std::numeric_limits<double>::max();
     }
     return anIndex;
 }
@@ -556,7 +550,7 @@ Activity::aggregateReplies( Entry * anEntry, const unsigned p, const double rate
 	anEntry->getPhase(p);
     }
     if ( repliesTo( anEntry ) ) {
-	if (  anEntry->isCalled() == SEND_NO_REPLY_REQUEST || anEntry->isCalled() == OPEN_ARRIVAL_REQUEST ) {
+	if (  anEntry->requestType() == request_type::SEND_NO_REPLY || anEntry->requestType() == request_type::OPEN_ARRIVAL ) {
 	    LQIO::solution_error( LQIO::ERR_REPLY_SPECIFIED_FOR_SNR_ENTRY, owner()->name().c_str(), name().c_str(), anEntry->name().c_str() );
 	} else if ( rate <= 0 ) {
 	    LQIO::solution_error( LQIO::ERR_INVALID_REPLY, owner()->name().c_str(), name().c_str(), anEntry->name().c_str() );
@@ -585,10 +579,10 @@ Activity::aggregateService( Entry * anEntry, const unsigned p, const double rate
 	sum = rate;
     }
 
-    switch ( Flags::print[AGGREGATION].opts.value.i ) {
-    case AGGREGATE_ENTRIES:
-    case AGGREGATE_PHASES:
-    case AGGREGATE_ACTIVITIES:
+    switch ( Flags::print[AGGREGATION].opts.value.a ) {
+    case Aggregate::ENTRIES:
+    case Aggregate::PHASES:
+    case Aggregate::ACTIVITIES:
 	const_cast<Entry *>(anEntry)->aggregateService( this, p, rate );
 	std::map<Entry *,Reply *>::iterator reply = _replyArcs.find(anEntry);
 	if ( reply != replyArcs().end() ) {
@@ -1040,9 +1034,9 @@ Activity::colour() const
 {
     if ( !reachable() ) {
 	return Graphic::RED;
-    } else switch ( Flags::print[COLOUR].opts.value.i ) {
-    case COLOUR_RESULTS:
-    case COLOUR_DIFFERENCES:
+    } else switch ( Flags::print[COLOUR].opts.value.c ) {
+	case Colouring::RESULTS:
+	case Colouring::DIFFERENCES:
 	return owner()->colour();
     default:
 	return Graphic::DEFAULT_COLOUR;

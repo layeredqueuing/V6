@@ -1,6 +1,6 @@
 /* srvn2eepic.c	-- Greg Franks Sun Jan 26 2003
  *
- * $Id: option.cc 15144 2021-12-02 19:10:29Z greg $
+ * $Id: option.cc 15171 2021-12-08 03:02:09Z greg $
  */
 
 #include "lqn2ps.h"
@@ -10,7 +10,6 @@
 #include <cmath>
 #include <cstring>
 #include <sstream>
-#include <libgen.h>
 #include <lqio/dom_object.h>
 #include <lqio/json_document.h>
 #include <lqio/dom_pragma.h>
@@ -56,244 +55,187 @@ double Flags::icon_width               	= DEFAULT_ICON_HEIGHT * 1.6;	/* 72 */
 
 std::regex * Flags::client_tasks	= nullptr;
 
-sort_type Flags::sort	 		= FORWARD_SORT;
+Sorting Flags::sort	 		= Sorting::FORWARD;
 
-justification_type Flags::node_justification = DEFAULT_JUSTIFY;
-justification_type Flags::label_justification = CENTER_JUSTIFY;
-justification_type Flags::activity_justification = DEFAULT_JUSTIFY;
+Justification Flags::node_justification = Justification::DEFAULT;
+Justification Flags::label_justification = Justification::CENTER;
+Justification Flags::activity_justification = Justification::DEFAULT;
 graphical_output_style_type Flags::graphical_output_style = TIMEBENCH_STYLE;
 
 double Flags::icon_slope	        = 1.0/10.0;
 unsigned int maxStrLen 		= 16;
 const unsigned int maxDblLen	= 12;		/* Field width in srvnoutput. */
 
-const char * Options::activity [] =
+const std::map<const Aggregate, const std::string> Options::aggregate = 
 {
-    "none",
-    "sequences",
-    "activities",
-    "phases",
-    "entries",
-    "threads",
-    0
+    { Aggregate::NONE,           LQIO::DOM::Pragma::_none_ },
+    { Aggregate::SEQUENCES,      "sequences" },
+    { Aggregate::ACTIVITIES,     "activities" },
+    { Aggregate::PHASES,         "phases" },
+    { Aggregate::ENTRIES,        "entries" },
+    { Aggregate::THREADS,        LQIO::DOM::Pragma::_threads_ }
 };
 
-const char * Options::colouring[] =
+const std::map<const Colouring, const std::string> Options::colouring =
 {
-    "off",
-    "results",
-    "layers",
-    "clients",
-    "type",
-    "chains",
-    "differences",
-    0
+    { Colouring::NONE,		LQIO::DOM::Pragma::_none_ },
+    { Colouring::RESULTS,    	"results" },
+    { Colouring::LAYERS,     	"layers" },
+    { Colouring::CLIENTS,    	"clients" },
+    { Colouring::SERVER_TYPE,	"type" },
+    { Colouring::CHAINS,     	"chains" },
+    { Colouring::DIFFERENCES,	"differences" },
 };
 
-const char * Options::integer [] =
-{
-    "int",
-    0
-};
+const std::string Options::integer = "int";
 
 /*
  * Input output format options
  */
 
-const std::map<const file_format,const std::string> Options::io =
+const std::map<const File_Format,const std::string> Options::file_format =
 {
-    { file_format::EEPIC,	"eepic" },
+    { File_Format::EEPIC,	"eepic" },
 #if EMF_OUTPUT
-    { file_format::EMF,		"emf" },
+    { File_Format::EMF,		"emf" },
 #endif
-    { file_format::FIG,		"fig" },
+    { File_Format::FIG,		"fig" },
 #if HAVE_GD_H && HAVE_LIBGD && HAVE_GDIMAGEGIFPTR
-    { file_format::GIF,		"gif" },
+    { File_Format::GIF,		"gif" },
 #endif
 #if JMVA_OUTPUT && HAVE_EXPAT_H
-    { file_format::JMVA,	"jmva" },
+    { File_Format::JMVA,	"jmva" },
 #endif
 #if HAVE_GD_H && HAVE_LIBGD && HAVE_LIBJPEG
-    { file_format::JPEG,	"jpeg" },
+    { File_Format::JPEG,	"jpeg" },
 #endif
-    { file_format::JSON,	"json" },
-    { file_format::LQX,		"lqx" },
-    { file_format::NO_OUTPUT,	"null" },
-    { file_format::OUTPUT,	"out" },
+    { File_Format::JSON,	"json" },
+    { File_Format::LQX,		"lqx" },
+    { File_Format::NO_OUTPUT,	"null" },
+    { File_Format::OUTPUT,	"out" },
 #if QNAP2_OUTPUT
-    { file_format::QNAP2,	"qnap2" },
+    { File_Format::QNAP2,	"qnap2" },
 #endif
-    { file_format::PARSEABLE,	"parseable" },
+    { File_Format::PARSEABLE,	"parseable" },
 #if defined(PMIF_OUTPUT)
     "pmif",
 #endif
 #if HAVE_GD_H && HAVE_LIBGD && HAVE_LIBPNG
-    { file_format::PNG,		"png" },
+    { File_Format::PNG,		"png" },
 #endif
-    { file_format::POSTSCRIPT,	"ps" },
-    { file_format::PSTEX,	"pstex" },
-    { file_format::RTF,		"rtf" },
-    { file_format::SRVN,	"lqn" },
+    { File_Format::POSTSCRIPT,	"ps" },
+    { File_Format::PSTEX,	"pstex" },
+    { File_Format::RTF,		"rtf" },
+    { File_Format::SRVN,	"lqn" },
 #if SVG_OUTPUT
-    { file_format::SVG,		"svg" },
+    { File_Format::SVG,		"svg" },
 #endif
 #if SXD_OUTPUT
-    { file_format::SXD,		"sxd" },
+    { File_Format::SXD,		"sxd" },
 #endif
 #if TXT_OUTPUT
-    { file_format::TXT,		"txt" },
+    { File_Format::TXT,		"txt" },
 #endif
 #if X11_OUTPUT
-    { file_format::X11,		"x11" },
+    { File_Format::X11,		"x11" },
 #endif
-    { file_format::XML,		"xml" }
+    { File_Format::XML,		"xml" }
 };
 
-const char * Options::justification[] =
+const std::map<const Justification, const std::string> Options::justification =
 {
-    "nodes",
-    "labels",
-    "activities",
-    0
+    { Justification::DEFAULT,	LQIO::DOM::Pragma::_default_ },
+    { Justification::CENTER,	"center" },
+    { Justification::LEFT,	"left" },
+    { Justification::RIGHT,	"right" },
+    { Justification::ALIGN,	"align" },	/* For Nodes		*/
+    { Justification::ABOVE,	"above" }	/* For labels on Arcs.	*/
 };
 
-const char * Options::key[] =
+const std::multimap<const Key_Position, const std::string> Options::key_position =
 {
-    "none",
-    "top-left",
-    "top-right",
-    "bottom-left",
-    "bottom-right",
-    "below-left",
-    "above-left",
-    "on",
-    0
+    { Key_Position::NONE,               LQIO::DOM::Pragma::_none_ },
+    { Key_Position::TOP_LEFT,           "top-left" },
+    { Key_Position::TOP_RIGHT,          "top-right" },
+    { Key_Position::BOTTOM_LEFT,        "bottom-left" },
+    { Key_Position::BOTTOM_RIGHT,	"bottom-right" },
+    { Key_Position::BELOW_LEFT,         "below-left" },
+    { Key_Position::ABOVE_LEFT,         "above-left" },
+    { Key_Position::TOP_LEFT,           "on" }			/* alias */
 };
 
-const char * Options::layering[] =
+const std::map<const Layering, const std::string> Options::layering =
 {
-    LQIO::DOM::Pragma::_batched_,       /* LAYERING_BATCH           */
-    "group",                            /* LAYERING_GROUP           */
-    LQIO::DOM::Pragma::_hwsw_,          /* LAYERING_HWSW            */
-    LQIO::DOM::Pragma::_mol_,           /* LAYERING_MOL             */
-    "processor",                        /* LAYERING_PROCESSOR       */
-    "processor-task",                   /* LAYERING_PROCESSOR_TASK  */
-    "share",                            /* LAYERING_SHARE           */
-    LQIO::DOM::Pragma::_squashed_,      /* LAYERING_SQUASHED        */
-    LQIO::DOM::Pragma::_srvn_,          /* LAYERING_SRVN            */
-    "task-processor",                   /* LAYERING_TASK_PROCESSOR  */
-    nullptr                             /* */
+    { Layering::BATCH,          LQIO::DOM::Pragma::_batched_ },
+    { Layering::GROUP,          "group" },
+    { Layering::HWSW,           LQIO::DOM::Pragma::_hwsw_ },
+    { Layering::MOL,            LQIO::DOM::Pragma::_mol_ },
+    { Layering::PROCESSOR,      "processor" },
+    { Layering::PROCESSOR_TASK, "processor-task" },
+    { Layering::SHARE,          "share" },
+    { Layering::SQUASHED,       LQIO::DOM::Pragma::_squashed_ },
+    { Layering::SRVN,           LQIO::DOM::Pragma::_srvn_ },
+    { Layering::TASK_PROCESSOR,	"task-processor" }
 };
 
-
-const char * Options::special[] = {
-    "annotate",				/* SPECIAL_ANNOTATE,                    */
-    "arrow-scaling",			/* SPECIAL_ARROW_SCALING,		*/
-    LQIO::DOM::Pragma::_bcmp_,  	/* SPECIAL_BCMP				*/
-    "clear-label-background", 		/* SPECIAL_CLEAR_LABEL_BACKGROUND,	*/
-    "exhaustive-topological-sort",	/* SPECIAL_EXHAUSTIVE_TOPOLOGICAL_SORT,	*/
-    "flatten",				/* SPECIAL_FLATTEN_SUBMODEL,		*/
-    LQIO::DOM::Pragma::_force_infinite_,	/* SPECIAL_FORCE_INFINITE	*/
-    "forwarding",			/* SPECIAL_FORWARDING_DEPTH,		*/
-    "group",				/* SPECIAL_GROUP,			*/
-    "layer-number",			/* SPECIAL_LAYER_NUMBER,		*/
-    "no-alignment-box",			/* SPECIAL_NO_ALIGNMENT_BOX,		*/
-    "no-async",				/* SPECIAL_NO_ASYNC_TOPOLOGICAL_SORT	*/
-    "no-cv-sqr",			/* SPECIAL_NO_CV_SQR,			*/
-    "no-phase-type",			/* SPECIAL_NO_PHASE_TYPE,		*/
-    "no-reference-task-conversion",	/* SPECIAL_NO_REF_TASK_CONVERSION,	*/
-    "prune",				/* SPECIAL_PRUNE			*/
-    LQIO::DOM::Pragma::_processor_scheduling_,	/* SPECIAL_PROCESSOR_SCHEDULING	*/
-    "quorum-reply",			/* SPECIAL_QUORUM_REPLY,		*/
-    "rename",				/* SPECIAL_RENAME			*/
-    "sort",				/* SPECIAL_SORT,			*/
-    "squish",				/* SPECIAL_SQUISH_ENTRY_NAMES,		*/
-    "no-header",			/* SPECIAL_SPEX_HEADER			*/
-    "submodels",			/* SPECIAL_SUBMODEL_CONTENTS,		*/
-    "tasks-only",			/* SPECIAL_TASKS_ONLY			*/
-    LQIO::DOM::Pragma::_task_scheduling_,	/* SPECIAL_TASK_SCHEDULING	*/
-    nullptr
+const std::map<const Processors, const std::string> Options::processors = {
+    { Processors::NONE,         LQIO::DOM::Pragma::_none_ },
+    { Processors::DEFAULT,      "default" },
+    { Processors::NONINFINITE,	"non-infinite" },
+    { Processors::ALL,          LQIO::DOM::Pragma::_all_ }
 };
 
-const char * Options::processor[] = {
-    "none",
-    "default",
-    "non-infinite",
-    "all",
-    nullptr
-};
+const std::string Options::real = "float";
 
-const char * Options::real [] = {
-    "float",
-    nullptr
-};
 
-const char * Options::replication [] =
+const std::map<const Replication, const std::string> Options::replication =
 {
-    "none",
-    "remove",
-    "expand",
-    nullptr
+    { Replication::NONE,    	LQIO::DOM::Pragma::_none_ },
+    { Replication::REMOVE,    	"remove" },
+    { Replication::EXPAND,    	"expand" },
+    { Replication::RETURN,    	"return" }
 };
 
-const char * Options::sort [] = {
-    "ascending",
-    "descending",
-    "topological",
-    "none",
-    nullptr
+const std::map<const Special, const std::string> Options::special = {
+    { Special::ANNOTATE,                    "annotate" },
+    { Special::ARROW_SCALING,		    "arrow-scaling" },
+    { Special::BCMP,			    LQIO::DOM::Pragma::_bcmp_ },
+    { Special::CLEAR_LABEL_BACKGROUND,	    "clear-label-background" },
+    { Special::EXHAUSTIVE_TOPOLOGICAL_SORT, "exhaustive-topological-sort" },
+    { Special::FLATTEN_SUBMODEL,	    "flatten" },
+    { Special::FORCE_INFINITE,		    LQIO::DOM::Pragma::_force_infinite_ },
+    { Special::FORWARDING_DEPTH,	    "forwarding" },
+    { Special::GROUP,			    "group" },
+    { Special::LAYER_NUMBER,		    "layer-number" },
+    { Special::NO_ALIGNMENT_BOX,	    "no-alignment-box" },
+    { Special::NO_ASYNC_TOPOLOGICAL_SORT,   "no-async" },
+    { Special::NO_CV_SQR,		    "no-cv-sqr" },
+    { Special::NO_PHASE_TYPE,		    "no-phase-type" },
+    { Special::NO_REF_TASK_CONVERSION,	    "no-reference-task-conversion" },
+    { Special::PRUNE,			    "prune" },
+    { Special::PROCESSOR_SCHEDULING,	    LQIO::DOM::Pragma::_processor_scheduling_ },
+    { Special::QUORUM_REPLY,		    "quorum-reply" },
+    { Special::RENAME,			    "rename" },
+    { Special::SORT,			    "sort" },
+    { Special::SQUISH_ENTRY_NAMES,	    "squish" },
+    { Special::SPEX_HEADER,		    "no-header" },
+    { Special::SUBMODEL_CONTENTS,	    "submodels" },
+    { Special::TASKS_ONLY,		    "tasks-only" },
+    { Special::TASK_SCHEDULING,		    LQIO::DOM::Pragma::_task_scheduling_ }
 };
 
-const char * Options::string [] = {
-    "string",
-    nullptr
+const std::map<const Sorting,const std::string> Options::sorting=
+{
+    { Sorting::FORWARD,        "ascending" },
+    { Sorting::REVERSE,        "descending" },
+    { Sorting::TOPILOGICAL,    "topological" },
+    { Sorting::NONE,           LQIO::DOM::Pragma::_none_ }
 };
+
+const std::string Options::string = "string";
+
 
 static bool get_bool( const std::string&, bool default_value );
-
-/*----------------------------------------------------------------------*/
-/*			      Main line					*/
-/*----------------------------------------------------------------------*/
-
-int
-main(int argc, char *argv[])
-{
-    /* We can only initialize integers in the Flags object -- initialize floats here. */
-
-    Flags::print[MAGNIFICATION].opts.value.f = 1.0;
-    Flags::print[BORDER].opts.value.f = 18.0;
-    Flags::print[X_SPACING].opts.value.f = DEFAULT_X_SPACING;
-    Flags::print[Y_SPACING].opts.value.f = DEFAULT_Y_SPACING;
-
-    LQIO::io_vars.init( VERSION, basename( argv[0] ), severity_action, local_error_messages, LSTLCLERRMSG-LQIO::LSTGBLERRMSG );
-
-    command_line += LQIO::io_vars.lq_toolname;
-
-    /* If we are invoked as lqn2xxx or rep2flat, then enable other options. */
-
-    const char * p = strrchr( LQIO::io_vars.toolname(), '2' );
-    if ( p ) {
-	p += 1;
-	for ( std::map<const file_format,const std::string>::const_iterator j = Options::io.begin(); j != Options::io.end(); ++j ) {
-	    if ( j->second == p ) {
-		setOutputFormat( j->first );
-		goto found1;
-	    }
-	}
-#if defined(REP2FLAT)
-	if ( strcmp( p, "flat" ) == 0 ) {
-	    setOutputFormat( file_format::SRVN );
-	    Flags::print[REPLICATION].opts.value.i = REPLICATION_EXPAND;
-	    goto found1;
-	}
-#endif
-	std::cerr << LQIO::io_vars.lq_toolname << ": command not found." << std::endl;
-	exit( 1 );
-    found1: ;
-    }
-
-    return lqn2ps( argc, argv );
-}
 
 /*
  * construct the error message.
@@ -326,6 +268,104 @@ Options::find_if( const char** values, const std::string& s )
 	if ( s == values[i] ) return i;
     }
     return i+1;
+}
+
+
+Aggregate
+Options::get_aggregate( const std::string& value )
+{
+    for ( std::map<const Aggregate,const std::string>::const_iterator i = Options::aggregate.begin(); i != Options::aggregate.end(); ++i ) {
+	if ( value == i->second ) return i->first;
+    }
+    throw std::invalid_argument( value );
+}
+
+Colouring
+Options::get_colouring( const std::string& value )
+{
+    for ( std::map<const Colouring,const std::string>::const_iterator i = Options::colouring.begin(); i != Options::colouring.end(); ++i ) {
+	if ( value == i->second ) return i->first;
+    }
+    throw std::invalid_argument( value );
+}
+
+File_Format
+Options::get_file_format( const std::string& value )
+{
+    for ( std::map<const File_Format,const std::string>::const_iterator i = Options::file_format.begin(); i != Options::file_format.end(); ++i ) {
+	if ( value == i->second ) return i->first;
+    }
+    throw std::invalid_argument( value );
+}
+
+
+Layering
+Options::get_layering( const std::string& value )
+{
+    for ( std::map<const Layering,const std::string>::const_iterator i = Options::layering.begin(); i != Options::layering.end(); ++i ) {
+	if ( value == i->second ) return i->first;
+    }
+    throw std::invalid_argument( value );
+}
+    
+
+Key_Position
+Options::get_key_position( const std::string& value )
+{
+    for ( std::map<const Key_Position,const std::string>::const_iterator i = Options::key_position.begin(); i != Options::key_position.end(); ++i ) {
+	if ( value == i->second ) return i->first;
+    }
+    throw std::invalid_argument( value );
+}
+    
+
+Justification
+Options::get_justification( const std::string& value )
+{
+    for ( std::map<const Justification,const std::string>::const_iterator i = Options::justification.begin(); i != Options::justification.end(); ++i ) {
+	if ( value == i->second ) return i->first;
+    }
+    throw std::invalid_argument( value );
+}
+    
+
+Processors
+Options::get_processors( const std::string& value )
+{
+    for ( std::map<const Processors,const std::string>::const_iterator i = Options::processors.begin(); i != Options::processors.end(); ++i ) {
+	if ( value == i->second ) return i->first;
+    }
+    throw std::invalid_argument( value );
+}
+    
+
+Replication
+Options::get_replication( const::std::string& value )
+{
+    for ( std::map<const Replication,const std::string>::const_iterator i = Options::replication.begin(); i != Options::replication.end(); ++i ) {
+	if ( value == i->second ) return i->first;
+    }
+    throw std::invalid_argument( value );
+}
+
+
+Sorting
+Options::get_sorting( const::std::string& value )
+{
+    for ( std::multimap<const Sorting,const std::string>::const_iterator i = Options::sorting.begin(); i != Options::sorting.end(); ++i ) {
+	if ( value == i->second ) return i->first;
+    }
+    throw std::invalid_argument( value );
+}
+
+
+Special
+Options::get_special( const::std::string& value )
+{
+    for ( std::map<const Special,const std::string>::const_iterator i = Options::special.begin(); i != Options::special.end(); ++i ) {
+	if ( value == i->second ) return i->first;
+    }
+    throw std::invalid_argument( value );
 }
 
 bool
@@ -363,81 +403,83 @@ special( const std::string& parameter, const std::string& value, LQIO::DOM::Prag
     try {
 	char * endptr = nullptr;
 
-	switch ( Options::find_if( Options::special, parameter ) ) {
-	case SPECIAL_ANNOTATE:			  Flags::annotate_input			= get_bool( value, true ); break;
-	case SPECIAL_CLEAR_LABEL_BACKGROUND:	  Flags::clear_label_background		= get_bool( value, true ); break;
-	case SPECIAL_EXHAUSTIVE_TOPOLOGICAL_SORT: Flags::exhaustive_toplogical_sort	= get_bool( value, true ); break;
-	case SPECIAL_FLATTEN_SUBMODEL:		  Flags::flatten_submodel		= get_bool( value, true ); break;
-	case SPECIAL_FORWARDING_DEPTH:		  Flags::print_forwarding_by_depth	= get_bool( value, true ); break;
-	case SPECIAL_LAYER_NUMBER:		  Flags::print_layer_number		= get_bool( value, true ); break;
-	case SPECIAL_NO_ALIGNMENT_BOX:		  Flags::print_alignment_box		= get_bool( value, false ); break;
-	case SPECIAL_NO_ASYNC_TOPOLOGICAL_SORT:	  Flags::async_topological_sort		= get_bool( value, false ); break;
-	case SPECIAL_NO_CV_SQR:			  Flags::output_coefficient_of_variation= get_bool( value, false ); break;
-	case SPECIAL_NO_PHASE_TYPE:		  Flags::output_phase_type		= get_bool( value, false ); break;
-	case SPECIAL_NO_REF_TASK_CONVERSION:	  Flags::convert_to_reference_task	= get_bool( value, false ); break;
-	case SPECIAL_RENAME:			  Flags::rename_model			= get_bool( value, true ); break;
-	case SPECIAL_SQUISH_ENTRY_NAMES:	  Flags::squish_names			= get_bool( value, true ); break;
-	case SPECIAL_SUBMODEL_CONTENTS:		  Flags::print_submodels		= get_bool( value, true ); break;
-	    
-	case SPECIAL_BCMP:
+	switch ( Options::get_special( parameter ) ) {
+	case Special::ANNOTATE:			    Flags::annotate_input		    = get_bool( value, true ); break;
+	case Special::CLEAR_LABEL_BACKGROUND:	    Flags::clear_label_background	    = get_bool( value, true ); break;
+	case Special::EXHAUSTIVE_TOPOLOGICAL_SORT:  Flags::exhaustive_toplogical_sort	    = get_bool( value, true ); break;
+	case Special::FLATTEN_SUBMODEL:		    Flags::flatten_submodel		    = get_bool( value, true ); break;
+	case Special::FORWARDING_DEPTH:		    Flags::print_forwarding_by_depth	    = get_bool( value, true ); break;
+	case Special::LAYER_NUMBER:		    Flags::print_layer_number		    = get_bool( value, true ); break;
+	case Special::NO_ALIGNMENT_BOX:		    Flags::print_alignment_box		    = get_bool( value, false ); break;
+	case Special::NO_ASYNC_TOPOLOGICAL_SORT:    Flags::async_topological_sort	    = get_bool( value, false ); break;
+	case Special::NO_CV_SQR:		    Flags::output_coefficient_of_variation  = get_bool( value, false ); break;
+	case Special::NO_PHASE_TYPE:		    Flags::output_phase_type		    = get_bool( value, false ); break;
+	case Special::NO_REF_TASK_CONVERSION:	    Flags::convert_to_reference_task	    = get_bool( value, false ); break;
+	case Special::RENAME:			    Flags::rename_model			    = get_bool( value, true ); break;
+	case Special::SQUISH_ENTRY_NAMES:	    Flags::squish_names			    = get_bool( value, true ); break;
+	case Special::SUBMODEL_CONTENTS:	    Flags::print_submodels		    = get_bool( value, true ); break;
+	
+	case Special::BCMP:
 	    pragmas.insert(LQIO::DOM::Pragma::_bcmp_, value );
 	    break;
-	    
-	case SPECIAL_FORCE_INFINITE:
+	
+	case Special::FORCE_INFINITE:
 	    pragmas.insert(LQIO::DOM::Pragma::_force_infinite_, value );
 	    break;
-	    
-	case SPECIAL_PROCESSOR_SCHEDULING:
+	
+	case Special::PROCESSOR_SCHEDULING:
 	    pragmas.insert(LQIO::DOM::Pragma::_processor_scheduling_, value );
 	    break;
-	    
-	case SPECIAL_PRUNE:
+	
+	case Special::PRUNE:
 	    pragmas.insert(LQIO::DOM::Pragma::_prune_, value );
 	    break;
 
-	case SPECIAL_QUORUM_REPLY:
+	case Special::QUORUM_REPLY:
 	    LQIO::io_vars.error_messages[LQIO::ERR_REPLY_NOT_GENERATED].severity = LQIO::WARNING_ONLY;
 	    break;
 
-	case SPECIAL_SORT:
-	    Flags::sort = static_cast<sort_type>(Options::find_if( Options::sort, value ));
-	    if ( Flags::sort == INVALID_SORT ) throw std::domain_error( value );
+	case Special::SORT:
+	    Flags::sort = Options::get_sorting( value );
 	    break;
 
-	case SPECIAL_TASK_SCHEDULING:
+	case Special::TASK_SCHEDULING:
 	    pragmas.insert(LQIO::DOM::Pragma::_task_scheduling_, value );
 	    break;
-	    
-	case SPECIAL_TASKS_ONLY:
-	    Flags::print[AGGREGATION].opts.value.i = AGGREGATE_ENTRIES;
+	
+	case Special::TASKS_ONLY:
+	    Flags::print[AGGREGATION].opts.value.a = Aggregate::ENTRIES;
 	    if ( Flags::icon_height == DEFAULT_ICON_HEIGHT ) {
 		if ( processor_output() || share_output() ) {
-		    Flags::print[Y_SPACING].opts.value.f = 45;
+		    Flags::print[Y_SPACING].opts.value.d = 45;
 		} else {
-		    Flags::print[Y_SPACING].opts.value.f = 27;
+		    Flags::print[Y_SPACING].opts.value.d = 27;
 		}
 		Flags::icon_height = 18;
 		Flags::entry_height = Flags::icon_height * 0.6;
 	    }
 	    break;
 
-	case SPECIAL_ARROW_SCALING:
+	case Special::ARROW_SCALING:
 	    Flags::arrow_scaling = strtod( value.c_str(), &endptr );
 	    if ( Flags::arrow_scaling <= 0 || *endptr != '\0' ) throw std::domain_error( value );
 	    break;
 
-	case SPECIAL_GROUP:
+	case Special::GROUP:
 	    Model::add_group( value.c_str() );
 	    break;
 
-	default:
-	    std::cerr << LQIO::io_vars.lq_toolname << ": Unknown argument: \"" << parameter;
-	    if ( value.size() ) {
-		std::cerr << "=" << value;
-	    }
-	    std::cerr << "\"" << std::endl;
-	    return false;
+	case Special::NONE:
+	    throw std::invalid_argument( parameter );
 	}
+    }
+    catch ( const std::invalid_argument& e ) {
+	std::cerr << LQIO::io_vars.lq_toolname << ": Unknown argument: \"" << e.what();
+	if ( value.size() ) {
+	    std::cerr << "=" << value;
+	}
+	std::cerr << "\"" << std::endl;
+	return false;
     }
     catch ( const std::domain_error& e ) {
 	std::cerr << LQIO::io_vars.lq_toolname << ": Invalid value: \"" << parameter << "=" << value << "\"" << std::endl;
@@ -462,24 +504,27 @@ get_bool( const std::string& arg, const bool default_value )
 bool
 graphical_output()
 {
-    static const std::set<file_format> reject = {
-	file_format::JSON,
-	file_format::LQX,
-	file_format::NO_OUTPUT,
-	file_format::OUTPUT,
-	file_format::PARSEABLE,
+    static const std::set<File_Format> reject = {
+#if JMVA_OUTPUT
+	File_Format::JMVA,
+#endif
+	File_Format::JSON,
+	File_Format::LQX,
+	File_Format::NO_OUTPUT,
+	File_Format::OUTPUT,
+	File_Format::PARSEABLE,
 #if QNAP2_OUTPUT
-	file_format::QNAP2,
+	File_Format::QNAP2,
 #endif
-	file_format::RTF,
-	file_format::SRVN,
+	File_Format::RTF,
+	File_Format::SRVN,
 #if TXT_OUTPUT
-	file_format::TXT,
+	File_Format::TXT,
 #endif
-	file_format::XML
+	File_Format::XML
     };
 
-    return std::find( reject.begin(), reject.end(), Flags::print[OUTPUT_FORMAT].opts.value.o ) != reject.end();
+    return std::find( reject.begin(), reject.end(), Flags::print[OUTPUT_FORMAT].opts.value.f ) != reject.end();
 }
 
 
@@ -490,9 +535,9 @@ graphical_output()
 bool
 output_output()
 {
-    return Flags::print[OUTPUT_FORMAT].opts.value.o == file_format::OUTPUT
-	|| Flags::print[OUTPUT_FORMAT].opts.value.o == file_format::PARSEABLE
-	|| Flags::print[OUTPUT_FORMAT].opts.value.o == file_format::RTF;
+    return Flags::print[OUTPUT_FORMAT].opts.value.f == File_Format::OUTPUT
+	|| Flags::print[OUTPUT_FORMAT].opts.value.f == File_Format::PARSEABLE
+	|| Flags::print[OUTPUT_FORMAT].opts.value.f == File_Format::RTF;
 }
 
 
@@ -503,10 +548,10 @@ output_output()
 bool
 input_output()
 {
-    return Flags::print[OUTPUT_FORMAT].opts.value.o == file_format::SRVN
-	|| Flags::print[OUTPUT_FORMAT].opts.value.o == file_format::JSON
-	|| Flags::print[OUTPUT_FORMAT].opts.value.o == file_format::LQX
-	|| Flags::print[OUTPUT_FORMAT].opts.value.o == file_format::XML
+    return Flags::print[OUTPUT_FORMAT].opts.value.f == File_Format::SRVN
+	|| Flags::print[OUTPUT_FORMAT].opts.value.f == File_Format::JSON
+	|| Flags::print[OUTPUT_FORMAT].opts.value.f == File_Format::LQX
+	|| Flags::print[OUTPUT_FORMAT].opts.value.f == File_Format::XML
 	;
 }
 
@@ -519,15 +564,15 @@ bool
 partial_output()
 {
     return submodel_output() || queueing_output()
-	|| Flags::print[INCLUDE_ONLY].opts.value.r != nullptr;
+	|| Flags::print[INCLUDE_ONLY].opts.value.m != nullptr;
 }
 
 bool
 processor_output()
 {
-    return Flags::print[LAYERING].opts.value.i == LAYERING_PROCESSOR
-	|| Flags::print[LAYERING].opts.value.i == LAYERING_PROCESSOR_TASK
-	|| Flags::print[LAYERING].opts.value.i == LAYERING_TASK_PROCESSOR;
+    return Flags::print[LAYERING].opts.value.l == Layering::PROCESSOR
+	|| Flags::print[LAYERING].opts.value.l == Layering::PROCESSOR_TASK
+	|| Flags::print[LAYERING].opts.value.l == Layering::TASK_PROCESSOR;
 }
 
 bool
@@ -540,7 +585,7 @@ queueing_output()
 bool
 share_output()
 {
-    return Flags::print[LAYERING].opts.value.i == LAYERING_SHARE;
+    return Flags::print[LAYERING].opts.value.l == Layering::SHARE;
 }
 
 bool
@@ -552,7 +597,7 @@ submodel_output()
 bool
 difference_output()
 {
-    return Flags::print[COLOUR].opts.value.i == COLOUR_DIFFERENCES;
+    return Flags::print[COLOUR].opts.value.c == Colouring::DIFFERENCES;
 }
 
 #if defined(REP2FLAT)

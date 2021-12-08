@@ -1,7 +1,7 @@
 /* -*- c++ -*-
  * element.h	-- Greg Franks
  *
- * $Id: key.h 14882 2021-07-07 11:09:54Z greg $
+ * $Id: key.h 15171 2021-12-08 03:02:09Z greg $
  */
 
 #ifndef SRVN2EEPIC_KEY_H
@@ -28,7 +28,7 @@ public:
     ~Key();
     Key& init( Point&, Point& ); 
 
-    Key& justification( const justification_type justify ) { myJustification = justify; return *this; }
+    Key& justification( const Justification justify ) { _justification = justify; return *this; }
     double width() const { return extent.x(); }
     double height() const { return extent.y(); }
     Key& moveTo( const double x, const double y );
@@ -43,8 +43,8 @@ public:
 private:
     Point origin;
     Point extent;
-    justification_type myJustification;
-    std::map<Label *, Arc *> myLabels;
+    Justification _justification;
+    std::map<Label *, Arc *> _labels;
 };
 
 #endif

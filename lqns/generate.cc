@@ -425,9 +425,6 @@ Generate::makefile( const unsigned nSubmodels )
     }
 
     std::string defines = "-DTESTMVA -DHAVE_BOOL -DHAVE_STD=1 -DHAVE_NAMESPACES=1";
-#if HAVE_IEEEFP_H
-    defines += " -DHAVE_IEEEFP_H=1";
-#endif
 
     output << "LQNDIR=$(HOME)/Interlock_merge_LQN/lqn/interlock-merge" << std::endl
 	   << "CC = gcc" << std::endl

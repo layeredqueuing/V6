@@ -1,6 +1,6 @@
 /* open.cc	-- Greg Franks Tue Feb 18 2003
  *
- * $Id: open.cc 15144 2021-12-02 19:10:29Z greg $
+ * $Id: open.cc 15171 2021-12-08 03:02:09Z greg $
  */
 
 #include "lqn2ps.h"
@@ -24,7 +24,7 @@ OpenArrivalSource::OpenArrivalSource( Entry * source )
 {
     _entries.push_back(source);		/* Owner of entry is orginal task, not this task */
     myPaths = source->paths();
-    assert ( source->isCalled() == OPEN_ARRIVAL_REQUEST );
+    assert ( source->requestType() == request_type::OPEN_ARRIVAL );
     OpenArrival * aCall = new OpenArrival(this,source);
     _calls.push_back( aCall );
     const_cast<Entry *>(source)->addDstCall( aCall );
@@ -105,8 +105,8 @@ OpenArrivalSource::setChain( unsigned k, const callPredicate aFunc )
 OpenArrivalSource&
 OpenArrivalSource::aggregate()
 {
-    switch ( Flags::print[AGGREGATION].opts.value.i ) {
-    case AGGREGATE_ENTRIES:
+    switch ( Flags::print[AGGREGATION].opts.value.a ) {
+    case Aggregate::ENTRIES:
 	for ( std::vector<OpenArrival *>::const_iterator call = calls().begin(); call != calls().end(); ++call ) {
 	    Task * dstTask = const_cast<Task *>((*call)->dstTask());
 	    dstTask->addDstCall( (*call) );
@@ -258,7 +258,7 @@ OpenArrivalSource::drawClient( std::ostream& output, const bool is_in_open_model
 {
     myNode->penColour( colour() == Graphic::GREY_10 ? Graphic::BLACK : colour() ).fillColour( colour() );
     myNode->open_source( output, bottomCenter(), Entity::radius() );
-    myLabel->moveTo( bottomCenter() ).justification( LEFT_JUSTIFY );
+    myLabel->moveTo( bottomCenter() ).justification( Justification::LEFT );
     myLabel->moveBy( Entity::radius() * 1, radius() * myNode->direction() );
     output << *myLabel;
     return output;

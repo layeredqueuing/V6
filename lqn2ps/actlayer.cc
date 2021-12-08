@@ -2,24 +2,17 @@
  *
  * Layering logic for activities.
  *
- * $Id: actlayer.cc 14882 2021-07-07 11:09:54Z greg $
+ * $Id: actlayer.cc 15171 2021-12-08 03:02:09Z greg $
  */
 
 
 
-#include "actlayer.h"
 #include <algorithm>
 #include <cstdlib>
+#include <limits>
+#include "actlayer.h"
 #include "activity.h"
 #include "actlist.h"
-#include <cstdlib>
-#include <limits.h>
-#if HAVE_VALUES_H
-#include <values.h>
-#endif
-#if HAVE_FLOAT_H
-#include <float.h>
-#endif
 
 ActivityLayer::ActivityLayer( const ActivityLayer& src ) :
     myActivities(src.myActivities),
@@ -164,18 +157,18 @@ ActivityLayer::depth( const unsigned depth )
 
 
 ActivityLayer&
-ActivityLayer::justify( const double maxWidthPts, const justification_type justification )
+ActivityLayer::justify( const double maxWidthPts, const Justification justification )
 {
     switch ( justification ) {
-    case ALIGN_JUSTIFY:
-    case DEFAULT_JUSTIFY:
-    case CENTER_JUSTIFY:
+    case Justification::ALIGN:
+    case Justification::DEFAULT:
+    case Justification::CENTER:
 	moveBy( (maxWidthPts - width())/2, 0.0 );
 	break;
-    case RIGHT_JUSTIFY:
+    case Justification::RIGHT:
 	moveBy( (maxWidthPts - width()), 0.0 );
 	break;
-    case LEFT_JUSTIFY:
+    case Justification::LEFT:
 	moveBy( 0, 0.0 );		/* Force recomputation of slopes */
 	break;
     default:
@@ -264,7 +257,7 @@ ActivityLayer::shift( unsigned i, double amount )
 ActivityLayer&
 ActivityLayer::crop()
 {
-    double left  = MAXDOUBLE;
+    double left  = std::numeric_limits<double>::max();
     double right = 0.;
     for ( std::vector<Activity *>::const_iterator activity = activities().begin(); activity != activities().end(); ++activity ) {
 	left  = std::min( left, (*activity)->left() );

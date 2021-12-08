@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: call.cc 15144 2021-12-02 19:10:29Z greg $
+ * $Id: call.cc 15171 2021-12-08 03:02:09Z greg $
  *
  * Everything you wanted to know about a call to an entry, but were afraid to ask.
  *
@@ -896,16 +896,16 @@ Call::hasSendNoReplyForPhase( const unsigned p ) const
 Graphic::colour_type
 Call::colour() const
 {
-    switch ( Flags::print[COLOUR].opts.value.i ) {
-    case COLOUR_RESULTS:
-    case COLOUR_DIFFERENCES:
+    switch ( Flags::print[COLOUR].opts.value.c ) {
+    case Colouring::RESULTS:
+    case Colouring::DIFFERENCES:
 	if ( hasDropProbability() || hasInfiniteWait() ) {
 	    return Graphic::RED;
 	} else {
 	    return dstTask()->colour();
 	}
-    case COLOUR_SERVER_TYPE:
-    case COLOUR_OFF:
+    case Colouring::SERVER_TYPE:
+    case Colouring::NONE:
 	return GenericCall::colour();
     }
     if ( hasAncestorLevel() || hasForwardingLevel() ) {
@@ -920,7 +920,7 @@ Call&
 Call::moveDst( const Point& aPoint )
 {
     GenericCall::moveDst( aPoint );
-    const double delta_y = Flags::print[Y_SPACING].opts.value.f / 3.0;
+    const double delta_y = Flags::print[Y_SPACING].opts.value.d / 3.0;
     /* Hack to stagger labels */
     const std::vector<GenericCall *>& callers = dstEntry()->callers();
     unsigned int even = 1;
@@ -930,11 +930,11 @@ Call::moveDst( const Point& aPoint )
 	    break;
 	}
     }
-    if ( Flags::label_justification == ABOVE_JUSTIFY ) {
+    if ( Flags::label_justification == Justification::ABOVE ) {
 	/* Move all labels above entry */
 	Point tempPoint = _arc->dstPoint();
 	tempPoint.moveBy( 0, delta_y * even );
-	_label->moveTo( tempPoint ).justification( CENTER_JUSTIFY );
+	_label->moveTo( tempPoint ).justification( Justification::CENTER );
     } else {
 	double offset;
 	const Point& p1 = _arc->penultimatePoint();
@@ -962,10 +962,10 @@ Call&
 Call::label()
 {
     if ( Flags::print[INPUT_PARAMETERS].opts.value.b ) {
-	if ( hasNoCall() && Flags::print[COLOUR].opts.value.i != COLOUR_OFF ) {
+	if ( hasNoCall() && Flags::print[COLOUR].opts.value.c != Colouring::NONE ) {
 	    _label->colour( Graphic::RED );
 	}
-	if ( Flags::print[AGGREGATION].opts.value.i != AGGREGATE_ENTRIES ) {
+	if ( Flags::print[AGGREGATION].opts.value.a != Aggregate::ENTRIES ) {
 	    *_label << '(' << print_calls(*this) << ')';
 	}
 	const LQIO::DOM::ExternalVariable& fan_out = srcTask()->fanOut( dstTask() );
@@ -1301,8 +1301,8 @@ EntryCall::setChain( const unsigned k )
 Graphic::colour_type
 EntryCall::colour() const
 {
-    switch ( Flags::print[COLOUR].opts.value.i ) {
-    case COLOUR_CLIENTS:
+    switch ( Flags::print[COLOUR].opts.value.c ) {
+    case Colouring::CLIENTS:
 	return srcEntry()->colour();
 
     }
@@ -1438,8 +1438,8 @@ ActivityCall::addForwardingCall( Entry * toEntry, const double rate )
 Graphic::colour_type
 ActivityCall::colour() const
 {
-    switch ( Flags::print[COLOUR].opts.value.i ) {
-    case COLOUR_CLIENTS:
+    switch ( Flags::print[COLOUR].opts.value.c ) {
+    case Colouring::CLIENTS:
 	return srcActivity()->colour();
 
     }
@@ -1697,10 +1697,10 @@ TaskCall::setChain( const unsigned k )
 Graphic::colour_type
 TaskCall::colour() const
 {
-    switch ( Flags::print[COLOUR].opts.value.i ) {
-    case COLOUR_CLIENTS:
+    switch ( Flags::print[COLOUR].opts.value.c ) {
+    case Colouring::CLIENTS:
 	return srcTask()->colour();
-    case COLOUR_SERVER_TYPE:
+    case Colouring::SERVER_TYPE:
 	return GenericCall::colour();
 
     }
@@ -1917,7 +1917,7 @@ ProcessorCall::fanOut() const
 bool
 ProcessorCall::isSelected() const
 {
-    return ( dstEntity()->isSelected() || Flags::print[INCLUDE_ONLY].opts.value.r )
+    return ( dstEntity()->isSelected() || Flags::print[INCLUDE_ONLY].opts.value.m )
 	&& ( dynamic_cast<const Processor *>(dstEntity())->isInteresting()
 	     || (Flags::print[CHAIN].opts.value.i != 0 && dstEntity()->isSelectedIndirectly())
 	     || submodel_output()
@@ -1941,9 +1941,9 @@ ProcessorCall::setChain( const unsigned k )
 Graphic::colour_type
 ProcessorCall::colour() const
 {
-    switch ( Flags::print[COLOUR].opts.value.i ) {
-    case COLOUR_CLIENTS:	return srcTask()->colour();
-    case COLOUR_SERVER_TYPE:	return GenericCall::colour();
+    switch ( Flags::print[COLOUR].opts.value.c ) {
+    case Colouring::CLIENTS:	return srcTask()->colour();
+    case Colouring::SERVER_TYPE:	return GenericCall::colour();
     }
     return dstEntity()->colour();
 }
@@ -2029,7 +2029,7 @@ ProcessorCall::label()
 void
 ProcessorCall::moveLabel()
 {
-    const double delta_y = Flags::print[Y_SPACING].opts.value.f / 3.0;
+    const double delta_y = Flags::print[Y_SPACING].opts.value.d / 3.0;
     /* Hack to stagger labels */
     const std::vector<GenericCall *>& callers = dstEntity()->callers();
     unsigned int even = 1;
@@ -2248,8 +2248,8 @@ OpenArrival::setChain( const unsigned k )
 Graphic::colour_type
 OpenArrival::colour() const
 {
-    switch ( Flags::print[COLOUR].opts.value.i ) {
-    case COLOUR_SERVER_TYPE:
+    switch ( Flags::print[COLOUR].opts.value.c ) {
+    case Colouring::SERVER_TYPE:
 	return Graphic::RED;
     }
 
@@ -2365,9 +2365,9 @@ CallStack::size() const
 static std::ostream&
 format_prologue( std::ostream& output, const Call& aCall, int p )
 {
-    switch( Flags::print[OUTPUT_FORMAT].opts.value.o ) {
-    case file_format::EEPIC:
-    case file_format::PSTEX:
+    switch( Flags::print[OUTPUT_FORMAT].opts.value.f ) {
+    case File_Format::EEPIC:
+    case File_Format::PSTEX:
 	if ( p != 1 ) {
 	    output << ',';
 	}
@@ -2375,14 +2375,14 @@ format_prologue( std::ostream& output, const Call& aCall, int p )
 	    output << "\\fbox{";
 	}
 	break;
-    case file_format::OUTPUT:
-    case file_format::PARSEABLE:
-    case file_format::RTF:
+    case File_Format::OUTPUT:
+    case File_Format::PARSEABLE:
+    case File_Format::RTF:
 	output << std::setw( maxDblLen );
 	break;
-    case file_format::POSTSCRIPT:
-    case file_format::FIG:
-    case file_format::SVG:
+    case File_Format::POSTSCRIPT:
+    case File_Format::FIG:
+    case File_Format::SVG:
 	if ( p != 1 ) {
 	    output << ',';
 	}
@@ -2399,16 +2399,16 @@ format_prologue( std::ostream& output, const Call& aCall, int p )
 static std::ostream&
 format_epilogue( std::ostream& output, const Call& aCall, int p )
 {
-    switch( Flags::print[OUTPUT_FORMAT].opts.value.o ) {
-    case file_format::EEPIC:
-    case file_format::PSTEX:
+    switch( Flags::print[OUTPUT_FORMAT].opts.value.f ) {
+    case File_Format::EEPIC:
+    case File_Format::PSTEX:
 	if ( aCall.phaseTypeFlag(p) == LQIO::DOM::Phase::Type::DETERMINISTIC ) {
 	    output << "}";
 	}
 	break;
-    case file_format::POSTSCRIPT:
-    case file_format::SVG:
-    case file_format::FIG:
+    case File_Format::POSTSCRIPT:
+    case File_Format::SVG:
+    case File_Format::FIG:
 	if ( aCall.phaseTypeFlag(p) == LQIO::DOM::Phase::Type::DETERMINISTIC ) {
 	    output << ":D";
 	}

@@ -1,7 +1,7 @@
 /* -*- c++ -*-
  * actlayer.h	-- Greg Franks
  *
- * $Id: actlayer.h 14882 2021-07-07 11:09:54Z greg $
+ * $Id: actlayer.h 15171 2021-12-08 03:02:09Z greg $
  */
 
 #ifndef _ACTLAYER_H
@@ -36,7 +36,7 @@ public:
     ActivityLayer& moveTo( const double, const double );
     ActivityLayer& translateY( const double );
     ActivityLayer& depth( const unsigned );
-    ActivityLayer& justify( const double, const justification_type );
+    ActivityLayer& justify( const double, const Justification );
     ActivityLayer& alignActivities();
 
     double x() const { return origin.x(); }

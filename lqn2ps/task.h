@@ -10,7 +10,7 @@
  * April 2010.
  *
  * ------------------------------------------------------------------------
- * $Id: task.h 14882 2021-07-07 11:09:54Z greg $
+ * $Id: task.h 15157 2021-12-06 19:18:24Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -128,7 +128,7 @@ public:
     virtual bool forwardsTo( const Task * aTask ) const;
     virtual bool hasForwardingLevel() const;
     virtual bool isForwardingTarget() const;
-    virtual bool isCalled( const requesting_type ) const;
+    virtual bool isCalled( const request_type ) const;
     virtual bool hasThinkTime() const { return false; }
 
     double openArrivalRate() const;

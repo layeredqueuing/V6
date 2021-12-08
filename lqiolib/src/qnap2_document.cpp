@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: qnap2_document.cpp 15144 2021-12-02 19:10:29Z greg $
+ * $Id: qnap2_document.cpp 15147 2021-12-03 14:27:24Z greg $
  *
  * Read in XML input files.
  *
@@ -157,7 +157,7 @@ namespace BCMP {
 
 	if ( Spex::input_variables().size() > Spex::array_variables().size() ) {	// Only care about scalars
 	    output << "&  -- SPEX scalar variables --" << std::endl;
-	    std::for_each( Spex::input_variables().begin(), Spex::input_variables().end(), printSPEXScalars( output ) );	/* Scalars */
+	    std::for_each( Spex::scalar_variables().begin(), Spex::scalar_variables().end(), printSPEXScalars( output ) );	/* Scalars */
 	}
 
 	/* Insert QNAP for statements for arrays and completions. */
@@ -531,12 +531,14 @@ namespace BCMP {
      */
 
     void
-    QNAP2_Document::printSPEXScalars::operator()( const std::pair<std::string, const LQX::SyntaxTreeNode *>& expr ) const
+    QNAP2_Document::printSPEXScalars::operator()( const std::string& var ) const
     {
-	if ( !expr.second ) return;		/* Comprehension or array.  I could check array_variables. */
+	const std::map<std::string,LQX::SyntaxTreeNode *>::const_iterator expr = Spex::input_variables().find(var);
+
+	if ( !expr->second ) return;		/* Comprehension or array.  I could check array_variables. */
 	std::ostringstream ss;
-	ss << expr.first << ":=";
-	expr.second->print(ss,0);
+	ss << expr->first << ":=";
+	expr->second->print(ss,0);
 	std::string s(ss.str());
 	s.erase(std::remove(s.begin(), s.end(), ' '), s.end());	/* Strip blanks */
 	_output << qnap2_statement( s ) << std::endl;	/* Swaps $ to _ and appends ;	*/

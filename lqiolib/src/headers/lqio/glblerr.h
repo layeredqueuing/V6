@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: glblerr.h 15144 2021-12-02 19:10:29Z greg $
+ * $Id: glblerr.h 15166 2021-12-07 15:38:08Z greg $
  *
  * Copyright the Real-Time and Distributed Systems Group,
  * Department of Systems and Computer Engineering,
@@ -19,9 +19,6 @@
 #include <config.h>
 #endif
 
-#if defined(HAVE_VALUES_H)
-#include <values.h>
-#endif
 #include "error.h"
 
 namespace LQIO {
