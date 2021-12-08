@@ -1,7 +1,7 @@
 /* -*- c++ -*-
  * lqn2ps.h	-- Greg Franks
  *
- * $Id: lqn2ps.h 15171 2021-12-08 03:02:09Z greg $
+ * $Id: lqn2ps.h 15177 2021-12-08 13:34:42Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -184,7 +184,7 @@ struct Flags
     static Justification label_justification;
     static Justification node_justification;
     static graphical_output_style_type graphical_output_style;
-    static Options::Type print[];
+    static std::vector<Options::Type> print;
     static std::regex * client_tasks;
     static Sorting sort;
     static unsigned long span;
@@ -417,7 +417,7 @@ DoubleManip opt_pct( const double aDouble );			/* See main.cc */
 
 /* ------------------------------------------------------------------------ */
 
-#if defined(REP2FLAT)
+#if REP2FLAT
     void update_mean( LQIO::DOM::DocumentObject *, set_function, const LQIO::DOM::DocumentObject *, get_function, unsigned );
     void update_variance( LQIO::DOM::DocumentObject *, set_function, const LQIO::DOM::DocumentObject *, get_function );
 #endif

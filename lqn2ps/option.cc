@@ -1,6 +1,6 @@
 /* srvn2eepic.c	-- Greg Franks Sun Jan 26 2003
  *
- * $Id: option.cc 15171 2021-12-08 03:02:09Z greg $
+ * $Id: option.cc 15177 2021-12-08 13:34:42Z greg $
  */
 
 #include "lqn2ps.h"
@@ -87,8 +87,13 @@ const std::map<const Colouring, const std::string> Options::colouring =
     { Colouring::DIFFERENCES,	"differences" },
 };
 
-const std::string Options::integer = "int";
+/* Discriminators for union */
 
+const std::string Options::boolean  = "bool";
+const std::string Options::integer  = "int";
+const std::string Options::real     = "float";
+const std::string Options::none     = "none";
+const std::string Options::result   = "result";
 /*
  * Input output format options
  */
@@ -184,9 +189,6 @@ const std::map<const Processors, const std::string> Options::processors = {
     { Processors::NONINFINITE,	"non-infinite" },
     { Processors::ALL,          LQIO::DOM::Pragma::_all_ }
 };
-
-const std::string Options::real = "float";
-
 
 const std::map<const Replication, const std::string> Options::replication =
 {
@@ -495,6 +497,24 @@ get_bool( const std::string& arg, const bool default_value )
 {
     if ( arg.size() == 0 ) return default_value;
     return LQIO::DOM::Pragma::isTrue( arg );
+}
+
+
+/*
+ * This function is used to set all of the output result options to
+ * either true or false.
+ */
+
+bool
+Options::set_all_result_options( const bool yesOrNo )
+{
+    for ( unsigned i = 0; i < SERVICE_EXCEEDED; ++i ) {
+	if ( Flags::print[i].opts.param.s = &Options::result ) {
+	    Flags::print[i].opts.value.b = yesOrNo;     /* Print entry throughput. */
+	}
+    }
+
+    return yesOrNo;
 }
 
 /*
