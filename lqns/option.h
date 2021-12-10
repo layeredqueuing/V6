@@ -1,7 +1,7 @@
 /* -*- C++ -*-
  * help.h	-- Greg Franks
  *
- * $Id: option.h 15193 2021-12-10 12:00:49Z greg $
+ * $Id: option.h 15198 2021-12-10 17:47:15Z greg $
  */
 
 #ifndef _OPTION_H

@@ -1,3 +1,17 @@
+* Bugs fixed in 6.2
+257 	lqiolib 	Update JSON document handling. 	
+263 	lqsim 	 	46-activities: Segmentation Fault. 	
+265 	lqsim 	 	EXC_BAD_ACCESS lqsim`Server_Task::set_synchronization_server() + 4 	
+287 	lqn2xxx 	Output queueing model for JMVA 	
+301 	lqns 	 	Rolia (Conway) multiservers appear to be sensitive to initial conditions which show up when using SPEX. 316 	lqns 	 	Allow zero's for rendezvous/send-no-reply requests 
+308 	lqns 	 	08-sanity 	
+312 	lqiolib 	Call observations on Forwarded calls aborts. 	
+314 	lqns 	 	Add -Pmultiserver=zhou 
+317 	petrisrv 	SIGSEGV, Segmentation fault. in LQIO::DOM::Entity::getSchedulingType (this=0x0) at dom_entity.cpp:55 
+319 	qnsolver	Can't build qnsolver without expat. 
+322 	qnsolver 	Add -Pmultiserver 
+325 	lqn2xxx 	Graphical output is borked. 
+
 * Bugs fixed in 6.1
 151     lqns            93-simple-ucm
 223     lqns            12-interlock regression: Send interlock merge issue.
