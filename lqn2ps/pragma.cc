@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: pragma.cc 15171 2021-12-08 03:02:09Z greg $ *
+ * $Id: pragma.cc 15185 2021-12-09 20:25:06Z greg $ *
  * Pragma processing and definitions.
  *
  * Copyright the Real-Time and Distributed Systems Group,
@@ -102,8 +102,8 @@ void Pragma::setBCMP( const std::string& value )
     if ( pragma != __bcmp_pragma.end() ) {
 	switch ( pragma->second ) {
 	case BCMP::STANDARD:
-	    Flags::print[QUEUEING_MODEL].opts.value.i = 1;
-	    Flags::print[AGGREGATION].opts.value.a = Aggregate::ENTRIES;
+	    Flags::set_queueing_model(1);
+	    Flags::set_aggregation( Aggregate::ENTRIES );
 	    Flags::bcmp_model = true;
 	    break;
 	default:
@@ -143,13 +143,13 @@ void Pragma::setForceInfinite( const std::string& value )
 
 Layering Pragma::layering()
 {
-    switch ( Flags::print[LAYERING].opts.value.l ) {
+    switch ( Flags::layering() ) {
     case Layering::BATCH:
     case Layering::HWSW:
     case Layering::MOL:
     case Layering::SQUASHED:
     case Layering::SRVN:
-	return Flags::print[LAYERING].opts.value.l;
+	return Flags::layering();
 	
     default:
 	return Layering::BATCH;

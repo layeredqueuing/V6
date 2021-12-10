@@ -1,7 +1,7 @@
 /* -*- c++ -*-
  * lqn2ps.h	-- Greg Franks
  *
- * $Id: option.h 15177 2021-12-08 13:34:42Z greg $
+ * $Id: option.h 15185 2021-12-09 20:25:06Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -84,6 +84,17 @@ enum class Justification {
     ABOVE		/* For labels on Arcs.	*/
 }; 
 
+enum class Key_Position {
+    NONE,
+    TOP_LEFT,
+    TOP_RIGHT,
+    BOTTOM_LEFT,
+    BOTTOM_RIGHT,
+    BELOW_LEFT,
+    ABOVE_LEFT,
+    ON
+};
+
 enum class Layering {
     BATCH,
     GROUP,
@@ -140,17 +151,6 @@ enum class Special {
     TASK_SCHEDULING
 };
 
-
-enum class Key_Position {
-    NONE,
-    TOP_LEFT,
-    TOP_RIGHT,
-    BOTTOM_LEFT,
-    BOTTOM_RIGHT,
-    BELOW_LEFT,
-    ABOVE_LEFT,
-    ON
-};
 
 enum class Sorting {
     FORWARD,

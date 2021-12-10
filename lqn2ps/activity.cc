@@ -1,6 +1,6 @@
 /* activity.cc	-- Greg Franks Thu Apr  3 2003
  *
- * $Id: activity.cc 15171 2021-12-08 03:02:09Z greg $
+ * $Id: activity.cc 15185 2021-12-09 20:25:06Z greg $
  */
 
 #include "activity.h"
@@ -579,7 +579,7 @@ Activity::aggregateService( Entry * anEntry, const unsigned p, const double rate
 	sum = rate;
     }
 
-    switch ( Flags::print[AGGREGATION].opts.value.a ) {
+    switch ( Flags::aggregation() ) {
     case Aggregate::ENTRIES:
     case Aggregate::PHASES:
     case Aggregate::ACTIVITIES:
@@ -831,8 +831,8 @@ Activity::hasCalls( const callPredicate predicate ) const
 bool
 Activity::isSelectedIndirectly() const
 {
-    if ( Flags::print[CHAIN].opts.value.i ) {
-	return hasPath( Flags::print[CHAIN].opts.value.i );
+    if ( Flags::chain() ) {
+	return hasPath( Flags::chain() );
     } else if ( owner()->isSelected() ) {
 	return true;
     }
@@ -1008,7 +1008,7 @@ Activity&
 Activity::label()
 {
     *myLabel << name();
-    if ( Flags::print[INPUT_PARAMETERS].opts.value.b && hasServiceTime() ) {
+    if ( Flags::print_input_parameters() && hasServiceTime() ) {
 	myLabel->newLine() << '[' << serviceTime()  << ']';
     }
     if ( Flags::have_results ) {
@@ -1034,7 +1034,7 @@ Activity::colour() const
 {
     if ( !reachable() ) {
 	return Graphic::RED;
-    } else switch ( Flags::print[COLOUR].opts.value.c ) {
+    } else switch ( Flags::colouring() ) {
 	case Colouring::RESULTS:
 	case Colouring::DIFFERENCES:
 	return owner()->colour();

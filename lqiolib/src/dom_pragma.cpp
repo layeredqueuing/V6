@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_pragma.cpp 15134 2021-11-29 23:23:57Z greg $
+ *  $Id: dom_pragma.cpp 15193 2021-12-10 12:00:49Z greg $
  *
  *  Created by Martin Mroz on 16/04/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -218,6 +218,7 @@ namespace LQIO {
 	const char * Pragma::_max_blocks_ =			"max-blocks";
 	const char * Pragma::_mol_ =				"mol";
 	const char * Pragma::_mol_back_ =			"mol-back";
+	const char * Pragma::_mol_underrelaxation_ = 		"mol-underrelaxation";
 	const char * Pragma::_multiserver_ = 			"multiserver";
 	const char * Pragma::_multiservers_ = 			"multiservers";
 	const char * Pragma::_mva_ = 				"mva";
@@ -308,6 +309,7 @@ namespace LQIO {
 	    { _interlocking_,      	    &__true_false_arg },	    /* lqns */
 	    { _layering_,     	    	    &__layering_args },		    /* lqns */
 	    { _max_blocks_,  	    	    nullptr },			    /* lqsim */
+	    { _mol_underrelaxation_,	    nullptr },			    /* lqns */
 	    { _multiserver_,  	    	    &__multiserver_args },	    /* lqns */
 	    { _mva_,  		   	    &__mva_args },		    /* lqns */
 	    { _nice_,              	    nullptr },			    /* lqsim */

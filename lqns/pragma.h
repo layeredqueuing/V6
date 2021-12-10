@@ -10,7 +10,7 @@
  * November, 1994
  * December, 2020
  *
- * $Id: pragma.h 14957 2021-09-07 19:29:19Z greg $
+ * $Id: pragma.h 15193 2021-12-10 12:00:49Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -22,6 +22,8 @@
 #include <lqio/input.h>
 #include <lqio/dom_pragma.h>
 #include "help.h"
+
+extern LQIO::DOM::Pragma pragmas;
 
 /* -------------------------------------------------------------------- */
 
@@ -93,6 +95,12 @@ public:
 	    return __cache->_layering;
 	}
 
+    static double molUnderrelaxation()
+	{
+	    assert( __cache != nullptr );
+	    return __cache->_mol_underrelaxation;
+	}
+    
     static Multiserver multiserver()
 	{
 	    assert( __cache != nullptr );
@@ -269,6 +277,7 @@ private:
     void setForceMultiserver(const std::string&);
     void setInterlock(const std::string&);
     void setLayering(const std::string&);
+    void setMOLUnderrelaxation(const std::string&);
     void setMultiserver(const std::string&);
     void setMva(const std::string&);
     void setOvertaking(const std::string&);
@@ -307,6 +316,7 @@ private:
     ForceMultiserver _force_multiserver;
     bool _interlock;
     Layering  _layering;
+    double _mol_underrelaxation;
     Multiserver _multiserver;
     MVA _mva;
     Overtaking _overtaking;

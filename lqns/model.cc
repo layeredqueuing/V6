@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: model.cc 15150 2021-12-03 16:30:06Z greg $
+ * $Id: model.cc 15193 2021-12-10 12:00:49Z greg $
  *
  * Layer-ization of model.  The basic concept is from the reference
  * below.  However, model partioning is more complex than task vs device.
@@ -92,7 +92,6 @@ Processor * Model::__think_server = nullptr;
 Processor * Model::__cfs_server = nullptr;
 unsigned Model::__sync_submodel = 0;
 LQIO::DOM::Document::InputFormat Model::input_format = LQIO::DOM::Document::InputFormat::AUTOMATIC;
-extern LQIO::DOM::Pragma pragmas;
 
 std::set<Processor *,Model::lt_replica<Processor>> Model::__processor;
 std::set<Group *,Model::lt_replica<Group>> Model::__group;
@@ -291,6 +290,7 @@ Model::prepare(const LQIO::DOM::Document* document)
     LQIO::io_vars.severity_level = Pragma::severityLevel();
     LQIO::Spex::__no_header = !Pragma::spexHeader();
     LQIO::Spex::__print_comment = Pragma::spexComment();
+    MVA::MOL_multiserver_underrelaxation = Pragma::molUnderrelaxation();
 
     /* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- [Step 1: Add Processors] */
 

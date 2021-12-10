@@ -1,6 +1,6 @@
 /* option.cc -- Greg Franks Wed Oct 12 2005
  *
- * $Id: option.cc 15064 2021-10-10 15:04:28Z greg $
+ * $Id: option.cc 15193 2021-12-10 12:00:49Z greg $
  */
 
 #include "lqns.h"
@@ -11,7 +11,6 @@
 #include <cstdlib>
 #include <lqio/error.h>
 #include <lqio/dom_document.h>
-#include <mva/mva.h>
 #include "generate.h"
 #include "help.h"
 #include "flags.h"
@@ -258,21 +257,21 @@ Options::Trace::exec( const int ix, const std::string& arg )
 
 std::map<const std::string, const Options::Special> Options::Special::__table =
 {
-    { "iteration-limit", 	    Special( &Special::iteration_limit, 	   true,  &Help::specialIterationLimit ) },
-    { "print-interval", 	    Special( &Special::print_interval,    	   true,  &Help::specialPrintInterval ) },
-    { "overtaking", 		    Special( &Special::overtaking,        	   false, &Help::specialOvertaking ) },
-    { "convergence-value", 	    Special( &Special::convergence_value,          true,  &Help::specialConvergenceValue ) },
-    { "single-step", 		    Special( &Special::single_step,		   false, &Help::specialSingleStep ) },
-    { "underrelaxation", 	    Special( &Special::underrelaxation,	           true,  &Help::specialUnderrelaxation ) },
-    { "generate", 	            Special( &Special::generate_queueing_model,    true,  &Help::specialGenerateQueueingModel ) },
-    { "mol-ms-underrelaxation",     Special( &Special::mol_ms_underrelaxation,     true,  &Help::specialMolMSUnderrelaxation ) },
-    { "man",	 		    Special( &Special::make_man,		   true,  &Help::specialMakeMan ) },
-    { "tex", 			    Special( &Special::make_tex,		   true,  &Help::specialMakeTex ) },
-    { "min-steps", 		    Special( &Special::min_steps,                  true,  &Help::specialMinSteps ) },
+    { "iteration-limit",                        Special( &Special::iteration_limit,             true,  &Help::specialIterationLimit ) },
+    { "print-interval",                         Special( &Special::print_interval,              true,  &Help::specialPrintInterval ) },
+    { "overtaking",                             Special( &Special::overtaking,                  false, &Help::specialOvertaking ) },
+    { "convergence-value",                      Special( &Special::convergence_value,           true,  &Help::specialConvergenceValue ) },
+    { "single-step",                            Special( &Special::single_step,                 false, &Help::specialSingleStep ) },
+    { "underrelaxation",                        Special( &Special::underrelaxation,             true,  &Help::specialUnderrelaxation ) },
+    { "generate",                               Special( &Special::generate_queueing_model,     true,  &Help::specialGenerateQueueingModel ) },
+    { LQIO::DOM::Pragma::_mol_underrelaxation_, Special( &Special::mol_ms_underrelaxation,      true,  &Help::specialMolMSUnderrelaxation ) },
+    { "man",                                    Special( &Special::make_man,                    true,  &Help::specialMakeMan ) },
+    { "tex",                                    Special( &Special::make_tex,                    true,  &Help::specialMakeTex ) },
+    { "min-steps",                              Special( &Special::min_steps,                   true,  &Help::specialMinSteps ) },
 #if HAVE_LIBGSL
-    { "ignore-overhanging-threads", Special( &Special::ignore_overhanging_threads, false, &Help::specialIgnoreOverhangingThreads ) },
+    { "ignore-overhanging-threads",             Special( &Special::ignore_overhanging_threads,  false, &Help::specialIgnoreOverhangingThreads ) },
 #endif
-    { "full-reinitialize", 	    Special( &Special::full_reinitialize,          false, &Help::specialFullReinitialize ) }
+    { "full-reinitialize",                      Special( &Special::full_reinitialize,           false, &Help::specialFullReinitialize ) }
 };
 
 std::vector<char *> Options::Special::__options;
@@ -361,7 +360,10 @@ Options::Special::generate_queueing_model( const std::string& arg )
 void
 Options::Special::mol_ms_underrelaxation( const std::string& arg )
 {
-    if ( arg.empty() || (MVA::MOL_multiserver_underrelaxation = strtod( arg.c_str(), 0 )) <= 0.0 || 1.0 < MVA::MOL_multiserver_underrelaxation ) {
+    try {
+	pragmas.insert(LQIO::DOM::Pragma::_mol_underrelaxation_,arg);
+    }
+    catch ( std::domain_error& e ) {
 	std::cerr << LQIO::io_vars.lq_toolname << "underrelaxation=" << arg << " is invalid, choose real between 0.0 and 1.0." << std::endl;
 	(void) exit( INVALID_ARGUMENT );
     }
@@ -420,11 +422,13 @@ Options::Special::min_steps( const std::string& arg )
     }
 }
 
+#if HAVE_LIBGSL
 void
 Options::Special::ignore_overhanging_threads( const std::string& )
 {
     flags.ignore_overhanging_threads = true;
 }
+#endif
 
 void
 Options::Special::full_reinitialize( const std::string& )
