@@ -1,9 +1,9 @@
 /*
- *  $Id: global.c 10972 2012-06-19 01:12:22Z greg $
+ *  $Id: global.c 15215 2021-12-13 19:17:13Z greg $
  *
  */
 
-#include <../config.h>
+#include <config.h>
 #include <stdio.h>
 #include <errno.h>
 

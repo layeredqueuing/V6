@@ -1,7 +1,7 @@
 /* -*- c++ -*-
  * model.h	-- Greg Franks
  *
- * $Id: model.h 15185 2021-12-09 20:25:06Z greg $
+ * $Id: model.h 15215 2021-12-13 19:17:13Z greg $
  */
 
 #ifndef _MODEL_H
@@ -149,7 +149,7 @@ public:
 
     Model& setModelNumber( unsigned int n ) { _modelNumber = n; return *this; }
 
-    static void create( const std::string& inputFileName,  const std::string& output_file_name, const std::string& parse_file_name, int model_no );
+    static void create( const std::string& inputFileName, const LQIO::DOM::Pragma& pragmas, const std::string& output_file_name, const std::string& parse_file_name, int model_no );
     bool load( const char * );
     bool process();
     bool store();

@@ -1,11 +1,11 @@
 /*
- *  $Id: netdir.c 14930 2021-07-20 12:00:33Z greg $
+ *  $Id: netdir.c 15215 2021-12-13 19:17:13Z greg $
  *
  *  Check for "nets" dir.
  *
  */
 
-#include <../config.h>
+#include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>

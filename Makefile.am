@@ -1,10 +1,9 @@
 # -*- Makefile -*-
 # ------------------------------------------------------------------------
-# $Id: Makefile.am 15045 2021-10-05 21:21:04Z greg $
+# $Id: Makefile.am 15215 2021-12-13 19:17:13Z greg $
 # ------------------------------------------------------------------------
 ACLOCAL_AMFLAGS=-I config
 SUBDIRS = lqx lqiolib libmva petrisrvn parasol lqns lqsim lqn2csv lqn2ps lqngen qnsolver srvndiff doc xml dist
-EXTRA_DIST = README NEWS ChangeLog AUTHORS COPYING 
 RPMDIR = @RPMDIR@
 
 distclean-local:

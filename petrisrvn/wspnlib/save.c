@@ -1,12 +1,12 @@
 /*
- * $Id: save.c 12285 2015-11-04 21:51:36Z greg $
+ * $Id: save.c 15215 2021-12-13 19:17:13Z greg $
  *
  * Routines to translate a GSPN internal data structures used by the
  * editor into the definition in file "~/nets/netname.net"
  *
  */
 
-#include <../config.h>
+#include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>

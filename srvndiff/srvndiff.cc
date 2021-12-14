@@ -12,12 +12,12 @@
  * Comparison of srvn output results.
  * By Greg Franks.  August, 1991.
  *
- * $Id: srvndiff.cc 15090 2021-10-22 16:18:55Z greg $
+ * $Id: srvndiff.cc 15215 2021-12-13 19:17:13Z greg $
  */
 
 #define DIFFERENCE_MODE	1
 
-#include "config.h"
+#include <config.h>
 #include <cstdio>
 #include <cstdlib>
 #include <cstdarg>
@@ -935,7 +935,7 @@ main (int argc, char * const argv[])
 
     if ( print_copyright ) {
 	char copyright_date[20];
-	sscanf( "$Date: 2021-10-22 12:18:55 -0400 (Fri, 22 Oct 2021) $", "%*s %s %*s", copyright_date );
+	sscanf( "$Date: 2021-12-13 14:17:13 -0500 (Mon, 13 Dec 2021) $", "%*s %s %*s", copyright_date );
 	(void) fprintf( stdout, "SRVN Difference, Version %s\n", VERSION );
 	(void) fprintf( stdout, "  Copyright %s the Real-Time and Distributed Systems Group,\n", copyright_date );
 	(void) fprintf( stdout, "  Department of Systems and Computer Engineering,\n" );
@@ -1302,8 +1302,8 @@ compare_directories (unsigned n, char * const dirs[])
 	for ( i = 0; i < n; ++i ) {
 	    int rc;
 	    dir_list[i].gl_pathc = 0;
-	    for ( std::vector<const std::string>::const_iterator match = patterns.begin(); match != patterns.end() && dir_list[i].gl_pathc == 0 ; ++match ) {
-		std::string path = dirs[i] + "/" + file_pattern + *match;
+	    for ( std::vector<std::string>::const_iterator match = patterns.begin(); match != patterns.end() && dir_list[i].gl_pathc == 0 ; ++match ) {
+		std::string path = std::string(dirs[i]) + "/" + file_pattern + *match;
 		rc = glob( path.c_str(), 0, NULL, &dir_list[i] );
 	    }
 	    if ( rc == GLOB_NOSPACE ) {

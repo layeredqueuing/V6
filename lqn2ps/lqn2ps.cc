@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: lqn2ps.cc 15193 2021-12-10 12:00:49Z greg $
+ * $Id: lqn2ps.cc 15215 2021-12-13 19:17:13Z greg $
  *
  * Command line processing.
  *
@@ -205,7 +205,7 @@ main(int argc, char *argv[])
     char * options;
     std::string output_file_name = "";
 
-    sscanf( "$Date: 2021-12-10 07:00:49 -0500 (Fri, 10 Dec 2021) $", "%*s %s %*s", copyrightDate );
+    sscanf( "$Date: 2021-12-13 14:17:13 -0500 (Mon, 13 Dec 2021) $", "%*s %s %*s", copyrightDate );
 
     static std::string opts = "";
 #if HAVE_GETOPT_H
@@ -844,10 +844,10 @@ main(int argc, char *argv[])
     }
 
     if ( optind == argc ) {
-	Model::create( "-", output_file_name, parse_file_name, 1 );
+	Model::create( "-", pragmas, output_file_name, parse_file_name, 1 );
     } else {
 	for ( int i = 1; optind < argc; ++optind, ++i ) {
-	    Model::create( argv[optind], output_file_name, parse_file_name, i );
+	    Model::create( argv[optind], pragmas, output_file_name, parse_file_name, i );
 	}
     }
 
