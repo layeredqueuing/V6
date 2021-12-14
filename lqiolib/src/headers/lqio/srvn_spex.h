@@ -8,7 +8,7 @@
 /************************************************************************/
 
 /*
- * $Id: srvn_spex.h 15147 2021-12-03 14:27:24Z greg $
+ * $Id: srvn_spex.h 15218 2021-12-14 22:06:12Z greg $
  */
 
 #ifndef __LQIO_SRVN_SPEX_H__
@@ -24,6 +24,7 @@
 
 namespace LQX {
     class SyntaxTreeNode;
+    class VariableExpression;
     class MethodInvocationExpression;
 }
 namespace LQIO {
@@ -293,6 +294,8 @@ namespace LQIO {
 	static VariableManip print_input_array_variable( const var_name_and_expr& var ) { return VariableManip( printInputArrayVariable, var ); }
 	static VariableManip print_result_variable( const var_name_and_expr& var ) { return VariableManip( printResultVariable, var ); }
 
+
+	LQX::VariableExpression * get_observation_variable( const std::string& ) const;
 	LQX::SyntaxTreeNode * observation( const ObservationInfo& obs );
 	LQX::SyntaxTreeNode * observation( const DOM::DocumentObject* object, const ObservationInfo& obs );
 	LQX::SyntaxTreeNode * observation( const DOM::Task* task, const DOM::Activity *activity, const ObservationInfo& obs );
