@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_bindings.cpp 15215 2021-12-13 19:17:13Z greg $
+ *  $Id: dom_bindings.cpp 15242 2021-12-18 21:26:43Z greg $
  *
  *  Created by Martin Mroz on 16/04/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -557,14 +557,18 @@ namespace LQIO {
 	    LQXEntry* entry = dynamic_cast<LQXEntry *>(lo);
 
 	    /* Make sure that what we have is an entry */
-	    if (!entry) {
-		throw LQX::RuntimeException("Argument 1 to phase(object,double) is not an entry.");
+	    if ( entry == nullptr ) {
+		throw LQX::RuntimeException("Argument 1 to phase(object,int) is not an entry.");
 		return LQX::Symbol::encodeNull();
 	    }
 
 	    /* Obtain the phase for the entry */
 	    const DOM::Entry* domEntry = entry->getDOMEntry();
 	    const DOM::Phase* domPhase = domEntry->getPhase(phase);
+	    if ( domPhase == nullptr || !domPhase->isPresent() ) {
+		throw LQX::RuntimeException( "No phase `%d' for entry `%s'.", phase, domEntry->getName().c_str() );
+		return LQX::Symbol::encodeNull();
+	    }
 	    return LQX::Symbol::encodeObject(new LQXPhase(domPhase), false);
 	}
     };

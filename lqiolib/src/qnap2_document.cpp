@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: qnap2_document.cpp 15147 2021-12-03 14:27:24Z greg $
+ * $Id: qnap2_document.cpp 15222 2021-12-15 15:41:14Z greg $
  *
  * Read in XML input files.
  *

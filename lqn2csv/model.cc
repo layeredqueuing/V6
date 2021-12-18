@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: model.cc 15092 2021-10-22 17:07:35Z greg $
+ * $Id: model.cc 15229 2021-12-17 13:32:10Z greg $
  *
  * Command line processing.
  *

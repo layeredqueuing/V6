@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- *  $Id: expat_document.h 13717 2020-08-03 00:04:28Z greg $
+ *  $Id: jmva_document.h 15242 2021-12-18 21:26:43Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  */
@@ -197,8 +197,8 @@ namespace BCMP {
 	void createOpenChain( const XML_Char ** attributes );
 	Model::Station * createStation( Model::Station::Type, const XML_Char ** attributes );
 	void createWhatIf( const XML_Char ** attributes );
-	void createResults( Object& object, const XML_Char ** attributes );
-	void createResult( const Model::Station::map_t::const_iterator& m, std::map<const std::string,const Model::Result::Type>::const_iterator& r );
+	void createMeasure( Object& object, const XML_Char ** attributes );
+
 	void setResultVariables( const std::string& );
 	LQX::SyntaxTreeNode * createObservation( const std::string& name, Model::Result::Type type, const Model::Station *, const Model::Station::Class * );
 	LQX::SyntaxTreeNode * createObservation( const std::string& name, Model::Result::Type type, const std::string& clasx );
@@ -210,6 +210,7 @@ namespace BCMP {
 	std::string setPopulationMix( const std::string& stationName, const std::string& className );
 	
 	void appendResultVariable( const std::string& );
+	LQX::VariableExpression * getObservationVariable( const std::string& name ) const;
 	
 	class What_If {
 	private:
@@ -274,6 +275,19 @@ namespace BCMP {
 	    const BCMP::Model _model;
 	};
 
+	class create_result {
+	public:
+	    create_result( JMVA_Document& self, const Model::Station::map_t::const_iterator& m ) : _self(self), _m(m) {}
+
+	    void operator()( const std::pair<const std::string,const Model::Result::Type>& r ) const;
+	    
+	private:
+	    JMVA_Document& _self;
+	    const Model::Station::map_t::const_iterator& _m;
+	};
+	
+
+
 	bool convertToLQN( LQIO::DOM::Document& ) const;
 
 	struct notSet {
@@ -332,8 +346,8 @@ namespace BCMP {
 	    std::ostream& _output;
 	};
 
-	struct printResultVariable {
-	    printResultVariable( std::ostream& output ) : _output(output) {}
+	struct printMeasure {
+	    printMeasure( std::ostream& output ) : _output(output) {}
 	    void operator()( const Model::Result::pair_t& r ) const;
 	private:
 	    std::ostream& _output;
@@ -370,7 +384,6 @@ namespace BCMP {
 	static const std::map<const std::string,JMVA_Document::setIndependentVariable> independent_var_table;
 	
 	static const std::set<const XML_Char *,attribute_table_t> algParams_table;
-	static const std::set<const XML_Char *,attribute_table_t> class_results_table;
 	static const std::set<const XML_Char *,attribute_table_t> compareAlgs_table;
 	static const std::set<const XML_Char *,attribute_table_t> demand_table;
 	static const std::set<const XML_Char *,attribute_table_t> measure_table;

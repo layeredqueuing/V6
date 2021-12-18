@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_entity.h 15081 2021-10-18 20:05:23Z greg $
+ *  $Id: dom_entity.h 15222 2021-12-15 15:41:14Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
