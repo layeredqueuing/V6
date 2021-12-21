@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: mva.cc 15092 2021-10-22 17:07:35Z greg $
+ * $Id: mva.cc 15244 2021-12-21 01:36:22Z greg $
  *
  * MVA solvers: Exact, Bard-Schweitzer, Linearizer and Linearizer2.
  * Abstract superclass does no operation by itself.
@@ -231,17 +231,17 @@ MVA::dimension( const size_t mapMaxOffset )
 	    LL[n] = new double ** [M+1];
 	    U[n] = new double ** [M+1];
 	    P[n] = new double * [M+1];
+
 	    for ( unsigned m = 1; m <= M; ++m ) {
 		const unsigned E = Q[m]->nEntries();
-
 		L[n][m] = new double * [E+1];
 		LL[n][m] = new double * [E+1];
 		U[n][m] = new double * [E+1];
 		P[n][m] = nullptr;
-
 		L[n][m][0] = nullptr;
 		LL[n][m][0] = 0;
 		U[n][m][0] = nullptr;
+
 		for ( unsigned e = 1; e <= E; ++e ) {
 		    L[n][m][e] = new double [K+1];
 		    LL[n][m][e] = new double [K+1];
@@ -361,11 +361,14 @@ MVA::reset()
     dimension( P, maxOffset );
 
     for ( unsigned n = 0; n < maxOffset; ++n) {
+	assert( L[n][0] == nullptr );
+	assert( U[n][0] == nullptr );
+
 	for ( unsigned m = 1; m <= M; ++m ) {
 	    const unsigned E = Q[m]->nEntries();
+	    assert( L[n][m][0] == nullptr );
+	    assert( U[n][m][0] == nullptr );
 
-	    L[n][m][0] = 0;
-	    U[n][m][0] = 0;
 	    for ( unsigned e = 1; e <= E; ++e ) {
 		for ( unsigned k = 0; k <= K; k++ ) {
 		    L[n][m][e][k] = 0.0;
@@ -580,17 +583,18 @@ MVA::setNonILRate( ) const
     }
 }
 
+#if BUG_267
 /* Ratio of Lj(N-1)/L(N-1) */
 void
 MVA::setQueueWeight( const Population &N ) const
 {
     for ( unsigned m = 1; m <= M; ++m ) {
 	for ( unsigned k = 1; k <= K; ++k ) {
-	    Q[m]->setQueueWeight(*this, k , N);
+	    Q[m]->setQueueWeight(*this, k, N);
 	}
     }
 }
-
+#endif
 
 
 double
@@ -612,11 +616,7 @@ MVA::sumOf_NOIL_m( const Server& station, const Population &N, const unsigned j 
 	    const double ir = station.interlock_rate( e, k, j );
 
 	    if ( ir != 0.0 ) {
-		if (isFractionalMVA()) {
-		    sum += station.SorQ(e,k) *L[Nej][m][e][k] *(1-station.chainILRate(e,k));
-		} else {
-		    sum += station.SorQ(e,k) *L[Nej][m][e][k] *(1-station.chainILRate(e,k)*station.chainILRate(0,j))/ir;
-		}
+		sum += station.SorQ(e,k) * L[Nej][m][e][k] *(1-station.IR(e,k)*station.IR(0,j))/ir;
 	    }
 	}
     }
@@ -629,12 +629,12 @@ MVA::sumOf_NOIL_m( const Server& station, const Population &N, const unsigned j 
  */
 
 double
-MVA::sumOf_NOIL_m( const Server& station, const Population &N, const unsigned je , const unsigned j ) const
+MVA::sumOf_NOIL_m( const Server& station, const Population &N, const unsigned je, const unsigned j ) const
 {
     assert( 0 < j && j <= K );
 
     if ( N[j] < 1 ) return 0.0;
-    /*  suppose station.chainILRate(j)>0  */
+    /*  suppose station.IR(j)>0  */
 
     const unsigned m   = station.closedIndex;
     const unsigned E   = station.nEntries();
@@ -644,8 +644,8 @@ MVA::sumOf_NOIL_m( const Server& station, const Population &N, const unsigned je
 	if ( station.priorityServer() && priority[k] < priority[j] ) continue;
 
 	for ( unsigned e = 1; e <= E; ++e ) {
-	    if ( station.interlock_rate1( e, k, je, j ) ) {
-		sum += station.SorQ(e,k) *L[Nej][m][e][k] *(1-station.chainILRate(e,k));
+	    if ( station.interlock_rate( e, k, je, j ) ) {
+		sum += station.SorQ(e,k) * L[Nej][m][e][k] * (1.0 - station.IR(e,k));
 	    }
 	}
     }
@@ -714,12 +714,14 @@ MVA::sumOf_L_m( const Server& station, const Population &N, const unsigned je, c
     for ( unsigned k = 1; k <= K; ++k ) {
 	if ( station.priorityServer() && priority[k] < priority[j] ) continue;
 	for ( unsigned e = 1; e <= E; ++e ) {
-	    sum += L[Nej][m][e][k] * station.interlock_rate1(e, k, je, j);
+	    sum += L[Nej][m][e][k] * station.interlock_rate(e, k, je, j);
 	}
     }
     return sum;
 }
 
+
+#if BUG_267
 double
 MVA::ratio_L_Nej_m( const Server& station, const Population &N, const unsigned e ,const unsigned j ) const
 {
@@ -733,22 +735,25 @@ MVA::ratio_L_Nej_m( const Server& station, const Population &N, const unsigned e
 
     assert( 0 < e && e <= E );
 
-    double sum = sumOf_L_m(station, N, e, j);
+    const double sum = sumOf_L_m(station, N, e, j);
     double ratio;
-    if ( sum==0.0 ) {
+    if ( sum == 0.0 ) {
 	ratio = 1.0;
     } else if( L[Nej][m][e][j] == 0 ) {
 	ratio = 0.0;
     } else {
-	ratio = L[Nej][m][e][j] * station.interlock_rate(e, j, e, j) / sum;	/* BUG 267 */
+	ratio = L[Nej][m][e][j] * station.interlock_ratex(e, j, e, j) / sum;	/* BUG 267 */
     }
-    return (ratio>1.0)? 1.0:ratio;
+    return std::min( ratio, 1.0 );
 
 }
+
+
 double
 MVA::ratio_SL_Nej_m( const Server& station, const Population &N, const unsigned e ,const unsigned j ) const
 {
     assert( 0 < j && j <= K );
+
 
     if ( N[j] < 1 ) return 1.0;
 
@@ -758,17 +763,19 @@ MVA::ratio_SL_Nej_m( const Server& station, const Population &N, const unsigned 
 
     assert( 0 < e && e <= E );
 
-    double sum = sumOf_SL_m(station, N, j);
+    const double sum = sumOf_SL_m(station, N, j);
     double ratio;
-    if ( sum==0.0) {
-	ratio= 1.0;
-    } else if(L[Nej][m][e][j] ==0 ) {
-	ratio= 0.0;
+    if ( sum == 0.0) {
+	ratio = 1.0;
+    } else if( L[Nej][m][e][j] == 0 ) {
+	ratio = 0.0;
     } else {
-	ratio= Q[m]->S(e,j) * L[Nej][m][e][j] * station.interlock_rate(e,j, e, j) / sum;
+	ratio = Q[m]->S(e,j) * L[Nej][m][e][j] * station.interlock_ratex(e, j, e, j) / sum;	/* BUG 267 */
     }
-    return (ratio>1.0)? 1.0:ratio;
+    return std::min( ratio, 1.0 );
 }
+#endif
+
 
 double
 MVA::sumOf_LL_m( const Server& station, const Population &N, const unsigned j ) const
@@ -811,7 +818,7 @@ MVA::sumOf_QL_m( const Server& station, const Population &N, const unsigned j ) 
 	const double scaling = tau_overlap( station, j, k, N );
 
 	for ( unsigned e = 1; e <= E; ++e ) {
-	    if ( station.chainILRate(j) == 0.0 ) {
+	    if ( station.IR(j) == 0.0 ) {
 		sum += L[Nej][m][e][k] * scaling;
 	    } else {
 		sum += L[Nej][m][e][k] * scaling * station.interlock_rate( e, k );
@@ -885,11 +892,11 @@ MVA::sumOf_SL_m( const Server& station, const Population &N, const unsigned je, 
 	    const double scaling = tau_overlap( station, j, k, N );		/* BUG 145 */
 
 	    if ( k != j ){
-		sum += s * L[Nej][m][e][k] * scaling * station.interlock_rate1(e, k, je, j);
+		sum += s * L[Nej][m][e][k] * scaling * station.interlock_rate(e, k, je, j);
 	    } else if ( station.getMaxCustomers(e,k) > 1 && 			/* BUG 191 */
-			station.chainILRate(e,k) <= 0. ) {
+			station.IR(e,k) <= 0. ) {
 		/* perform upper level adjustment*/
-		sum += s * L[Nej][m][e][k] * scaling * station.interlock_rate1(e, k, je, j);
+		sum += s * L[Nej][m][e][k] * scaling * station.interlock_rate(e, k, je, j);
 	    } else {
 		/* Do not apply PrIL on itself.*/
 		sum += s * L[Nej][m][e][k] * scaling;
@@ -905,10 +912,10 @@ MVA::sumOf_SL_m( const Server& station, const Population &N, const unsigned je, 
 	    for ( unsigned e = 1; e <= E; ++e ) {
 		const double s = station.S(e,k);
 		if ( !std::isfinite(s) ) return s;
-		sum += s * L[Nej][m][e][k] * scaling * station.interlock_rate1(e, k, je, j);
+		sum += s * L[Nej][m][e][k] * scaling * station.interlock_rate(e, k, je, j);
 	    }
 	} else { //(k==j)
-	    double SL_je =  station.S(je,k)  *L[Nej][m][je][k] * scaling * station.interlock_rate1(je, k, je, j);
+	    double SL_je =  station.S(je,k)  *L[Nej][m][je][k] * scaling * station.interlock_rate(je, k, je, j);
 	    double max_rc = N[k] - 1 - L[Nej][m][je][k];
 	    double sum_SL = 0.;
 	    double sum_le = 0.;
@@ -929,7 +936,7 @@ MVA::sumOf_SL_m( const Server& station, const Population &N, const unsigned je, 
 			le = Lnmek < max_rc ? Lnmek  : max_rc;
 		    }
 
-		    sum_SL += s  * le * station.interlock_rate1(e, k, je, j);
+		    sum_SL += s  * le * station.interlock_rate(e, k, je, j);
 		    sum_le += le;
 		}// END FOR
 		if ( sum_le > max_rc ) {
@@ -988,7 +995,7 @@ MVA::sumOf_SQL_m( const Server& station, const Population &N, const unsigned j )
 
 	    const double s = station.S(e,k);
 	    if ( !std::isfinite(s) ) return s;						/* Infinitiy */
-	    if ( station.chainILRate(j) == 0.0 ) {
+	    if ( station.IR(j) == 0.0 ) {
 		sum += s * L[Nej][m][e][k] * scaling;
 	    } else {
 		sum += s * L[Nej][m][e][k] * scaling * station.interlock_rate( e, k );
@@ -1784,10 +1791,10 @@ MVA::queueOnly_adjusted( const Server& station, const unsigned k, const Populati
     for ( unsigned e = 1; e <= E; ++e ) {
 	const double service = station.S(e,k);
 	if ( service == 0.0 ) continue;
-	if (station.chainILRate(j)==0.0){
+	if ( station.IR(j) == 0.0 ) {
 	    sum += std::max( L[Nej][m][e][k] - U[Nej][m][e][k], 0.);	/* Can't have negative length */
-	}else  {
-	    sum += std::max( L[Nej][m][e][k] * station.interlock_rate( e, k )- U[Nej][m][e][k], 0.);
+	} else {
+	    sum += std::max( L[Nej][m][e][k] * station.interlock_rate( e, k ) - U[Nej][m][e][k], 0.);
 	}
     }
     return sum;
@@ -2518,7 +2525,7 @@ SchweitzerCommon::reset()
 
 
 /*
- * Hairy initilalization for marginal probabilties.
+ * Hairy initialization for marginal probabilties.
  */
 
 void
@@ -3071,7 +3078,9 @@ Schweitzer::solve()
     try {
 	core( NCust, offset_e_j( NCust, 0 ) );		/* May not need to do this... */
 	setNonILRate( NCust );
+#if BUG_267
 	setQueueWeight( NCust );
+#endif
     }
     catch ( const MVA::iteration_limit& error ) {
 	faultCount += 1;
@@ -3245,15 +3254,15 @@ Linearizer::reset()
 	}
     }
 
-    D[0] = 0;
+    D[0] = nullptr;
 
     for ( unsigned m = 1; m <= M; ++m ) {
 	const unsigned E = Q[m]->nEntries();
 
-	D[m][0] = 0;
+	D[m][0] = nullptr;
 
 	for ( unsigned e = 1; e <= E; ++e ) {
-	    D[m][e][0] = 0;
+	    D[m][e][0] = nullptr;
 	    for ( unsigned j = 1; j <= K; ++j ) {
 		for ( unsigned l = 1; l <= K; ++l ) {
 		    D[m][e][j][l] = 0.0;
@@ -3330,7 +3339,9 @@ Linearizer::solve()
     }
     //setNonILRate( );
     setNonILRate( NCust );
+#if BUG_267
     setQueueWeight( NCust );
+#endif
     return true;
 }
 
@@ -3605,13 +3616,13 @@ Linearizer2::Linearizer2( Vector<Server *>&q, const Population& N, const Vector<
     }
 
     D_k = new double ** [M+1];
-    D_k[0] = 0;
+    D_k[0] = nullptr;
     for ( unsigned m = 1; m <= M; ++m ) {
 	const unsigned E = Q[m]->nEntries();
 
 	D_k[m] = new double * [E+1];
 
-	D_k[m][0] = 0;
+	D_k[m][0] = nullptr;
 	for ( unsigned e = 1; e <= E; ++e ) {
 	    D_k[m][e] = new double [K+1];
 

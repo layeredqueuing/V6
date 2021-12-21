@@ -1,5 +1,5 @@
 /*  -*- C++ -*-
- * $Id: server.cc 15090 2021-10-22 16:18:55Z greg $
+ * $Id: server.cc 15244 2021-12-21 01:36:22Z greg $
  *
  * Copyright the Real-Time and Distributed Systems Group,
  * Department of Systems and Computer Engineering,
@@ -82,25 +82,29 @@ Server::initialize()
     v = new double ** [E+1];
     s = new double ** [E+1];
 
-    QW = new double ** [E+1];
+#if BUG_267
+    _QW = new double ** [E+1];
+#endif
     QP = new double *  [E+1];
-    IL = new Probability * [E+1];
+    _PrIL = new Probability * [E+1];
     _maxCusts =new double *[E+1];
     _realCusts =new double *[E+1];
     nILRate =new double *[E+1];
-    _chain_IL_Rate = new double *[E+1];
+    _IR = new double *[E+1];
 
-    W[0] = 0;
-    s[0] = 0;
-    IL[0] = 0;
-    QW[0] = 0;
+    W[0] = nullptr;
+    s[0] = nullptr;
+    _PrIL[0] = nullptr;
+#if BUG_267
+    _QW[0] = nullptr;
+#endif
     for ( e = 0; e <= E; ++e ) {
 	_realCusts[e] = new double [K+1];
 	_maxCusts[e]  = new double [K+1];
-	_chain_IL_Rate[e] = new double [K+1];
+	_IR[e] = new double [K+1];
 	for ( k = 0; k <= K; ++k ) {
 	    _realCusts[e][k] =0.;
-	    _chain_IL_Rate[e][k] = 0;
+	    _IR[e][k] = 0;
 	    _maxCusts[e][k] =0;
 	}
 
@@ -110,18 +114,22 @@ Server::initialize()
 	v[e] = new double * [K+1];
 	W[e] = new double * [K+1];
 	s[e] = new double * [K+1];
-	QW[e] = new double * [K+1];
+#if BUG_267
+	_QW[e] = new double * [K+1];
+#endif
 	QP[e] = new double  [K+1];
-	IL[e] = new Probability[K+1];
+	_PrIL[e] = new Probability[K+1];
 	nILRate[e] =new double [K+1];
 
 	for ( k = 0; k <= K; ++k ) {
 	    v[e][k] = new double [MAX_PHASES+1];
 	    s[e][k] = new double [P+1];
 	    W[e][k] = new double [MAX_PHASES+1];
-	    QW[e][k] = new double [MAX_PHASES+1];
-	    IL[e][k] = 0;
-	    nILRate[e][k]=0.;
+#if BUG_267
+	    _QW[e][k] = new double [MAX_PHASES+1];
+#endif
+	    _PrIL[e][k] = 0.0;
+	    nILRate[e][k] = 0.;
 
 	    unsigned p;
 	    for ( p = 0; p <= P; ++p ) {
@@ -130,7 +138,9 @@ Server::initialize()
 	    for ( p = 0; p <= MAX_PHASES; ++p ) {
 		v[e][k][p] = 0.0;
 		W[e][k][p] = 0.0;
-		QW[e][k][p] = 1.0;
+#if BUG_267
+		_QW[e][k][p] = 1.0;
+#endif
 	    }
 	}
     }
@@ -179,20 +189,24 @@ Server::~Server()
 	    delete [] W[e][k];
 	    delete [] v[e][k];
 	    delete [] s[e][k];
-	    delete [] QW[e][k];
+#if BUG_267
+	    delete [] _QW[e][k];
+#endif
 	}
 	delete [] W[e];
 	delete [] v[e];
 	delete [] s[e];
-	delete [] QW[e];
+#if BUG_267
+	delete [] _QW[e];
+#endif
 	delete [] QP[e];
-	delete [] IL[e];
+	delete [] _PrIL[e];
 	delete [] nILRate[e];
     }
     for ( unsigned e = 0; e <= E; ++e ) {
 	delete [] _maxCusts[e];
 	delete [] _realCusts[e];
-	delete [] _chain_IL_Rate[e];
+	delete [] _IR[e];
 
     }
     for ( unsigned k = 0; k <= K; ++k ) {
@@ -204,12 +218,14 @@ Server::~Server()
     delete [] W;
     delete [] v;
     delete [] s;
-    delete [] QW;
+#if BUG_267
+    delete [] _QW;
+#endif
     delete [] QP;
-    delete [] IL;
+    delete [] _PrIL;
     delete [] _maxCusts;
     delete [] _realCusts;
-    delete [] _chain_IL_Rate;
+    delete [] _IR;
     delete [] nILRate;
     if ( MVA::__enable_interlock ) {
 	for ( unsigned e = 1; e <= E; ++e ) {
@@ -256,7 +272,9 @@ Server::clear()
 	    for ( unsigned p = 0; p <= MAX_PHASES; ++p ) {
 		v[e][k][p] = 0.0;
 		W[e][k][p] = 0.0;
-		QW[e][k][p] = .0;
+#if BUG_267
+		_QW[e][k][p] = .0;
+#endif
 	    }
 	    QP[e][k]=0.0;
 	}
@@ -363,7 +381,7 @@ Server::setInterlock( const unsigned e, const unsigned k, const Probability& flo
 {
     assert( 0 < e && e <= E && k <= K );
 
-    IL[e][k] = flow;
+    _PrIL[e][k] = flow;
 
     return *this;
 }
@@ -372,7 +390,7 @@ bool
 Server::isNONILFlow (const unsigned k)  const
 {
     for ( unsigned e = 1; e <= E; ++e ) {
-	if (IL[e][k]>0)	return false;
+	if ( PrIL(e,k) > 0.0 ) return false;
     }
     return true;
 }
@@ -414,7 +432,7 @@ Server::setNonILRate( const MVA& solver, const unsigned k, const unsigned e) con
 #endif
 
     if ( nonILflow > 0 ) {
-	nILRate[e][k]= nonILflow /((solver.utilization( *this)-nonILflow)* (1-IL[e][k])+nonILflow);
+	nILRate[e][k]= nonILflow /((solver.utilization(*this)-nonILflow)* (1-PrIL(e,k))+nonILflow);
 #if	defined(DEBUG)
 	cout<<", rate = "<<nILRate[e][k] <<endl;
 #endif
@@ -490,23 +508,23 @@ Server::addRealCustomers( const unsigned e, const unsigned k, double nCusts )
 }
 
 void
-Server::setChainILRate( const unsigned e, const unsigned k, double rate)
+Server::setChainILRate( const unsigned e, const unsigned k, double rate )
 {
     if ( rate < 0 || 1 < rate ) return;
-    _chain_IL_Rate[e][k] =rate;
+    _IR[e][k] = rate;
 
-#if	defined(DEBUG)
+#if defined(DEBUG)
     if ( rate > 0. )
 	cout << "==server station: set chainILRate(e= "<<e<<", k= "<<k << ",rate = " <<rate<<")=="<<endl;
 #endif
 }
 
 void
-Server::setChainILRate( const unsigned k, double rate)
+Server::setChainILRate( const unsigned k, double rate )
 {
     if ( rate < 0 || 1 < rate ) return;
     for ( unsigned e = 1; e <= E; ++e ) {
-	_chain_IL_Rate[e][k] =rate;
+	_IR[e][k] =rate;
 #if	defined(DEBUG)
 	cout << "==server station: set chainILRate(e= "<<e<<", k= "<<k << ",rate = " <<rate<<")=="<<endl;
 #endif
@@ -689,56 +707,61 @@ Server::is_related(const unsigned k, const unsigned k2 )const
     }
     return false;
 }
+
+
 void
-Server::set_IL_Relation(const unsigned e, const unsigned k,const unsigned e2, const unsigned k2, double rel)
+Server::set_IL_Relation(const unsigned e1, const unsigned k1, const unsigned e2, const unsigned k2, double rel)
 {
     /* sending relations e2=1 and k2==0 */
     /* second phase ratio e2=0 and k2==0 */
     if (k2 == 0 && e2 >1) return;
 
-    _ir_relation[e][k][e2][k2]=rel;
+    _ir_relation[e1][k1][e2][k2] = rel;
 }
 
 
 
 /*
  * get probablity of interlocking by a server entry receive the request of the incoming chain j
+ * Eqn (3.7), Li.
  */
 
 double
-Server::interlock_rate1( const unsigned e, const unsigned k, const unsigned je, const unsigned j ) const
+Server::interlock_rate( const unsigned ek, const unsigned k, const unsigned ej, const unsigned j ) const
 {
-    if ( IL_Relation(je, j, e, k ) > 5 ) {
-	return 6 - IL_Relation(je, j, e, k );
+    if ( IL_Relation(ej, j, ek, k) > 5 ) {
+	return 6 - IL_Relation(ej, j, ek, k);
     }
-    if ( (_chain_IL_Rate[0][k] == 0) && (_chain_IL_Rate[0][j] == 0) ) {
+    if ( (IR(0,k) == 0) && (IR(0,j) == 0) ) {
 
 	/* upper submodel, IR[e,k] =0. but PrIL[e,k] in (0, 1)*/
-	return upper_ILrate(e,k);
+	return upper_ILrate(ek,k);
     }
-    if ( _chain_IL_Rate[e][k] * _chain_IL_Rate[je][j] > 0. ) {
-	//cout<<"pril(e,k)="<<IL[e][k] <<", IR(e,k)="<<_chain_IL_Rate[e][k]
-	//<<", IR(je,j)="<<_chain_IL_Rate[je][j]
-	//<<", IRE(e,k,je,j)]="<<IL_Relation(e, k, je, j )<<endl;
-	return  1.0 - (IL[e][k]  * _chain_IL_Rate[e][k] * _chain_IL_Rate[je][j]* IL_Relation(e, k, je, j ) );
+    if ( IR(ek,k) * IR(ej,j) > 0. ) {
+	//cout<<"pril(e,k)="<<IL[e][k] <<", IR(e,k)="<<IR(e,k)
+	//<<", IR(ej,j)="<<IR(ej,j)
+	//<<", IRE(e,k,ej,j)]="<<IL_Relation(e, k, ej, j )<<endl;
+	return  1.0 - (PrIL(ek,k) * IR(ek,k) * IR(ej,j) * IL_Relation(ek, k, ej, j) );
     }
 
-    //else if (_chain_IL_Rate[e][k]>0 && cc>0)
-    //	return  1.0 - (IL[e][k]  * _chain_IL_Rate[e][k] /2.0 );
+    //else if (IR(e,k) >0 && cc>0)
+    //	return  1.0 - (IL[e][k]  * _IR[e][k] /2.0 );
     else {
 	return 1.;
     }
-    //	return  1.0 - (IL[e][k]  * _chain_IL_Rate[e][k] * _chain_IL_Rate[je][j] );
+    //	return  1.0 - (IL[e][k]  * _IR[e][k] * _IR[ej][j] );
 }
 
 double
 Server::upper_ILrate( const unsigned e, const unsigned k ) const
 {
-    if ( IL[e][k] > 0.005 &&  (_chain_IL_Rate[0][k] == 0) && (_chain_IL_Rate[e][k] == 0)) {
-	return 1 - IL[e][k];
+    if ( PrIL(e,k) > 0.005 &&  (IR(0,k) == 0) && (IR(e,k) == 0)) {
+	return 1.0 - PrIL(e,k);
     }
     return 1.0;
 }
+
+
 /*
  * Common expression for setting various data structures.
  */
@@ -1086,9 +1109,9 @@ Server::printInput( std::ostream& output, const unsigned e, const unsigned k ) c
     }
     output << std::endl;
 
-    if ( IL[e][k] > 0.005 && (chainILRate(e,k)>0.005 || chainILRate(e,k)<0) ) {
-	output << "  PrIL(e=" << e << ",k=" << k << ") = "  << IL[e][k];
-	output << "  IR(e=" << e << ",k=" << k << ") = " << chainILRate(e,k);
+    if ( PrIL(e,k) > 0.005 && (IR(e,k)>0.005 || IR(e,k)<0) ) {
+	output << "  PrIL(e=" << e << ",k=" << k << ") = "  << PrIL(e,k);
+	output << "  IR(e=" << e << ",k=" << k << ") = " << IR(e,k);
 	output << std::endl;
     }
 
@@ -1244,7 +1267,7 @@ PS_Server::setNonILRate( const MVA& solver, const unsigned k, const Population &
 
     //if (getMixFlow()<2 || (isNONILFlow(k)))  return;
 
-    if (chainILRate(k)> 0 ){
+    if (IR(k)> 0 ){
 
 	for (unsigned e=1;e<=E;e++){
 	    double nonIL= solver.sumOf_NOIL_m( *this, N, e, k );
@@ -1256,13 +1279,14 @@ PS_Server::setNonILRate( const MVA& solver, const unsigned k, const Population &
 
 	    }
 
-#if	defined(DEBUG)
+#if DEBUG
 	    cout <<"PS_server: nILRate[e= "<<e<<", k="<<k<<"]="<<nILRate[e][k] <<endl;
 #endif
 	}
     }
 }
 
+#if BUG_267
 /* Ratio of Lj(N-1)/L(N-1) */
 void
 PS_Server::setQueueWeight( const MVA& solver, const unsigned k, const Population & N ) const
@@ -1272,15 +1296,14 @@ PS_Server::setQueueWeight( const MVA& solver, const unsigned k, const Population
 
 	double ratio=solver.ratio_L_Nej_m( *this, N, e, k );
 	for ( unsigned p = 0; p <= MAX_PHASES; ++p ) {
-	    QW[e][k][p] = ratio;						/* Eq:1 */
+	    _QW[e][k][p] = ratio;						/* Eq:1 */
 	}
-#if	defined(DEBUG)
-	cout <<"PS_Server::setQueueWeight():QW[e= "<<e<<", k="<<k<<"]="<<QW[e][k][1] <<endl;
+#if DEBUG
+	cout <<"PS_Server::setQueueWeight():QW[e= "<<e<<", k="<<k<<"]="<<_QW[e][k][1] <<endl;
 #endif
     }
-
-
 }
+#endif
 
 /*
  * Queue length for Open models (M/M/1) (PS,LCFSPR,PS - all servers same
@@ -1383,7 +1406,7 @@ FCFS_Server::wait( const MVA& solver, const unsigned k, const Population& N ) co
 	if ( !V(e,k) ) continue;
 
 	const Positive sum = solver.sumOf_SL_m( *this, N, e, k );
-#if defined	(DEBUG)
+#if defined(DEBUG)
 	cout<<"FCFS_Server[m="<<closedIndex<<", e="<<e<<"]::wait(): for chain "<<k<<" sum of queueing time after adjustment:  "<<sum<<endl;
 #endif
 
@@ -1393,7 +1416,7 @@ FCFS_Server::wait( const MVA& solver, const unsigned k, const Population& N ) co
 
     }
 
-#if	defined(DEBUG)
+#if defined(DEBUG)
     printWait( cout,k);
 #endif
 }
@@ -1402,22 +1425,23 @@ void
 FCFS_Server::setNonILRate( const MVA& solver, const unsigned k, const Population & N ) const{
 
     // may be have problem
-    //should use if (chainILRate(k)== 0 ) return; if that ok for upper level?
+    //should use if (IR(k)== 0 ) return; if that ok for upper level?
     //if (getMixFlow()<2 || (isNONILFlow(k)))  return;  // how about case 1: all 0<ir<=1  ?
-    if ( chainILRate(k) > 0 ) {
+    if ( IR(k) > 0 ) {
 	for ( unsigned e = 1; e <= E; e++ ) {
 	    double sumNOIL=solver.sumOf_NOIL_m( *this, N,e, k );
 	    if (W[e][k][1]<=0 || sumNOIL<=0) continue;
 
 	    nILRate[e][k] = sumNOIL / (W[e][k][1] - S(e,k));
 
-#if	defined(DEBUG)
+#if defined(DEBUG)
 	    cout <<"sumNOIL= "<<sumNOIL<<",nILRate[e= "<<e<<", k="<<k<<"]="<<nILRate[e][k] <<endl;
 #endif
 	}
     }
 }
 
+#if BUG_267
 /* Ratio of Lj(N-1)/L(N-1) */
 void
 FCFS_Server::setQueueWeight( const MVA& solver, const unsigned k, const Population & N ) const
@@ -1427,14 +1451,14 @@ FCFS_Server::setQueueWeight( const MVA& solver, const unsigned k, const Populati
 
 	double ratio=solver.ratio_SL_Nej_m( *this, N, e, k );
 	for ( unsigned p = 0; p <= MAX_PHASES; ++p ) {
-	    QW[e][k][p] = ratio;						/* Eq:1 */
+	    _QW[e][k][p] = ratio;						/* Eq:1 */
 	}
-#if	defined(DEBUG)
-	cout <<"FCFS_Server::setQueueWeight():QW[e= "<<e<<", k="<<k<<"]="<<QW[e][k][1] <<endl;
+#if defined(DEBUG)
+	cout <<"FCFS_Server::setQueueWeight():QW[e= "<<e<<", k="<<k<<"]="<<_QW[e][k][1] <<endl;
 #endif
     }
-
 }
+#endif
 
 
 
@@ -1654,7 +1678,7 @@ HVFCFS_Server::wait( const MVA& solver, const unsigned k, const Population& N ) 
 
 	const Positive sum = solver.sumOf_SL_m( *this, N, e, k );
 
-#if defined	(DEBUG)
+#if defined(DEBUG)
 	cout<<"HVFCFS_Server[m="<<closedIndex<<", e="<<e<<"]::wait(): for chain "
 	    <<k<<" sum of queueing time after adjustment:  "<<sum<<endl;
 #endif
@@ -1673,7 +1697,7 @@ HVFCFS_Server::wait( const MVA& solver, const unsigned k, const Population& N ) 
     }
 
 
-#if	defined(DEBUG)
+#if defined(DEBUG)
     printWait( cout,k);
 #endif
 }
@@ -1683,9 +1707,9 @@ void
 HVFCFS_Server::setNonILRate( const MVA& solver, const unsigned k, const Population & N ) const{
 
     // may be have problem
-    //should use if (chainILRate(k)== 0 ) return; if that ok for upper level?
+    //should use if (IR(k)== 0 ) return; if that ok for upper level?
 
-    if (chainILRate(k)> 0 ){
+    if ( IR(k) > 0 ) {
 	double sumNOIL=solver.sumOf_NOIL_m( *this, N, k );
 	for (unsigned e=1;e<=E;e++){
 
@@ -1882,7 +1906,7 @@ CFS_Server::wait( const MVA& solver, const unsigned k, const Population& N ) con
 
 	const Positive sum = solver.sumOf_L_m( *this, N, e, k );
 
-#if defined	(DEBUG)
+#if defined(DEBUG)
 	cout<<"CFS_PS_Server[m="<<closedIndex<<", e="<<e
 	    <<"]::wait(): sum of queue length after adjustment:  "
 	    <<sum<<",chain k="<<k<<endl;

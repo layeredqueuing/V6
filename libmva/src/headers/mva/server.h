@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: server.h 14895 2021-07-10 13:02:49Z greg $
+ * $Id: server.h 15244 2021-12-21 01:36:22Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -79,7 +79,9 @@ public:
     double nonILRate( const unsigned k ) const;
     void setNonILRate(  const MVA& solver, const unsigned k, const unsigned e) const;
     virtual void setNonILRate( const MVA& solver, const unsigned k, const Population & N ) const{}
+#if BUG_267
     virtual void setQueueWeight( const MVA& solver, const unsigned k, const Population & N ) const{}
+#endif
     void setNonILRate( const unsigned k,  double ilwait) const;
     void setNonILRate( const unsigned k, const unsigned e, double ilwait ) const;
     void setMaxCustomers( const unsigned e, const unsigned k, double nCusts );
@@ -90,11 +92,11 @@ public:
     void addRealCustomers( const unsigned e, const unsigned k, double nCusts );
     bool isLessCustomer( const unsigned e, const unsigned k, const unsigned nk) const{ return _maxCusts[e][k]<=(nk-1) && (nk>1); }
 
-    double chainILRate( const unsigned e, const unsigned k) const { return _chain_IL_Rate[e][k]; }
-    double chainILRate( const unsigned k) const { return _chain_IL_Rate[0][k]; 	}
+    double IR( const unsigned e, const unsigned k ) const { return _IR[e][k]; }
+    double IR( const unsigned k ) const { return _IR[0][k]; }
     void setChainILRate( const unsigned e, const unsigned k, double rate);
     void setChainILRate( const unsigned k, double rate);
-    double ILRate(const unsigned e) const{ return _chain_IL_Rate[e][0]; }
+    double ILRate(const unsigned e) const{ return _IR[e][0]; }
     void set_IL_Relation(const unsigned e, const unsigned k,const unsigned e2, const unsigned k2, double rel=1.);//{_ir_relation[e][k][e2][k2]=rel; }
     double IL_Relation(const unsigned e, const unsigned k,const unsigned e2, const unsigned k2 ) const;
     bool is_related(const unsigned k, const unsigned k2 ) const;
@@ -131,7 +133,7 @@ public:
     double R( const unsigned e, const unsigned k ) const;
     double R( const unsigned e, const unsigned k, const unsigned p ) const;
 
-    double QL( const unsigned e, const unsigned k) const{return QP[e][k]; }
+    double QL( const unsigned e, const unsigned k) const { return QP[e][k]; }
     double QL( const unsigned e ) const;
     virtual double r( const unsigned e, const unsigned k, const unsigned p=0 ) const { return S(e,k,p); }
 
@@ -149,17 +151,19 @@ public:
     /* Computation -- closed */
 
     virtual void wait( const MVA& solver, const unsigned k, const Population & N ) const = 0;
-    double interlock( const unsigned e, const unsigned k, const double lambda ) const { return ( 1.0 - IL[e][k] * _chain_IL_Rate[e][k]) * lambda; }
-    double getInterlock( const unsigned e, const unsigned k) const { return IL[e][k];  }
-    double interlock_rate( const unsigned e, const unsigned k ) const { return ( 1.0 - (IL[e][k]  * _chain_IL_Rate[e][k] ));  }
-    double interlock_rate( const unsigned e, const unsigned k, const unsigned j ) const { return ( 1.0 - (IL[e][k]  * _chain_IL_Rate[e][k] * _chain_IL_Rate[0][j] ));  }
-    //  double interlock_rate1( const unsigned e, const unsigned k, const unsigned je,const unsigned j, const unsigned cc = 0) const;
-    double interlock_rate1( const unsigned e, const unsigned k, const unsigned je,const unsigned j ) const;
-    double interlock_rate( const unsigned e, const unsigned k, const unsigned j, const unsigned cc) const { return ( 1.0 - (IL[e][k]  * _chain_IL_Rate[e][k] * _chain_IL_Rate[0][j]* _chain_IL_Rate[0][cc] ));  }
+    double interlock( const unsigned e, const unsigned k, const double lambda ) const { return (1.0 - PrIL(e,k) * _IR[e][k]) * lambda; }
+    double interlock_rate( const unsigned e, const unsigned k ) const { return 1.0 - (PrIL(e,k) * _IR[e][k]); }	/* (3.6), Pg 59 Li */
+    double interlock_rate( const unsigned e, const unsigned k, const unsigned j ) const { return 1.0 - (PrIL(e,k)  * _IR[e][k] * _IR[0][j]); }
+    double interlock_rate( const unsigned ek, const unsigned k, const unsigned ej, const unsigned j ) const;			/* (3.7), Pg 60 Li */
+#if BUG_267
+    /* Not used, only called as (e,j,e,j), but what is cc? */
+    double interlock_ratex( const unsigned e, const unsigned k, const unsigned j, const unsigned cc ) const { return 1.0 - (PrIL(e,k) * _IR[e][k] * _IR[0][j] * _IR[0][cc]); }
+#endif
     double upper_ILrate( const unsigned e, const unsigned k ) const;
-    void setIntermediate(bool intermediate){ _intermediate=intermediate; }
-    bool isIntermediate() const {return _intermediate; }
-    virtual double SorQ (const unsigned e, const unsigned k) const {return S(e,k ); }
+    void setIntermediate( bool intermediate ) { _intermediate = intermediate; }
+    bool isIntermediate() const { return _intermediate; }
+    virtual double SorQ (const unsigned e, const unsigned k) const { return S(e,k); }
+
     /* Computation -- open */
 
     virtual double alpha( const unsigned n ) const;
@@ -177,6 +181,7 @@ public:
     virtual std::ostream& printOutput( std::ostream& output, const unsigned = 0 ) const { return output; }
 
     std::ostream& printWait( std::ostream& output = std::cout, const unsigned k=1 ) const;
+
 protected:
     void setAndTotal( double *item, const unsigned phase, const double value );
     void totalVisits( const unsigned e, const unsigned k );
@@ -187,14 +192,14 @@ protected:
     virtual std::ostream& printInput( std::ostream&, const unsigned, const unsigned ) const;
 
 private:
+    double PrIL( const unsigned e, const unsigned k) const { return _PrIL[e][k]; }
     void initialize();
 
 public:
     double ***W;		/* Waiting time per visit.	*/
     unsigned openIndex;		/* Not used locally.		*/
     unsigned closedIndex;	/* Not used locally.		*/
-    double **QP;
-    double ***QW;		/* the ratio of Lj(N-1)/L(N-1)*/
+    double ** QP;
     double ** nILRate;	/* the rate of queueing time caused by non interlocked flows  */
 
 protected:
@@ -206,14 +211,17 @@ protected:
     /* =-1: only non-interlocked flow; */
     /* >1: mixed with interlocked and non-interlocked flow; */
     bool _intermediate;
+#if BUG_267
+    double *** _QW;		/* the ratio of Lj(N-1)/L(N-1)*/
+#endif
 
 private:
-    double ***s;		/* Service Time per phase.	*/
-    double ***v;		/* Visit ratios per phase.	*/
-    Probability ** IL;		/* Interlocking probability.	*/
+    double *** s;		/* Service Time per phase.	*/
+    double *** v;		/* Visit ratios per phase.	*/
+    Probability ** _PrIL;	/* Interlocking probability.	*/
     double ** _maxCusts; 	/* maximum possible number of customers for each server entry*/
     double ** _realCusts;	/* fractional number of customers for each server entry*/
-    double ** _chain_IL_Rate;	/* the weight of the interlocked flow that coming in from a client chain*/
+    double ** _IR;		/* the weight of the interlocked flow that coming in from a client chain*/
     double **** _ir_relation;	/* the interlock relationship between two client chains */
 };
 
@@ -271,10 +279,10 @@ public:
 
     virtual void wait( const MVA& solver, const unsigned k, const Population & N ) const;
     virtual void setNonILRate( const MVA& solver, const unsigned k, const Population & N ) const;
-    virtual void setQueueWeight( const MVA& solver, const unsigned k, const Population & N ) const;
+//    virtual void setQueueWeight( const MVA& solver, const unsigned k, const Population & N ) const;
     virtual void openWait() const;
 
-    virtual double SorQ (const unsigned e, const unsigned k) const {return 1.0; }
+    virtual double SorQ (const unsigned e, const unsigned k) const { return 1.0; }
     virtual const char * typeStr() const { return "PS_Server"; }
 };
 
@@ -330,7 +338,7 @@ public:
 
     virtual void wait( const MVA& solver, const unsigned k, const Population & N ) const;
     virtual void setNonILRate( const MVA& solver, const unsigned k, const Population & N ) const;
-    virtual void setQueueWeight( const MVA& solver, const unsigned k, const Population & N ) const;
+//    virtual void setQueueWeight( const MVA& solver, const unsigned k, const Population & N ) const;
     virtual void openWait() const;
 
     virtual const char * typeStr() const { return "FCFS_Server"; }

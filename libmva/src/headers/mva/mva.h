@@ -9,7 +9,7 @@
  * November, 1994
  * August, 2005
  *
- * $Id: mva.h 14882 2021-07-07 11:09:54Z greg $
+ * $Id: mva.h 15244 2021-12-21 01:36:22Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -77,12 +77,11 @@ public:
 
     unsigned nChains() const { return K; }
     virtual double filter() const = 0;
-    void setThreadChain(const unsigned k, const unsigned kk){ _isThread[k]=kk;}
+    void setThreadChain(const unsigned k, const unsigned kk){ _isThread[k]=kk; }
     unsigned getThreadChain(const unsigned k) const { return _isThread[k];}
 
-    virtual double getRealCustomer(const unsigned k ) const { return  (double)NCust[k];}
-    virtual double getRealCustomer(const unsigned k, const unsigned e) const { return  (double)NCust[k];}
-    virtual bool isFractionalMVA() const {return false;}
+    virtual double getRealCustomer(const unsigned k ) const { return static_cast<double>(NCust[k]); }
+    virtual double getRealCustomer(const unsigned k, const unsigned e) const { return  static_cast<double>(NCust[k]); }
     virtual bool isExactMVA() const { return false; }
 
     virtual double sumOf_L_m( const Server& station, const Population &N, const unsigned j ) const;
@@ -95,8 +94,10 @@ public:
     virtual double sumOf_SQL_m( const Server& station, const Population &N, const unsigned j ) const;
     double sumOf_NOIL_m( const Server& station, const Population &N, const unsigned j ) const;
     double sumOf_NOIL_m( const Server& station, const Population &N, const unsigned je, const unsigned j ) const;
+#if BUG_267
     double ratio_L_Nej_m( const Server& station, const Population &N, const unsigned e ,const unsigned j ) const;
     double ratio_SL_Nej_m( const Server& station, const Population &N, const unsigned e ,const unsigned j ) const;
+#endif
     double sumOf_SU_m( const Server& station, const Population &N, const unsigned j ) const;
     double sumOf_SQ_m( const Server& station, const Population &N, const unsigned j ) const;
     double sumOf_rU_m( const Server& station, const Population &N, const unsigned j ) const;
@@ -168,9 +169,11 @@ protected:
     virtual void marginalProbabilities2( const unsigned m, const Population& N ) = 0;
     void setNonILRate( ) const;
     void setNonILRate(const Population &N ) const;
+#if BUG_267
     void setQueueWeight(const Population &N ) const;
+    #endif
 
-#if	DEBUG_MVA
+#if DEBUG_MVA
     std::ostream& printL( std::ostream&, const Population& ) const;
     std::ostream& printW( std::ostream& ) const;
     std::ostream& printU( std::ostream&, const Population & N ) const;
