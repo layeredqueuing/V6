@@ -10,7 +10,7 @@
  * November, 1994
  *
  * ------------------------------------------------------------------------
- * $Id: task.cc 15114 2021-11-18 15:57:57Z greg $
+ * $Id: task.cc 15245 2021-12-22 15:02:18Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -1019,7 +1019,9 @@ Task::saveClientResults( const MVASubmodel& submodel )
 
     callsPerform( &Call::saveWait, n );
     callsPerform( &Call::saveILWait, n );
+#if BUG_267
     callsPerform( &Call::saveQueueWeight, n );
+#endif
     openCallsPerform( &Call::saveOpen, n );
 
     /* Other results (only useful for references tasks. */

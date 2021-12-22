@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: call.cc 14971 2021-09-12 13:03:17Z greg $
+ * $Id: call.cc 15246 2021-12-22 15:13:01Z greg $
  *
  * Everything you wanted to know about a call to an entry, but were afraid to ask.
  *
@@ -17,8 +17,8 @@
 #include <algorithm>
 #include <cmath>
 #include <sstream>
-#include <mva/server.h>
 #include <mva/fpgoop.h>
+#include <mva/server.h>
 #include "activity.h"
 #include "call.h"
 #include "entry.h"
@@ -102,8 +102,10 @@ Call::Call( const Phase * fromPhase, const Entry * toEntry )
       _replica_number(1),
       _wait(0.0),
       _interlockedFlow(-1.0),
-      _callWeight(0.0),
-      _queueWeight(1.0)
+      _callWeight(0.0)
+#if BUG_267
+    , _queueWeight(1.0)
+#endif
 {
     if ( toEntry != nullptr ) {
 	const_cast<Entry *>(_destination)->addDstCall( this );	/* Set reverse link	*/
@@ -119,8 +121,10 @@ Call::Call( const Call& src, unsigned int replica )
       _replica_number(replica),
       _wait(0.0),
       _interlockedFlow(-1.0),
-      _callWeight(0.0),
-      _queueWeight(1.0)
+      _callWeight(0.0)
+#if BUG_267
+    , _queueWeight(1.0)
+#endif
 {
 }
 
@@ -671,6 +675,7 @@ Call::setInterlockedFlow( const MVASubmodel& submodel )
 
 
 
+#if BUG_267
 void
 Call::saveQueueWeight( const unsigned k, const unsigned p, const double )
 {
@@ -679,7 +684,7 @@ Call::saveQueueWeight( const unsigned k, const unsigned p, const double )
     const Server * station = server->serverStation();
 
     if ( station->V( e, k, p ) > 0.0 ) {
-	_queueWeight = station->QW[e][k][p];
+	_queueWeight = station->getQueueWeight(e,k,p);
     
 	if ( flags.trace_interlock ) {
 	    std::cout << "Call::saveQueueWeight(): Call from " 
@@ -688,6 +693,7 @@ Call::saveQueueWeight( const unsigned k, const unsigned p, const double )
 	}
     }
 }
+#endif
 
 
 

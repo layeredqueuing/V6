@@ -12,7 +12,7 @@
  * July 2007.
  *
  * ------------------------------------------------------------------------
- * $Id: entry.cc 15048 2021-10-07 15:10:18Z greg $
+ * $Id: entry.cc 15246 2021-12-22 15:13:01Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -1566,7 +1566,7 @@ Entry::setInterlock( const MVASubmodel& submodel, const Task * client, unsigned 
 		 << "),PrIL = " <<pr_il <<")"<< std::endl;
 	    std::cout << "set Interlock rate: server entry="  << name()
 		 << "--->setChainILRate( e= " << index()<< ", k= "<<k
-		 << ") = " <<  station->chainILRate(e,k) << std::endl;
+		 << ") = " <<  station->IR(e,k) << std::endl;
 	}
 	ir_c = 1.0;
     } else {  // this server entry only has non-interlocked flow coming in;

@@ -10,7 +10,7 @@
  * November, 1994
  * March, 2004
  *
- * $Id: call.h 14971 2021-09-12 13:03:17Z greg $
+ * $Id: call.h 15246 2021-12-22 15:13:01Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -21,6 +21,7 @@
 #include <lqio/input.h>
 #include <lqio/dom_call.h>
 #include <deque>
+#include <mva/bug_267.h>		/* BUG_267 */
 #include "interlock.h"
 
 class Activity;
@@ -293,14 +294,18 @@ public:
     void setInterlockedFlow( double flow ) { _interlockedFlow = flow; }
 
     Call& setInterlockedFlow( const MVASubmodel& submodel );
+#if BUG_267
     void saveQueueWeight( const unsigned k, const unsigned p, const double );
+#endif
     double getQueueLength() const;
 
     double computeWeight( const MVASubmodel& );
     double getWeight() const { return _callWeight; }
 
+#if BUG_267
     void setqueueWeight( double weight ) { _queueWeight = weight; }
     double getqueueWeight() const { return _queueWeight; }
+#endif
 
     /* Proxies */
 
@@ -333,7 +338,9 @@ private:
     					/* =0.0: is along the Path of an interlocked flow. */
 					/* <0.0: is an non interlocked flow ; */
     double _callWeight;
+#if BUG_267
     double _queueWeight;		/* the ratio of queueing time from its own chain */
+#endif
 };
 
 /* -------------------------------------------------------------------- */

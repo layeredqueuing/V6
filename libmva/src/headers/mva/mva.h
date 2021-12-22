@@ -9,7 +9,7 @@
  * November, 1994
  * August, 2005
  *
- * $Id: mva.h 15244 2021-12-21 01:36:22Z greg $
+ * $Id: mva.h 15246 2021-12-22 15:13:01Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -23,6 +23,7 @@
 #include "pop.h"
 #include "prob.h"
 #include "vector.h"
+#include "bug_267.h"
 
 class MVA;
 class Server;

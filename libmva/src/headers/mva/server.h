@@ -9,17 +9,18 @@
  *
  * November, 1994
  *
- * $Id: server.h 15244 2021-12-21 01:36:22Z greg $
+ * $Id: server.h 15246 2021-12-22 15:13:01Z greg $
  *
  * ------------------------------------------------------------------------
  */
 
-#if	!defined(SERVER_H)
-#define	SERVER_H
+#if	!defined(MVA_SERVER_H)
+#define	MVA_SERVER_H
 
 #include "pop.h"
 #include "prob.h"
 #include "vector.h"
+#include "bug_267.h"
 
 #define MAX_PHASES	3
 
@@ -78,9 +79,10 @@ public:
     bool isNONILFlow(const unsigned k) const;
     double nonILRate( const unsigned k ) const;
     void setNonILRate(  const MVA& solver, const unsigned k, const unsigned e) const;
-    virtual void setNonILRate( const MVA& solver, const unsigned k, const Population & N ) const{}
+    virtual void setNonILRate( const MVA& solver, const unsigned k, const Population & N ) const {}
 #if BUG_267
-    virtual void setQueueWeight( const MVA& solver, const unsigned k, const Population & N ) const{}
+    virtual void setQueueWeight( const MVA& solver, const unsigned k, const Population & N ) const {}
+    double getQueueWeight( unsigned int e, unsigned int k, unsigned int p ) const { return _QW[e][k][p]; }
 #endif
     void setNonILRate( const unsigned k,  double ilwait) const;
     void setNonILRate( const unsigned k, const unsigned e, double ilwait ) const;
@@ -279,7 +281,9 @@ public:
 
     virtual void wait( const MVA& solver, const unsigned k, const Population & N ) const;
     virtual void setNonILRate( const MVA& solver, const unsigned k, const Population & N ) const;
-//    virtual void setQueueWeight( const MVA& solver, const unsigned k, const Population & N ) const;
+#if BUG_267
+    virtual void setQueueWeight( const MVA& solver, const unsigned k, const Population & N ) const;
+#endif
     virtual void openWait() const;
 
     virtual double SorQ (const unsigned e, const unsigned k) const { return 1.0; }
@@ -338,7 +342,9 @@ public:
 
     virtual void wait( const MVA& solver, const unsigned k, const Population & N ) const;
     virtual void setNonILRate( const MVA& solver, const unsigned k, const Population & N ) const;
-//    virtual void setQueueWeight( const MVA& solver, const unsigned k, const Population & N ) const;
+#if BUG_267
+    virtual void setQueueWeight( const MVA& solver, const unsigned k, const Population & N ) const;
+#endif
     virtual void openWait() const;
 
     virtual const char * typeStr() const { return "FCFS_Server"; }

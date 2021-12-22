@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: entity.cc 15108 2021-11-17 16:45:53Z greg $
+ * $Id: entity.cc 15245 2021-12-22 15:02:18Z greg $
  *
  * Everything you wanted to know about a task or processor, but were
  * afraid to ask.
@@ -26,7 +26,6 @@
 #include <mva/open.h>
 #include <mva/mva.h>
 #include <mva/ph2serv.h>
-#include <mva/server.h>
 #include <mva/vector.h>
 #include "call.h"
 #include "entity.h"
@@ -684,7 +683,7 @@ Entity::setInterlockRelation( const MVASubmodel& submodel ) const
 	    const std::vector<Entry *>& server_entries = entries();
 	    for ( std::vector<Entry *>::const_iterator server_entry_1 = server_entries.begin(); server_entry_1 != server_entries.end(); ++server_entry_1 ) {
 		const unsigned se1 = (*server_entry_1)->index();
-		if ( station->chainILRate( se1, k1 ) == 0.) continue;
+		if ( station->IR( se1, k1 ) == 0.) continue;
 		for ( std::set<Task *>::const_iterator client_2 = clients.begin(); client_2 != clients.end(); ++client_2 ) {
 		    if ( (*client_2)->throughput() == 0.0 ) continue;
 		    const ChainVector& chain2 = (*client_2)->clientChains( submodel.number() );
@@ -712,9 +711,9 @@ Entity::setInterlockRelation( Server * station, const Entry * server_entry_1, co
     const unsigned se2 = server_entry_2->index();
     if ( k1 == k2 && se1 == se2 ) return;
 		
-    //if ( station->chainILRate( se2,k2)>0.){
+    //if ( station->IR( se2,k2)>0.){
     if ( hasCommonEntry( server_entry_1, server_entry_2, client_1, client_2 )){
-	if ( station->chainILRate( se2, k2 ) > 0.) {
+	if ( station->IR( se2, k2 ) > 0.) {
 	    station->set_IL_Relation( se1, k1, se2, k2, 1.0 );
 	    if ( k1 == k2 ) return;
 			
@@ -760,8 +759,8 @@ Entity::setInterlockRelation( Server * station, const Entry * server_entry_1, co
 	}
     } else { // have no common entry!
 	// check whether is a type3 sending interlock.
-	// now:  station->chainILRate( se1,k)>0.
-	if ( client_2->nEntries() > 1 && station->chainILRate( se2, k2 ) > 0. && isType3Sending( server_entry_1, server_entry_2, client_1, client_2 ) ) {
+	// now:  station->IR( se1,k)>0.
+	if ( client_2->nEntries() > 1 && station->IR( se2, k2 ) > 0. && isType3Sending( server_entry_1, server_entry_2, client_1, client_2 ) ) {
 	    if ( client_2->population() == 1. ) {//  (station->getMaxCustomers(se2, k2) ==1) ){
 		station->set_IL_Relation( se1, k1, se2, k2, 6 );
 		station->set_IL_Relation( se2, k2, se1, k1, 6 );
@@ -780,7 +779,7 @@ Entity::setInterlockRelation( Server * station, const Entry * server_entry_1, co
 	    }
 	}
     }
-} // end if ( station->chainILRate( se2,k2)>0.)
+} // end if ( station->IR( se2,k2)>0.)
 
 /* -------------------------------------------------------------------- */
 
