@@ -1,6 +1,6 @@
 /* srvn2eepic.c	-- Greg Franks Sun Jan 26 2003
  *
- * $Id: option.cc 15185 2021-12-09 20:25:06Z greg $
+ * $Id: option.cc 15253 2021-12-24 03:00:15Z greg $
  */
 
 #include "lqn2ps.h"
@@ -301,13 +301,29 @@ Options::get_file_format( const std::string& value )
 }
 
 
+/*
+ * Get the layering method.  If there is an argument, split the comma-separated string into a vector of strings
+ */
+
 Layering
-Options::get_layering( const std::string& value )
+Options::get_layering( const std::string& str, std::vector<std::string>& values )
 {
+    /* Split str at '=' and stop at either null or ',' */
+
+    const std::size_t pos = str.find( '=' );
+    const std::string option = str.substr( 0, pos );
+
     for ( std::map<const Layering,const std::string>::const_iterator i = Options::layering.begin(); i != Options::layering.end(); ++i ) {
-	if ( value == i->second ) return i->first;
+	if ( option == i->second ) {
+	    if ( pos != std::string::npos ) {
+		const std::string rest = str.substr( pos + 1 );
+		const std::regex regexz("=");
+		values.assign( std::sregex_token_iterator(rest.begin(), rest.end(), regexz, -1), std::sregex_token_iterator() );
+	    }
+	    return i->first;
+	}
     }
-    throw std::invalid_argument( value );
+    throw std::invalid_argument( option );
 }
 
 
@@ -620,7 +636,7 @@ difference_output()
     return Flags::colouring() == Colouring::DIFFERENCES;
 }
 
-#if defined(REP2FLAT)
+#if REP2FLAT
 void
 update_mean( LQIO::DOM::DocumentObject * dst, set_function set, const LQIO::DOM::DocumentObject * src, get_function get, unsigned int replica )
 {

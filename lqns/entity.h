@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: entity.h 14882 2021-07-07 11:09:54Z greg $
+ * $Id: entity.h 15247 2021-12-22 19:47:38Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -257,7 +257,7 @@ public:
     Probability prInterlock( const Task& aClient, const Entry * aServerEntry, double& il_rate, bool& moreThanFour ) const;
 
     bool isInterlocked() const { return _interlock.getNsources() > 0; }
-    void setChainILRate(const Task&  aClient, double rate) const;
+    void setChainILRate(const Task& aClient, double rate) const;
     void setChainILRate(const Task& aClient, const Entry& viaTaskEntry, double rate) const;
     double getWeight() const { return _weight;}
     bool hasSingleSource() const { return _interlock.hasSingleSource(); }

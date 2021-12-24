@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: mva.cc 15244 2021-12-21 01:36:22Z greg $
+ * $Id: mva.cc 15250 2021-12-23 13:36:28Z greg $
  *
  * MVA solvers: Exact, Bard-Schweitzer, Linearizer and Linearizer2.
  * Abstract superclass does no operation by itself.
@@ -723,7 +723,7 @@ MVA::sumOf_L_m( const Server& station, const Population &N, const unsigned je, c
 
 #if BUG_267
 double
-MVA::ratio_L_Nej_m( const Server& station, const Population &N, const unsigned e ,const unsigned j ) const
+MVA::ratio_L_Nej_m( const Server& station, const Population &N, const unsigned e, const unsigned j ) const
 {
     assert( 0 < j && j <= K );
 
@@ -742,7 +742,7 @@ MVA::ratio_L_Nej_m( const Server& station, const Population &N, const unsigned e
     } else if( L[Nej][m][e][j] == 0 ) {
 	ratio = 0.0;
     } else {
-	ratio = L[Nej][m][e][j] * station.interlock_ratex(e, j, e, j) / sum;	/* BUG 267 */
+	ratio = L[Nej][m][e][j] * station.interlock_rate( e, j ) / sum;		/* BUG_267 */
     }
     return std::min( ratio, 1.0 );
 
@@ -770,7 +770,7 @@ MVA::ratio_SL_Nej_m( const Server& station, const Population &N, const unsigned 
     } else if( L[Nej][m][e][j] == 0 ) {
 	ratio = 0.0;
     } else {
-	ratio = Q[m]->S(e,j) * L[Nej][m][e][j] * station.interlock_ratex(e, j, e, j) / sum;	/* BUG 267 */
+	ratio = Q[m]->S(e,j) * L[Nej][m][e][j] * station.interlock_rate( e, j ) / sum;	/* BUG_267 */
     }
     return std::min( ratio, 1.0 );
 }
@@ -3470,7 +3470,6 @@ Linearizer::update_Delta( const Population & N )
     const unsigned n = offset_e_c_e_j(0, 0);			/* Hoist */
 
     for ( unsigned m = 1; m <= M; ++m ) {
-	if ( !Q[m]->updateD() ) continue;	/* For synch servers. */
 	const unsigned E = Q[m]->nEntries();
 
 	for ( unsigned j = 1; j <= K; ++j ) {

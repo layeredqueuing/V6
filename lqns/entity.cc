@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: entity.cc 15245 2021-12-22 15:02:18Z greg $
+ * $Id: entity.cc 15247 2021-12-22 19:47:38Z greg $
  *
  * Everything you wanted to know about a task or processor, but were
  * afraid to ask.
@@ -535,7 +535,7 @@ Entity::setChainILRate(const Task& aClient, double rate) const
     std::for_each( chain.begin(), chain.end(), set_chain_IL_rate( *this, rate ) );
 }
 
-void Entity::set_chain_IL_rate::operator()( unsigned int k ) { if ( _serverChains.find(k) ) { _station->setChainILRate( k, _rate ); } }
+void Entity::set_chain_IL_rate::operator()( unsigned int k ) { if ( _serverChains.find(k) ) { _station->setIR( k, _rate ); } }
 
 
 bool

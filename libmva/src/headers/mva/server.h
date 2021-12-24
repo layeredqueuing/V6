@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: server.h 15246 2021-12-22 15:13:01Z greg $
+ * $Id: server.h 15250 2021-12-23 13:36:28Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -84,7 +84,7 @@ public:
     virtual void setQueueWeight( const MVA& solver, const unsigned k, const Population & N ) const {}
     double getQueueWeight( unsigned int e, unsigned int k, unsigned int p ) const { return _QW[e][k][p]; }
 #endif
-    void setNonILRate( const unsigned k,  double ilwait) const;
+    void setNonILRate( const unsigned k, double ilwait) const;
     void setNonILRate( const unsigned k, const unsigned e, double ilwait ) const;
     void setMaxCustomers( const unsigned e, const unsigned k, double nCusts );
     double getMaxCustomers( const unsigned e, const unsigned k ) const { return _maxCusts[e][k]; }
@@ -92,14 +92,13 @@ public:
     void setRealCustomers( const unsigned e,const unsigned k, double realCusts );
     double getRealCustomers( const unsigned e, const unsigned k  ) const { return _realCusts[e][k]; }
     void addRealCustomers( const unsigned e, const unsigned k, double nCusts );
-    bool isLessCustomer( const unsigned e, const unsigned k, const unsigned nk) const{ return _maxCusts[e][k]<=(nk-1) && (nk>1); }
+    bool isLessCustomer( const unsigned e, const unsigned k, const unsigned nk ) const { return _maxCusts[e][k] <= (nk-1) && (nk>1); }
 
     double IR( const unsigned e, const unsigned k ) const { return _IR[e][k]; }
     double IR( const unsigned k ) const { return _IR[0][k]; }
-    void setChainILRate( const unsigned e, const unsigned k, double rate);
-    void setChainILRate( const unsigned k, double rate);
-    double ILRate(const unsigned e) const{ return _IR[e][0]; }
-    void set_IL_Relation(const unsigned e, const unsigned k,const unsigned e2, const unsigned k2, double rel=1.);//{_ir_relation[e][k][e2][k2]=rel; }
+    void setIR( const unsigned e, const unsigned k, double rate );
+    void setIR( const unsigned k, double rate );
+    void set_IL_Relation(const unsigned e, const unsigned k,const unsigned e2, const unsigned k2, double rel=1.);
     double IL_Relation(const unsigned e, const unsigned k,const unsigned e2, const unsigned k2 ) const;
     bool is_related(const unsigned k, const unsigned k2 ) const;
 
@@ -111,7 +110,6 @@ public:
     unsigned nEntries() const { return E; }			/* Number of entries 	*/
     virtual double mu() const { return 1.0; }			/* Capacity function.	*/
     virtual double mu( const unsigned ) const { return 1.0; }	/* Capacity function.	*/
-    virtual short updateD() const { return 1; }			/* For synch server.  	*/
     virtual bool hasTau() const { return false; }
 
     double S() const;
@@ -153,18 +151,14 @@ public:
     /* Computation -- closed */
 
     virtual void wait( const MVA& solver, const unsigned k, const Population & N ) const = 0;
-    double interlock( const unsigned e, const unsigned k, const double lambda ) const { return (1.0 - PrIL(e,k) * _IR[e][k]) * lambda; }
-    double interlock_rate( const unsigned e, const unsigned k ) const { return 1.0 - (PrIL(e,k) * _IR[e][k]); }	/* (3.6), Pg 59 Li */
-    double interlock_rate( const unsigned e, const unsigned k, const unsigned j ) const { return 1.0 - (PrIL(e,k)  * _IR[e][k] * _IR[0][j]); }
+    double interlock( const unsigned e, const unsigned k, const double lambda ) const { return (1.0 - PrIL(e,k) * IR(e,k)) * lambda; }
+    double interlock_rate( const unsigned e, const unsigned k ) const { return 1.0 - (PrIL(e,k) * IR(e,k)); }			/* (3.6), Pg 59 Li */
+    double interlock_rate( const unsigned e, const unsigned k, const unsigned j ) const { return 1.0 - (PrIL(e,k)  * IR(e,k) * IR(j)); }	/* mva.cc:616,3484 */
     double interlock_rate( const unsigned ek, const unsigned k, const unsigned ej, const unsigned j ) const;			/* (3.7), Pg 60 Li */
-#if BUG_267
-    /* Not used, only called as (e,j,e,j), but what is cc? */
-    double interlock_ratex( const unsigned e, const unsigned k, const unsigned j, const unsigned cc ) const { return 1.0 - (PrIL(e,k) * _IR[e][k] * _IR[0][j] * _IR[0][cc]); }
-#endif
     double upper_ILrate( const unsigned e, const unsigned k ) const;
     void setIntermediate( bool intermediate ) { _intermediate = intermediate; }
     bool isIntermediate() const { return _intermediate; }
-    virtual double SorQ (const unsigned e, const unsigned k) const { return S(e,k); }
+    virtual double SorQ( const unsigned e, const unsigned k ) const { return S(e,k); }
 
     /* Computation -- open */
 
@@ -189,7 +183,7 @@ protected:
     void totalVisits( const unsigned e, const unsigned k );
 
     Probability rho() const;
-    double priorityInflation( const MVA&, const Population &, const unsigned ) const;
+    double priorityInflation( const MVA&, const Population&, const unsigned ) const;
 
     virtual std::ostream& printInput( std::ostream&, const unsigned, const unsigned ) const;
 
@@ -198,7 +192,7 @@ private:
     void initialize();
 
 public:
-    double ***W;		/* Waiting time per visit.	*/
+    double *** W;		/* Waiting time per visit.	*/
     unsigned openIndex;		/* Not used locally.		*/
     unsigned closedIndex;	/* Not used locally.		*/
     double ** QP;

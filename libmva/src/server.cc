@@ -1,5 +1,5 @@
 /*  -*- C++ -*-
- * $Id: server.cc 15244 2021-12-21 01:36:22Z greg $
+ * $Id: server.cc 15247 2021-12-22 19:47:38Z greg $
  *
  * Copyright the Real-Time and Distributed Systems Group,
  * Department of Systems and Computer Engineering,
@@ -508,23 +508,22 @@ Server::addRealCustomers( const unsigned e, const unsigned k, double nCusts )
 }
 
 void
-Server::setChainILRate( const unsigned e, const unsigned k, double rate )
+Server::setIR( const unsigned e, const unsigned k, double rate )
 {
     if ( rate < 0 || 1 < rate ) return;
     _IR[e][k] = rate;
 
 #if defined(DEBUG)
-    if ( rate > 0. )
-	cout << "==server station: set chainILRate(e= "<<e<<", k= "<<k << ",rate = " <<rate<<")=="<<endl;
+    cout << "==server station: set chainILRate(e= "<<e<<", k= "<<k << ",rate = " <<rate<<")=="<<endl;
 #endif
 }
 
 void
-Server::setChainILRate( const unsigned k, double rate )
+Server::setIR( const unsigned k, double rate )
 {
     if ( rate < 0 || 1 < rate ) return;
     for ( unsigned e = 1; e <= E; ++e ) {
-	_IR[e][k] =rate;
+	_IR[e][k] = rate;
 #if	defined(DEBUG)
 	cout << "==server station: set chainILRate(e= "<<e<<", k= "<<k << ",rate = " <<rate<<")=="<<endl;
 #endif

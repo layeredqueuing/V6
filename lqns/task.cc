@@ -10,7 +10,7 @@
  * November, 1994
  *
  * ------------------------------------------------------------------------
- * $Id: task.cc 15245 2021-12-22 15:02:18Z greg $
+ * $Id: task.cc 15247 2021-12-22 19:47:38Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -1348,7 +1348,7 @@ Task::set_interlock::operator()( const Task * client ) const
     for ( unsigned ix = 1; ix <= chain.size(); ++ix ) {
 	const unsigned k = chain[ix];
 	if ( !_server->hasServerChain(k) ) continue;
-	station->setChainILRate( 0, k, std::accumulate( _server->entries().begin(), _server->entries().end(), 0., Entry::add_interlock( _submodel, client, k ) ) );
+	station->setIR( 0, k, std::accumulate( _server->entries().begin(), _server->entries().end(), 0., Entry::add_interlock( _submodel, client, k ) ) );
     }
 }
 
@@ -1368,7 +1368,7 @@ Task::set_interlock_PrUpper::operator()( const Task * client ) const
     for ( unsigned ix = 1; ix <= chain.size(); ++ix ) {
 	const unsigned k = chain[ix];
 	if ( !_server->hasServerChain(k) ) continue;
-	station->setChainILRate( 0, k, 0 );
+	station->setIR( 0, k, 0. );
 	std::for_each( _server->entries().begin(), _server->entries().end(), Entry::set_interlock_PrUpper( _submodel, station, k ) );
     }
 }

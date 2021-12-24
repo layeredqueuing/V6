@@ -12,7 +12,7 @@
  * July 2007.
  *
  * ------------------------------------------------------------------------
- * $Id: entry.cc 15246 2021-12-22 15:13:01Z greg $
+ * $Id: entry.cc 15247 2021-12-22 19:47:38Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -1518,10 +1518,10 @@ Entry::setInterlock( const MVASubmodel& submodel, const Task * client, unsigned 
 	    } else {
 		pr_il = 1.0 / (m * (m+1));
 	    }
-	    station->setChainILRate( e, k, il_rate );
+	    station->setIR( e, k, il_rate );
 	    station->setInterlock( e, k, pr_il);
 	} else if ( moreThan3 ) {
-	    station->setChainILRate(e,k, il_rate );
+	    station->setIR( e, k, il_rate );
 	    station->setInterlock( e, k, pr_il );
 	} else {
 	    const std::vector<Entry *>& client_entries = client->entries();
@@ -1557,7 +1557,7 @@ Entry::setInterlock( const MVASubmodel& submodel, const Task * client, unsigned 
 		    }
 		}
 	    }
-	    station->setChainILRate(e,k,il_rate );
+	    station->setIR( e, k, il_rate );
 	    station->setInterlock( e, k, pr_il );
 	}
 	if ( flags.trace_interlock ) {
@@ -1565,12 +1565,12 @@ Entry::setInterlock( const MVASubmodel& submodel, const Task * client, unsigned 
 		 << ")->setInterlock( e= " << index()<< ", k= "<<k
 		 << "),PrIL = " <<pr_il <<")"<< std::endl;
 	    std::cout << "set Interlock rate: server entry="  << name()
-		 << "--->setChainILRate( e= " << index()<< ", k= "<<k
+		 << "--->setIR( e= " << index()<< ", k= "<<k
 		 << ") = " <<  station->IR(e,k) << std::endl;
 	}
 	ir_c = 1.0;
     } else {  // this server entry only has non-interlocked flow coming in;
-	station->setChainILRate( e, k, 0.0 );
+	station->setIR( e, k, 0.0 );
 	station->setInterlock( e, k, 0.0 );
     }
     return ir_c;
@@ -1598,7 +1598,7 @@ void
 Entry::set_interlock_PrUpper::operator()( const Entry * entry ) const
 {
     /* modify the server service time directly */
-    _station->setChainILRate( entry->index(), _k, 0 );
+    _station->setIR( entry->index(), _k, 0. );
 					
     Call * call = entry->getCall(_k); // is unique??
     if ( !call ) return;
