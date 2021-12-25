@@ -1,6 +1,6 @@
 /* node.cc	-- Greg Franks Wed Jan 29 2003
  *
- * $Id: node.cc 15193 2021-12-10 12:00:49Z greg $
+ * $Id: node.cc 15258 2021-12-25 13:21:14Z greg $
  */
 
 #include "lqn2ps.h"
@@ -242,7 +242,7 @@ NodeFig::polygon( std::ostream& output, const std::vector<Point>& points ) const
 std::ostream&
 NodeFig::polyline( std::ostream& output, const std::vector<Point>& points ) const
 {
-    Fig::polyline( output, points, Fig::POLYLINE, penColour(), Graphic::TRANSPARENT, depth(), linestyle() );
+    Fig::polyline( output, points, Fig::POLYLINE, penColour(), Graphic::Colour::TRANSPARENT, depth(), linestyle() );
     return output;
 }
 
@@ -265,7 +265,7 @@ NodeFig::rectangle( std::ostream& output ) const
 std::ostream&
 NodeFig::roundedRectangle( std::ostream& output ) const
 {
-    Fig::roundedRectangle( output, origin, extent, penColour(), Graphic::TRANSPARENT, depth(), linestyle() );
+    Fig::roundedRectangle( output, origin, extent, penColour(), Graphic::Colour::TRANSPARENT, depth(), linestyle() );
     return output;
 }
 
@@ -389,7 +389,7 @@ NodePostScript::rectangle( std::ostream& output ) const
 std::ostream&
 NodePostScript::roundedRectangle( std::ostream& output ) const
 {
-    PostScript::roundedRectangle( output, origin, extent, penColour(), Graphic::TRANSPARENT, Graphic::linestyle() );
+    PostScript::roundedRectangle( output, origin, extent, penColour(), Graphic::Colour::TRANSPARENT, Graphic::linestyle() );
     return output;
 }
 

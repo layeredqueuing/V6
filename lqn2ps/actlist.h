@@ -1,7 +1,7 @@
 /* -*- c++ -*-
  * actlist.h	-- Greg Franks
  *
- * $Id: actlist.h 14882 2021-07-07 11:09:54Z greg $
+ * $Id: actlist.h 15258 2021-12-25 13:21:14Z greg $
  */
 
 #ifndef _ACTLIST_H
@@ -89,7 +89,7 @@ public:
     virtual ActivityList& sort( compare_func_ptr compare ) { return *this; }
 
     virtual double height() const { return interActivitySpace; }
-    Graphic::colour_type colour() const;
+    Graphic::Colour colour() const;
 	
     virtual Point srcPoint() const = 0;
     virtual Point dstPoint() const = 0;

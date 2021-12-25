@@ -1,6 +1,6 @@
 /* label.cc	-- Greg Franks Wed Jan 29 2003
  *
- * $Id: label.cc 15193 2021-12-10 12:00:49Z greg $
+ * $Id: label.cc 15258 2021-12-25 13:21:14Z greg $
  */
 
 #include "lqn2ps.h"
@@ -35,7 +35,7 @@ private:
 	{ return m.f(os,m.myStr); }
 };
 
-Label::Line::Line() : _font(NORMAL_FONT), _colour(DEFAULT_COLOUR), _string()
+Label::Line::Line() : _font(NORMAL_FONT), _colour(Colour::DEFAULT), _string()
 {
     if ( Flags::precision() > 0 ) {
 	_string.precision( Flags::precision() );
@@ -96,7 +96,7 @@ Label::Label()
     : Graphic(),
       _origin(),
       _lines(1),
-      _backgroundColour(TRANSPARENT),
+      _backgroundColour(Colour::TRANSPARENT),
       _justification(Justification::CENTER),
       _mathMode(false)
 {
@@ -118,7 +118,7 @@ Label::Label( const Point& aPoint )
     : Graphic(),
       _origin(aPoint),
       _lines(1),
-      _backgroundColour(TRANSPARENT),
+      _backgroundColour(Colour::TRANSPARENT),
       _justification(Justification::CENTER),
       _mathMode(false)
 {
@@ -160,7 +160,7 @@ Label::font( const font_type font )
 
 
 Label&
-Label::colour( const colour_type colour )
+Label::colour( const Colour colour )
 {
     _lines.back().setColour( colour );
     return *this;

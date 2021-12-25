@@ -10,7 +10,7 @@
  * April 2010.
  *
  * ------------------------------------------------------------------------
- * $Id: task.h 15157 2021-12-06 19:18:24Z greg $
+ * $Id: task.h 15258 2021-12-25 13:21:14Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -196,7 +196,7 @@ public:
     virtual Task& translateY( const double );
     virtual Task& depth( const unsigned );
 
-    virtual Graphic::colour_type colour() const;
+    virtual Graphic::Colour colour() const;
 
     virtual Task& label();
     virtual Task& labelBCMPModel( const BCMP::Model::Station::Class::map_t&, const std::string& class_name="" );
@@ -303,7 +303,7 @@ public:
 
     virtual root_level_t rootLevel() const { return root_level_t::IS_REFERENCE; }
 
-    virtual Graphic::colour_type colour() const;
+    virtual Graphic::Colour colour() const;
     virtual size_t findChildren( CallStack&, const unsigned );
 
 #if defined(BUG_270)

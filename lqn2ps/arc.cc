@@ -1,6 +1,6 @@
 /* arc.cc	-- Greg Franks Thu Jan 30 2003
  *
- * $Id: arc.cc 15193 2021-12-10 12:00:49Z greg $
+ * $Id: arc.cc 15258 2021-12-25 13:21:14Z greg $
  */
 
 #include "lqn2ps.h"
@@ -305,7 +305,7 @@ ArcFig::draw( std::ostream& output ) const
 {
     std::vector<Point> points = removeDuplicates();
     if ( points.size() > 0 ) {
-	Fig::polyline( output, points, Fig::POLYLINE, penColour(), Graphic::TRANSPARENT, depth(), linestyle(), arrowhead(), arrowScaling() );
+	Fig::polyline( output, points, Fig::POLYLINE, penColour(), Graphic::Colour::TRANSPARENT, depth(), linestyle(), arrowhead(), arrowScaling() );
     }
     return *this;
 }
@@ -339,7 +339,7 @@ ArcGD::draw( std::ostream& output ) const
 	arrowHead( penultimatePoint(), dstPoint(), arrowScaling(), penColour(), penColour() );
 	break;
     case OPEN_ARROW:
-	arrowHead( penultimatePoint(), dstPoint(), arrowScaling(), penColour(), Graphic::WHITE );
+	arrowHead( penultimatePoint(), dstPoint(), arrowScaling(), penColour(), Graphic::Colour::WHITE );
 	break;
     }
     return *this;

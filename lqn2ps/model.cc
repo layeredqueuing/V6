@@ -1,6 +1,6 @@
 /* model.cc	-- Greg Franks Mon Feb  3 2003
  *
- * $Id: model.cc 15253 2021-12-24 03:00:15Z greg $
+ * $Id: model.cc 15258 2021-12-25 13:21:14Z greg $
  *
  * Load, slice, and dice the lqn model.
  */
@@ -1786,7 +1786,7 @@ Model::printFIG( std::ostream& output ) const
 	points[1].moveTo( left(), top() );
 	points[2].moveTo( right(), top() );
 	points[3].moveTo( right(), bottom() );
-	alignment.polyline( output, points, Fig::POLYGON, Graphic::WHITE, Graphic::TRANSPARENT, (_layers.size()+1)*10 );
+	alignment.polyline( output, points, Fig::POLYGON, Graphic::Colour::WHITE, Graphic::Colour::TRANSPARENT, (_layers.size()+1)*10 );
     }
 
     printLayers( output );

@@ -2,7 +2,7 @@
  * element.h	-- Greg Franks
  *
  * ------------------------------------------------------------------------
- * $Id: element.h 15157 2021-12-06 19:18:24Z greg $
+ * $Id: element.h 15258 2021-12-25 13:21:14Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -62,7 +62,7 @@ public:
     bool hasClientOpenChain( unsigned ) const;
     bool hasServerChain( unsigned ) const;
 
-    virtual Graphic::colour_type colour() const = 0;
+    virtual Graphic::Colour colour() const = 0;
 
     Point center() const { return myNode->center(); }
     Point bottomLeft() const { return myNode->bottomLeft(); }
@@ -93,8 +93,8 @@ public:
 protected:
     size_t followCalls( std::pair<std::vector<Call *>::const_iterator,std::vector<Call *>::const_iterator>, CallStack&, const unsigned ) const;
     virtual double getIndex() const = 0;
-    Graphic::colour_type colourForUtilization( double ) const;
-    Graphic::colour_type colourForDifference( double ) const;
+    Graphic::Colour colourForUtilization( double ) const;
+    Graphic::Colour colourForDifference( double ) const;
 
     static double adjustForSlope( double y );
 
