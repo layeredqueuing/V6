@@ -1,13 +1,17 @@
-# -*- Makefile -*-
+# 
 # ------------------------------------------------------------------------
-# $Id: Makefile.am 15215 2021-12-13 19:17:13Z greg $
+# $Id: Makefile.am 15267 2021-12-26 20:51:37Z greg $
 # ------------------------------------------------------------------------
 ACLOCAL_AMFLAGS=-I config
 SUBDIRS = lqx lqiolib libmva petrisrvn parasol lqns lqsim lqn2csv lqn2ps lqngen qnsolver srvndiff doc xml dist
 RPMDIR = @RPMDIR@
+EXTRA_DIST = README NEWS ChangeLog AUTHORS COPYING 
 
 distclean-local:
 	rm -f autoconf.cache config.cache
+if HAVE_SVN
+	svn stat | grep '^?' | sed -e s'/^?       //' | xargs rm -rf
+endif
 
 rpm: $(RPMDIR)/SOURCES/$(distdir).tar.gz dist/linux/lqns.spec
 	if test -d /usr/local/man; then \

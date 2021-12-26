@@ -10,7 +10,7 @@
  * January 2001
  *
  * ------------------------------------------------------------------------
- * $Id: task.cc 15258 2021-12-25 13:21:14Z greg $
+ * $Id: task.cc 15264 2021-12-26 20:28:39Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -960,7 +960,7 @@ Task::findOrAddPseudoCall( Entity * toEntity )
 	    aCall = new PseudoTaskCall( this, toTask );
 	    toTask->addDstCall( aCall );
 	}
-	aCall->linestyle( Graphic::DASHED_DOTTED );
+	aCall->linestyle( Graphic::LineStyle::DASHED_DOTTED );
 	_calls.push_back( aCall );
     }
 

@@ -8,7 +8,7 @@
  * January 2003
  *
  * ------------------------------------------------------------------------
- * $Id: entry.cc 15258 2021-12-25 13:21:14Z greg $
+ * $Id: entry.cc 15264 2021-12-26 20:28:39Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -1166,7 +1166,7 @@ Entry::findOrAddPseudoCall( const Entry * anEntry )
 
     if ( !aCall ) {
 	aCall = new PseudoEntryCall( this, anEntry );
-	aCall->linestyle( Graphic::DASHED_DOTTED );
+	aCall->linestyle( Graphic::LineStyle::DASHED_DOTTED );
 	addSrcCall( aCall );
 	const_cast<Entry *>(anEntry)->addDstCall( aCall );
     }
