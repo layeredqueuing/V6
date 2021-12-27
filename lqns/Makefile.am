@@ -1,5 +1,5 @@
 # 
-# $Id: Makefile.am 14952 2021-08-20 22:26:32Z greg $
+# $Id: Makefile.am 15272 2021-12-27 12:46:09Z greg $
 #
 #----------------------------------------------------------------------
 
@@ -34,12 +34,9 @@ endif
 distclean-local:
 		rm -f config.cache
 
-lqns.ps:	$(man1_MANS)
-		groff -t -man  $(man1_MANS) > lqns.ps
-
 if HAVE_PS2PDF
-lqns.pdf:	lqns.ps
-		ps2pdf lqns.ps
+lqns.pdf:	$(man1_MANS)
+		groff -t -man  $< | ps2pdf - $@
 endif
 
 lqns.txt:	$(man1_MANS)

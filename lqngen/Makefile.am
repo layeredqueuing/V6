@@ -1,6 +1,6 @@
 # Makefile for .
 # Copyright (C) 2003 Greg Franks <rgfranks@alumni.uwaterloo.ca>
-# $Id: Makefile.am 14882 2021-07-07 11:09:54Z greg $
+# $Id: Makefile.am 15272 2021-12-27 12:46:09Z greg $
 # ----------------------------------------------------------------------
 ACLOCAL_AMFLAGS=-I ../config
 SUBDIRS		= 
@@ -28,18 +28,10 @@ distclean-local:
 
 if HAVE_PS2PDF
 install-data-local: lqngen.pdf lqn2lqx.pdf
-endif
 
-lqngen.ps: lqngen.1
-	cat lqngen.1  | groff -man > lqngen.ps
+lqngen.pdf: lqngen.1
+	groff -man $< | ps2pdf - $@
 
-lqn2lqx.ps: lqn2lqx.1
-	cat lqn2lqx.1  | groff -man > lqn2lqx.ps
-
-if HAVE_PS2PDF
-lqngen.pdf: lqngen.ps
-	ps2pdf lqngen.ps
-
-lqn2lqx.pdf: lqn2lqx.ps
-	ps2pdf lqn2lqx.ps
+lqn2lqx.pdf: lqn2lqx.1
+	groff -man $< | ps2pdf - $@
 endif

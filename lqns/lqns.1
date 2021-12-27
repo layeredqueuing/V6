@@ -1,6 +1,6 @@
 .\" t -*- nroff -*-
-.TH lqns 1 "10 October 2021" "5.22"
-.\" $Id: lqns.1 15064 2021-10-10 15:04:28Z greg $
+.TH lqns 1 "27 December 2021" "6.2"
+.\" $Id: lqns.1 15272 2021-12-27 12:46:09Z greg $
 .\"
 .\" --------------------------------
 .SH "NAME"
@@ -103,11 +103,12 @@ In some instances, infinities  will be propogated within the solver.  Please ref
 \fBstop-on-message-loss\fP pragma below.
 .RE
 .TP
-\fB\-f\fP, \fB\-\-fast\fR
+\fB\-f\fP, \fB\-\-fast-linearizer\fR
 This option is used to set options for quick solution of a model using One-Step (Bard-Schweitzer) MVA.
 It is equivalent to setting \fBpragma\fP \fImva\fP=\fIone-step\fP, \fIlayering\fP=\fIbatched\fP, \fImultiserver\fP=\fIconway\fP
 .TP
 \fB\-H\fP, \fB\-\-help\fR=\fIarg\fR
+Print a summary of the command line options.  The optional argument shows help for -d, -t, -z, and -P respectively.
 .TP
 \fB\-h\fP, \fB\-\-huge\fR
 Solve using one-step-schweitzer, no interlocking, and Rolia multiserver.
@@ -166,10 +167,7 @@ This option is useful for tracking the rate of convergence for a model.
 The optional numeric argument supplied to this option will print out the convergence value for the specified MVA submodel, otherwise,
 the convergence value for all submodels will be printed.
 .TP
-\fBcustomers\fR
-Print the real number of customers or maximum customers traces.
-.TP
-\fBdelta-wait\fR
+\fBdelta_wait\fR
 Print out difference in entry service time after each submodel is solved.
 .TP
 \fBforks\fR
@@ -258,7 +256,7 @@ Otherwise, output is sent to stdout.
 \fBmin-steps\fR=\fIarg\fR
 Force the solver to iterate min-steps times.
 .TP
-\fBmol-ms-underrelaxation\fR=\fIarg\fR
+\fBmol-underrelaxation\fR=\fIarg\fR
 Set the under-relaxation factor to \fIarg\fP for the MOL multiserver approximation.
 \fIArg\fP must be a number between 0.0 and 1.0.
 The default value is 0.5..TP
@@ -424,7 +422,7 @@ instead of a fixed-rate server whenever the multiplicity of a server is one.
 .TP
 \fBall\fP
 Always use a multiserver solution for non-delay servers (tasks and processors) even if the number of servers is one (1).
-The Rolia multiserver approximationis known to fail for this case.
+The Rolia multiserver approximation is known to fail for this case.
 .TP
 \fBnone\fP
 Use fixed-rate servers whenever a server multiplicity is one (1).
@@ -434,11 +432,11 @@ multiserver servers never take variance into consideration.
 .TP
 \fBprocessors\fP
 Always use a multiserver solution for non-delay processors even if the number of servers is one (1).
-The Rolia multiserver approximationis known to fail for this case.
+The Rolia multiserver approximation is known to fail for this case.
 .TP
 \fBtasks\fP
 Always use a multiserver solution for non-delay server tasks even if the number of servers is one (1).
-The Rolia multiserver approximationis known to fail for this case.
+The Rolia multiserver approximation is known to fail for this case.
 .LP
 The default is none.
 .RE
@@ -529,10 +527,10 @@ This pragma is used to choose the MVA algorithm used to solve the submodels.
 \fIArg\fP must be one of: 
 .RS
 .TP
-\fBexact\fP
+\fBexact-mva\fP
 Exact MVA.  Not suitable for large systems.
 .TP
-\fBfast\fP
+\fBfast-linearizer\fP
 Fast Linearizer
 .TP
 \fBlinearizer\fP

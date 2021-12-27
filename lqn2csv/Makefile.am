@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.am 15076 2021-10-15 18:25:48Z greg $
+# $Id: Makefile.am 15272 2021-12-27 12:46:09Z greg $
 #----------------------------------------------------------------------
 
 AUTOMAKE_OPTIONS = foreign
@@ -19,14 +19,10 @@ man1_MANS	= lqn2csv.1
 
 if HAVE_PS2PDF
 install-data-local:	lqn2csv.pdf
-endif
 
-lqn2csv.ps:	$(man1_MANS)
-		cat $(man1_MANS) | groff -man  > lqn2csv.ps
+lqn2csv.pdf:	$(man1_MANS)
+		groff -man $< | ps2pdf - $@
 
-if HAVE_PS2PDF
-lqn2csv.pdf:	lqn2csv.ps
-		ps2pdf lqn2csv.ps
 endif
 
 lqn2csv.txt:	$(man1_MANS)
