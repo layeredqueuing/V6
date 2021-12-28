@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: lqn2csv.cc 15087 2021-10-20 16:57:44Z greg $
+ * $Id: lqn2csv.cc 15280 2021-12-28 13:11:27Z greg $
  *
  * Command line processing.
  *
@@ -364,7 +364,7 @@ fetch_arguments( const std::string& filename, std::vector<Model::Result::result_
 	/* Get pointers to tokens for longopt */
 	std::vector<char *> argv( argc );
 	argv.at(0) = const_cast<char *>(filename.c_str());
-	for ( size_t i = 1; i < argc; ++i ) {
+	for ( int i = 1; i < argc; ++i ) {
 	    argv.at(i) = const_cast<char *>(tokens.at(i-1).c_str());
 	}
 

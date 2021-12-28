@@ -1,9 +1,7 @@
-# 
-# $Id: Makefile.am 15272 2021-12-27 12:46:09Z greg $
-#
+#----------------------------------------------------------------------
+# $Id: Makefile.am 15280 2021-12-28 13:11:27Z greg $
 #----------------------------------------------------------------------
 
-ACLOCAL_AMFLAGS=-I ../config
 AM_CPPFLAGS	= -I.. -I../lqiolib/src/headers -I../lqx/libsrc/headers -I../libmva/src/headers
 bin_PROGRAMS 	= qnsolver
 qnsolver_SOURCES= pragma.cc qnsolver.cc 

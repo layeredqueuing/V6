@@ -1,8 +1,7 @@
-# Makefile for .
-# Copyright (C) 2003 Greg Franks <rgfranks@alumni.uwaterloo.ca>
-# $Id: Makefile.am 15272 2021-12-27 12:46:09Z greg $
 # ----------------------------------------------------------------------
-ACLOCAL_AMFLAGS=-I ../config 
+# $Id: Makefile.am 15280 2021-12-28 13:11:27Z greg $
+# ----------------------------------------------------------------------
+
 SUBDIRS		= 
 if COND_PNG
   MAYBE_PNG = lqn2png

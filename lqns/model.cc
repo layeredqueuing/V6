@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: model.cc 15245 2021-12-22 15:02:18Z greg $
+ * $Id: model.cc 15280 2021-12-28 13:11:27Z greg $
  *
  * Layer-ization of model.  The basic concept is from the reference
  * below.  However, model partioning is more complex than task vs device.
@@ -289,7 +289,9 @@ Model::prepare(const LQIO::DOM::Document* document)
     LQIO::io_vars.severity_level = Pragma::severityLevel();
     LQIO::Spex::__no_header = !Pragma::spexHeader();
     LQIO::Spex::__print_comment = Pragma::spexComment();
-    MVA::MOL_multiserver_underrelaxation = Pragma::molUnderrelaxation();
+    if ( Pragma::has( LQIO::DOM::Pragma::_mol_underrelaxation_ ) ) {
+	MVA::MOL_multiserver_underrelaxation = Pragma::molUnderrelaxation();
+    }
 
     /* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- [Step 1: Add Processors] */
 
@@ -472,32 +474,37 @@ Model::create( const LQIO::DOM::Document * document, const std::string& inputFil
 void
 Model::setModelParameters( const LQIO::DOM::Document* doc )
 {
-
     if ( __print_interval == 0 ) {
 	__print_interval = doc->getModelPrintIntervalValue();
     }
-    if ( __iteration_limit == 0 ) {
+    if ( Pragma::has( LQIO::DOM::Pragma::_iteration_limit_ ) ) {
+	__iteration_limit = Pragma::iterationLimit();
+    } else {
 	__iteration_limit = doc->getModelIterationLimitValue();
-	if ( __iteration_limit < 1 ) {
-	    LQIO::input_error2( ADV_ITERATION_LIMIT, __iteration_limit, 50 );
-	    __iteration_limit =  50;
-	}
     }
-    if ( __convergence_value == 0.0 ) {
+    if ( __iteration_limit < 1 ) {
+	LQIO::input_error2( ADV_ITERATION_LIMIT, __iteration_limit, 50 );
+	__iteration_limit =  50;
+    }
+    if ( Pragma::has( LQIO::DOM::Pragma::_convergence_value_ ) ) {
+	__convergence_value = Pragma::convergenceValue();
+    } else {
 	__convergence_value = doc->getModelConvergenceValue();
-	if ( __convergence_value <= 0 ) {
-	    LQIO::input_error2( ADV_CONVERGENCE_VALUE, __convergence_value, 0.00001 );
-	    __convergence_value = 0.00001;
-	} else if ( __convergence_value > 0.01 ) {
-	    LQIO::input_error2( ADV_LARGE_CONVERGENCE_VALUE, __convergence_value );
-	}
     }
-    if ( __underrelaxation == 0.0 ) {
+    if ( __convergence_value <= 0 ) {
+	LQIO::input_error2( ADV_CONVERGENCE_VALUE, __convergence_value, 0.00001 );
+	__convergence_value = 0.00001;
+    } else if ( __convergence_value > 0.01 ) {
+	LQIO::input_error2( ADV_LARGE_CONVERGENCE_VALUE, __convergence_value );
+    }
+    if ( Pragma::has( LQIO::DOM::Pragma::_underrelaxation_ ) ) {
+	__underrelaxation = Pragma::underrelaxation();
+    } else {
 	__underrelaxation = doc->getModelUnderrelaxationCoefficientValue();
-	if ( __underrelaxation <= 0.0 || 2.0 < __underrelaxation ) {
-	    LQIO::input_error2( ADV_UNDERRELAXATION, __underrelaxation );
-	    __underrelaxation = 0.9;
-	}
+    }
+    if ( __underrelaxation <= 0.0 || 2.0 < __underrelaxation ) {
+	LQIO::input_error2( ADV_UNDERRELAXATION, __underrelaxation );
+	__underrelaxation = 0.9;
     }
 }
 

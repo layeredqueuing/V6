@@ -1,9 +1,7 @@
-#
-# $Id: Makefile.am 15215 2021-12-13 19:17:13Z greg $
+#----------------------------------------------------------------------
+# $Id: Makefile.am 15280 2021-12-28 13:11:27Z greg $
 #----------------------------------------------------------------------
 
-AUTOMAKE_OPTIONS = foreign
-ACLOCAL_AMFLAGS=-I ../config
 AM_CPPFLAGS	= -I..
 srvndiff_CXXFLAGS = -std=c++11 -Wall -Wno-format -Wno-format-security
 bin_PROGRAMS 	= srvndiff
@@ -22,14 +20,9 @@ man1_MANS	= srvndiff.1
 
 if HAVE_PS2PDF
 install-data-local:	srvndiff.pdf
-endif
 
-srvndiff.ps:	$(man1_MANS)
-		cat $(man1_MANS) | groff -man  > srvndiff.ps
-
-if HAVE_PS2PDF
-srvndiff.pdf:	srvndiff.ps
-		ps2pdf srvndiff.ps
+srvndiff.pdf:	$(man1_MANS)
+		groff -man $< | ps2pdf - $@
 endif
 
 srvndiff.txt:	$(man1_MANS)
