@@ -10,7 +10,7 @@
 /*
  * Global vars for simulation.
  *
- * $Id: model.h 15090 2021-10-22 16:18:55Z greg $
+ * $Id: model.h 15298 2021-12-30 17:03:32Z greg $
  */
 
 #ifndef LQSIM_MODEL_H
@@ -18,11 +18,16 @@
 
 #include <lqsim.h>
 #include <lqio/dom_document.h>
-#if HAVE_REGEX_H
-#include <regex.h>
-#endif
-#include "result.h"
 #include <lqio/common_io.h>
+#include <regex>
+#include "result.h"
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#if HAVE_SYS_TIMES_H
+#include <sys/times.h>
+#endif
+#include <time.h>
 
 namespace LQIO {
     namespace DOM {
@@ -30,13 +35,11 @@ namespace LQIO {
     }
 }
 
-extern matherr_type matherr_disposition;    /* What to do on math fault     */
+extern matherr_type matherr_disposition;    	/* What to do on math fault     */
 extern FILE * stddbg;
 
-#if HAVE_REGEX_H
-extern regex_t * processor_match_pattern;   /* Pattern to match.	    */
-extern regex_t * task_match_pattern;	    /* Pattern to match.	    */
-#endif
+extern std::regex processor_match_pattern;	/* Pattern to match.	    */
+extern std::regex task_match_pattern;		/* Pattern to match.	    */
 
 /*
  * Information unique to a particular instance of a task.
@@ -48,6 +51,8 @@ extern bool messages_lost;
 
 extern "C" void ps_genesis(void);
 
+class Task;
+
 class Model {
     friend void ps_genesis(void);
 
@@ -57,7 +62,8 @@ public:
 	
 	static const double DEFAULT_TIME;
 
-    simulation_parameters() : _seed(123456),
+	simulation_parameters() :
+	    _seed(123456),
 	    _run_time(50000),
 	    _precision(0),
 	    _max_blocks(1),
@@ -89,43 +95,47 @@ public:
 	double _confidence;
     };
 
-
 private:
+    template <typename Type> inline static void Delete( Type x ) { delete x; }
+
+    Model( LQIO::DOM::Document* document, const std::string&, const std::string& );
     Model( const Model& );
     Model& operator=( const Model& );
 
 public:
-    Model( LQIO::DOM::Document* document, const std::string&, const std::string& );
     virtual ~Model();
     
+    static int solve( const std::string&, LQIO::DOM::Document::InputFormat, const std::string&, const LQIO::DOM::Pragma& pragmas );
+
     bool operator!() const { return _document == nullptr; }
-    bool construct();	/* Step 1 */
     bool hasVariables() const;
 
-    bool start();
-    bool reload();		/* Load results from LQX */
-    bool restart();
-    
-    static LQIO::DOM::Document* load( const std::string&, const std::string& );
     static int genesis_task_id() { return __genesis_task_id; }
     static double block_period() { return __model->_parameters._block_period; }
     static void set_block_period( double block_period ) { __model->_parameters._block_period = block_period; }
 
 private:
+    bool prepare();		/* Step 1 -- outside of parasol */
+    bool create();		/* Step 2 -- inside of parasol	*/
+
+    bool start();
+    bool reload();		/* Load results from LQX */
+    bool restart();
+    
     void reset_stats();
     void accumulate_data();
     void insertDOMResults();
 
-    bool hasOutputFileName() const { return _output_file_name.size() > 0 && _output_file_name != "="; }
+    bool hasOutputFileName() const { return _output_file_name.size() > 0 && _output_file_name != "-"; }
     
-    bool create();		/* Step 2 */
-
     void print();
     void print_intermediate();
     void print_raw_stats( FILE * output ) const;
     std::string createDirectory() const;
     
     bool run( int );
+    static void start_task( Task * );
+
     static double rms_confidence();
     static double normalized_conf95( const result_t& stat );
 
@@ -141,7 +151,6 @@ private:
 
 public:
     static double max_service;	/* Max service time found.	*/
-    static LQIO::DOM::Document::InputFormat input_format;
 };
 
 double square( const double arg );

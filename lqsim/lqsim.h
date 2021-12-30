@@ -6,18 +6,16 @@
 /* 									*/
 /* September 1991.							*/
 /************************************************************************/
-#ifndef _PARASRVN_H
-#define _PARASRVN_H
+#ifndef _LQSIM_LQSIM_H
+#define _LQSIM_LQSIM_H
 
 /*
  * Global vars for setting up simulation.
  *
- * $URL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqsim/lqsim.h $
- *
- * $Id: lqsim.h 14153 2020-11-30 18:03:53Z greg $
+ * $Id: lqsim.h 15298 2021-12-30 17:03:32Z greg $
  */
 
-#if defined(HAVE_CONFIG_H)
+#if HAVE_CONFIG_H
 #include <config.h>
 #endif
 #include <cstdio>

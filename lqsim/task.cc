@@ -10,7 +10,7 @@
 /*
  * Input output processing.
  *
- * $Id: task.cc 15001 2021-09-27 22:12:07Z greg $
+ * $Id: task.cc 15298 2021-12-30 17:03:32Z greg $
  */
 
 #include <iostream>
@@ -21,9 +21,6 @@
 #include <cmath>
 #include <parasol.h>
 #include "lqsim.h"
-#if defined(HAVE_REGEX_H)
-#include <regex.h>
-#endif
 #include <lqio/input.h>
 #include <lqio/labels.h>
 #include <lqio/error.h>
@@ -39,7 +36,7 @@
 #define N_SEMAPHORE_ENTRIES 2
 #define N_RWLOCK_ENTRIES 4
 
-std::set <Task *, ltTask> task;	/* Task table.	*/
+std::set<Task *, Task::ltTask> Task::__tasks;	/* Task table.	*/
 
 const std::map<const Task::Type,const std::string> Task::type_strings =  {
     { Task::Type::UNDEFINED,              "Undefined" },
@@ -159,6 +156,10 @@ Task::configure()
 }
 
 
+/*
+ * Construct the parasol entity.
+ */
+
 Task&
 Task::create()
 {
@@ -172,11 +173,7 @@ Task::create()
 
     /* JOIN Stuff -- All entries are free. */
 
-#if HAVE_REGCOMP
-    trace_flag	= (bool)(task_match_pattern != 0 && regexec( task_match_pattern, (char *)name(), 0, 0, 0 ) != REG_NOMATCH );
-#else
-    trace_flag = false;
-#endif
+    trace_flag	= std::regex_match( name(), task_match_pattern );
 
     if ( debug_flag ){
 	(void) fprintf( stddbg, "\n-+++++---- %s task %s", type_name().c_str(), name() );
@@ -690,7 +687,7 @@ Task::add( LQIO::DOM::Task* domTask )
 	break;
     }
 
-    ::task.insert( cp );
+    Task::__tasks.insert( cp );
 
     return cp;
 }
@@ -703,8 +700,8 @@ Task::add( LQIO::DOM::Task* domTask )
 Task *
 Task::find( const char * task_name )
 {
-    std::set<Task *,ltTask>::const_iterator nextTask = find_if( ::task.begin(), ::task.end(), eqTaskStr( task_name ) );
-    if ( nextTask == ::task.end() ) {
+    std::set<Task *>::const_iterator nextTask = find_if( Task::__tasks.begin(), Task::__tasks.end(), eqTaskStr( task_name ) );
+    if ( nextTask == Task::__tasks.end() ) {
 	return nullptr;
     } else {
 	return *nextTask;

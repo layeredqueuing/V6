@@ -7,7 +7,7 @@
 /************************************************************************/
 
 /*
- * $Id: lqsim.cc 15215 2021-12-13 19:17:13Z greg $
+ * $Id: lqsim.cc 15298 2021-12-30 17:03:32Z greg $
  */
 
 #define STACK_TESTING
@@ -16,10 +16,11 @@
 #include <cstdlib>
 #include <cmath>
 #include <cstring>
+#include <unistd.h>
+#include <time.h>
 #include <errno.h>
 #include <libgen.h>
 #include <stdexcept>
-#include <sstream>		/* LQX */
 #if HAVE_SYS_RESOURCE_H
 #endif
 #if HAVE_FENV_H
@@ -40,6 +41,9 @@
 #if HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#if HAVE_SYS_RESOURCE_H
+#include <sys/resource.h>
+#endif
 #include <lqio/input.h>
 #if !HAVE_GETSUBOPT
 #include <lqio/getsbopt.h>
@@ -47,12 +51,10 @@
 #include <lqio/error.h>
 #include <lqio/filename.h>
 #include <lqio/commandline.h>
-#include <lqio/dom_bindings.h>
 #include <lqio/srvn_spex.h>
 #include <lqio/dom_pragma.h>
 #include "errmsg.h"
 #include "model.h"
-#include "runlqx.h"		// Coupling here is ugly at the moment
 #include "pragma.h"
 
 extern FILE* Timeline_Open(char* file_name); /* Open the timeline output stream */
@@ -250,10 +252,8 @@ static const char * events[] = {
     "enqueue_writer"	/* ENQUEUE_WRITER */
 };
 
-#if HAVE_REGEX_H
-regex_t * processor_match_pattern = 0;
-regex_t * task_match_pattern 	= 0;
-#endif
+std::regex processor_match_pattern;
+std::regex task_match_pattern;
 
 /*
  * IEEE exceptions.
@@ -297,12 +297,8 @@ static struct {
 static LQIO::DOM::Pragma pragmas;
 
 static void usage(void);
-static int process( const std::string& input_file, const std::string& output_file );
-#if HAVE_REGCOMP
-static void trace_event_list ( char * );
-static bool regexec_check( int errcode, regex_t *r );
-#endif
 static void set_fp_abort();
+static void trace_event_list( const std::regex& );
 
 /*----------------------------------------------------------------------*/
 /* Main.								*/
@@ -312,7 +308,8 @@ int
 main( int argc, char * argv[] )
 {   				
     int global_error_flag	= 0;
-    std::string output_file		= "";		/* Command line filename?   	*/
+    std::string output_file;		/* Command line filename?   	*/
+    LQIO::DOM::Document::InputFormat input_format = LQIO::DOM::Document::InputFormat::AUTOMATIC;
 	
     /* optarg(3) stuff */
 	
@@ -329,7 +326,7 @@ main( int argc, char * argv[] )
     LQIO::io_vars.init( VERSION, basename( argv[0] ), severity_action, local_error_messages, LSTLCLERRMSG-LQIO::LSTGBLERRMSG );
 
     command_line = LQIO::io_vars.lq_toolname;
-    (void) sscanf( "$Date: 2021-12-13 14:17:13 -0500 (Mon, 13 Dec 2021) $", "%*s %s %*s", copyright_date );
+    (void) sscanf( "$Date: 2021-12-30 12:03:32 -0500 (Thu, 30 Dec 2021) $", "%*s %s %*s", copyright_date );
     stddbg    = stdout;
 
     /* Stuff set from the input file.				*/
@@ -446,9 +443,9 @@ main( int argc, char * argv[] )
 
 	    case 'I':
 		if ( strcasecmp( optarg, "xml" ) == 0 ) {
-		    Model::input_format = LQIO::DOM::Document::InputFormat::XML;
+		    input_format = LQIO::DOM::Document::InputFormat::XML;
 		} else if ( strcasecmp( optarg, "lqn" ) == 0 ) {
-		    Model::input_format = LQIO::DOM::Document::InputFormat::LQN;
+		    input_format = LQIO::DOM::Document::InputFormat::LQN;
 		} else {
 		    throw std::invalid_argument( optarg );
 		}
@@ -563,22 +560,17 @@ main( int argc, char * argv[] )
 			trace_driver = 1;
 			break;
 
-#if HAVE_REGCOMP
 		    case PROCESSOR:
-			processor_match_pattern = (regex_t *)my_malloc( sizeof( regex_t ) );
-			regexec_check( regcomp( processor_match_pattern, value ? value : ".*", REG_EXTENDED ), processor_match_pattern );
+			processor_match_pattern = value;
 			break;
-
 				
 		    case TASK:
-			task_match_pattern = (regex_t *)my_malloc( sizeof( regex_t ) );
-			regexec_check( regcomp( task_match_pattern, value ? value : ".*", REG_EXTENDED ), task_match_pattern );
+			task_match_pattern = value;
 			break;
 
 		    case EVENTS:
-			trace_event_list( value );
+			trace_event_list( std::regex( value ) );
 			break;
-#endif
 
 		    case TIMELINE:
 			timeline_flag = true;
@@ -600,7 +592,7 @@ main( int argc, char * argv[] )
 		break;
 			
 	    case 'V':
-		(void) fprintf( stdout, "\nStochastic Rendezvous Network Simulator, Version %s\n\n", VERSION );
+		(void) fprintf( stdout, "\nLayered Queueing Network Simulator, Version %s\n\n", VERSION );
 		(void) fprintf( stdout, "  Copyright %s the Real-Time and Distributed Systems Group,\n", copyright_date );
 		(void) fprintf( stdout, "  Department of Systems and Computer Engineering,\n" );
 		(void) fprintf( stdout, "  Carleton University, Ottawa, Ontario, Canada. K1S 5B6\n\n");
@@ -668,7 +660,7 @@ main( int argc, char * argv[] )
 	}
 	
 	try {
-	    global_error_flag |= process( "-", output_file );
+	    global_error_flag |= Model::solve( "-", input_format, output_file, pragmas );
 	}
 	catch ( const std::runtime_error &e ) {
 	    fprintf( stderr, "%s: %s\n", LQIO::io_vars.toolname(), e.what() );
@@ -695,7 +687,7 @@ main( int argc, char * argv[] )
 		(void) printf( "%s:\n", argv[optind] );
 	    }
 	    try {
-		global_error_flag |= process( argv[optind], output_file );
+		global_error_flag |= Model::solve( argv[optind], input_format, output_file, pragmas );
 	    }
 	    catch ( const std::runtime_error &e ) {
 		fprintf( stderr, "%s: %s\n", LQIO::io_vars.toolname(), e.what() );
@@ -784,99 +776,6 @@ usage(void)
 #endif
 }
 
-/*
- * PARASOL mainline - initializes the simulation, processes command line
- * arguments, kick starts genesis, & drives the simulation.
- * The simulation itself runs as a child to simplify exit processing by
- * the simulator, redirection of input and output, and a host of other
- * things.
- */
-
-/*ARGSUSED*/
-static int
-process( const std::string& input_file, const std::string& output_file )	 
-{
-    LQIO::DOM::Document* document = Model::load( input_file, output_file );
-    Model aModel( document, input_file, output_file );
-
-    /* Make sure we got a document */
-    if ( document == NULL || LQIO::io_vars.anError() ) return INVALID_INPUT;
-
-    if( !aModel.construct() ) return INVALID_INPUT;
-
-    document->mergePragmas( pragmas.getList() );       /* Save pragmas */
-
-    int status = 0;
-
-    /* We can simply run if there's no control program */
-
-    LQX::Program* program = document->getLQXProgram();
-    FILE * output = 0;
-    try { 
-	if ( program ) {
-	    /* Attempt to run the program */
-	    document->registerExternalSymbolsWithProgram(program);
-	    if ( restart_flag ) {
-		program->getEnvironment()->getMethodTable()->registerMethod(new SolverInterface::Solve(document, &Model::restart, &aModel));
-	    } else if ( reload_flag ) {
-		program->getEnvironment()->getMethodTable()->registerMethod(new SolverInterface::Solve(document, &Model::reload, &aModel));
-	    } else {
-		program->getEnvironment()->getMethodTable()->registerMethod(new SolverInterface::Solve(document, &Model::start, &aModel));
-	    }
-
-	    LQIO::RegisterBindings(program->getEnvironment(), document);
-	
-	    if ( output_file.size() > 0 && output_file != "-" && LQIO::Filename::isRegularFile(output_file.c_str()) ) {
-		output = fopen( output_file.c_str(), "w" );
-		if ( !output ) {
-		    solution_error( LQIO::ERR_CANT_OPEN_FILE, output_file.c_str(), strerror( errno ) );
-		    status = FILEIO_ERROR;
-		} else {
-		    program->getEnvironment()->setDefaultOutput( output );	/* Default is stdout */
-		}
-	    }
-
-	    if ( status == 0 ) {
-		/* Invoke the LQX program itself */
-		if ( !program->invoke() ) {
-		    LQIO::solution_error( LQIO::ERR_LQX_EXECUTION, input_file.c_str() );
-		    status = INVALID_INPUT;
-		} else if ( !SolverInterface::Solve::solveCallViaLQX ) {
-		    /* There was no call to solve the LQX */
-		    LQIO::solution_error( LQIO::ADV_LQX_IMPLICIT_SOLVE, input_file.c_str() );
-		    std::vector<LQX::SymbolAutoRef> args;
-		    SolverInterface::Solve::implicitSolve = true;
-		    program->getEnvironment()->invokeGlobalMethod("solve", &args);
-		}
-	    }
-	
-	} else {
-	    /* There is no control flow program, check for $-variables */
-	    if ( aModel.hasVariables() ) {
-		LQIO::solution_error( LQIO::ERR_LQX_VARIABLE_RESOLUTION, input_file.c_str() );
-		status = INVALID_INPUT;
-	    } else if ( !aModel.start() ) {
-		status = INVALID_OUTPUT;
-	    }
-	}
-    }
-    catch ( const std::domain_error& e ) {
-	status = INVALID_INPUT;
-    }
-    catch ( const std::runtime_error& e ) {
-	status = INVALID_INPUT;
-    }
-
-    /* Clean up */
-    
-    if ( output ) fclose( output );
-    if ( program ) delete program;
-//    delete document;
-    
-    return status;
-}
-/* ------------------------------------------------------------------------ */
-
 void
 report_matherr( FILE * output )
 {
@@ -909,36 +808,17 @@ report_matherr( FILE * output )
     }
 }
 
-#if HAVE_REGCOMP
 static void
-trace_event_list( char * s )
+trace_event_list( const std::regex& pattern )
 {
-    regex_t pattern;
-    
     watched_events = 0;		/* reset event list */
 
-    while ( s ) {
-	int j;
-	char * p = strchr( s, ':' );
-	
-	if ( p ) {
-	    *p = '\0';
-	}
-	regexec_check( regcomp( &pattern, s, REG_EXTENDED ), &pattern );
-	for ( j = 0; j < ACTIVITY_JOIN; ++j ) {
-	    if ( regexec( &pattern, events[j], 0, 0, 0 ) != REG_NOMATCH ) {
-		watched_events |= (1 << j );
-	    }
-	}
-	regfree( &pattern );
-	if ( p ) {
-	    s = p + 1;
-	} else {
-	    s = 0;
+    for ( size_t j = 0; j < ACTIVITY_JOIN; ++j ) {
+	if ( std::regex_match( events[j], pattern ) ) {
+	    watched_events |= (1 << j );
 	}
     }
 }
-#endif
 
 /*
  * Allocate memory. Exit on failure.
@@ -949,16 +829,16 @@ my_malloc( size_t size )
 {
     void * p;
 
-    if ( size == 0 ) return (void *)0;
+    if ( size == 0 ) return nullptr;
 
     p = (void *)malloc( size );
 
     if ( !p ) {
-#if defined(HAVE_GETRUSAGE)
+#if HAVE_GETRUSAGE
 	struct rusage r;
 #endif
 	(void) fprintf( stderr, "%s: Out of memory!\n", LQIO::io_vars.toolname() );
-#if defined(HAVE_GETRUSAGE)
+#if HAVE_GETRUSAGE
 	getrusage( RUSAGE_SELF, &r );
 	(void) fprintf( stderr, "\tmaxrss=%ld, idrss=%ld\n", r.ru_maxrss, r.ru_idrss );
 #endif
@@ -973,11 +853,11 @@ my_realloc( void * ptr, size_t size )
     void * p = (void *)realloc( ptr, size );
 
     if ( !p ) {
-#if defined(HAVE_GETRUSAGE)
+#if HAVE_GETRUSAGE
 	struct rusage r;
 #endif
 	(void) fprintf( stderr, "%s: Out of memory!\n", LQIO::io_vars.toolname() );
-#if defined(HAVE_GETRUSAGE)
+#if HAVE_GETRUSAGE
 	getrusage( RUSAGE_SELF, &r );
 	(void) fprintf( stderr, "\tmaxrss=%ld, idrss=%ld\n", r.ru_maxrss, r.ru_idrss );
 #endif
@@ -986,23 +866,6 @@ my_realloc( void * ptr, size_t size )
     return p;
 }
 
-
-
-#if HAVE_REGCOMP
-static bool
-regexec_check( int errcode, regex_t *r )
-{
-    if ( errcode ) {
-	char buf[BUFSIZ];
-	regerror( errcode, r, buf, BUFSIZ );
-	fprintf( stderr, "%s: %s\n", LQIO::io_vars.toolname(), buf );
-	exit( INVALID_ARGUMENT );
-	return false;
-    } else {
-	return true;
-    }
-}
-#endif
 
 
 static void

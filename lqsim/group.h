@@ -2,7 +2,7 @@
  * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqsim/group.h $
  * Global vars for simulation.
  *
- * $Id: group.h 14996 2021-09-27 14:14:50Z greg $
+ * $Id: group.h 15298 2021-12-30 17:03:32Z greg $
  */
 
 /************************************************************************/
@@ -21,7 +21,32 @@
 
 class Group 
 {
+    /*
+     * Compare to processors by their name.  Used by the set class to insert items
+     */
+
+    struct ltGroup
+    {
+	bool operator()(const Group * p1, const Group * p2) const { return strcmp( p1->name(), p2->name() ) < 0; }
+    };
+
+
+    /*
+     * Compare a group name to a string.  Used by the find_if (and other algorithm type things.
+     */
+
+    struct eqGroupStr 
+    {
+	eqGroupStr( const std::string& s ) : _s(s) {}
+	bool operator()(const Group * p1 ) const { return _s == p1->name(); }
+
+    private:
+	const std::string _s;
+    };
+
 public:
+    static std::set<Group *, ltGroup> __groups;
+
     static Group * find( const std::string& );
     static void add( const std::pair<std::string,LQIO::DOM::Group*>& );
 
@@ -49,29 +74,4 @@ private:
 
     std::set<Task*> _task_list;
 };
-
-/*
- * Compare to processors by their name.  Used by the set class to insert items
- */
-
-struct ltGroup
-{
-    bool operator()(const Group * p1, const Group * p2) const { return strcmp( p1->name(), p2->name() ) < 0; }
-};
-
-
-/*
- * Compare a group name to a string.  Used by the find_if (and other algorithm type things.
- */
-
-struct eqGroupStr 
-{
-    eqGroupStr( const std::string& s ) : _s(s) {}
-    bool operator()(const Group * p1 ) const { return _s == p1->name(); }
-
-private:
-    const std::string _s;
-};
-
-extern std::set<Group *, ltGroup> group;
 #endif

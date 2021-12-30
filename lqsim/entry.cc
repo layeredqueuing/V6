@@ -12,7 +12,7 @@
  *
  * $URL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqsim/entry.cc $
  *
- * $Id: entry.cc 15157 2021-12-06 19:18:24Z greg $
+ * $Id: entry.cc 15298 2021-12-30 17:03:32Z greg $
  */
 
 #include <parasol.h>
@@ -38,7 +38,7 @@ unsigned int open_arrival_count = 0;
  * task and entry information.
  */
 
-std::set <Entry *, ltEntry> entry;		/* Entry table.		*/
+std::set<Entry *, Entry::ltEntry> Entry::__entries;	/* Entry table.		*/
 Entry * Entry::entry_table[MAX_PORTS+1];	/* Reverse map		*/
 
 Entry::Entry( LQIO::DOM::Entry* dom, Task * task )
@@ -47,7 +47,7 @@ Entry::Entry( LQIO::DOM::Entry* dom, Task * task )
       r_cycle(),
       _minimum_service_time(MAX_PHASES),
       _dom(dom),
-      _entry_id(::entry.size() + 1),
+      _entry_id(Entry::__entries.size() + 1),
       _local_id(task->n_entries()),
       _port(-1),
       _activity(nullptr),
@@ -607,16 +607,16 @@ Entry *
 Entry::add( LQIO::DOM::Entry* domEntry, Task * task )
 {
     Entry * ep = 0;	
-    if ( ::entry.size() >= MAX_PORTS ) {
+    if ( Entry::__entries.size() >= MAX_PORTS ) {
 	input_error2( LQIO::ERR_TOO_MANY_X, "entries", MAX_PORTS );
     } else {
 	const char* entry_name = domEntry->getName().c_str();
-	std::set<Entry *,ltEntry>::const_iterator nextEntry = find_if( entry.begin(), entry.end(), eqEntryStr( entry_name ) );
-	if ( nextEntry != entry.end() ) {
+	std::set<Entry *>::const_iterator entry = find_if( Entry::__entries.begin(), Entry::__entries.end(), eqEntryStr( entry_name ) );
+	if ( entry != Entry::__entries.end() ) {
 	    LQIO::input_error2( LQIO::ERR_DUPLICATE_SYMBOL, "Entry", entry_name );
 	} else {
 	    ep = new Entry( domEntry, task );
-	    ::entry.insert( ep );
+	    Entry::__entries.insert( ep );
 	    ep->add_open_arrival_task();
 	}
     }
@@ -639,11 +639,11 @@ Entry::add_open_arrival_task()
     char * task_name = new char[strlen( name() ) + 20];
     (void) sprintf( task_name, "(%s)", name() );
     Task * cp = new Pseudo_Task( task_name );
-    ::task.insert( cp );
+    Task::__tasks.insert( cp );
 	
     Entry * from_entry = new Pseudo_Entry( _dom, cp );
     from_entry->initialize();
-    ::entry.insert( from_entry );
+    Entry::__entries.insert( from_entry );
 
     /* Set up entry information for my arrival rate. */
 
@@ -693,12 +693,12 @@ Entry::add_call( const unsigned int p, LQIO::DOM::Call* domCall )
 Entry *
 Entry::find( const char * entry_name )
 {
-    std::set<Entry *>::const_iterator nextEntry = find_if( ::entry.begin(), ::entry.end(), eqEntryStr( entry_name ) );
-    if ( nextEntry == ::entry.end() ) {
+    std::set<Entry *>::const_iterator entry = find_if( Entry::__entries.begin(), Entry::__entries.end(), eqEntryStr( entry_name ) );
+    if ( entry == Entry::__entries.end() ) {
 	input_error2( LQIO::ERR_NOT_DEFINED, entry_name );
 	return nullptr;
     } else {
-	return *nextEntry;
+	return *entry;
     }
 }
 

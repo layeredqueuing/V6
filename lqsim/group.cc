@@ -9,7 +9,7 @@
 /*
  * Input output processing.
  *
- * $Id: group.cc 14999 2021-09-27 18:19:56Z greg $
+ * $Id: group.cc 15298 2021-12-30 17:03:32Z greg $
  */
 
 #include <algorithm>
@@ -27,7 +27,7 @@
 #include "processor.h"
 #include "group.h"
 
-std::set<Group *, ltGroup> group;
+std::set<Group *, Group::ltGroup> Group::__groups;
 
 
 Group::Group( LQIO::DOM::Group * group, const Processor& processor ) 
@@ -40,7 +40,8 @@ Group::Group( LQIO::DOM::Group * group, const Processor& processor )
 
 
 /*
- * Called from Model::create to create ALL groups.  IFF a group has a multiserver, then we re-assign that task to a new sub-group
+ * Called from Model::create to create ALL groups.  IFF a group has a
+ * multiserver, then we re-assign that task to a new sub-group
  */
 
 Group&
@@ -117,11 +118,11 @@ Group *
 Group::find( const std::string& group_name  )
 {
     if ( group_name.empty() ) return nullptr;
-    std::set<Group *,ltGroup>::const_iterator nextGroup = find_if( ::group.begin(), ::group.end(), eqGroupStr( group_name ) );
-    if ( nextGroup == group.end() ) {
+    std::set<Group *>::const_iterator group = find_if( Group::__groups.begin(), Group::__groups.end(), eqGroupStr( group_name ) );
+    if ( group == Group::__groups.end() ) {
 	return nullptr;
     } else {
-	return *nextGroup;
+	return *group;
     }
 }
 
@@ -153,7 +154,7 @@ Group::add( const std::pair<std::string,LQIO::DOM::Group*>& p )
     if ( Group::find( group_name ) ) {
 	LQIO::input_error2( LQIO::ERR_DUPLICATE_SYMBOL, "Group", group_name.c_str() );
     } else {
-	group.insert( new Group( domGroup, *aProcessor ) );
+	__groups.insert( new Group( domGroup, *aProcessor ) );
     }
 }
 

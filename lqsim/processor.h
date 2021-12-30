@@ -11,7 +11,7 @@
  *
  * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqsim/processor.h $
  *
- * $Id: processor.h 14996 2021-09-27 14:14:50Z greg $
+ * $Id: processor.h 15298 2021-12-30 17:03:32Z greg $
  */
 
 #ifndef	PROCESSOR_H
@@ -28,6 +28,35 @@ class Instance;
 class Task;
 
 class Processor {
+public:
+
+    /*
+     * Compare to processors by their name.  Used by the set class to
+     * insert items
+     */
+
+    struct ltProcessor
+    {
+	bool operator()(const Processor * p1, const Processor * p2) const { return strcmp( p1->name(), p2->name() ) < 0; }
+    };
+
+
+    /*
+     * Compare a processor name to a string.  Used by the find_if (and
+     * other algorithm type things.
+     */
+
+    struct eqProcStr 
+    {
+    eqProcStr( const std::string& s ) : _s(s) {}
+	bool operator()(const Processor * p1 ) const { return _s == p1->name(); }
+
+    private:
+	const std::string _s;
+    };
+
+    static std::set <Processor *, ltProcessor> __processors;	/* Processor table.	*/
+
 private:
     /*
      * Translate input.h types to para_proto.h types.
@@ -118,32 +147,4 @@ private:
     Instance ** _active_task;		/* Active tasks.		*/
     long _scheduler;			/* Port of the scheduler.	*/
 };
-
-/* ------------------------------------------------------------------------ */
-/*
- * Compare to processors by their name.  Used by the set class to insert items
- */
-
-struct ltProcessor
-{
-    bool operator()(const Processor * p1, const Processor * p2) const { return strcmp( p1->name(), p2->name() ) < 0; }
-};
-
-
-/*
- * Compare a processor name to a string.  Used by the find_if (and other algorithm type things.
- */
-
-struct eqProcStr 
-{
-eqProcStr( const std::string& s ) : _s(s) {}
-    bool operator()(const Processor * p1 ) const { return _s == p1->name(); }
-
-private:
-    const std::string _s;
-};
-
-extern std::set <Processor *, ltProcessor> processor;	/* Processor table.	*/
-
-
 #endif

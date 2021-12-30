@@ -2,7 +2,7 @@
  * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqsim/task.h $
  * Global vars for simulation.
  *
- * $Id: task.h 15001 2021-09-27 22:12:07Z greg $
+ * $Id: task.h 15298 2021-12-30 17:03:32Z greg $
  */
 
 /************************************************************************/
@@ -51,7 +51,34 @@ typedef double (*hold_func_ptr)( const Task *, const unsigned );
 class Task {
     friend class Instance;
 
+    /*
+     * Compare to tasks by their name.  Used by the set class to
+     * insert items
+     */
+
+    struct ltTask
+    {
+	bool operator()(const Task * p1, const Task * p2) const { return strcmp( p1->name(), p2->name() ) < 0; }
+    };
+
+
+    /*
+     * Compare a task name to a string.  Used by the find_if (and
+     * other algorithm type things).
+     */
+
+    struct eqTaskStr
+    {
+	eqTaskStr( const char * s ) : _s(s) {}
+	bool operator()(const Task * p1 ) const { return strcmp( p1->name(), _s ) == 0; }
+
+    private:
+	const char * _s;
+    };
+
 public:
+    static std::set <Task *, ltTask> __tasks;	/* Task table.	*/
+
     /* Update service_routine in task.c when changing this enum */
     enum class Type {
 	UNDEFINED,
@@ -424,30 +451,4 @@ private:
 typedef double (*hold_func_ptr)( const Task *, const unsigned );
 
 extern unsigned total_tasks;
-
-/* ------------------------------------------------------------------------ */
-/*
- * Compare to tasks by their name.  Used by the set class to insert items
- */
-
-struct ltTask
-{
-    bool operator()(const Task * p1, const Task * p2) const { return strcmp( p1->name(), p2->name() ) < 0; }
-};
-
-
-/*
- * Compare a task name to a string.  Used by the find_if (and other algorithm type things).
- */
-
-struct eqTaskStr
-{
-    eqTaskStr( const char * s ) : _s(s) {}
-    bool operator()(const Task * p1 ) const { return strcmp( p1->name(), _s ) == 0; }
-
-private:
-    const char * _s;
-};
-
-extern std::set <Task *, ltTask> task;	/* Task table.	*/
 #endif
