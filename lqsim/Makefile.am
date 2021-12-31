@@ -1,9 +1,9 @@
 #----------------------------------------------------------------------
-# $Id: Makefile.am 15280 2021-12-28 13:11:27Z greg $
+# $Id: Makefile.am 15305 2021-12-31 16:01:37Z greg $
 #----------------------------------------------------------------------
 SUBDIRS		= regression
 
-AM_CPPFLAGS	= -I.. -I../lqx/libsrc/headers/ -I../lqiolib/src/headers -I../parasol/include
+AM_CPPFLAGS	= -I../lqx/libsrc/headers/ -I../lqiolib/src/headers -I../parasol/include
 bin_PROGRAMS	= lqsim
 lqsim_SOURCES	= activity.cc actlist.cc entry.cc errmsg.cc group.cc histogram.cc instance.cc model.cc lqsim.cc \
 		  message.cc pragma.cc processor.cc result.cc runlqx.cc target.cc task.cc

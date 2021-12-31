@@ -1,11 +1,13 @@
 /*
- *  $Id: dom_activity.cpp 14111 2020-11-20 16:30:03Z greg $
+ *  $Id: dom_activity.cpp 15305 2021-12-31 16:01:37Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
  *
  */
 
+#include "dom_activity.h"
+#include "dom_task.h"
 #include "dom_document.h"
 #include "glblerr.h"
 

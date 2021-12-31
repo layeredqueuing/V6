@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- *  $Id: common_io.h 15222 2021-12-15 15:41:14Z greg $
+ *  $Id: common_io.h 15305 2021-12-31 16:01:37Z greg $
  *
  *  Greg Franks
  */
@@ -195,6 +195,9 @@ namespace LQIO {
 	};
 
     }
+
+    std::string createDirectory();
+
 
     std::string ltrim(const std::string& s);
     std::string rtrim(const std::string& s);

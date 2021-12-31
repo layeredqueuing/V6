@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: model.cc 15229 2021-12-17 13:32:10Z greg $
+ * $Id: model.cc 15305 2021-12-31 16:01:37Z greg $
  *
  * Command line processing.
  *
@@ -20,9 +20,12 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <lqio/dom_activity.h>
 #include <lqio/dom_document.h>
-#include <lqio/dom_object.h>
 #include <lqio/dom_entry.h>
+#include <lqio/dom_object.h>
+#include <lqio/dom_processor.h>
+#include <lqio/dom_task.h>
 #include "model.h"
 #include "lqn2csv.h"
 

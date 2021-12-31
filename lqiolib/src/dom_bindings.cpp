@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_bindings.cpp 15242 2021-12-18 21:26:43Z greg $
+ *  $Id: dom_bindings.cpp 15305 2021-12-31 16:01:37Z greg $
  *
  *  Created by Martin Mroz on 16/04/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -15,6 +15,12 @@
 #include <lqx/RuntimeException.h>
 
 #include "dom_document.h"
+#include "dom_processor.h"
+#include "dom_task.h"
+#include "dom_entry.h"
+#include "dom_group.h"
+#include "dom_activity.h"
+#include "dom_actlist.h"
 #include "confidence_intervals.h"
 
 #include <sstream>

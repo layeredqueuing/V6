@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: common_io.cpp 15222 2021-12-15 15:41:14Z greg $
+ * $Id: common_io.cpp 15305 2021-12-31 16:01:37Z greg $
  *
  * Read in XML input files.
  *
@@ -21,6 +21,9 @@
 #include <algorithm>
 #if HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
+#endif
+#if HAVE_SYS_TIME_H
+#include <sys/time.h>
 #endif
 #if HAVE_SYS_TIMES_H
 #include <sys/times.h>

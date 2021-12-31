@@ -1,11 +1,12 @@
 /*
- *  $Id: dom_entry.cpp 14957 2021-09-07 19:29:19Z greg $
+ *  $Id: dom_entry.cpp 15305 2021-12-31 16:01:37Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
  *
  */
 
+#include "dom_activity.h"
 #include "dom_document.h"
 #include "dom_entry.h"
 #include "dom_histogram.h"

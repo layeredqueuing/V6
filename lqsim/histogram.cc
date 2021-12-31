@@ -1,28 +1,21 @@
 /* histogram.cc	-- Greg Franks Mon Jun 15 2009
- * $HeadURL$
  *
  * ------------------------------------------------------------------------
- * $Id: histogram.cc 13356 2018-06-28 03:13:02Z greg $
+ * $Id: histogram.cc 15305 2021-12-31 16:01:37Z greg $
  * ------------------------------------------------------------------------
  */
 
 
 #include "lqsim.h"
-#include "histogram.h"
 #include <cmath>
 #include <cstdlib>
 #include <algorithm>
 #include <lqio/error.h>
-#if HAVE_FLOAT_H
-#include <float.h>
-#endif
+#include "histogram.h"
 #include "errmsg.h"
 #include "result.h"
-#if !defined(MAXDOUBLE)
-#define MAXDOUBLE FLT_MAX
-#endif
 
-Histogram::Histogram( const LQIO::DOM::Histogram * histogram ) 
+Histogram::Histogram( const LQIO::DOM::Histogram * histogram )
     : _histogram(const_cast<LQIO::DOM::Histogram *>(histogram)),
       _n_bins(histogram->getBins()),
       _bin_size(_n_bins > 0 ? static_cast<double>(histogram->getMax() - histogram->getMin())/static_cast<double>(histogram->getBins()) : 0),
@@ -37,7 +30,7 @@ Histogram::Histogram( const LQIO::DOM::Histogram * histogram )
     }
     for_each ( _hist.begin(), _hist.end(), Exec<hist_bin>(&hist_bin::clear) );
 }
-      
+
 
 void
 Histogram::configure()
@@ -109,7 +102,7 @@ Histogram::variance( const unsigned i ) const
 }
 
 
-void 
+void
 Histogram::insertDOMResults()
 {
     for ( unsigned int i = 0; i < _n_bins+2; ++i ) {

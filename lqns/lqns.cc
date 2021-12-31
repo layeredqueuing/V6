@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: lqns.cc 15280 2021-12-28 13:11:27Z greg $
+ * $Id: lqns.cc 15305 2021-12-31 16:01:37Z greg $
  *
  * Command line processing.
  *
@@ -117,10 +117,12 @@ extern "C" int getsubopt (char **, char * const *, char **);
 int main (int argc, char *argv[])
 {
     std::string outputFileName = "";
+    LQIO::DOM::Document::OutputFormat output_format = LQIO::DOM::Document::OutputFormat::DEFAULT;
     LQIO::CommandLine command_line;
     Options::Debug::initialize();
     Options::Trace::initialize();
     Options::Special::initialize();
+    Model::solve_using solve_function = &Model::compute;
 
     unsigned global_error_flag = 0;     /* Error detected anywhere??    */
 
@@ -240,11 +242,11 @@ int main (int argc, char *argv[])
 
 	    case 'I':
 		if ( strcasecmp( optarg, "xml" ) == 0 ) {
-		    Model::input_format = LQIO::DOM::Document::InputFormat::XML;
+		    Model::__input_format = LQIO::DOM::Document::InputFormat::XML;
 		} else if ( strcasecmp( optarg, "lqn" ) == 0 ) {
-		    Model::input_format = LQIO::DOM::Document::InputFormat::LQN;
+		    Model::__input_format = LQIO::DOM::Document::InputFormat::LQN;
 		} else if ( strcasecmp( optarg, "json" ) == 0 ) {
-		    Model::input_format = LQIO::DOM::Document::InputFormat::JSON;
+		    Model::__input_format = LQIO::DOM::Document::InputFormat::JSON;
 		} else {
 		    std::cerr << LQIO::io_vars.lq_toolname << ": invalid argument to -I -- " << optarg << std::endl;
 		    exit( 1 );
@@ -256,7 +258,7 @@ int main (int argc, char *argv[])
 		break;
 
 	    case 'j':
-		flags.json_output = true;
+		output_format = LQIO::DOM::Document::OutputFormat::JSON;
 		break;
 
 	    case 512+'j':
@@ -288,7 +290,7 @@ int main (int argc, char *argv[])
 		break;
 
 	    case 'p':
-		flags.parseable_output = true;
+		output_format = LQIO::DOM::Document::OutputFormat::PARSEABLE;
 		break;
 
 	    case 'P':       /* Pragma processing... */
@@ -319,11 +321,11 @@ int main (int argc, char *argv[])
 		break;
 
 	    case 512+'r':
-		flags.reload_only = true;
+		solve_function = &Model::reload;
 		break;
 
 	    case 512+'R':
-		flags.restart = true;
+		solve_function = &Model::restart;
 		break;
 
 	    case 256+'s':
@@ -377,7 +379,7 @@ int main (int argc, char *argv[])
 		break;
 
 	    case 'x':
-		flags.xml_output = true;
+		output_format = LQIO::DOM::Document::OutputFormat::XML;
 		break;
 
 	    case 512+'x':
@@ -423,11 +425,6 @@ int main (int argc, char *argv[])
         std::cerr << LQIO::io_vars.lq_toolname << ": -n is incompatible with -zgenerate.  -zgenerate ignored." << std::endl;
     }
 
-    if ( flags.reload_only && flags.restart ) {
-	std::cerr << LQIO::io_vars.lq_toolname << ": --reload-lqx and --restart are mutually exclusive: --restart assumed."  << std::endl;
-	flags.reload_only = false;
-    }
-
     /* Process all command line arguments.  If none specified, then     */
     /* input is assumed to come in from stdin.                          */
 
@@ -440,7 +437,7 @@ int main (int argc, char *argv[])
             outputFileName = "-";
         }
 
-        global_error_flag = Model::create( "-", outputFileName );
+        global_error_flag = Model::solve( solve_function, "-", outputFileName, output_format );
 
     } else {
 
@@ -465,7 +462,7 @@ int main (int argc, char *argv[])
             if ( file_count > 1 ) {
                 std::cout << argv[optind] << ':' << std::endl;
             }
-            global_error_flag |= Model::create( argv[optind], outputFileName );
+            global_error_flag |= Model::solve( solve_function, argv[optind], outputFileName, output_format );
         }
     }
 
@@ -483,9 +480,7 @@ void init_flags()
 {
     flags.no_execute            = false;
     flags.bounds_only           = false;
-    flags.parseable_output      = false;
     flags.rtf_output            = false;
-    flags.xml_output            = false;
     flags.generate              = false;
     flags.reset_mva		= false;
     flags.print_overtaking      = false;
@@ -516,8 +511,6 @@ void init_flags()
 
     flags.ignore_overhanging_threads = false;
     flags.full_reinitialize          = false;               /* Maybe a pragma?                      */
-    flags.reload_only                = false;
-    flags.restart		     = false;
 }
 
 /*

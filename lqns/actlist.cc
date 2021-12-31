@@ -10,7 +10,7 @@
  * February 1997
  *
  * ------------------------------------------------------------------------
- * $Id: actlist.cc 15048 2021-10-07 15:10:18Z greg $
+ * $Id: actlist.cc 15305 2021-12-31 16:01:37Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -25,6 +25,7 @@
 #include <lqio/input.h>
 #include <lqio/error.h>
 #include <mva/fpgoop.h>
+#include <lqio/dom_actlist.h>
 #include "activity.h"
 #include "actlist.h"
 #include "call.h"

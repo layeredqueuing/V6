@@ -12,7 +12,7 @@
 /*
  * Global vars for setting up simulation.
  *
- * $Id: lqsim.h 15298 2021-12-30 17:03:32Z greg $
+ * $Id: lqsim.h 15305 2021-12-31 16:01:37Z greg $
  */
 
 #if HAVE_CONFIG_H
@@ -50,10 +50,7 @@ extern "C" {
 
 extern bool debug_flag;			/* Debugging flag set?      	*/
 extern bool debug_interactive_stepping;
-extern bool global_parse_flag;		/* Parsable output desired? 	*/
-extern bool global_xml_flag;	      	/* Output XML results.		*/
-extern bool global_rtf_flag;		/* Output in RTF.		*/
-extern bool global_json_flag;		/* Output in JSON.		*/
+extern bool rtf_flag;			/* Output in RTF.		*/
 extern bool raw_stat_flag;		/* Verbose text output?	    	*/
 extern bool verbose_flag;		/* Verbose text output?	    	*/
 extern bool no_execute_flag;		/* Run simulation if false	*/

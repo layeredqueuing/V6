@@ -10,24 +10,26 @@
  * Activities are arcs in the graph that do work.
  * Nodes are points in the graph where splits and joins take place.
  *
- * $Id: actlist.cc 15157 2021-12-06 19:18:24Z greg $
+ * $Id: actlist.cc 15305 2021-12-31 16:01:37Z greg $
  */
 
-#include <sstream>
-#include <deque>
-#include <algorithm>
-#include <numeric>
-#include <parasol.h>
 #include "lqsim.h"
-#include <stdarg.h>
-#include <string.h>
-#include <assert.h>
+#include <algorithm>
+#include <cassert>
+#include <cstdarg>
+#include <cstring>
+#include <deque>
+#include <numeric>
+#include <sstream>
+#include <lqio/dom_actlist.h>
 #include <lqio/error.h>
 #include <lqio/input.h>
+#include <parasol.h>
 #include "activity.h"
 #include "actlist.h"
 #include "errmsg.h"
 #include "instance.h"
+#include "model.h"
 #include "task.h"
 
 static inline int i_max( int a, int b ) { return a > b ? a : b; }

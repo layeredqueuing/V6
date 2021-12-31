@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: model.cc 15298 2021-12-30 17:03:32Z greg $
+ * $Id: model.cc 15305 2021-12-31 16:01:37Z greg $
  *
  * Layer-ization of model.  The basic concept is from the reference
  * below.  However, model partioning is more complex than task vs device.
@@ -33,15 +33,13 @@
  */
 
 #include "lqns.h"
-#if HAVE_UNISTD_H
-#include <unistd.h>
-#endif
 #include <fstream>
 #include <cstdlib>
 #include <cmath>
 #include <errno.h>
-#include <sys/stat.h>
-#include <sys/types.h>
+#if HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 #include <lqio/dom_bindings.h>
 #include <lqio/dom_document.h>
 #include <lqio/error.h>
@@ -82,7 +80,8 @@ unsigned Model::__print_interval = 0;
 Processor * Model::__think_server = nullptr;
 Processor * Model::__cfs_server = nullptr;
 unsigned Model::__sync_submodel = 0;
-LQIO::DOM::Document::InputFormat Model::input_format = LQIO::DOM::Document::InputFormat::AUTOMATIC;
+
+LQIO::DOM::Document::InputFormat Model::__input_format = LQIO::DOM::Document::InputFormat::AUTOMATIC;
 
 std::set<Processor *,Model::lt_replica<Processor>> Model::__processor;
 std::set<Group *,Model::lt_replica<Group>> Model::__group;
@@ -98,16 +97,23 @@ std::set<Entry *,Model::lt_replica<Entry>> Model::__entry;
  */
 
 int
-Model::create( const std::string& inputFileName, const std::string& outputFileName )
+Model::solve( solve_using solve_function, const std::string& inputFileName, const std::string& outputFileName, LQIO::DOM::Document::OutputFormat outputFormat )
 {
+    static const std::map<const LQIO::DOM::Document::InputFormat,const LQIO::DOM::Document::OutputFormat> input_to_output_format = {
+	{ LQIO::DOM::Document::InputFormat::XML,	LQIO::DOM::Document::OutputFormat::XML },
+	{ LQIO::DOM::Document::InputFormat::JSON,	LQIO::DOM::Document::OutputFormat::JSON },
+	{ LQIO::DOM::Document::InputFormat::LQN,	LQIO::DOM::Document::OutputFormat::XML },
+    };
+    
     /* Open input file. */
 
     if ( !flags.no_execute && flags.generate && Generate::file_name.size() == 0 ) {
         Generate::file_name = LQIO::Filename( inputFileName )();
     }
 
-    /* This is a departure from before -- we begin by loading a model */
+    /* Loading the model */
     LQIO::DOM::Document* document = Model::load(inputFileName,outputFileName);
+    LQX::Program * program = document->getLQXProgram();
 
     /* Make sure we got a document */
 
@@ -116,13 +122,25 @@ Model::create( const std::string& inputFileName, const std::string& outputFileNa
     document->mergePragmas( pragmas.getList() );       /* Save pragmas -- prepare will process */
     if ( Model::prepare(document) == false ) return INVALID_INPUT;
 
-    if ( document->getInputFormat() == LQIO::DOM::Document::InputFormat::XML || document->getInputFormat() == LQIO::DOM::Document::InputFormat::JSON ) {
+    switch ( document->getInputFormat() ) {
+    case LQIO::DOM::Document::InputFormat::JSON:
+    case LQIO::DOM::Document::InputFormat::XML:
 	if ( LQIO::Spex::__no_header ) {
 	    std::cerr << LQIO::io_vars.lq_toolname << ": --no-header is ignored for " << inputFileName << "." << std::endl;
 	}
 	if ( LQIO::Spex::__print_comment ) {
 	    std::cerr << LQIO::io_vars.lq_toolname << ": --print-comment is ignored for " << inputFileName << "." << std::endl;
 	}
+	break;
+    default:;
+    }
+
+    /*
+     * Set output format from input, or if LQN and LQX then force to XML.
+     */
+    
+    if ( outputFormat == LQIO::DOM::Document::OutputFormat::DEFAULT && (document->getInputFormat() != LQIO::DOM::Document::InputFormat::LQN || program != nullptr) ) {
+	outputFormat = input_to_output_format.at( document->getInputFormat() );
     }
 
     /* declare Model * at this scope but don't instantiate due to problems with LQX programs and registering external symbols*/
@@ -130,7 +148,6 @@ Model::create( const std::string& inputFileName, const std::string& outputFileNa
     int rc = 0;
 
     /* We can simply run if there's no control program */
-    LQX::Program * program = document->getLQXProgram();
     FILE * output = nullptr;
     if ( !program ) {
 
@@ -145,13 +162,13 @@ Model::create( const std::string& inputFileName, const std::string& outputFileNa
 	    /* Simply invoke the solver for the current DOM state */
 
 	    try {
-		model = Model::create( document, inputFileName, outputFileName );
+		model = Model::create( document, inputFileName, outputFileName, outputFormat );
 
 		if ( model->check() && model->initialize() ) {
 		    if ( Pragma::spexComment() ) {	// Not spex/lqx, so output on stderr.
 			std::cerr << inputFileName << ": " << document->getModelCommentString() << std::endl;
 		    }
-		    model->solve();
+		    model->compute();
 		} else {
 		    rc = INVALID_INPUT;
 		}
@@ -186,16 +203,10 @@ Model::create( const std::string& inputFileName, const std::string& outputFileNa
 	    program->print( std::cout );
 	}
 
-	model = Model::create( document, inputFileName, outputFileName );
+	model = Model::create( document, inputFileName, outputFileName, outputFormat );
 
 	LQX::Environment * environment = program->getEnvironment();
-	if ( flags.restart ) {
-	    environment->getMethodTable()->registerMethod(new SolverInterface::Solve(document, &Model::restart, model));
-	} else if ( flags.reload_only ) {
-	    environment->getMethodTable()->registerMethod(new SolverInterface::Solve(document, &Model::reload, model));
-	} else {
-	    environment->getMethodTable()->registerMethod(new SolverInterface::Solve(document, &Model::solve, model));
-	}
+	environment->getMethodTable()->registerMethod(new SolverInterface::Solve(document, solve_function, model));
 	LQIO::RegisterBindings(environment, document);
 
 	if ( outputFileName.size() > 0 && outputFileName != "-" && LQIO::Filename::isRegularFile(outputFileName.c_str()) ) {
@@ -261,7 +272,7 @@ Model::load( const std::string& input_filename, const std::string& output_filena
     unsigned errorCode = 0;
 
     /* Attempt to load in the document from the filename/ptr and configured io_vars */
-    return LQIO::DOM::Document::load(input_filename, input_format, errorCode, false);
+    return LQIO::DOM::Document::load(input_filename, __input_format, errorCode, false);
 }
 
 
@@ -280,9 +291,7 @@ Model::prepare(const LQIO::DOM::Document* document)
     LQIO::io_vars.severity_level = Pragma::severityLevel();
     LQIO::Spex::__no_header = !Pragma::spexHeader();
     LQIO::Spex::__print_comment = Pragma::spexComment();
-    if ( Pragma::has( LQIO::DOM::Pragma::_mol_underrelaxation_ ) ) {
-	MVA::MOL_multiserver_underrelaxation = Pragma::molUnderrelaxation();
-    }
+    MVA::MOL_multiserver_underrelaxation = Pragma::molUnderrelaxation();
 
     /* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- [Step 1: Add Processors] */
 
@@ -410,7 +419,7 @@ Model::recalculateDynamicValues( const LQIO::DOM::Document* document )
  */
 
 Model *
-Model::create( const LQIO::DOM::Document * document, const std::string& inputFileName, const std::string& outputFileName )
+Model::create( const LQIO::DOM::Document * document, const std::string& inputFileName, const std::string& outputFileName, LQIO::DOM::Document::OutputFormat outputFormat )
 {
     static const std::map<const Pragma::Layering, create_func> create_funcs = {
 	{ Pragma::Layering::BATCHED,  			    &Batch_Model::create },
@@ -434,7 +443,7 @@ Model::create( const LQIO::DOM::Document * document, const std::string& inputFil
     if ( flags.verbose ) std::cerr << "Create: " << Pragma::getLayeringStr() << " layers..." << std::endl;
 
     create_func f = create_funcs.at(Pragma::layering());
-    Model * model = (*f)( document, inputFileName, outputFileName );
+    Model * model = (*f)( document, inputFileName, outputFileName, outputFormat );
 
     if ( !model ) throw std::runtime_error( "could not create model" );
 
@@ -454,31 +463,22 @@ Model::setModelParameters( const LQIO::DOM::Document* doc )
     if ( __print_interval == 0 ) {
 	__print_interval = doc->getModelPrintIntervalValue();
     }
-    if ( Pragma::has( LQIO::DOM::Pragma::_iteration_limit_ ) ) {
-	__iteration_limit = Pragma::iterationLimit();
-    } else {
-	__iteration_limit = doc->getModelIterationLimitValue();
-    }
+
+    __iteration_limit = Pragma::iterationLimit() > 0 ? Pragma::iterationLimit() : doc->getModelIterationLimitValue();
     if ( __iteration_limit < 1 ) {
 	LQIO::input_error2( ADV_ITERATION_LIMIT, __iteration_limit, 50 );
 	__iteration_limit =  50;
     }
-    if ( Pragma::has( LQIO::DOM::Pragma::_convergence_value_ ) ) {
-	__convergence_value = Pragma::convergenceValue();
-    } else {
-	__convergence_value = doc->getModelConvergenceValue();
-    }
-    if ( __convergence_value <= 0 ) {
+
+    __convergence_value = Pragma::convergenceValue() > 0. ? Pragma::convergenceValue() : doc->getModelConvergenceValue();
+    if ( __convergence_value <= 0. ) {
 	LQIO::input_error2( ADV_CONVERGENCE_VALUE, __convergence_value, 0.00001 );
 	__convergence_value = 0.00001;
     } else if ( __convergence_value > 0.01 ) {
 	LQIO::input_error2( ADV_LARGE_CONVERGENCE_VALUE, __convergence_value );
     }
-    if ( Pragma::has( LQIO::DOM::Pragma::_underrelaxation_ ) ) {
-	__underrelaxation = Pragma::underrelaxation();
-    } else {
-	__underrelaxation = doc->getModelUnderrelaxationCoefficientValue();
-    }
+    
+    __underrelaxation = Pragma::underrelaxation() > 0. ? Pragma::underrelaxation() : doc->getModelUnderrelaxationCoefficientValue();
     if ( __underrelaxation <= 0.0 || 2.0 < __underrelaxation ) {
 	LQIO::input_error2( ADV_UNDERRELAXATION, __underrelaxation );
 	__underrelaxation = 0.9;
@@ -493,8 +493,8 @@ Model::setModelParameters( const LQIO::DOM::Document* doc )
  * Constructor.
  */
 
-Model::Model( const LQIO::DOM::Document * document, const std::string& inputFileName, const std::string& outputFileName )
-    : _converged(false), _iterations(0), _step_count(0), _model_initialized(false), _document(document), _input_file_name(inputFileName), _output_file_name(outputFileName)
+Model::Model( const LQIO::DOM::Document * document, const std::string& inputFileName, const std::string& outputFileName, LQIO::DOM::Document::OutputFormat outputFormat )
+    : _converged(false), _iterations(0), _step_count(0), _model_initialized(false), _document(document), _input_file_name(inputFileName), _output_file_name(outputFileName), _output_format(outputFormat)
 {
     __sync_submodel = 0;
 }
@@ -819,11 +819,11 @@ Model::reinitStations()
 
 
 /*
- * Read model description.  Return true if all went well.
+ * Now that the model is constructed, solve it by calling Model::run().
  */
 
 bool
-Model::solve()
+Model::compute()
 {
     SolverReport report( const_cast<LQIO::DOM::Document *>(_document), _MVAStats );
     setModelParameters( _document );
@@ -854,126 +854,19 @@ Model::solve()
 
     report.insertDOMResults();
     insertDOMResults();
+    _document->print( _output_file_name, _document->getResultInvocationNumber() > 0 ? SolverInterface::Solve::customSuffix : std::string(""), _output_format, flags.rtf_output );
+
+    //if ( flags.print_overtaking ) {
+    //printOvertaking( output );
+    //}
 
     if ( flags.generate ) {
 	Generate::makefile( nSubmodels() );	/* We are dumping C source -- make a makefile. */
-    }
-
-    const bool lqx_output = _document->getResultInvocationNumber() > 0;
-    const std::string directoryName = createDirectory();
-    const std::string suffix = lqx_output ? SolverInterface::Solve::customSuffix : "";
-
-    /* override is true for '-p -o filename.out filename.in' == '-p filename.in' */
-
-    bool override = false;
-    if ( hasOutputFileName() && LQIO::Filename::isRegularFile( _output_file_name ) != 0 ) {
-	LQIO::Filename filename( _input_file_name, flags.rtf_output ? "rtf" : "out" );
-	override = filename() == _output_file_name;
-    }
-
-    if ( override || ((!hasOutputFileName() || directoryName.size() > 0 ) && _input_file_name != "-" )) {
-	if ( _document->getInputFormat() == LQIO::DOM::Document::InputFormat::XML || flags.xml_output ) {	/* No parseable/json output, so create XML */
-	    LQIO::Filename filename( _input_file_name, "lqxo", directoryName, suffix );
-	    std::ofstream output;
-	    filename.backup();
-	    output.open( filename().c_str(), std::ios::out );
-	    if ( !output ) {
-		solution_error( LQIO::ERR_CANT_OPEN_FILE, filename().c_str(), strerror( errno ) );
-	    } else {
-		_document->print( output, LQIO::DOM::Document::OutputFormat::XML );
-		output.close();
-	    }
-	}
-
-	if ( _document->getInputFormat() == LQIO::DOM::Document::InputFormat::JSON || flags.json_output ) {
-	    LQIO::Filename filename( _input_file_name, "lqjo", directoryName, suffix );
-	    std::ofstream output;
-	    output.open( filename().c_str(), std::ios::out );
-	    if ( !output ) {
-		solution_error( LQIO::ERR_CANT_OPEN_FILE, filename().c_str(), strerror( errno ) );
-	    } else {
-		_document->print( output, LQIO::DOM::Document::OutputFormat::JSON );
-		output.close();
-	    }
-	}
-
-	/* Parseable output. */
-
-	if ( ( _document->getInputFormat() == LQIO::DOM::Document::InputFormat::LQN && lqx_output && !flags.xml_output ) || flags.parseable_output ) {
-	    LQIO::Filename filename( _input_file_name, "p", directoryName, suffix );
-	    std::ofstream output;
-	    output.open( filename().c_str(), std::ios::out );
-	    if ( !output ) {
-		solution_error( LQIO::ERR_CANT_OPEN_FILE, filename().c_str(), strerror( errno ) );
-	    } else {
-		_document->print( output, LQIO::DOM::Document::OutputFormat::PARSEABLE );
-		output.close();
-	    }
-	}
-
-	/* Regular output */
-
-	LQIO::Filename filename( _input_file_name, flags.rtf_output ? "rtf" : "out", directoryName, suffix );
-
-	std::ofstream output;
-	output.open( filename().c_str(), std::ios::out );
-	if ( !output ) {
-	    solution_error( LQIO::ERR_CANT_OPEN_FILE, filename().c_str(), strerror( errno ) );
-	} else if ( flags.rtf_output ) {
-	    _document->print( output, LQIO::DOM::Document::OutputFormat::RTF );
-	} else {
-	    _document->print( output );
-	    if ( flags.print_overtaking ) {
-		printOvertaking( output );
-	    }
-	}
-	output.close();
-
-    } else if ( _output_file_name == "-" || _input_file_name == "-" ) {
-
-	if ( flags.parseable_output ) {
-	    _document->print( std::cout, LQIO::DOM::Document::OutputFormat::PARSEABLE );
-	} else if ( flags.rtf_output ) {
-	    _document->print( std::cout, LQIO::DOM::Document::OutputFormat::RTF );
-	} else {
-	    _document->print( std::cout );
-	    if ( flags.print_overtaking ) {
-		printOvertaking( std::cout );
-	    }
-	}
-
-    } else {
-
-	/* Do not map filename. */
-
-	LQIO::Filename::backup( _output_file_name );
-
-	std::ofstream output;
-	output.open( _output_file_name.c_str(), std::ios::out );
-	if ( !output ) {
-	    solution_error( LQIO::ERR_CANT_OPEN_FILE, _output_file_name.c_str(), strerror( errno ) );
-	} else if ( flags.xml_output ) {
-	    _document->print( output, LQIO::DOM::Document::OutputFormat::XML );
-	} else if ( flags.json_output ) {
-	    _document->print( output, LQIO::DOM::Document::OutputFormat::JSON );
-	} else if ( flags.parseable_output ) {
-	    _document->print( output, LQIO::DOM::Document::OutputFormat::PARSEABLE );
-	} else if ( flags.rtf_output ) {
-	    _document->print( output, LQIO::DOM::Document::OutputFormat::RTF );
-	} else {
-	    _document->print( output );
-	    if ( flags.print_overtaking ) {
-		printOvertaking( output );
-	    }
-	}
-	output.close();
     }
     if ( flags.verbose ) {
 	report.print( std::cout );
     }
 
-    std::cout.flush();
-    std::cerr.flush();
     return true;
 }
 
@@ -1009,14 +902,10 @@ bool
 Model::restart()
 {
     try {
-	if ( !reload() ) {
-	    return solve();
-	}
-	return false;
+	if ( reload() ) return true;
     }
-    catch ( const LQX::RuntimeException& e ) {
-	return solve();
-    }
+    catch ( const LQX::RuntimeException& e ) {}
+    return compute();
 }
 
 
@@ -1085,26 +974,26 @@ Model::printIntermediate( const double convergence ) const
 {
     SolverReport report( const_cast<LQIO::DOM::Document *>(_document), _MVAStats );
 
-    const std::string directoryName = createDirectory();
-    const std::string suffix = _document->getResultInvocationNumber() > 0 ? SolverInterface::Solve::customSuffix : "";
-
     report.insertDOMResults();
     insertDOMResults();
 
+    const bool lqx_output = _document->getResultInvocationNumber() > 0;
+    const std::string suffix = lqx_output ? SolverInterface::Solve::customSuffix : "";
+    const std::string directory_name = LQIO::Filename::createDirectory( hasOutputFileName() ? _output_file_name : _input_file_name, lqx_output );
     std::string extension;
-    if ( flags.parseable_output ) {
-    	extension = "p";
-    } else if ( flags.xml_output ) {
-    	extension = "lqxo";
+
+    const std::map<const LQIO::DOM::Document::OutputFormat,const std::string>::const_iterator ext_iter =  LQIO::DOM::Document::__output_extensions.find( _output_format );
+    if ( ext_iter != LQIO::DOM::Document::__output_extensions.end() ) {
+	extension = ext_iter->second;
     } else if ( flags.json_output ) {
 	extension = "json";
     } else if ( flags.rtf_output ) {
-    	extension = "rtf";
+	extension = "rtf";
     } else {
-    	extension = "out";
+	extension = "out";
     }
 
-    LQIO::Filename filename( _input_file_name, extension, directoryName, suffix );
+    LQIO::Filename filename( _input_file_name, extension, directory_name, suffix );
 
     /* Make filename look like an emacs autosave file. */
     filename << "~" << _iterations << "~";
@@ -1112,16 +1001,14 @@ Model::printIntermediate( const double convergence ) const
     report.finish( _converged, convergence, _iterations );	/* Save results */
 
     std::ofstream output;
-    output.open( filename().c_str(), std::ios::out );
+    output.open( filename(), std::ios::out );
 
     if ( !output ) return;			/* Ignore errors */
 
-    if ( flags.xml_output ) {
-	_document->print( output, LQIO::DOM::Document::OutputFormat::XML );
-    } else if ( flags.json_output ) {
-	_document->print( output, LQIO::DOM::Document::OutputFormat::JSON );
-    } else if ( flags.parseable_output ) {
-	_document->print( output, LQIO::DOM::Document::OutputFormat::PARSEABLE );
+    if ( ext_iter != LQIO::DOM::Document::__output_extensions.end() ) {
+	_document->print( std::cout, ext_iter->first );
+    } else if ( flags.rtf_output ) {
+	_document->print( output, LQIO::DOM::Document::OutputFormat::RTF );
     } else {
 	_document->print( output );
     }
@@ -1181,44 +1068,6 @@ Model::printOvertaking( std::ostream& output ) const
 }
 
 
-
-/*
- * Create a directory (if needed)
- */
-
-std::string
-Model::createDirectory() const
-{
-    std::string directoryName;
-    if ( hasOutputFileName() && LQIO::Filename::isDirectory( _output_file_name ) > 0 ) {
-	directoryName = _output_file_name;
-    }
-
-    if ( _document->getResultInvocationNumber() > 0 ) {
-	if ( directoryName.empty() ) {
-	    /* We need to create a directory to store output. */
-	    LQIO::Filename filename( hasOutputFileName() ? _output_file_name : _input_file_name, "d" );		/* Get the base file name */
-	    directoryName = filename();
-	}
-    }
-
-    if ( directoryName.size() > 0 ) {
-	int rc = access( directoryName.c_str(), R_OK|W_OK|X_OK );
-	if ( rc < 0 ) {
-	    if ( errno == ENOENT ) {
-#if defined(__WINNT__)
-		rc = mkdir( directoryName.c_str() );
-#else
-		rc = mkdir( directoryName.c_str(), S_IRUSR|S_IWUSR|S_IXUSR|S_IRGRP|S_IWGRP|S_IXGRP|S_IWOTH|S_IROTH|S_IXOTH );
-#endif
-	    }
-	    if ( rc < 0 ) {
-		solution_error( LQIO::ERR_CANT_OPEN_DIRECTORY, directoryName.c_str(), strerror( errno ) );
-	    }
-	}
-    }
-    return directoryName;
-}
 
 /*
  * Sort tasks into layers.  Start from reference tasks and tasks

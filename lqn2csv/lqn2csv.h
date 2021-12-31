@@ -9,13 +9,17 @@
  *
  * October, 2021
  *
- * $Id: lqn2csv.h 15229 2021-12-17 13:32:10Z greg $
+ * $Id: lqn2csv.h 15305 2021-12-31 16:01:37Z greg $
  *
  * ------------------------------------------------------------------------
  */
 
-#if	!defined(LQNRESULT_H)
-#define LQNRESULT_H
+#if !defined(LQN2CSV_H)
+#define LQN2CSV_H
+
+#if HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #include <string>
 

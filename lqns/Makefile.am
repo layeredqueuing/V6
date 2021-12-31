@@ -1,9 +1,9 @@
 #----------------------------------------------------------------------
-# $Id: Makefile.am 15280 2021-12-28 13:11:27Z greg $
+# $Id: Makefile.am 15305 2021-12-31 16:01:37Z greg $
 #----------------------------------------------------------------------
 
 SUBDIRS		= regression 
-AM_CPPFLAGS	= -I.. -I../lqiolib/src/headers -I../lqx/libsrc/headers -I../libmva/src/headers
+AM_CPPFLAGS	= -I../lqiolib/src/headers -I../lqx/libsrc/headers -I../libmva/src/headers
 bin_PROGRAMS 	= lqns
 lqns_SOURCES	= activity.cc actlist.cc call.cc entity.cc entry.cc \
 		  entrythread.cc errmsg.cc gamma.cc generate.cc group.cc help.cc interlock.cc \
