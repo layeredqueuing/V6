@@ -1,9 +1,7 @@
 /* -*- c++ -*- result.h	-- Greg Franks
  *
- * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqsim/result.h $
- *
  * ------------------------------------------------------------------------
- * $Id: result.h 14153 2020-11-30 18:03:53Z greg $
+ * $Id: result.h 15319 2022-01-01 17:27:22Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -12,7 +10,6 @@
 
 extern unsigned number_blocks;	/* For block statistics. 	*/
 
-/* Can't be class (because constructors NOT allowed in actlist union */
 
 struct result_t {
     result_t() : raw(0), _sum(0), _sum_sqr(0), _count(0), _count_sqr(0), _avg_count(0), _n(0), _type(0) {}

@@ -9,7 +9,7 @@
 /*
  * Input processing.
  *
- * $Id: model.cc 15305 2021-12-31 16:01:37Z greg $
+ * $Id: model.cc 15319 2022-01-01 17:27:22Z greg $
  */
 
 #include "lqsim.h"
@@ -91,16 +91,16 @@ Model::Model( LQIO::DOM::Document* document, const std::string& input_file_name,
 
 Model::~Model()
 {
-    std::for_each( Processor::__processors.begin(), Processor::__processors.end(), Model::Delete<Processor*> );
+    std::for_each( Processor::__processors.begin(), Processor::__processors.end(), Delete<Processor*> );
     Processor::__processors.clear();
 
-    std::for_each( Group::__groups.begin(), Group::__groups.end(), Model::Delete<Group *> );
+    std::for_each( Group::__groups.begin(), Group::__groups.end(), Delete<Group *> );
     Group::__groups.clear();
 
-    std::for_each( Task::__tasks.begin(), Task::__tasks.end(), Model::Delete<Task *> );
+    std::for_each( Task::__tasks.begin(), Task::__tasks.end(), Delete<Task *> );
     Task::__tasks.clear();
 
-    std::for_each( Entry::__entries.begin(), Entry::__entries.end(), Model::Delete<Entry *> );
+    std::for_each( Entry::__entries.begin(), Entry::__entries.end(), Delete<Entry *> );
     Entry::__entries.clear();
 
     Activity::actConnections.clear();
@@ -121,52 +121,37 @@ Model::~Model()
 int
 Model::solve( solve_using run_function, const std::string& input_file_name, LQIO::DOM::Document::InputFormat input_format, const std::string& output_file_name, LQIO::DOM::Document::OutputFormat output_format, const LQIO::DOM::Pragma& pragmas )
 {
-    static const std::map<const LQIO::DOM::Document::InputFormat,const LQIO::DOM::Document::OutputFormat> input_to_output_format = {
-	{ LQIO::DOM::Document::InputFormat::XML,	LQIO::DOM::Document::OutputFormat::XML },
-	{ LQIO::DOM::Document::InputFormat::JSON,	LQIO::DOM::Document::OutputFormat::JSON },
-	{ LQIO::DOM::Document::InputFormat::LQN,	LQIO::DOM::Document::OutputFormat::XML },
-    };
-
     LQIO::io_vars.reset();
 
     /* load the model into the DOM document.  */
 
     unsigned int status = 0;
     LQIO::DOM::Document* document = LQIO::DOM::Document::load( input_file_name, input_format, status, false );
-    LQX::Program * program = nullptr;
 
     /* Make sure we got a document */
+
     if ( document == nullptr || LQIO::io_vars.anError() ) return INVALID_INPUT;
 
-    switch ( document->getInputFormat() ) {
-    case LQIO::DOM::Document::InputFormat::JSON:
-    case LQIO::DOM::Document::InputFormat::XML:
+    if ( LQIO::Spex::numberOfInputVariables() == 0 ) {
 	if ( LQIO::Spex::__no_header ) {
 	    std::cerr << LQIO::io_vars.lq_toolname << ": --no-header is ignored for " << input_file_name << "." << std::endl;
 	}
 	if ( LQIO::Spex::__print_comment ) {
 	    std::cerr << LQIO::io_vars.lq_toolname << ": --print-comment is ignored for " << input_file_name << "." << std::endl;
 	}
-	break;
-    default:;
-    }
-
-    /*
-     * Set output format from input, or if LQN and LQX then force to XML.
-     */
-    
-    if ( output_format == LQIO::DOM::Document::OutputFormat::DEFAULT && (document->getInputFormat() != LQIO::DOM::Document::InputFormat::LQN || program != nullptr) ) {
-	output_format = input_to_output_format.at( document->getInputFormat() );
     }
 
     Model model( document, input_file_name, output_file_name, output_format );
-
+    LQX::Program * program = nullptr;
     FILE * output = nullptr;
     try { 
-
-	if( !model.prepare() ) throw std::runtime_error( "Model::prepare" );
+	if ( !model.prepare() ) throw std::runtime_error( "Model::prepare" );
 
 	document->mergePragmas( pragmas.getList() );       /* Save pragmas */
+
+#if BUG_313
+	extend();			/* convert entry think times	*/
+#endif
 
 	/* We can simply run if there's no control program */
 
@@ -356,6 +341,22 @@ Model::prepare()
 
 
 
+#if BUG_313
+/*
+ * Add a think server if there are any entries with think times.
+ */
+
+/* static */ void
+Model::extend()
+{
+    for ( std::set<Task *>::const_iterator task = Task::__tasks.begin(); task != Task::__tasks.end(); ++task ) {
+	if ( (*task)->has_think_time() ) {
+	}
+    }
+}
+#endif
+
+
 /*
  * Create all of the parasol tasks instances after the simulation has
  * started.  Some construction is needed after the simulation has
@@ -411,38 +412,7 @@ Model::print_intermediate()
 	.setResultValid(_confidence <= _parameters._precision)
 	.setResultIterations(number_blocks);
 
-    const bool lqx_output = _document->getResultInvocationNumber() > 0;
-    const std::string directory_name = LQIO::Filename::createDirectory( hasOutputFileName() ? _output_file_name : _input_file_name, lqx_output );
-    const std::string suffix = lqx_output ? SolverInterface::Solve::customSuffix : "";
-
-    std::string extension;
-    const std::map<const LQIO::DOM::Document::OutputFormat,const std::string>::const_iterator ext_iter =  LQIO::DOM::Document::__output_extensions.find( _output_format );
-    if ( ext_iter != LQIO::DOM::Document::__output_extensions.end() ) {
-	extension = ext_iter->second;
-    } else if ( rtf_flag ) {
-	extension = "rtf";
-    } else {
-	extension = "out";
-    }
-
-    LQIO::Filename filename( _input_file_name, extension, directory_name, suffix );
-
-    /* Make filename look like an emacs autosave file. */
-    filename << "~" << number_blocks << "~";
-
-    std::ofstream output;
-    output.open( filename(), std::ios::out );
-
-    if ( !output ) {
-	return;			/* Ignore errors */
-    } else if ( ext_iter != LQIO::DOM::Document::__output_extensions.end() ) {
-	_document->print( std::cout, ext_iter->first );
-    } else if ( rtf_flag ) {
-	_document->print( output, LQIO::DOM::Document::OutputFormat::RTF );
-    } else {
-	_document->print( output );
-    }
-    output.close();
+    _document->print( _output_file_name, SolverInterface::Solve::customSuffix, _output_format, rtf_flag, number_blocks );
 }
 
 
@@ -643,7 +613,7 @@ Model::reload()
 {
     /* Default mapping */
 
-    LQIO::Filename directory_name( hasOutputFileName() ? _output_file_name : _input_file_name, "d" );		/* Get the base file name */
+    LQIO::Filename directory_name( getOutputFileName(), "d" );		/* Get the base file name */
 
     if ( access( directory_name().c_str(), R_OK|W_OK|X_OK ) < 0 ) {
 	solution_error( LQIO::ERR_CANT_OPEN_DIRECTORY, directory_name().c_str(), strerror( errno ) );

@@ -1,8 +1,8 @@
 /* -*- c++ -*-
- * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqsim/group.h $
- * Global vars for simulation.
  *
- * $Id: group.h 15298 2021-12-30 17:03:32Z greg $
+ * Processor Group handling.
+ *
+ * $Id: group.h 15319 2022-01-01 17:27:22Z greg $
  */
 
 /************************************************************************/
@@ -44,6 +44,10 @@ class Group
 	const std::string _s;
     };
 
+private:
+    Group( const Group& ) = delete;
+    Group operator=( const Group& ) = delete;
+    
 public:
     static std::set<Group *, ltGroup> __groups;
 

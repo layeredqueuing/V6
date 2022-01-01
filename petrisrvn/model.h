@@ -10,7 +10,7 @@
 /************************************************************************/
 
 /*
- * $Id: model.h 15305 2021-12-31 16:01:37Z greg $
+ * $Id: model.h 15311 2021-12-31 22:23:29Z greg $
  *
  * Solve LQN using petrinets.
  */
@@ -68,6 +68,7 @@ public:
 
 private:
     explicit Model( LQIO::DOM::Document *, const std::string&, const std::string&, LQIO::DOM::Document::OutputFormat );
+    template <typename Type> static inline void Delete( Type x ) { delete x; }
 
 public:
     virtual  ~Model();

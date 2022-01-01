@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- * $Id: expat_document.cpp 15305 2021-12-31 16:01:37Z greg $
+ * $Id: expat_document.cpp 15320 2022-01-01 17:27:38Z greg $
  *
  * Read in XML input files.
  *
@@ -2528,7 +2528,7 @@ namespace LQIO {
                            << XML::time_attribute( Xsystem_cpu_time, _document.getResultSysTime() )
                            << XML::time_attribute( Xelapsed_time, _document.getResultElapsedTime() );
 		    if ( _document.getResultMaxRSS() > 0 ) {
-			output << XML::time_attribute( Xmax_rss, _document.getResultMaxRSS() );
+			output << XML::attribute( Xmax_rss, _document.getResultMaxRSS() );
 		    }
                     if ( has_mva_info ) {
                         output << ">" << std::endl;

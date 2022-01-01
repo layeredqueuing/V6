@@ -1,3 +1,5 @@
+/* -*- c++ -*- */
+
 /************************************************************************/
 /* Copyright the Real-Time and Distributed Systems Group,		*/
 /* Department of Systems and Computer Engineering,			*/
@@ -7,9 +9,9 @@
 /************************************************************************/
 
 /*
- * Global vars for simulation.
+ * Lqsim-parasol entry interface.
  *
- * $Id: entry.h 15298 2021-12-30 17:03:32Z greg $
+ * $Id: entry.h 15319 2022-01-01 17:27:22Z greg $
  */
 
 #ifndef ENTRY_H
@@ -66,8 +68,8 @@ class Entry {				/* task entry struct	        */
     };
 
 private:
-    Entry( const Entry& );
-    Entry& operator=( const Entry& );
+    Entry( const Entry& ) = delete;
+    Entry& operator=( const Entry& ) = delete;
     
 public:
     enum class Type {
@@ -118,6 +120,7 @@ public:
     bool is_send_no_reply() const { return _recv == Type::SEND_NO_REPLY; }
     bool is_rendezvous() const { return _recv == Type::RENDEZVOUS; }
     bool has_lost_messages() const;
+    bool has_think_time() const;
 
     virtual bool test_and_set( LQIO::DOM::Entry::Type );			/* Sets _type too!		*/
     bool test_and_set_recv( Type );

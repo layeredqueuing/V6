@@ -1,3 +1,4 @@
+/* -*- c++ -*- */
 /************************************************************************/
 /* Copyright the Real-Time and Distributed Systems Group,		*/
 /* Department of Systems and Computer Engineering,			*/
@@ -7,19 +8,17 @@
 /************************************************************************/
 
 /*
- * Global vars for simulation.
+ * Lqsim-parasol Processor interface.
  *
- * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqsim/processor.h $
- *
- * $Id: processor.h 15298 2021-12-30 17:03:32Z greg $
+ * $Id: processor.h 15319 2022-01-01 17:27:22Z greg $
  */
 
 #ifndef	PROCESSOR_H
 #define PROCESSOR_H
 
 #include <vector>
+#include <map>
 #include <string>
-#include <ostream>
 #include <lqio/dom_processor.h>
 #include "result.h"
 
@@ -55,14 +54,14 @@ public:
 	const std::string _s;
     };
 
-    static std::set <Processor *, ltProcessor> __processors;	/* Processor table.	*/
+    static std::set<Processor *, ltProcessor> __processors;	/* Processor table.	*/
 
 private:
     /*
      * Translate input.h types to para_proto.h types.
      */
 
-    static int scheduling_types[N_SCHEDULING_TYPES];
+    static const std::map<const scheduling_type,const int> scheduling_types;
 
 protected:
     static Processor * processor_table[MAX_NODES+1];
@@ -74,8 +73,8 @@ public:
     static void add( const std::pair<std::string,LQIO::DOM::Processor*>& );
 
 private:
-    Processor( const Processor& );
-    Processor& operator=( const Processor& );
+    Processor( const Processor& ) = delete;
+    Processor& operator=( const Processor& ) = delete;
 
 public:
     Processor( LQIO::DOM::Processor * );
@@ -106,6 +105,7 @@ public:
 public:
     bool trace_flag;			/* For tracing.			*/
     result_t r_util;			/* Utilization.			*/
+    Group * _group;			/*				*/
 
 protected:
     long _node_id;			/* Parasol node id	.	*/

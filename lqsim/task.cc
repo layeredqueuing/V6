@@ -10,7 +10,7 @@
 /*
  * Input output processing.
  *
- * $Id: task.cc 15298 2021-12-30 17:03:32Z greg $
+ * $Id: task.cc 15319 2022-01-01 17:27:22Z greg $
  */
 
 #include <iostream>
@@ -104,26 +104,13 @@ Task::Task( const Task::Type type, LQIO::DOM::Task* dom, Processor * processor, 
 
 Task::~Task()
 {
-    for ( std::vector<Activity *>::iterator act = _activity.begin(); act != _activity.end(); ++act ) {
-	delete *act;
-    }
-    for ( std::vector<ActivityList *>::iterator list = _act_list.begin(); list != _act_list.end(); ++list ) {
-	delete *list;
-    }
-
-    _activity.clear();
-    _act_list.clear();
-    _forks.clear();
-    _joins.clear();
+    std::for_each( _activity.begin(), _activity.end(), Delete<Activity *> );
+    std::for_each( _act_list.begin(), _act_list.end(), Delete<ActivityList *> );
+    std::for_each( _free_msgs.begin(), _free_msgs.end(), Delete<Message *> );
 
     if ( _hist_data ) {
 	delete _hist_data;
     }
-    for ( std::list<Message *>::iterator msg = _free_msgs.begin(); msg != _free_msgs.end(); ++msg ) {
-	delete *msg;
-    }
-    _free_msgs.clear();
-    _pending_msgs.clear();
 }
 
 
@@ -141,7 +128,7 @@ Task::configure()
     for_each( _act_list.begin(), _act_list.end(), Exec<ActivityList>( &ActivityList::configure ) );
     total_calls += for_each( _entry.begin(), _entry.end(), ExecSum<Entry,double>( &Entry::configure ) ).sum();
 
-    if ( total_calls == 0 && is_reference_task() ) { 
+    if ( total_calls == 0 && is_reference_task() ) {
 	LQIO::solution_error( LQIO::WRN_NO_SENDS_FROM_REF_TASK, name() );
     }
 
@@ -212,7 +199,7 @@ Task::initialize()
      * don't know how many joins we have when we allocate the task
      * class object.
      */
-	
+
     for ( std::vector<AndForkActivityList *>::iterator lp = _forks.begin(); lp != _forks.end(); ++lp ) {
 	(*lp)->set_visits( 0 );
 	for ( unsigned j = 0; j < (*lp)->size(); ++j ) {
@@ -246,12 +233,12 @@ Task::node_id() const
     return processor() ? processor()->node_id() : 0;
 }
 
-void 
+void
 Task::set_start_activity( LQIO::DOM::Entry* dom )
 {
     const char * entry_name = dom->getName().c_str();
     Entry * ep = Entry::find( entry_name );
-	
+
     if ( !ep ) return;
     if ( !ep->test_and_set( LQIO::DOM::Entry::Type::ACTIVITY ) ) return;
 
@@ -283,7 +270,7 @@ Task::build_links()
 		    const int h = proc->node_id();
 		    if ( static_cast<int>(link_tab[h]) == -1 ) {
 			char link_name[BUFSIZ];
-						
+
 			(void) sprintf( link_name, "%s.%s", name(), proc->name() );
 
 			/*
@@ -314,11 +301,11 @@ Task::has_send_no_reply() const
     return std::any_of( _entry.begin(), _entry.end(), Predicate<Entry>( &Entry::is_send_no_reply ) );
 }
 
-/* 
- * Create a new activity assigned to a given task and set the information DOM entry for it 
+/*
+ * Create a new activity assigned to a given task and set the information DOM entry for it
  */
 
-Activity * 
+Activity *
 Task::add_activity( LQIO::DOM::Activity * dom_activity )
 {
     Activity * activity = find_activity( dom_activity->getName().c_str() );
@@ -345,13 +332,13 @@ Task::find_activity( const char * activity_name ) const
     if ( ap != _activity.end() ) {
 	return *ap;
     } else {
-	return 0;
+	return nullptr;
     }
 }
 
 
 /*
- * allocate message pool for asynchronous messages.  
+ * allocate message pool for asynchronous messages.
  */
 
 void
@@ -400,7 +387,7 @@ double
 Task::throughput() const
 {
     switch ( type() ) {
-    case Task::Type::SEMAPHORE: return r_cycle.mean_count() / (Model::block_period() * n_entries()); 		/* Only count for one entry.  */
+    case Task::Type::SEMAPHORE: return r_cycle.mean_count() / (Model::block_period() * n_entries()); 	/* Only count for one entry.  */
     case Task::Type::RWLOCK:	return r_cycle.mean_count() / (Model::block_period() * n_entries()/2); 	/* Only count for two entries.  */
     case Task::Type::SERVER:	if ( is_sync_server() ) return  r_cycle.mean_count() / (Model::block_period() * n_entries());
 	/* Fall through */
@@ -421,7 +408,7 @@ Task::throughput_variance() const
     default:		   	return r_cycle.variance_count() / square(Model::block_period());
     }
 }
-	
+
 Task&
 Task::reset_stats()
 {
@@ -440,7 +427,7 @@ Task::reset_stats()
     }
 
     /* Histogram stuff */
- 
+
     if ( _hist_data ) {
 	_hist_data->reset();
     }
@@ -531,7 +518,7 @@ Task::insertDOMResults()
     }
 
     /* Store totals */
-	
+
     getDOM()->setResultPhaseUtilizations(max_phases(),phaseUtil)
 	.setResultUtilization(r_util.mean())
 	.setResultThroughput(throughput())
@@ -556,19 +543,16 @@ Task::insertDOMResults()
 
 /*
  * Add a task to the model.
- *
- * NB:	The parser returns a mallocated string for task_name which
- * 	should be freed but once!
  */
 
-Task * 
+Task *
 Task::add( LQIO::DOM::Task* domTask )
 {
     /* Recover the old parameter information that used to be passed in */
     const char* task_name = domTask->getName().c_str();
     const LQIO::DOM::Group * domGroup = domTask->getGroup();
     const scheduling_type sched_type = domTask->getSchedulingType();
-    
+
     if ( !task_name || strlen( task_name ) == 0 ) abort();
 
     if ( Task::find( task_name ) ) {
@@ -583,8 +567,8 @@ Task::add( LQIO::DOM::Task* domTask )
     Processor * processor = Processor::find( processor_name );
 
     if ( !LQIO::DOM::Common_IO::is_default_value( domTask->getPriority(), 0 ) && ( processor->discipline() == SCHEDULE_FIFO
-								     || processor->discipline() == SCHEDULE_PS
-								     || processor->discipline() == SCHEDULE_RAND ) ) {
+										   || processor->discipline() == SCHEDULE_PS
+										   || processor->discipline() == SCHEDULE_RAND ) ) {
 	LQIO::input_error2( LQIO::WRN_PRIO_TASK_ON_FIFO_PROC, task_name, processor_name );
     }
 
@@ -618,7 +602,7 @@ Task::add( LQIO::DOM::Task* domTask )
 	    input_error2( LQIO::ERR_NON_REF_THINK_TIME, task_name );
 	}
 	Task::Type a_type;
-	
+
 	if ( domTask->isInfinite() ) {
 	    a_type = Task::Type::INFINITE_SERVER;
 	} else if ( domTask->isMultiserver() ) {
@@ -627,7 +611,6 @@ Task::add( LQIO::DOM::Task* domTask )
 	    a_type = Task::Type::SERVER;
 	}
 	cp = new Server_Task( a_type, domTask, processor, group );
-	//}
 	break;
 
     case SCHEDULE_DELAY:
@@ -636,7 +619,7 @@ Task::add( LQIO::DOM::Task* domTask )
 	}
 	if ( domTask->isMultiserver() ) {
 	    LQIO::input_error2( LQIO::WRN_INFINITE_MULTI_SERVER, "Task", task_name, domTask->getCopiesValue() );
-	}	
+	}
 	if ( domTask->hasQueueLength() ) {
 	    LQIO::input_error2( LQIO::WRN_QUEUE_LENGTH, task_name );
 	}
@@ -654,8 +637,8 @@ Task::add( LQIO::DOM::Task* domTask )
  	cp = new Semaphore_Task( Task::Type::SEMAPHORE, domTask, processor, group );
 	break;
 /*- BUG_164 */
-	
-/* reader_writer lock */ 
+
+/* reader_writer lock */
 
     case SCHEDULE_RWLOCK:
 	if ( domTask->hasQueueLength() ) {
@@ -744,17 +727,23 @@ Task::priority() const
     return 0;
 }
 
-bool 
+bool
 Task::is_infinite() const
 {
     return getDOM()->isInfinite();
 }
 
 
+/*
+ * Return true if any entry or activity has a think time value.  If
+ * so, Model::extend() will then create an entry to a thinker device.
+ */
+
 bool
-Task::derive_utilization() const
-{ 
-    return processor()->derive_utilization(); 
+Task::has_think_time() const
+{
+    return std::any_of( _entry.begin(), _entry.end(), Predicate<Entry>( &Entry::has_think_time ) )
+	|| std::any_of( _activity.begin(), _activity.end(), Predicate<Activity>( &Activity::has_think_time ) );
 }
 
 
@@ -762,6 +751,13 @@ bool
 Task::has_lost_messages() const
 {
     return std::any_of( _entry.begin(), _entry.end(), Predicate<Entry>( &Entry::has_lost_messages ) );
+}
+
+
+bool
+Task::derive_utilization() const
+{
+    return processor()->derive_utilization();
 }
 
 /* ------------------------------------------------------------------------ */
@@ -777,7 +773,7 @@ Reference_Task::create_instance()
 {
     if ( n_entries() != 1 ) {
 	solution_error( LQIO::WRN_TOO_MANY_ENTRIES_FOR_REF_TASK, name() );
-    } 
+    }
     if ( getDOM()->hasThinkTime() ) {
 	_think_time = getDOM()->getThinkTimeValue();
     }
@@ -840,7 +836,7 @@ Server_Task::is_not_waiting() const
 }
 
 void
-Server_Task::set_synchronization_server() 
+Server_Task::set_synchronization_server()
 {
     _sync_server = true;
 }
@@ -1038,10 +1034,10 @@ ReadWriteLock_Task::create_instance()
     if ( n_entries() != N_RWLOCK_ENTRIES ) {
 	LQIO::solution_error( LQIO::ERR_ENTRY_COUNT_FOR_TASK, name(), n_entries(), N_RWLOCK_ENTRIES );
     }
-	
+
     int E[N_RWLOCK_ENTRIES];
     for (int i=0;i<N_RWLOCK_ENTRIES;i++){ E[i]=-1; }
-	
+
     for (int i=0;i<N_RWLOCK_ENTRIES;i++){
 	if ( _entry[i]->is_r_unlock() ) {
 	    if (E[0]== -1) { E[0]=i; }
@@ -1050,22 +1046,22 @@ ReadWriteLock_Task::create_instance()
 	    }
 	} else if ( _entry[i]->is_r_lock() ) {
 	    if (E[1]== -1) { E[1]=i; }
-	    else{ 
+	    else{
 		LQIO::solution_error( LQIO::ERR_DUPLICATE_SYMBOL, name() );
 	    }
 	} else if ( _entry[i]->is_w_unlock() ) {
 	    if (E[2]== -1) { E[2]=i; }
-	    else{ 
+	    else{
 		LQIO::solution_error( LQIO::ERR_DUPLICATE_SYMBOL, name() );
 	    }
 	} else if ( _entry[i]->is_w_lock() ) {
 	    if (E[3]== -1) { E[3]=i; }
-	    else{ 
+	    else{
 		LQIO::solution_error( LQIO::ERR_DUPLICATE_SYMBOL, name() );
 	    }
-	} else { 
+	} else {
 	    LQIO::solution_error( LQIO::ERR_NO_RWLOCK, name() );
-	    std::cerr << "entry names: " << _entry[0]->name() << ", " << _entry[1]->name() <<", " << _entry[2]->name()<< ", " << _entry[3]->name()<< std::endl;
+	    std::cerr << "entry names: " << _entry[0]->name() << ", " << _entry[1]->name() <<", " << _entry[2]->name()<< ", " << _entry[3]->name() << std::endl;
 	}
     }
     //test reader lock entry
@@ -1075,7 +1071,7 @@ ReadWriteLock_Task::create_instance()
     if ( !_entry[E[1]]->test_and_set_recv( Entry::Type::RENDEZVOUS ) ) {
 	LQIO::solution_error( LQIO::ERR_ASYNC_REQUEST_TO_WAIT, _entry[E[1]]->name() );
     }
-	 
+
     //test reader unlock entry
     if ( !_entry[E[0]]->test_and_set_rwlock( LQIO::DOM::Entry::RWLock::READ_UNLOCK ) ) {
 	LQIO::solution_error( LQIO::ERR_MIXED_RWLOCK_ENTRY_TYPES, name() );
@@ -1094,7 +1090,7 @@ ReadWriteLock_Task::create_instance()
 	LQIO::solution_error( LQIO::ERR_MIXED_RWLOCK_ENTRY_TYPES, name() );
     }
 
- 
+
 
     std::string buf = name();
     buf += "-rwlock-server";
@@ -1148,7 +1144,7 @@ bool
 ReadWriteLock_Task::start()
 {
     return Semaphore_Task::start()		/* Starts _signal_task */
-	&& ps_resume( _reader->task_id() ) 
+	&& ps_resume( _reader->task_id() )
 	&& ps_resume( _writer->task_id() );
 }
 
@@ -1178,7 +1174,7 @@ ReadWriteLock_Task::reset_stats()
     r_reader_hold_sqr.reset();
     r_reader_hold_util.reset();
     r_reader_wait.reset();
-    r_reader_wait_sqr.reset();	
+    r_reader_wait_sqr.reset();
     r_writer_hold.reset();
     r_writer_hold_sqr.reset();
     r_writer_wait.reset();

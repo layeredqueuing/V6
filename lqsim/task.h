@@ -1,8 +1,7 @@
 /* -*- c++ -*-
- * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqsim/task.h $
- * Global vars for simulation.
+ * Lqsim-parasol task interface.
  *
- * $Id: task.h 15298 2021-12-30 17:03:32Z greg $
+ * $Id: task.h 15319 2022-01-01 17:27:22Z greg $
  */
 
 /************************************************************************/
@@ -14,8 +13,8 @@
 /* Nov 2005.								*/
 /************************************************************************/
 
-#ifndef	TASK_H
-#define TASK_H
+#ifndef	LQSIM_TASK_H
+#define LQSIM_TASK_H
 
 #include <set>
 #include <vector>
@@ -110,8 +109,8 @@ public:
     static Task * add( LQIO::DOM::Task* domTask );
 
 private:
-    Task( const Task& );
-    Task& operator=( const Task& );
+    Task( const Task& ) = delete;
+    Task& operator=( const Task& ) = delete;
 
 public:
     Task( const Type type, LQIO::DOM::Task* domTask, Processor * aProc, Group * aGroup );
@@ -151,8 +150,9 @@ public:
     virtual bool is_sync_server() const { return false; }
     bool has_activities() const { return _activity.size() > 0; }	/* True if activities present.	*/
     bool has_threads() const { return _forks.size() > 0; }
-    virtual bool derive_utilization() const;
+    bool has_think_time() const;
     bool has_lost_messages() const;
+    virtual bool derive_utilization() const;
 
     void set_start_activity( LQIO::DOM::Entry* theDOMEntry );
     Activity * add_activity( LQIO::DOM::Activity * activity );

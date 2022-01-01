@@ -8,15 +8,13 @@
 /************************************************************************/
 
 /*
- * Input output processing.
+ * Lqsim-parasol Entry interface.
  *
- * $URL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqsim/entry.cc $
- *
- * $Id: entry.cc 15298 2021-12-30 17:03:32Z greg $
+ * $Id: entry.cc 15319 2022-01-01 17:27:22Z greg $
  */
 
-#include <parasol.h>
 #include "lqsim.h"
+#include <parasol.h>
 #include <algorithm>
 #include <cmath>
 #include <cstring>
@@ -284,6 +282,14 @@ Entry::has_lost_messages() const
 {
     return std::any_of( _phase.begin(), _phase.end(), Predicate<Activity>( &Activity::has_lost_messages ) );
 }
+
+
+bool
+Entry::has_think_time() const
+{
+    return std::any_of( _phase.begin(), _phase.end(), Predicate<Activity>( &Activity::has_think_time ) );
+}
+
 
 /*
  * Set fields denoting run of the mill entry.

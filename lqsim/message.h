@@ -1,3 +1,5 @@
+/* -*- c++ -*- */
+
 /************************************************************************/
 /* Copyright the Real-Time and Distributed Systems Group,		*/
 /* Department of Systems and Computer Engineering,			*/
@@ -9,7 +11,7 @@
 /*
  * Global vars for simulation.
  *
- * $Id: message.h 14996 2021-09-27 14:14:50Z greg $
+ * $Id: message.h 15319 2022-01-01 17:27:22Z greg $
  */
 
 #ifndef MESSAGE_H

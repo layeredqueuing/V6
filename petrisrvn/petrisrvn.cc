@@ -8,7 +8,7 @@
 /************************************************************************/
 
 /*
- * $Id: petrisrvn.cc 15305 2021-12-31 16:01:37Z greg $
+ * $Id: petrisrvn.cc 15311 2021-12-31 22:23:29Z greg $
  *
  * Generate a Petri-net from an SRVN description.
  *
@@ -177,7 +177,7 @@ main (int argc, char *argv[])
     extern char *optarg;
     extern int optind;
 
-    int global_error_flag  = 0; 	/* Error detected anywhere??	*/
+    int status  = NORMAL_TERMINATION;
 
     LQIO::io_vars.init( VERSION, basename( argv[0] ), severity_action, local_error_messages, LSTLCLERRMSG-LQIO::LSTGBLERRMSG );
     command_line = LQIO::io_vars.lq_toolname;
@@ -416,7 +416,7 @@ main (int argc, char *argv[])
 	    output_file = "-";
 	}
 
-	global_error_flag |= Model::solve( solve_function, "-", input_format, output_file, output_format, pragmas );
+	status |= Model::solve( solve_function, "-", input_format, output_file, output_format, pragmas );
 
     } else {
 	unsigned int file_count = argc - optind;			/* Number of files on cmd line	*/
@@ -432,14 +432,14 @@ main (int argc, char *argv[])
 		(void) printf( "%s:\n", argv[optind] );
 	    }
 
-	    global_error_flag |= Model::solve( solve_function, argv[optind], input_format, output_file, output_format, pragmas );
+	    status |= Model::solve( solve_function, argv[optind], input_format, output_file, output_format, pragmas );
 	}
 
     }
 
     unlink( "empty" );		/* Clean up after GreatSPN. */
 
-    return global_error_flag;
+    return status;	 	/* 0 is a successful exit */
 }
 
 static void

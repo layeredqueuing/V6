@@ -1,8 +1,8 @@
 /* -*- c++ -*-
- * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqsim/instance.h $
- * Global vars for simulation.
+ * 
+ * Logic executed for task behaviour in simulation.
  *
- * $Id: instance.h 15001 2021-09-27 22:12:07Z greg $
+ * $Id: instance.h 15313 2022-01-01 14:22:27Z greg $
  */
 
 /************************************************************************/
