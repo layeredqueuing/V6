@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: common_io.cpp 15305 2021-12-31 16:01:37Z greg $
+ * $Id: common_io.cpp 15330 2022-01-02 20:49:03Z greg $
  *
  * Read in XML input files.
  *
@@ -162,6 +162,12 @@ static inline double tv_to_double( struct timeval& tv ) { return (static_cast<do
 	    document.setResultUserTime( getUserTime() );
 	    document.setResultSysTime( getSystemTime() );
 	    document.setResultElapsedTime( getRealTime() );
+#if HAVE_SYS_RESOURCE_H && HAVE_GETRUSAGE
+	    struct rusage r_usage;
+	    if ( getrusage( RUSAGE_SELF, &r_usage ) == 0 && r_usage.ru_maxrss > 0 ) {
+		document.setResultMaxRSS( r_usage.ru_maxrss );
+	    }
+#endif
 	}
 
 

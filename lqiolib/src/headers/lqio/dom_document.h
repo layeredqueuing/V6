@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- *  $Id: dom_document.h 15311 2021-12-31 22:23:29Z greg $
+ *  $Id: dom_document.h 15330 2022-01-02 20:49:03Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -55,7 +55,6 @@ namespace LQIO {
 
 	    /* STORE: Model Parameter Information */
 	    void setModelParameters(const std::string& comment, ExternalVariable* conv_val, ExternalVariable* it_limit, ExternalVariable* print_int, ExternalVariable* underrelax_coeff, const void * arg );
-	    void setMVAStatistics( const unsigned int, const unsigned long, const double, const double, const double, const double, const unsigned int );
 
 	    /* Obtaining identifiers for entities */
 	    unsigned getNextEntityId();
@@ -146,6 +145,7 @@ namespace LQIO {
 	    unsigned getMaximumPhase() const { return _maximumPhase; }
 
 	    /* Results */
+	    Document& setMVAStatistics( const unsigned int, const unsigned long, const double, const double, const double, const double, const unsigned int );
 	    unsigned int getResultInvocationNumber() const { return _resultInvocationNumber; }
 	    Document& setResultInvocationNumber( const unsigned int resultInvocationNumber ) { _resultInvocationNumber = resultInvocationNumber; return *this; }
 	    double getResultConvergenceValue() const { return _resultConvergenceValue; }

@@ -10,7 +10,7 @@
 /************************************************************************/
 
 /*
- * $Id: model.h 15311 2021-12-31 22:23:29Z greg $
+ * $Id: model.h 15330 2022-01-02 20:49:03Z greg $
  *
  * Solve LQN using petrinets.
  */
@@ -91,7 +91,7 @@ private:
 
     unsigned int set_queue_length() const;
 
-    void insert_DOM_results( const bool valid, const solution_stats_t& );
+    void insert_DOM_results( const bool valid, const solution_stats_t& ) const;
 
 private:
     bool has_output_file_name() const { return _output_file_name.size() > 0 && _output_file_name != "-"; }
