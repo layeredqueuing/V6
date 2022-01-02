@@ -1,6 +1,6 @@
 /* -*- c++ -*-
  * submodel.C	-- Greg Franks Wed Dec 11 1996
- * $Id: submodel.cc 15054 2021-10-08 12:08:59Z greg $
+ * $Id: submodel.cc 15323 2022-01-02 16:13:23Z greg $
  *
  * MVA submodel creation and solution.  This class is the interface
  * between the input model consisting of processors, tasks, and entries,
@@ -45,7 +45,6 @@
  * ----------------------------------------------------------------------
  */
 
-
 #include "lqns.h"
 #include <cstdlib>
 #include <cmath>
@@ -53,8 +52,6 @@
 #include <mva/open.h>
 #include <mva/prob.h>
 #include <mva/server.h>
-#include <mva/vector.h>
-#include <mva/fpgoop.h>
 #include "activity.h"
 #include "call.h"
 #include "entry.h"

@@ -10,7 +10,7 @@
 /*
  * Input output processing.
  *
- * $Id: task.cc 15319 2022-01-01 17:27:22Z greg $
+ * $Id: task.cc 15323 2022-01-02 16:13:23Z greg $
  */
 
 #include <iostream>
@@ -207,7 +207,6 @@ Task::initialize()
 		(*lp)->inc_visits();
 	    }
 	}
-
     }
     for ( std::vector<AndJoinActivityList *>::iterator lp = _joins.begin(); lp != _joins.end(); ++lp ) {
 	const Activity * src = (*lp)->front();

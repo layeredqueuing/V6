@@ -1,5 +1,5 @@
 /*  -*- C++ -*-
- * $Id: server.cc 15247 2021-12-22 19:47:38Z greg $
+ * $Id: server.cc 15323 2022-01-02 16:13:23Z greg $
  *
  * Copyright the Real-Time and Distributed Systems Group,
  * Department of Systems and Computer Engineering,
@@ -41,6 +41,7 @@
 #include <cmath>
 #include <limits>
 #include "mva.h"
+#include "mvaexception.h"
 #include "open.h"
 #include "prob.h"
 #include "server.h"
@@ -340,7 +341,7 @@ Server::addVisits( const unsigned e, const unsigned k, const unsigned p, const d
 Server&
 Server::setVariance( const unsigned, const unsigned, const unsigned, const double  )
 {
-    throw subclass_responsibility( "Server::setVariance", __FILE__, __LINE__ );
+    throw LibMVA::subclass_responsibility( "Server::setVariance", __FILE__, __LINE__ );
     return *this;
 }
 
@@ -353,7 +354,7 @@ Server::setVariance( const unsigned, const unsigned, const unsigned, const doubl
 Server&
 Server::setClientChain( const unsigned, const unsigned )
 {
-    throw subclass_responsibility( "Server::setClientChain", __FILE__, __LINE__ );
+    throw LibMVA::subclass_responsibility( "Server::setClientChain", __FILE__, __LINE__ );
     return *this;
 }
 
@@ -367,7 +368,7 @@ Server::setClientChain( const unsigned, const unsigned )
 Probability ***
 Server::getPrOt( const unsigned ) const
 {
-    throw subclass_responsibility( "Server::prOt", __FILE__, __LINE__  );
+    throw LibMVA::subclass_responsibility( "Server::prOt", __FILE__, __LINE__  );
     return 0;
 }
 
@@ -674,7 +675,7 @@ Server::etaS( const unsigned e, const unsigned k ) const
 double
 Server::muS( const Population&, const unsigned ) const
 {
-    throw should_not_implement( "Server::muS", __FILE__, __LINE__ );
+    throw LibMVA::should_not_implement( "Server::muS", __FILE__, __LINE__ );
     return 0.0;
 }
 
@@ -1351,7 +1352,7 @@ PR_PS_Server::wait( const MVA& solver, const unsigned k, const Population& N ) c
 void
 PR_PS_Server::openWait() const
 {
-    throw not_implemented( "Prio_PS_Server::openWait", __FILE__, __LINE__  );
+    throw LibMVA::not_implemented( "Prio_PS_Server::openWait", __FILE__, __LINE__  );
 }
 
 /* ------------------- PS Server with priorities. ------------------- */
@@ -1387,7 +1388,7 @@ HOL_PS_Server::wait( const MVA& solver, const unsigned k, const Population& N ) 
 void
 HOL_PS_Server::openWait() const
 {
-    throw not_implemented( "Prio_PS_Server::openWait", __FILE__, __LINE__  );
+    throw LibMVA::not_implemented( "Prio_PS_Server::openWait", __FILE__, __LINE__  );
 }
 
 /* ---------------------- Generic FIFO Server -------------------------	*/
@@ -1509,7 +1510,7 @@ PR_FCFS_Server::wait( const MVA& solver, const unsigned k, const Population& N )
 void
 PR_FCFS_Server::openWait() const
 {
-    throw not_implemented( "Prio_FCFS_Server::openWait", __FILE__, __LINE__  );
+    throw LibMVA::not_implemented( "Prio_FCFS_Server::openWait", __FILE__, __LINE__  );
 }
 
 /* ------------------- FCFS Server with priorities. ------------------- */
@@ -1545,7 +1546,7 @@ HOL_FCFS_Server::wait( const MVA& solver, const unsigned k, const Population& N 
 void
 HOL_FCFS_Server::openWait() const
 {
-    throw not_implemented( "Prio_FCFS_Server::openWait", __FILE__, __LINE__  );
+    throw LibMVA::not_implemented( "Prio_FCFS_Server::openWait", __FILE__, __LINE__  );
 }
 
 /* ------------------- High Variation FIFO Server --------------------- */

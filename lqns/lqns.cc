@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: lqns.cc 15305 2021-12-31 16:01:37Z greg $
+ * $Id: lqns.cc 15325 2022-01-02 18:15:16Z greg $
  *
  * Command line processing.
  *
@@ -19,7 +19,9 @@
 #include <cstdlib>
 #include <cmath>
 #include <errno.h>
+#if HAVE_LIBGEN_H
 #include <libgen.h>
+#endif
 #include <lqio/filename.h>
 #include <lqio/commandline.h>
 #include <lqio/srvn_spex.h>

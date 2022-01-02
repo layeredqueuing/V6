@@ -10,7 +10,7 @@
  * November, 1994
  *
  * ------------------------------------------------------------------------
- * $Id: task.cc 15247 2021-12-22 19:47:38Z greg $
+ * $Id: task.cc 15323 2022-01-02 16:13:23Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -25,7 +25,6 @@
 #include <lqio/error.h>
 #include <lqio/input.h>
 #include <lqio/labels.h>
-#include <mva/fpgoop.h>
 #include <mva/server.h>
 #include <mva/ph2serv.h>
 #include <mva/multserv.h>
@@ -2011,7 +2010,7 @@ ReferenceTask::find_max_depth::operator()( unsigned int depth, const Entry * ent
 Server *
 ReferenceTask::makeServer( const unsigned )
 {
-    throw should_not_implement( "ReferenceTask::makeServer", __FILE__, __LINE__ );
+    throw LQIO::should_not_implement( "ReferenceTask::makeServer" );
     return 0;
 }
 
@@ -2276,7 +2275,7 @@ ServerTask::makeServer( const unsigned nChains )
 
 	    case Pragma::Multiserver::SURI:
 		if ( dynamic_cast<Markov_Phased_Suri_Multi_Server *>(_station) && _station->copies() == copies()) return nullptr;
-		throw not_implemented( "Task::makeServer", __FILE__, __LINE__ );
+		throw LQIO::not_implemented( "Task::makeServer" );
 		_station = new Markov_Phased_Suri_Multi_Server(     copies(), nEntries(), nChains, maxPhase());
 		break;
 
@@ -2488,14 +2487,14 @@ SemaphoreTask::check() const
 SemaphoreTask&
 SemaphoreTask::configure( const unsigned )
 {
-    throw not_implemented( "SemaphoreTask::configure", __FILE__, __LINE__ );
+    throw LQIO::not_implemented( "SemaphoreTask::configure" );
     return *this;
 }
 
 Server *
 SemaphoreTask::makeServer( const unsigned )
 {
-    throw not_implemented( "SemaphoreTask::configure", __FILE__, __LINE__ );
+    throw LQIO::not_implemented( "SemaphoreTask::configure" );
 }
 
 /* ----------------------- External functions. ------------------------ */

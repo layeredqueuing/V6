@@ -1,8 +1,9 @@
-# $Id: Makefile.am 15246 2021-12-22 15:13:01Z greg $
+# $Id: Makefile.am 15323 2022-01-02 16:13:23Z greg $
 # ------------------------------------------------------------------------
 noinst_HEADERS = fpgoop.h \
 	multserv.h \
 	mva.h \
+	mvaexception.h \
 	open.h \
 	ph2serv.h \
 	pop.h \

@@ -8,7 +8,7 @@
 /************************************************************************/
 
 /*
- * $Id: model.cc 15311 2021-12-31 22:23:29Z greg $
+ * $Id: model.cc 15325 2022-01-02 18:15:16Z greg $
  *
  * Load the SRVN model.
  */
@@ -26,9 +26,6 @@
 #include <unistd.h>
 #if HAVE_SYS_UTSNAME_H
 #include <sys/utsname.h>
-#endif
-#if HAVE_VALUES_H
-#include <values.h>
 #endif
 #if HAVE_UNISTD_H
 #include <unistd.h>

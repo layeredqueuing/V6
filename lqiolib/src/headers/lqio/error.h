@@ -8,7 +8,7 @@
 /************************************************************************/
 
 /*
- * $Id: error.h 15222 2021-12-15 15:41:14Z greg $
+ * $Id: error.h 15323 2022-01-02 16:13:23Z greg $
  */
 
 #if	!defined(SRVNIO_LIB_ERROR_H)
@@ -229,10 +229,23 @@ namespace LQIO {
 	explicit duplicate_symbol( const std::string& name ) : runtime_error( name ) {}
     };
 
-    class should_implement : public std::runtime_error
+    class should_implement : public std::logic_error
     {
     public:
-	explicit should_implement( const std::string& name ) : runtime_error( name ) {}
+	explicit should_implement( const std::string& name ) : logic_error( name ) {}
     };
+
+    class should_not_implement : public std::logic_error
+    {
+    public:
+	explicit should_not_implement( const std::string& name ) : logic_error( name ) {}
+    };
+    
+    class not_implemented : public std::logic_error
+    {
+    public:
+	explicit not_implemented( const std::string& name ) : logic_error( name ) {}
+    };
+    
 }
 #endif

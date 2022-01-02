@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: call.cc 15246 2021-12-22 15:13:01Z greg $
+ * $Id: call.cc 15323 2022-01-02 16:13:23Z greg $
  *
  * Everything you wanted to know about a call to an entry, but were afraid to ask.
  *

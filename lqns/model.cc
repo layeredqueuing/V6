@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: model.cc 15311 2021-12-31 22:23:29Z greg $
+ * $Id: model.cc 15323 2022-01-02 16:13:23Z greg $
  *
  * Layer-ization of model.  The basic concept is from the reference
  * below.  However, model partioning is more complex than task vs device.
@@ -48,7 +48,6 @@
 #include <lqio/json_document.h>
 #include <lqio/srvn_output.h>
 #include <lqio/srvn_spex.h>
-#include <mva/fpgoop.h>
 #include <mva/mva.h>
 #include <mva/open.h>
 #include "activity.h"
@@ -1353,14 +1352,14 @@ SRVN_Model::assignSubmodel()
 
     std::multiset<Entity *> servers;
     for ( std::set<Task *>::const_iterator task = __task.begin(); task != __task.end(); ++task ) {
-	if ( (*task)->isReferenceTask() || (*task)->submodel() <= 0 ) continue;
+	if ( (*task)->isReferenceTask() || (*task)->submodel() == 0 ) continue;
 	servers.insert( *task );
     }
     for ( std::set<Processor *>::const_iterator processor = __processor.begin(); processor != __processor.end(); ++processor ) {
-	if ( (*processor)->submodel() <= 0 ) continue;
+	if ( (*processor)->submodel() == 0 ) continue;
 	servers.insert( *processor );
     }
-    if ( __think_server && __think_server->submodel() > 0 ) {
+    if ( __think_server && __think_server->submodel() != 0 ) {
         servers.insert( __think_server );
     }
     if ( __cfs_server && __cfs_server->submodel() > 0 ) {
@@ -1400,7 +1399,7 @@ Squashed_Model::assignSubmodel()
 	    (*processor)->setSubmodel( 1 );
 	}
     }
-    if ( __think_server && __think_server->submodel() > 0 ) {
+    if ( __think_server && __think_server->submodel() != 0 ) {
         __think_server->setSubmodel( 1 );
     }
     if ( __cfs_server && __cfs_server->submodel() > 0 ) {
@@ -1438,7 +1437,7 @@ HwSw_Model::assignSubmodel()
 	    (*processor)->setSubmodel( 2 );
 	}
     }
-    if ( __think_server && __think_server->submodel() > 0 ) {
+    if ( __think_server && __think_server->submodel() != 0 ) {
         __think_server->setSubmodel( 2 );
     }
     if ( __cfs_server && __cfs_server->submodel() > 0 ) {

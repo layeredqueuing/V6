@@ -11,7 +11,7 @@
  *
  * January 2005.
  *
- * $Id: randomvar.cc 14882 2021-07-07 11:09:54Z greg $
+ * $Id: randomvar.cc 15323 2022-01-02 16:13:23Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -1567,7 +1567,7 @@ DiscreteCDFs::quorumKofN( const unsigned K, const unsigned N )
 {
 #if !defined(TESTDIST)    
     if (Pragma::exponential_paths()) {
-	throw not_implemented( "DiscreteCDFs::quorumKofN", __FILE__, __LINE__ );
+	throw LQIO::not_implemented( "DiscreteCDFs::quorumKofN" );
     }
 #endif
 
