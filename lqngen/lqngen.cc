@@ -2,7 +2,7 @@
  * Model file generator.
  * This is actually part of lqn2ps, but if lqn2ps is invoked as lqngen, then this magically runs.
  *
- * $Id: lqngen.cc 15215 2021-12-13 19:17:13Z greg $
+ * $Id: lqngen.cc 15344 2022-01-03 20:41:10Z greg $
  */
 
 #include "lqngen.h"
@@ -196,12 +196,13 @@ main( int argc, char *argv[] )
     static std::string opts = "";
 #if HAVE_GETOPT_H
     int optflag = 0;
-    static std::vector<struct option> longopts;
+    std::vector<struct option> longopts;
     makeopts( opts, longopts, &optflag );
+    LQIO::CommandLine command_line( longopts.data() );
 #else
     makeopts( opts );
+    LQIO::CommandLine command_line();
 #endif
-    LQIO::CommandLine command_line;
     command_line = LQIO::io_vars.lq_toolname;
     
     optarg = 0;
