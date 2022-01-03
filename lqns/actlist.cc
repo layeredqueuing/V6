@@ -10,7 +10,7 @@
  * February 1997
  *
  * ------------------------------------------------------------------------
- * $Id: actlist.cc 15323 2022-01-02 16:13:23Z greg $
+ * $Id: actlist.cc 15332 2022-01-02 22:04:56Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -1364,7 +1364,7 @@ AndForkActivityList::saveQuorumDelayedThreadsServiceTime( std::deque<Entry *>& e
     }
     const unsigned n = activityList().size();
     bool anError= false;
-    Activity * localQuorumDelayActivity = NULL;
+    Activity * localQuorumDelayActivity = nullptr;
     Entry * currEntry = entryStack.back();
 
     unsigned orgSubmodel = currEntry->owner()->submodel();
@@ -1423,7 +1423,7 @@ AndForkActivityList::saveQuorumDelayedThreadsServiceTime( std::deque<Entry *>& e
     sprintf( localQuorumDelayActivityName, "localQmDelay_%d", dynamic_cast<const AndJoinActivityList *>(joinList())->quorumListNum() );
     localQuorumDelayActivity = owner()->findActivity(localQuorumDelayActivityName);
 
-    if (localQuorumDelayActivity != NULL) {
+    if (localQuorumDelayActivity != nullptr) {
 
         DeviceEntry * procEntry = dynamic_cast<DeviceEntry *>(const_cast<Entry *>(localQuorumDelayActivity->processorCall()->dstEntry()));
 

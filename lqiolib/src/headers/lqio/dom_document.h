@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- *  $Id: dom_document.h 15330 2022-01-02 20:49:03Z greg $
+ *  $Id: dom_document.h 15338 2022-01-03 14:15:48Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -231,7 +231,6 @@ namespace LQIO {
 	    private:
 		std::vector<std::string>& _list;
 	    };
-	    static inline bool isOutputFileName( const std::string& name ) { return !name.empty() && name != "-"; }
 
 	public:
 	    /* Names of document attributes */

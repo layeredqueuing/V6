@@ -1,3 +1,4 @@
+/* -*- c++ -*- */
 /************************************************************************/
 /* Copyright the Real-Time and Distributed Systems Group,		*/
 /* Department of Systems and Computer Engineering,			*/
@@ -8,7 +9,7 @@
 /************************************************************************/
 
 /*
- * $Id: errmsg.h 13831 2020-09-18 12:51:41Z greg $
+ * $Id: errmsg.h 15332 2022-01-02 22:04:56Z greg $
  */
 
 #include <lqio/glblerr.h>

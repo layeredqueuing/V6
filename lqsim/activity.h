@@ -1,3 +1,4 @@
+/* -*- c++ -*- */
 /************************************************************************/
 /* Copyright the Real-Time and Distributed Systems Group,		*/
 /* Department of Systems and Computer Engineering,			*/
@@ -9,7 +10,7 @@
 /*
  * Activities (and phases).
  *
- * $Id: activity.h 15319 2022-01-01 17:27:22Z greg $
+ * $Id: activity.h 15332 2022-01-02 22:04:56Z greg $
  */
 
 #ifndef ACTIVITY_H
@@ -37,7 +38,7 @@ private:
     Activity& operator=( const Activity& ) = delete;
     
 public:
-    Activity( Task * cp=NULL, LQIO::DOM::Phase * dom=NULL );
+    Activity( Task * cp=nullptr, LQIO::DOM::Phase * dom=nullptr );
     virtual ~Activity();
 
     const char * name() const { return _name.c_str(); }

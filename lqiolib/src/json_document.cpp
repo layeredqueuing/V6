@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: json_document.cpp 15305 2021-12-31 16:01:37Z greg $
+ * $Id: json_document.cpp 15338 2022-01-03 14:15:48Z greg $
  *
  * Read in JSON input files.
  *
@@ -175,7 +175,7 @@ namespace LQIO {
 	    bool rc = true;
 	    int input_fd = -1;
 
-	    if ( _input_file_name ==  "-" ) {
+	    if ( !Filename::isFileName( _input_file_name ) ) {
 		input_fd = fileno( stdin );
 	    } else if ( ( input_fd = open( _input_file_name.c_str(), O_RDONLY ) ) < 0 ) {
 		std::cerr << LQIO::io_vars.lq_toolname << ": Cannot open input file " << _input_file_name << " - " << strerror( errno ) << std::endl;

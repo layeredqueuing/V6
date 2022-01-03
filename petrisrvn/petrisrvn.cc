@@ -8,7 +8,7 @@
 /************************************************************************/
 
 /*
- * $Id: petrisrvn.cc 15311 2021-12-31 22:23:29Z greg $
+ * $Id: petrisrvn.cc 15341 2022-01-03 15:16:54Z greg $
  *
  * Generate a Petri-net from an SRVN description.
  *
@@ -48,7 +48,6 @@
 #include <lqio/commandline.h>
 #include <lqio/dom_document.h>
 #include <lqio/srvn_spex.h>
-#include <lqio/filename.h>
 #if !defined(HAVE_GETSUBOPT)
 #include <lqio/getsbopt.h>
 #endif
@@ -122,6 +121,9 @@ static const struct option longopts[] =
     { "debug-xml",          no_argument,        0, 256+'x' },
     { nullptr, 0, 0, 0 }
 };
+#else
+const struct option * longopts = nullptr;
+#endif
 
 static const char * opthelp[]  = {
     /* "debug"		    */    "Enable debug code.",
@@ -155,7 +157,6 @@ static const char * opthelp[]  = {
     /* "debug-xml"	    */    "Output debugging information while parsing XML input.",
     nullptr
 };
-#endif
 
 
 std::regex * inservice_match_pattern	= nullptr;
@@ -165,12 +166,12 @@ FILE * stddbg;				/* debugging output goes here.	*/
 static void usage( void );
  
 int
-main (int argc, char *argv[])
+main(int argc, char *argv[])
 {
     std::string output_file = "";
     LQIO::DOM::Document::InputFormat input_format = LQIO::DOM::Document::InputFormat::AUTOMATIC;
     LQIO::DOM::Document::OutputFormat output_format = LQIO::DOM::Document::OutputFormat::DEFAULT;
-    LQIO::CommandLine command_line;
+    LQIO::CommandLine command_line( longopts );
     LQIO::DOM::Pragma pragmas;
     Model::solve_using solve_function = &Model::compute;
 
@@ -409,19 +410,12 @@ main (int argc, char *argv[])
 
     if ( optind == argc ) {
 
-	/* If stdout is not a terminal and output to stdout.  		*/
-	/* For pipelines.						*/
-
-	if ( output_file.size() == 0 && LQIO::Filename::isWriteableFile( fileno( stdout ) ) > 0 ) {
-	    output_file = "-";
-	}
-
 	status |= Model::solve( solve_function, "-", input_format, output_file, output_format, pragmas );
 
     } else {
 	unsigned int file_count = argc - optind;			/* Number of files on cmd line	*/
 
-	if ( output_file.size() && file_count > 1 && !LQIO::Filename::isDirectory( output_file ) ) {
+	if ( file_count > 1 && LQIO::Filename::isFileName( output_file ) && !LQIO::Filename::isDirectory( output_file ) ) {
 	    (void) fprintf( stderr, "%s: Too many input files specified with -o <file> option.\n", LQIO::io_vars.toolname() );
 	    exit( INVALID_ARGUMENT );
 	}

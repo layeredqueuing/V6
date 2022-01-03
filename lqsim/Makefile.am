@@ -1,5 +1,5 @@
 #----------------------------------------------------------------------
-# $Id: Makefile.am 15305 2021-12-31 16:01:37Z greg $
+# $Id: Makefile.am 15341 2022-01-03 15:16:54Z greg $
 #----------------------------------------------------------------------
 SUBDIRS		= regression
 
@@ -26,7 +26,7 @@ distclean-local:
 if HAVE_PS2PDF
 install-data-hook: lqsim.pdf
 
-lqsim.ps: $(man1_MANS)
+lqsim.pdf: $(man1_MANS)
 	groff -t -man  $< | ps2pdf - $@
 
 endif

@@ -7,7 +7,7 @@
 /************************************************************************/
 
 /*
- * $Id: lqsim.cc 15325 2022-01-02 18:15:16Z greg $
+ * $Id: lqsim.cc 15341 2022-01-03 15:16:54Z greg $
  */
 
 #define STACK_TESTING
@@ -42,11 +42,11 @@
 #include <sys/resource.h>
 #endif
 #include <lqio/input.h>
+#include <lqio/filename.h>
 #if !HAVE_GETSUBOPT
 #include <lqio/getsbopt.h>
 #endif
 #include <lqio/error.h>
-#include <lqio/filename.h>
 #include <lqio/commandline.h>
 #include <lqio/srvn_spex.h>
 #include <lqio/dom_pragma.h>
@@ -150,8 +150,10 @@ static const struct option longopts[] =
 #if defined(STACK_TESTING)
     { "check-stacks",	  no_argument,	     0, 256+'s' },
 #endif
-    { 0, 0, 0, 0 }
+    { nullptr, 0, 0, 0 }
 };
+#else
+const struct option * = nullptr;
 #endif
 static const char opts[] = "aA:B:C:de:G:h:HI:jm:MnN:o:pP:rRsS:t:T:vVwx";
 
@@ -312,7 +314,7 @@ main( int argc, char * argv[] )
     char * value;
     extern int optind;
 
-    LQIO::CommandLine command_line;
+    LQIO::CommandLine command_line( longopts );
 
     /* Set the program name and revision numbers.			*/
 
@@ -320,7 +322,7 @@ main( int argc, char * argv[] )
     LQIO::io_vars.init( VERSION, basename( argv[0] ), severity_action, local_error_messages, LSTLCLERRMSG-LQIO::LSTGBLERRMSG );
 
     command_line = LQIO::io_vars.lq_toolname;
-    (void) sscanf( "$Date: 2022-01-02 13:15:16 -0500 (Sun, 02 Jan 2022) $", "%*s %s %*s", copyright_date );
+    (void) sscanf( "$Date: 2022-01-03 10:16:54 -0500 (Mon, 03 Jan 2022) $", "%*s %s %*s", copyright_date );
     stddbg    = stdout;
 
     /* Stuff set from the input file.				*/
@@ -342,7 +344,7 @@ main( int argc, char * argv[] )
 	
     for ( ;; ) {
 #if HAVE_GETOPT_LONG
-	const int c = getopt_long( argc, argv, opts, longopts, NULL );
+	const int c = getopt_long( argc, argv, opts, longopts, nullptr );
 #else	
 	const int c = getopt( argc, argv, opts );
 #endif
@@ -643,13 +645,6 @@ main( int argc, char * argv[] )
 	
     if ( optind == argc ) {
 
-	/* If stdout is not a terminal and output to stdout.  		*/
-	/* For pipelines.						*/
-	
-	if ( output_file.size() == 0 && LQIO::Filename::isWriteableFile( fileno( stdout ) ) > 0 ) {
-	    output_file = "-";
-	}
-	
 	try {
 	    global_error_flag |= Model::solve( solve_function, "-", input_format, output_file, output_format, pragmas );
 	}
@@ -668,7 +663,7 @@ main( int argc, char * argv[] )
   
 	int file_count = argc - optind;
 		
-	if ( output_file.size() > 0  && file_count > 1 && LQIO::Filename::isDirectory( output_file ) == 0 ) {
+	if ( file_count > 1 && LQIO::Filename::isFileName( output_file ) && LQIO::Filename::isDirectory( output_file ) == 0 ) {
 	    (void) fprintf( stderr, "%s: Too many input files specified with -o <file> option.\n", LQIO::io_vars.toolname() );
 	    exit( INVALID_ARGUMENT );
 	}

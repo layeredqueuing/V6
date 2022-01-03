@@ -10,7 +10,7 @@
  * Activities are arcs in the graph that do work.
  * Nodes are points in the graph where splits and joins take place.
  *
- * $Id: actlist.cc 15305 2021-12-31 16:01:37Z greg $
+ * $Id: actlist.cc 15332 2022-01-02 22:04:56Z greg $
  */
 
 #include "lqsim.h"
@@ -65,13 +65,6 @@ ActivityList::fold::operator()( const std::string& s1, const Activity * a2 ) con
     return s1 + " " + _op + " " + a2->name();
 }
 
-ActivityList&
-ActivityList::initialize()
-{
-    return *this;
-}
-
-
 AndJoinActivityList::AndJoinActivityList( ActivityList::Type type, LQIO::DOM::ActivityList * dom )
     : OutputActivityList(type,dom),
       _fork(),
@@ -127,6 +120,20 @@ LoopActivityList::push_back( Activity * activity )
 {
     ActivityList::push_back( activity );
     _count.push_back( 0.0 );
+    return *this;
+}
+
+/* ------------------------------------------------------------------------ */
+
+AndForkActivityList&
+AndForkActivityList::initialize()
+{
+    _visits = 0;
+    for ( unsigned j = 0; j < size(); ++j ) {
+	if ( at(j) ) {
+	    _visits += 1;
+	}
+    }
     return *this;
 }
 
@@ -569,6 +576,28 @@ AndJoinActivityList::set_join_type( Join type )
     }
 }
 
+
+AndJoinActivityList&
+AndJoinActivityList::reset_stats()
+{
+    r_join.reset();
+    r_join_sqr.reset();
+    if ( _hist_data ) {
+	_hist_data->reset();
+    }
+    return *this;
+}
+
+
+AndJoinActivityList&
+AndJoinActivityList::accumulate_data()
+{
+    r_join_sqr.accumulate_variance( r_join.accumulate() );
+    if ( _hist_data ) {
+	_hist_data->accumulate_data();
+    }
+    return *this;
+}
 
 AndJoinActivityList&
 AndJoinActivityList::insertDOMResults()

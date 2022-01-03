@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: lqns.cc 15325 2022-01-02 18:15:16Z greg $
+ * $Id: lqns.cc 15341 2022-01-03 15:16:54Z greg $
  *
  * Command line processing.
  *
@@ -22,14 +22,14 @@
 #if HAVE_LIBGEN_H
 #include <libgen.h>
 #endif
-#include <lqio/filename.h>
-#include <lqio/commandline.h>
-#include <lqio/srvn_spex.h>
-#include <lqio/dom_pragma.h>
 #if HAVE_GETOPT_H
 #include <getopt.h>
 #endif
-#if !defined(HAVE_GETSUBOPT)
+#include <lqio/commandline.h>
+#include <lqio/filename.h>
+#include <lqio/srvn_spex.h>
+#include <lqio/dom_pragma.h>
+#if !HAVE_GETSUBOPT
 #include <lqio/getsbopt.h>
 #endif
 #include <mva/fpgoop.h>
@@ -103,6 +103,8 @@ const struct option longopts[] =
     { "debug-xml",				no_argument,	   nullptr, 512+'x' },
     { nullptr, 0, nullptr, 0 }
 };
+#else
+const struct option * longopts = nullptr;
 #endif
 const char opts[]       = "abc:d:e:fhG:H:i:I:jno:pP:rt:u:vVwxz:";
 
@@ -120,7 +122,7 @@ int main (int argc, char *argv[])
 {
     std::string outputFileName = "";
     LQIO::DOM::Document::OutputFormat output_format = LQIO::DOM::Document::OutputFormat::DEFAULT;
-    LQIO::CommandLine command_line;
+    LQIO::CommandLine command_line( longopts );
     Options::Debug::initialize();
     Options::Trace::initialize();
     Options::Special::initialize();
@@ -143,7 +145,7 @@ int main (int argc, char *argv[])
 
     for ( ;; ) {
 #if HAVE_GETOPT_LONG
-        const int c = getopt_long( argc, argv, opts, longopts, NULL );
+        const int c = getopt_long( argc, argv, opts, longopts, nullptr );
 #else
         const int c = getopt( argc, argv, opts );
 #endif
@@ -432,13 +434,6 @@ int main (int argc, char *argv[])
 
     if ( optind == argc ) {
 
-        /* If stdout is not a terminal route output to stdout.          */
-        /* For pipelines.                                               */
-
-        if ( outputFileName == "" && LQIO::Filename::isWriteableFile( fileno( stdout ) ) > 0 ) {
-            outputFileName = "-";
-        }
-
         global_error_flag = Model::solve( solve_function, "-", outputFileName, output_format );
 
     } else {
@@ -446,7 +441,7 @@ int main (int argc, char *argv[])
         const int file_count = argc - optind;           /* Number of files on cmd line  */
 
         if ( file_count > 1 ) {
-            if ( outputFileName != "" ) {
+            if ( LQIO::Filename::isFileName( outputFileName ) && LQIO::Filename::isDirectory( outputFileName ) == 0 ) {
                 std::cerr << LQIO::io_vars.lq_toolname << ": Too many input files specified with the option: -o"
                      << outputFileName
                      << std::endl;

@@ -10,7 +10,7 @@
 /*
  * Global vars for simulation.
  *
- * $Id: model.h 15319 2022-01-01 17:27:22Z greg $
+ * $Id: model.h 15338 2022-01-03 14:15:48Z greg $
  */
 
 #ifndef LQSIM_MODEL_H
@@ -74,8 +74,8 @@ public:
 	void set( const std::map<std::string,std::string>&, double );
 
     private:
-	bool set( unsigned long& parameter, const std::map<std::string,std::string>& pragmas, const char * value );
-	bool set( double& parameter, const std::map<std::string,std::string>& pragmas, const char * value );
+	bool set( unsigned long& parameter, const std::map<std::string,std::string>& pragmas, const std::string& value );
+	bool set( double& parameter, const std::map<std::string,std::string>& pragmas, const std::string& value );
 
     private:
 	static const unsigned long MAX_BLOCKS	    = 30;
