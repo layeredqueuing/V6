@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_document.cpp 15358 2022-01-05 00:27:52Z greg $
+ *  $Id: dom_document.cpp 15361 2022-01-05 12:02:48Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -825,7 +825,7 @@ namespace LQIO {
 #endif
 
 	    case InputFormat::JSON:
-		rc = Json_Document::load( *document, input_filename, errorCode, load_results );
+		rc = JSON_Document::load( *document, input_filename, errorCode, load_results );
 		break;
 
 	    default:
@@ -867,8 +867,7 @@ namespace LQIO {
 		return false;
 #endif
 	    case OutputFormat::JSON:
-//		return Json_Document::loadResults( *this, LQIO::Filename( file_name, "lqxo", directory_name, extension )() );
-		return false;
+		return JSON_Document::loadResults( *this, LQIO::Filename( file_name, "lqxo", directory_name, extension )() );
 
 	    default:
 		return false;
@@ -1077,7 +1076,7 @@ namespace LQIO {
 		break;
 	    }
 	    case OutputFormat::JSON: {
-		Json_Document json( *const_cast<Document *>(this), __input_file_name, false, false );
+		JSON_Document json( *const_cast<Document *>(this), __input_file_name, false, false );
 		json.serializeDOM( output );
 		break;
 	    }
