@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: lqns.cc 15341 2022-01-03 15:16:54Z greg $
+ * $Id: lqns.cc 15358 2022-01-05 00:27:52Z greg $
  *
  * Command line processing.
  *
@@ -309,7 +309,7 @@ int main (int argc, char *argv[])
 		break;
 
 	    case 512+'p':
-		Options::Special::print_interval( optarg );
+		Options::Special::print_interval( optarg != nullptr ? optarg : std::string("") );
 		break;
 
 	    case 256+'q': //tomari quorum options

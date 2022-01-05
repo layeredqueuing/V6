@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: model.cc 15338 2022-01-03 14:15:48Z greg $
+ * $Id: model.cc 15358 2022-01-05 00:27:52Z greg $
  *
  * Layer-ization of model.  The basic concept is from the reference
  * below.  However, model partioning is more complex than task vs device.
@@ -106,7 +106,6 @@ Model::solve( solve_using solve_function, const std::string& inputFileName, cons
 
     /* Loading the model */
     LQIO::DOM::Document* document = Model::load(inputFileName,outputFileName);
-    LQX::Program * program = document->getLQXProgram();
 
     /* Make sure we got a document */
 
@@ -125,12 +124,13 @@ Model::solve( solve_using solve_function, const std::string& inputFileName, cons
     }
 
     /* declare Model * at this scope but don't instantiate due to problems with LQX programs and registering external symbols*/
-    Model * model = nullptr;
+    Model * model = Model::create( document, inputFileName, outputFileName, outputFormat );
     int status = 0;
 
     /* We can simply run if there's no control program */
     FILE * output = nullptr;
-    if ( !program ) {
+    LQX::Program * program = document->getLQXProgram();
+    if ( program == nullptr ) {
 
 	/* There is no control flow program, check for $-variables */
 	if (document->getSymbolExternalVariableCount() != 0) {
@@ -143,8 +143,6 @@ Model::solve( solve_using solve_function, const std::string& inputFileName, cons
 	    /* Simply invoke the solver for the current DOM state */
 
 	    try {
-		model = Model::create( document, inputFileName, outputFileName, outputFormat );
-
 		if ( model->check() && model->initialize() ) {
 		    if ( Pragma::spexComment() ) {	// Not spex/lqx, so output on stderr.
 			std::cerr << inputFileName << ": " << document->getModelCommentString() << std::endl;
@@ -183,8 +181,6 @@ Model::solve( solve_using solve_function, const std::string& inputFileName, cons
 	if ( flags.print_lqx ) {
 	    program->print( std::cout );
 	}
-
-	model = Model::create( document, inputFileName, outputFileName, outputFormat );
 
 	LQX::Environment * environment = program->getEnvironment();
 	environment->getMethodTable()->registerMethod(new SolverInterface::Solve(document, solve_function, model));
@@ -871,7 +867,7 @@ Model::reload()
 
     unsigned int errorCode;
     if ( !const_cast<LQIO::DOM::Document *>(_document)->loadResults( directory_name(), _input_file_name,
-								     SolverInterface::Solve::customSuffix, errorCode ) ) {
+								     SolverInterface::Solve::customSuffix, _output_format, errorCode ) ) {
 	throw LQX::RuntimeException( "--reload-lqx can't load results." );
     } else {
 	return _document->getResultValid();

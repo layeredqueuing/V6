@@ -1,14 +1,14 @@
 /* -*- c++ -*- result.h	-- Greg Franks
  *
  * ------------------------------------------------------------------------
- * $Id: result.h 15319 2022-01-01 17:27:22Z greg $
+ * $Id: result.h 15358 2022-01-05 00:27:52Z greg $
  * ------------------------------------------------------------------------
  */
 
 #ifndef _RESULT_H
 #define _RESULT_H
 
-extern unsigned number_blocks;	/* For block statistics. 	*/
+extern unsigned long number_blocks;	/* For block statistics. 	*/
 
 
 struct result_t {

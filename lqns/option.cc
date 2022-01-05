@@ -1,6 +1,6 @@
 /* option.cc -- Greg Franks Wed Oct 12 2005
  *
- * $Id: option.cc 15280 2021-12-28 13:11:27Z greg $
+ * $Id: option.cc 15358 2022-01-05 00:27:52Z greg $
  */
 
 #include "lqns.h"
@@ -53,7 +53,7 @@ Options::Debug::initialize()
 	__options.push_back( nullptr );
     }
 }
-	
+
 void
 Options::Debug::all( const std::string& )
 {
@@ -409,9 +409,9 @@ void
 Options::Special::print_interval( const std::string& arg )
 {
     char * endptr = nullptr;
-    if ( arg.empty() && (Model::__print_interval = (unsigned)strtol( arg.c_str(), &endptr, 10 )) == 0 || *endptr != '\0' ) {
+    if ( !arg.empty() && (Model::__print_interval = (unsigned)strtol( arg.c_str(), &endptr, 10 )) == 0 || *endptr != '\0' ) {
 	throw std::invalid_argument( std::string( "--print-interval=" ) + arg + "choose an integer greater than 0." );
-    } 
+    }
     flags.trace_intermediate = true;
 }
 

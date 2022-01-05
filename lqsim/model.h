@@ -10,7 +10,7 @@
 /*
  * Global vars for simulation.
  *
- * $Id: model.h 15338 2022-01-03 14:15:48Z greg $
+ * $Id: model.h 15358 2022-01-05 00:27:52Z greg $
  */
 
 #ifndef LQSIM_MODEL_H
@@ -151,7 +151,9 @@ private:
     static const std::map<const LQIO::DOM::Document::OutputFormat,const std::string> __parseable_output;
 
 public:
-    static double max_service;	/* Max service time found.	*/
+    static double max_service;			/* Max service time found.	*/
+    static bool __enable_print_interval;
+    static unsigned int __print_interval;	/* Value set by input file.	*/
 };
 
 double square( const double arg );
