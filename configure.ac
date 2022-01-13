@@ -1,5 +1,5 @@
 # Process this file with autoconf to produce a configure script.
-# $Id: configure.ac 15325 2022-01-02 18:15:16Z greg $
+# $Id: configure.ac 15372 2022-01-12 15:17:25Z greg $
 # ------------------------------------------------------------------------
 AC_INIT([lqns],[6.2],[greg@sce.carleton.ca])
 AC_CONFIG_AUX_DIR([config])
@@ -47,6 +47,23 @@ fi
 AM_CONDITIONAL([HAVE_PS2PDF], test -n "$XPS2PDF")
 AC_CHECK_PROGS(XSVN, svn)
 AM_CONDITIONAL([HAVE_SVN], test -n "$XSVN")
+
+AC_ARG_ENABLE([latex-doc],
+    [AS_HELP_STRING([--disable-latex-doc], [disable building the PDF
+    documentation from LaTeX source])],
+    [latexdoc=no],
+    [latexdoc=yes])
+
+if test "x$latexdoc" = "xyes"; then
+   AC_MSG_NOTICE([building of the PDF of the user manual from LaTeX source is enabled])
+   # Check for presence of pdfLaTeX
+   AC_CHECK_PROGS(XLATEX, latex)
+   if test -z "$XLATEX"; then
+      AC_MSG_NOTICE([LaTeX not found - Unable to create PDF version of the user manual])
+   fi
+fi
+AM_CONDITIONAL([HAVE_LATEX], test -n "$XLATEX")
+AM_CONDITIONAL([BUILD_latexdoc], test "x$latexdoc" = "xyes")
 
 # ----------------------------------------------------------------------
 # Checks for typedefs, structures, and compiler characteristics.
@@ -120,10 +137,13 @@ if test "${ac_cv_lib_gd_gdMalloc}" = "no"; then
 fi
 
 # ------------------------------------------------------------------------
-AC_CONFIG_SUBDIRS([lqiolib lqx libmva parasol doc])
+AC_CONFIG_SUBDIRS([lqiolib lqx libmva parasol])
 AC_CONFIG_FILES([Makefile lqns/Makefile lqns/regression/Makefile qnsolver/Makefile])
 AC_CONFIG_FILES([lqn2csv/Makefile lqngen/Makefile lqn2ps/Makefile srvndiff/Makefile])
-AC_CONFIG_FILES([lqsim/Makefile lqsim/regression/Makefile])
+AC_CONFIG_FILES([lqsim/Makefile lqsim/regression/Makefile lqsim/doc/Makefile])
 AC_CONFIG_FILES([petrisrvn/Makefile petrisrvn/wspnlib/Makefile petrisrvn/regression/Makefile])
+AC_CONFIG_FILES([doc/Makefile doc/tutorial/Makefile doc/userman/Makefile])
+AC_CONFIG_FILES([doc/tutorial/activity-templ/Makefile doc/tutorial/calls/Makefile doc/tutorial/model/Makefile doc/tutorial/pseudo-tasks/Makefile doc/tutorial/web-server/Makefile])
+AC_CONFIG_FILES([doc/userman/bookstore/Makefile doc/userman/model/Makefile doc/userman/replication/Makefile doc/userman/srvn-schema/Makefile doc/userman/timing-diagrams/Makefile doc/userman/xml-schema/Makefile])
 AC_CONFIG_FILES([xml/Makefile dist/Makefile dist/examples/Makefile dist/win-nt/Makefile])
 AC_OUTPUT
