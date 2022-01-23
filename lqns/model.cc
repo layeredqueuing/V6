@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: model.cc 15358 2022-01-05 00:27:52Z greg $
+ * $Id: model.cc 15380 2022-01-23 03:21:28Z greg $
  *
  * Layer-ization of model.  The basic concept is from the reference
  * below.  However, model partioning is more complex than task vs device.
@@ -179,7 +179,7 @@ Model::solve( solve_using solve_function, const std::string& inputFileName, cons
 	document->registerExternalSymbolsWithProgram( program );
 
 	if ( flags.print_lqx ) {
-	    program->print( std::cout );
+	    program->print( std::cerr );
 	}
 
 	LQX::Environment * environment = program->getEnvironment();
