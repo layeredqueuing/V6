@@ -2,7 +2,7 @@
 #
 # Make file for Unit test files
 #
-# $Id: Makefile.am 15108 2021-11-17 16:45:53Z greg $
+# $Id: Makefile.am 15396 2022-01-27 02:37:32Z greg $
 # ------------------------------------------------------------------------
 
 AM_CXXFLAGS	= -std=c++11 -DTESTMVA -DTESTDIST -DDEBUG_MVA
@@ -87,7 +87,7 @@ run:	check
 
 run-all:	check
 	@for i in $(check_PROGRAMS); do \
-	  if test $$i != "poptest" -a -a $$i != "popitertest" $$i != "disttest" -a $$i != "test1ps" -a $$i != "test2" -a $$i != "test12s" -a $$i != "testA" -a $$i != "testB"; then \
+	  if test $$i != "poptest" -a $$i != "popitertest" -a $$i != "disttest" -a $$i != "test1ps" -a $$i != "test2" -a $$i != "test12s" -a $$i != "testA" -a $$i != "testB"; then \
 	    echo $$i; \
 	    ./$$i -a -s; \
 	  fi \
