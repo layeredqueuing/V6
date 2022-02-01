@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: jmva_document.cpp 15396 2022-01-27 02:37:32Z greg $
+ * $Id: jmva_document.cpp 15415 2022-02-01 15:02:57Z greg $
  *
  * Read in XML input files.
  *
@@ -491,7 +491,8 @@ namespace BCMP {
     void
     JMVA_Document::endModel( Object& object, const XML_Char * element )
     {
-	if ( _variables.empty() || !LQIO::Spex::__result_variables.empty() ) return;
+//	if ( _variables.empty() || !LQIO::Spex::__result_variables.empty() || _plot_population_mix ) return;
+	if ( !LQIO::Spex::__result_variables.empty() ) return;
 
 	for (std::map<std::string,LQIO::DOM::SymbolExternalVariable*>::const_iterator var = _variables.begin(); var != _variables.end(); ++var ) {
 	    appendResultVariable( var->first );
@@ -964,16 +965,23 @@ namespace BCMP {
 	if ( generator.begin() == generator.end() ) {
 	    /* One item = scalar */
 	    statement = static_cast<LQX::SyntaxTreeNode *>(spex_assignment_statement( x_var.c_str(), new LQX::ConstantValueExpression( generator.begin() ), true ));
-	} else if ( generator.stride() > 0 ) {
-	    /* Stride present, so it's a... */
-	    statement = static_cast<LQX::SyntaxTreeNode *>(spex_array_comprehension( x_var.c_str(), generator.begin(), generator.end(), generator.stride() ));
+	    LQIO::Spex::__input_variables[x_var] = statement;	/* Save for output */
 	} else {
-	    /* it's a string of values */
+	    /* Stride present, so it's a... */
+	    statement = static_cast<LQX::SyntaxTreeNode *>( spex_array_comprehension( "_i", 0., generator.count(), 1.0 ) );
+	    LQX::SyntaxTreeNode * assignment_expr = new LQX::AssignmentStatementNode( new LQX::VariableExpression( &x_var.c_str()[1], false ),
+										      new LQX::MathExpression( LQX::MathExpression::MULTIPLY,
+													       new LQX::VariableExpression( "i", false ),
+													       new LQX::ConstantValueExpression( generator.stride() ) ) );
+	    LQIO::Spex::__deferred_assignment.insert( LQIO::Spex::__deferred_assignment.begin(), assignment_expr );
+	    LQIO::Spex::__input_variables[x_var] = assignment_expr;	/* Save for output */
+//	    statement = static_cast<LQX::SyntaxTreeNode *>( spex_array_comprehension( x_var.c_str(), generator.begin(), generator.end(), generator.stride() ) );
+//	} else {
+//	    /* it's a string of values */
 	}
-	LQIO::Spex::__input_variables[x_var] = statement;	/* Save for output */
 
 	/* Add the loop to the program */
-	_spex_program = static_cast<expr_list *>(spex_list( _spex_program, statement ));
+	_spex_program = static_cast<expr_list *> (spex_list( _spex_program, statement ));
 
 	/* If this is the first WhatIf, then set the first x variable for gnuplot */
 	if ( _x1.empty() ) {
@@ -1113,11 +1121,13 @@ namespace BCMP {
     JMVA_Document::setPopulationMix( const std::string& stationName, const std::string& className )
     {
  	if ( chains().size() != 2 ) throw std::runtime_error( "JMVA_Document::setPopulationMix" );
-	_plot_population_mix = true;
+	setPlotPopulationMix( true );
 	
 	const Model::Chain::map_t::iterator i = chains().begin();
 	const Model::Chain::map_t::iterator j = std::next(i);
 	const std::string beta = "$Beta";					/* Local variable	*/
+
+	LQX::SyntaxTreeNode * assignment_expr;
 
 	/*
 	 * Two new variables are needed, n1, for class 1, which is $N
@@ -1128,41 +1138,46 @@ namespace BCMP {
 	
 	const Model::Chain::map_t::iterator k1 = i->first == className ? i : j;
 	const Model::Chain::map_t::iterator k2 = i->first == className ? j : i;
+	const double k1_customers = to_double( *k1->second.customers() );	/* Get original (constant) values	*/
+	const double k2_customers = to_double( *k2->second.customers() );	/* Get original (constant) values	*/
 
-	double k1_customers = to_double( *k1->second.customers());
-	const std::string class1_name = "$N_" + k1->first;
-	LQIO::DOM::SymbolExternalVariable * n1 = new LQIO::DOM::SymbolExternalVariable( class1_name );
-	_population_vars.emplace( &k1->second, class1_name );
-	_variables.emplace( class1_name, n1 );
-	k1->second.setCustomers( n1 );								/* swap constanst for variable in class */
-	LQX::SyntaxTreeNode * assignment_expr;
+	const std::string class1_population = "$N_" + k1->first;
+	const std::string x_name = "_N_" + k1->first;
+	_x1.set( x_name, x_name, k1_customers );
+
+	LQIO::DOM::SymbolExternalVariable * n1 = new LQIO::DOM::SymbolExternalVariable( class1_population );
+	_population_vars.emplace( &k1->second, class1_population );
+	_variables.emplace( class1_population, n1 );		/* allows Spex to change customers in class1...	*/
+	k1->second.setCustomers( n1 );				/* ... so swap constanst for variable in class.	*/
+	_spex_program = static_cast<expr_list *>(spex_list( _spex_program,
+							    new LQX::AssignmentStatementNode( new LQX::VariableExpression( x_name, false ),
+											      new LQX::ConstantValueExpression( k1_customers ) ) ) );
 	expr_list * function_args = new expr_list;
 	function_args->push_back( new LQX::MathExpression( LQX::MathExpression::MULTIPLY,
 							   new LQX::VariableExpression( &beta[1], false ),
-							   new LQX::ConstantValueExpression( k1_customers ) ) );
-	assignment_expr = new LQX::AssignmentStatementNode( new LQX::VariableExpression( &class1_name[1], false ), new LQX::MethodInvocationExpression( "ceil", function_args ) );
+							   new LQX::VariableExpression( x_name, false ) ) );
+	assignment_expr = new LQX::AssignmentStatementNode( new LQX::VariableExpression( &class1_population[1], false ), new LQX::MethodInvocationExpression( "round", function_args ) );
 	LQIO::Spex::__deferred_assignment.push_back( assignment_expr );
-	LQIO::Spex::__input_variables[class1_name] = assignment_expr;
+	LQIO::Spex::__input_variables[class1_population] = assignment_expr;
 
-	double k2_customers = to_double( *k2->second.customers());
-	const std::string class2_name = "$N_" + k2->first;
-	LQIO::DOM::SymbolExternalVariable * n2 = new LQIO::DOM::SymbolExternalVariable( class2_name );
-	_population_vars.emplace( &k2->second, class2_name );
-	_variables.emplace( class2_name, n2 );
-	k2->second.setCustomers( n2 );								/* swap constanst for variable in class */
+	const std::string class2_population = "$N_" + k2->first;
+	const std::string y_name = "_N_" + k2->first;
+	_x2.set( y_name, y_name, k2_customers );
+	
+	LQIO::DOM::SymbolExternalVariable * n2 = new LQIO::DOM::SymbolExternalVariable( class2_population );
+	_population_vars.emplace( &k2->second, class2_population );
+	_variables.emplace( class2_population, n2 );		/* allows Spex to change customers in class1...	*/
+	k2->second.setCustomers( n2 );				/* ... so swap constanst for variable in class.	*/
+	_spex_program = static_cast<expr_list *>(spex_list( _spex_program,
+							    new LQX::AssignmentStatementNode( new LQX::VariableExpression( y_name, false ),
+											      new LQX::ConstantValueExpression( k2_customers ) ) ) );
 	function_args = new expr_list;
 	function_args->push_back( new LQX::MathExpression( LQX::MathExpression::MULTIPLY,
 							   new LQX::MathExpression( LQX::MathExpression::SUBTRACT,  new LQX::ConstantValueExpression( 1. ), new LQX::VariableExpression( &beta[1], false ) ),
-							   new LQX::ConstantValueExpression( k2_customers ) ) );
-	assignment_expr = new LQX::AssignmentStatementNode( new LQX::VariableExpression( &class2_name[1], false ), new LQX::MethodInvocationExpression( "floor", function_args ) );
+							   new LQX::VariableExpression( y_name, false ) ) );
+	assignment_expr = new LQX::AssignmentStatementNode( new LQX::VariableExpression( &class2_population[1], false ), new LQX::MethodInvocationExpression( "round", function_args ) );
 	LQIO::Spex::__deferred_assignment.push_back( assignment_expr );
-	LQIO::Spex::__input_variables[class2_name] = assignment_expr;
-#if BUG_343
-	if ( LQIO::Spex::__input_variables.size() == 0 ) {
-	    std::cerr << "No input variables..." << std::endl;
-	
-	}
-#endif
+	LQIO::Spex::__input_variables[class2_population] = assignment_expr;
 	return beta;
     }
 
@@ -1262,19 +1277,18 @@ namespace BCMP {
     void
     JMVA_Document::Generator::convert( const std::string& s )
     {
-	double previous = 0;
 	char * endptr = nullptr;
 	for ( const char *p = s.data(); *p != '\0'; p = endptr ) {
 	    if ( *p == ';' ) ++p;
 	    double value = strtod( p, &endptr );
 	    if ( *endptr != '\0' && *endptr != ';' ) throw std::invalid_argument( s );
 	    _end = value;			/* always take the last */
-	    if ( _begin < 0 ) {
+	    if ( p == s.data() ) {
 		_begin = value;
 	    } else {
-		_stride = value - previous;
+		_count += 1;
+		_end = value;
 	    }
-	    previous = value;
 	}
     }
 
@@ -1325,13 +1339,18 @@ namespace BCMP {
     {
 	LQIO::Spex::__observation_variables.clear();	/* Get rid of them all. */
 	LQIO::Spex::__result_variables.clear();		/* Get rid of them all. */
+	_model.clearAllResultVariables();		/* Get rid of them all.	*/
 	_gnuplot.push_back( LQIO::Spex::print_node( "set title \"" + _model.comment() + "\"" ) );
+	_gnuplot.push_back( LQIO::Spex::print_node( "#set output \"" + LQIO::Filename( _input_file_name, "svg", "", "" )() + "\"" ) );
+	_gnuplot.push_back( LQIO::Spex::print_node( "#set terminal svg" ) );
 
 	std::ostringstream plot;		// Plot command collected here.
 	plot << "plot ";
 
-	if ( type == Model::Result::Type::THROUGHPUT && _plot_population_mix ) {
-	    plot_population_mix( plot );
+	if ( type == Model::Result::Type::THROUGHPUT && plotPopulationMix() ) {
+	    plot_population_mix_vs_throughput( plot );
+	} else if ( type == Model::Result::Type::UTILIZATION && plotPopulationMix() ) {
+	    plot_population_mix_vs_utilization( plot );
 	} else if ( arg.empty() ) {
 	    plot_chain( plot, type );
 	} else if ( chains().find( arg ) != chains().end() ) {
@@ -1347,6 +1366,7 @@ namespace BCMP {
 	_gnuplot.push_back( LQIO::Spex::print_node( plot.str() ) );
     }
 
+
     /*
      * for all stations plot class arg.
      */
@@ -1354,16 +1374,9 @@ namespace BCMP {
     std::ostream&
     JMVA_Document::plot_class( std::ostream& plot, Model::Result::Type type, const std::string& arg )
     {
-	static const std::map<const Model::Result::Type, const std::string> y_labels = {
-	    {Model::Result::Type::QUEUE_LENGTH,   XNumber_of_Customers },
-	    {Model::Result::Type::RESIDENCE_TIME, XResidence_Time },
-	    {Model::Result::Type::THROUGHPUT,     XThroughput },
-	    {Model::Result::Type::UTILIZATION,    XUtilization }
-	};
-
 	appendResultVariable( _x1.var );
-	_gnuplot.push_back( LQIO::Spex::print_node( "set xlabel \"" + _x1.label + "\"" ) );		// X axis
-	_gnuplot.push_back( LQIO::Spex::print_node( "set ylabel \"" + y_labels.at(type) + "\"" ) );	// Y1 axis
+	_gnuplot.push_back( LQIO::Spex::print_node( "set xlabel \"" + _x1.label + "\"" ) );			// X axis
+	_gnuplot.push_back( LQIO::Spex::print_node( "set ylabel \"" + y_label_table.at(type) + "\"" ) );	// Y1 axis
 	_gnuplot.push_back( LQIO::Spex::print_node( "set key title \"Class " + arg + "\"" ) );
 	_gnuplot.push_back( LQIO::Spex::print_node( "set key top left box" ) );
 
@@ -1398,16 +1411,9 @@ namespace BCMP {
     std::ostream&
     JMVA_Document::plot_station( std::ostream& plot, Model::Result::Type type, const std::string& arg )
     {
-	static const std::map<const Model::Result::Type, const std::string> y_labels = {
-	    {Model::Result::Type::QUEUE_LENGTH,   XNumber_of_Customers },
-	    {Model::Result::Type::RESIDENCE_TIME, XResidence_Time },
-	    {Model::Result::Type::THROUGHPUT,     XThroughput },
-	    {Model::Result::Type::UTILIZATION,    XUtilization }
-	};
-
 	appendResultVariable( _x1.var );
-	_gnuplot.push_back( LQIO::Spex::print_node( "set xlabel \"" + _x1.label + "\"" ) );		// X axis
-	_gnuplot.push_back( LQIO::Spex::print_node( "set ylabel \"" + y_labels.at(type) + "\"" ) );	// Y1 axis
+	_gnuplot.push_back( LQIO::Spex::print_node( "set xlabel \"" + _x1.label + "\"" ) );			// X axis
+	_gnuplot.push_back( LQIO::Spex::print_node( "set ylabel \"" + y_label_table.at(type) + "\"" ) );	// Y1 axis
 	_gnuplot.push_back( LQIO::Spex::print_node( "set key title \"Station " + arg + "\"" ) );
 	_gnuplot.push_back( LQIO::Spex::print_node( "set key top left box" ) );
 
@@ -1540,11 +1546,11 @@ namespace BCMP {
     /*
      * Plot the results of a population mix.  X-axis is class 1,
      * Y-axis is class 2.  I should possibly label a few points, but
-     * they might have to computed bu gnuplot.
+     * they might have to computed by gnuplot.
      */
 
     std::ostream&
-    JMVA_Document::plot_population_mix( std::ostream& plot )
+    JMVA_Document::plot_population_mix_vs_throughput( std::ostream& plot )
     {
 	const Model::Chain::map_t::iterator x = chains().begin();
 	const Model::Chain::map_t::iterator y = std::next(x);
@@ -1552,16 +1558,23 @@ namespace BCMP {
 	std::string x_var = "$" + x->first;
 	std::string y_var = "$" + y->first;
 	createObservation( x_var, Model::Result::Type::THROUGHPUT, x->first );
-	appendResultVariable( x_var );
 	createObservation( y_var, Model::Result::Type::THROUGHPUT, y->first );
-	appendResultVariable( y_var );
 
+	std::ostringstream x_cust;
+	std::ostringstream y_cust;
+	x_cust << *x->second.customers();
+	y_cust << *y->second.customers();
+	appendResultVariable( x_cust.str() );
+	appendResultVariable( y_cust.str() );
+	appendResultVariable( x_var );
+	appendResultVariable( y_var );
+	
 	_gnuplot.push_back( LQIO::Spex::print_node( "set xlabel \"" + x->first + " Throughput\"" ) );	// X axis
 	_gnuplot.push_back( LQIO::Spex::print_node( "set ylabel \"" + y->first + " Throughput\"" ) );	// Y1 axis
 	_gnuplot.push_back( LQIO::Spex::print_node( "set key bottom left" ) );
 	_gnuplot.push_back( LQIO::Spex::print_node( "set key box" ) );
 
-	plot << "\"$DATA\" using 1:2 with linespoints title \"MVA\"";
+	plot << "\"$DATA\" using 3:4 with linespoints title \"MVA\"";
 
 	/* Compute bound for each station */
 
@@ -1599,13 +1612,70 @@ namespace BCMP {
 	    }
 	    plot << " with lines title \"" << m->first << " Bound\"";
 	}
-	_gnuplot.push_back( LQIO::Spex::print_node( "set parametric" ) );
-	if ( x_max > 0 ) {
-	    _gnuplot.push_back( LQIO::Spex::print_node( "set xrange [0:" + std::to_string(1.0/x_max) + "]" ) );
-	    _gnuplot.push_back( LQIO::Spex::print_node( "set trange [0:" + std::to_string(1.0/x_max) + "]" ) );
+
+	/* Set range (if possible), otherwise punt */
+	if ( x_max > 0 && y_max > 0 ) {
+	    const double x_pos = 1.0/x_max;
+	    const double y_pos = 1.0/y_max;
+	    _gnuplot.push_back( LQIO::Spex::print_node( "set parametric" ) );
+	    _gnuplot.push_back( LQIO::Spex::print_node( "set xrange [0:" + std::to_string(x_pos*1.05) + "]" ) );
+	    _gnuplot.push_back( LQIO::Spex::print_node( "set trange [0:" + std::to_string(x_pos) + "]" ) );
+	    _gnuplot.push_back( LQIO::Spex::print_node( "set yrange [0:" + std::to_string(y_pos*1.05) + "]" ) );
+
+	    std::ostringstream label_1, label_2;
+	    label_1 << ")\" at " << x_pos * 0.01 << "," << y_pos << " left";
+	    label_2 << ",0)\" at " << x_pos << "," << y_pos * 0.01 << " right";
+	    _gnuplot.push_back( new LQX::FilePrintStatementNode( LQIO::Spex::make_list( new LQX::ConstantValueExpression("set label \"(0,"),
+											new LQX::VariableExpression( _x1.var, false ),
+											new LQX::ConstantValueExpression(label_1.str()), nullptr ), true, false ) );
+	    _gnuplot.push_back( new LQX::FilePrintStatementNode( LQIO::Spex::make_list( new LQX::ConstantValueExpression("set label \"("),
+											new LQX::VariableExpression( _x2.var, false ),
+											new LQX::ConstantValueExpression(label_2.str()), nullptr ), true, false ) );
 	}
-	if ( y_max > 0 ) {
-	    _gnuplot.push_back( LQIO::Spex::print_node( "set yrange [0:" + std::to_string(1.0/y_max) + "]" ) );
+
+	return plot;
+    }
+
+
+    /*
+     * Plot the utilization versus the population mix.
+     */
+    
+    std::ostream&
+    JMVA_Document::plot_population_mix_vs_utilization( std::ostream& plot )
+    {
+	const Model::Chain::map_t::iterator x1 = chains().begin();
+	const Model::Chain::map_t::iterator x2 = std::next(x1);
+
+	appendResultVariable( _x1.var );
+	appendResultVariable( _x2.var );
+
+	/* Find utilization for all stations */
+
+	_gnuplot.push_back( LQIO::Spex::print_node( "set xlabel \""  + _x1.label + "\"" ) );			// X axis
+	_gnuplot.push_back( LQIO::Spex::print_node( "set x2label \"" + _x2.label + "\"" ) );			// X axis
+	_gnuplot.push_back( LQIO::Spex::print_node( "set ylabel \""  + y_label_table.at(Model::Result::Type::UTILIZATION) + "\"" ) );	// Y1 axis
+//	_gnuplot.push_back( LQIO::Spex::print_node( "set key title \"Station " + arg + "\"" ) );
+//	_gnuplot.push_back( LQIO::Spex::print_node( "set key top left box" ) );
+
+	const size_t x = 1;		/* GNUPLOT starts from 1, not 0 */
+	size_t y = x + 1;		/* Skip "mirror" x */
+	
+	for ( Model::Station::map_t::const_iterator m = stations().begin(); m != stations().end(); ++m ) {
+	    if ( m->second.reference() ) continue;
+
+	    if ( y > 2 ) plot << ", ";
+
+	    /* Create observation, var name is class name. */
+	    y += 1;
+	    const std::string y_var = "$" + m->first;
+	    createObservation( y_var, Model::Result::Type::UTILIZATION, &m->second, nullptr );
+	    appendResultVariable( y_var );
+
+	    /* Append plot command to plot */
+	    std::string title = m->first;
+	    plot << "\"$DATA\" using " << x << ":" << y << " with linespoints"
+		 << " title \"" << title << "\"";
 	}
 
 	return plot;
@@ -1973,10 +2043,20 @@ namespace BCMP {
 
 
 namespace BCMP {
+    /* Tables for input parsing */
     const std::set<const XML_Char *,JMVA_Document::attribute_table_t> JMVA_Document::algParams_table = { XmaxSamples, Xname, Xtolerance };
     const std::set<const XML_Char *,JMVA_Document::attribute_table_t> JMVA_Document::compareAlgs_table = { XmeanValue, XmeasureType, Xsuccessful };
     const std::set<const XML_Char *,JMVA_Document::attribute_table_t> JMVA_Document::null_table = {};
 
+    /* Table for y label when plotting */
+    const std::map<const Model::Result::Type, const std::string> JMVA_Document::y_label_table = {
+	{Model::Result::Type::QUEUE_LENGTH,   JMVA_Document::XNumber_of_Customers },
+	{Model::Result::Type::RESIDENCE_TIME, JMVA_Document::XResidence_Time },
+	{Model::Result::Type::THROUGHPUT,     JMVA_Document::XThroughput },
+	{Model::Result::Type::UTILIZATION,    JMVA_Document::XUtilization }
+    };
+
+    /* Schema element/attribute names */
     const XML_Char * JMVA_Document::XArrivalProcess	= "Arrival Process";
     const XML_Char * JMVA_Document::XClass		= "Class";
     const XML_Char * JMVA_Document::XReferenceStation	= "ReferenceStation";

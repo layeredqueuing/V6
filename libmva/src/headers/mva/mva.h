@@ -9,7 +9,7 @@
  * November, 1994
  * August, 2005
  *
- * $Id: mva.h 15246 2021-12-22 15:13:01Z greg $
+ * $Id: mva.h 15415 2022-02-01 15:02:57Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -64,6 +64,7 @@ protected:
 
 protected:
     MVA( Vector<Server *>&, const Population &, const Vector<double>&, const Vector<unsigned>&, const Vector<double>* );
+    virtual void initialize();
 
 private:
     MVA( const MVA& ) = delete;
@@ -188,11 +189,11 @@ private:
     double tau( const Server&, const unsigned j, const unsigned k, const Population& ) const;
 
     std::ostream& printZ( std::ostream& ) const;
-    std::ostream& printX( std::ostream& ) const;
     std::ostream& printPri( std::ostream& output ) const;
-
-protected:
-    virtual void initialize();
+#if DEBUG_MVA
+public:
+#endif
+    std::ostream& printX( std::ostream& ) const;
 
 public:
     static int __bounds_limit;		/* Enable bounds limiting.	*/
