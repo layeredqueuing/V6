@@ -1,7 +1,7 @@
 /* -*- c++ -*-
  * lqn2ps.h	-- Greg Franks
  *
- * $Id: option.h 15270 2021-12-26 23:11:55Z greg $
+ * $Id: option.h 15437 2022-02-12 17:03:35Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -26,6 +26,7 @@ enum class Aggregate {
 
 enum class Colouring {
     NONE,
+    INPUT,		/* Input model -- flag errors? */
     RESULTS,		/* Default */
     LAYERS,		/* Each layer gets its own colour */
     CLIENTS,		/* Each client chaing gets its own colour */
@@ -37,7 +38,7 @@ enum class Colouring {
 
 enum class File_Format {
     EEPIC,
-#if defined(EMF_OUTPUT)
+#if EMF_OUTPUT
     EMF,
 #endif
     FIG,
@@ -65,13 +66,13 @@ enum class File_Format {
     PSTEX,
     RTF,
     SRVN,
-#if defined(SVG_OUTPUT)
+#if SVG_OUTPUT
     SVG,
 #endif
-#if defined(SXD_OUTPUT)
+#if SXD_OUTPUT
     SXD,
 #endif
-#if defined(TXT_OUTPUT)
+#if TXT_OUTPUT
     TXT,
 #endif
 #if defined(X11_OUTPUT)

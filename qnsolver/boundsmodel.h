@@ -9,7 +9,7 @@
  *
  * February 2022.
  *
- * $Id: boundsmodel.h 15424 2022-02-03 11:01:20Z greg $
+ * $Id: boundsmodel.h 15437 2022-02-12 17:03:35Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -25,6 +25,11 @@
 #include "model.h"
 
 class BoundsModel : public Model {
+    typedef std::pair<const std::string,std::pair<const std::string,double>> result_pair_t;
+    typedef std::multimap<const std::string,std::pair<const std::string,double>> result_map_t;
+
+    static double plus( double augend, const std::pair<const std::string,double>& addend ) { return augend + addend.second; }
+
 public:
     friend class Model;
     
@@ -35,6 +40,7 @@ public:
     bool construct();
     bool solve();
     virtual void saveResults();
+    const std::map<const std::string,BCMP::Model::Bound>& bounds() const { return _bounds; }	/* Chain, Bounds */
     
 private:
     virtual BCMP::Model::Chain::Type type() const { return BCMP::Model::Chain::Type::UNDEFINED; }
@@ -42,6 +48,7 @@ private:
 
 private:
     Model& _parent;
-    std::map<std::string,BCMP::Model::Bound> _bounds;		/* Chain, Bounds */
+    std::map<const std::string,BCMP::Model::Bound> _bounds;			/* Chain, Bounds */
+    result_map_t _results;	/* Station, classes */
 };
 #endif

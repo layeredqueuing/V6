@@ -9,7 +9,7 @@
  *
  * December 2020
  *
- * $Id: closedmodel.h 15424 2022-02-03 11:01:20Z greg $
+ * $Id: closedmodel.h 15438 2022-02-12 17:12:56Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -63,10 +63,10 @@ private:
 
 private:
     Model& _parent;
-    Population N;			/* Population (by class) 	*/
-    Vector<double> Z;			/* Think Time */
-    Vector<unsigned> priority;		/* Priority */
-    Model::Solver _mva;
     MVA * _solver;
+    Model::Solver _mva;
+    Population N;				/* Population (by class) 	*/
+    VectorMath<double> Z;			/* Think Time */
+    VectorMath<unsigned> priority;		/* Priority */
 };
 #endif

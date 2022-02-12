@@ -1,5 +1,5 @@
 /*
- * $Id: qnsolver.cc 15424 2022-02-03 11:01:20Z greg $
+ * $Id: qnsolver.cc 15437 2022-02-12 17:03:35Z greg $
  */
 
 #include "config.h"
@@ -122,6 +122,7 @@ int main (int argc, char *argv[])
 
 	switch( c ) {
 	case 'b':
+	    pragmas.insert(LQIO::DOM::Pragma::_mva_,LQIO::DOM::Pragma::_bounds_);
 	    break;
 
 	case 'd':
@@ -254,6 +255,7 @@ int main (int argc, char *argv[])
 static void exec( const std::string& input_file_name, const std::string& output_file_name, const std::string& plot_arg )
 {
     static std::map<const Model::Solver,const std::string> solver_name = {
+	{ Model::Solver::BOUNDS,		"bounds" },
 	{ Model::Solver::EXACT_MVA,		LQIO::DOM::Pragma::_exact_ },
 	{ Model::Solver::BARD_SCHWEITZER,	LQIO::DOM::Pragma::_schweitzer_ },
 	{ Model::Solver::LINEARIZER,		LQIO::DOM::Pragma::_linearizer_ },

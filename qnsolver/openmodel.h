@@ -9,7 +9,7 @@
  *
  * December 2020
  *
- * $Id: openmodel.h 15424 2022-02-03 11:01:20Z greg $
+ * $Id: openmodel.h 15437 2022-02-12 17:03:35Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -48,7 +48,7 @@ public:
 private:
     virtual BCMP::Model::Chain::Type type() const { return BCMP::Model::Chain::Type::OPEN; }
     virtual bool isParent() const { return false; }
-
+    
 private:
     Model& _parent;
     Open* _solver;
