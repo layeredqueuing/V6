@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- * $Id: multserv.cc 15365 2022-01-07 16:09:44Z greg $
+ * $Id: multserv.cc 15441 2022-03-02 14:16:20Z greg $
  *
  * Server definitions for Multiserver MVA.
  * From
@@ -55,6 +55,8 @@
 #include "mvaexception.h"
 #include "prob.h"
 #include "vector.h"
+
+// #define BUG_338	0
 
 #if DEBUG_MVA
 bool Conway_Multi_Server::debug_XE = false;
@@ -917,6 +919,9 @@ Zhou_Multi_Server::sumOf_SL( const MVA& solver, const Population& N, const unsig
 
     const Probability P = P_mean( solver, N );		// Residence time divided by cycle time (1/lambba)
     const double S = S_mean( solver, N );		// Ratio of service times (by throughput)
+#if BUG_338
+    std::cerr << "Zhou: P_mean" << N << "=" << P << ", S_mean(N)=" << S << std::endl;
+#endif
     if ( P == 1.0 ) return static_cast<double>(N_sum - m) * S
 		      / static_cast<double>(m);		/* server full utilized */
 

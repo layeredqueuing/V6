@@ -7,7 +7,7 @@
  * However, to eliminate code here, the spex construction functions will have to save the
  * LQX expressions and then construct the program.
  * ------------------------------------------------------------------------
- * $Id: generate.cc 15305 2021-12-31 16:01:37Z greg $
+ * $Id: generate.cc 15455 2022-03-08 00:34:06Z greg $
  */
 
 #include "lqngen.h"
@@ -448,7 +448,7 @@ Generate::addProcessor( const std::string& name, const scheduling_type sched_fla
 LQIO::DOM::Group *
 Generate::addGroup( LQIO::DOM::Processor * processor, double share )
 {
-    if ( share <= 0 || 1 <= share ) throw std::domain_error( "share" );
+    if ( share <= 0 || 1 <= share ) throw std::invalid_argument( "share" );
     std::ostringstream name;
     name << ( Flags::long_names ? "Group" : "g" ) << _document->getNumberOfGroups() + 1;
     LQIO::DOM::Group * group = new LQIO::DOM::Group( _document, name.str().c_str(), processor );		/* Guarantee, not cap */

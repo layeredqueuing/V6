@@ -1,8 +1,9 @@
 /* lqngen.cc	-- Greg Franks Thu Jul 29 2004
- * Model file generator.
- * This is actually part of lqn2ps, but if lqn2ps is invoked as lqngen, then this magically runs.
+ * Model file generator/converter.
+ * If invoked as lqngen, generate a model.
+ * In invoked as lqn2lqx, convert model to lqx.
  *
- * $Id: lqngen.cc 15344 2022-01-03 20:41:10Z greg $
+ * $Id: lqngen.cc 15455 2022-03-08 00:34:06Z greg $
  */
 
 #include "lqngen.h"
@@ -15,9 +16,6 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <libgen.h>
-#if !HAVE_GETSUBOPT
-#include <lqio/getsbopt.h>
-#endif
 #include <lqio/commandline.h>
 #include <lqio/filename.h>
 #include <lqio/glblerr.h>
@@ -27,9 +25,6 @@
 #include "randomvar.h"
 #endif
 
-#if (defined(linux) || defined(__linux__)) && !defined(__USE_XOPEN_EXTENDED)
-extern "C" int getsubopt (char **, char * const *, char **);
-#endif
 #if HAVE_GETOPT_H
 void makeopts( std::string& opts, std::vector<struct option>& longopts, int * );
 #else
@@ -168,6 +163,14 @@ static const std::map<LQIO::DOM::Document::InputFormat,const std::string> output
 };
 static std::string output_file_name;
 
+static const std::map<const std::string,const LQIO::DOM::Document::InputFormat> output_format = {
+    { "lqn", LQIO::DOM::Document::InputFormat::LQN },
+    { "xml", LQIO::DOM::Document::InputFormat::XML },
+    { "lqx", LQIO::DOM::Document::InputFormat::XML },
+    { "json", LQIO::DOM::Document::InputFormat::JSON }
+};
+
+
 
 std::map<std::string,RV::RandomVariable *> distributions;
 
@@ -241,7 +244,7 @@ main( int argc, char *argv[] )
 	    case 0x100+'#':
 		if ( total_customers ) delete total_customers;		/* out with the old... */
 		total_customers = get_RV( std::string(optarg), discreet_default, RV::RandomVariable::DISCREET );
-		if ( !check_multiplicity( total_customers ) ) throw std::domain_error( "The mean number of clients must be greater than zero." );
+		if ( !check_multiplicity( total_customers ) ) throw std::invalid_argument( "The mean number of clients must be greater than zero." );
 		Flags::override[Flags::CUSTOMERS] = false;		/* Use DOM value as we set that */
 		break;
 		
@@ -291,7 +294,7 @@ main( int argc, char *argv[] )
 		} else {
 		    const double arg = static_cast<double>(strtol( optarg, &endptr, 10 ));
 		    if ( arg < 1. ) {
-			throw std::domain_error( "argument is not a positive integer." );
+			throw std::invalid_argument( "argument is not a positive integer." );
 		    }
 		    const double root_arg = sqrt( arg );
 		    Flags::annotate_input = false;
@@ -331,11 +334,11 @@ main( int argc, char *argv[] )
 		if ( optarg ) {
 		    if ( Generate::__customers_per_client ) delete Generate::__customers_per_client;
 		    Generate::__customers_per_client = get_RV( std::string(optarg), discreet_default, RV::RandomVariable::DISCREET );
-		    if ( !check_multiplicity( Generate::__customers_per_client ) ) throw std::domain_error( "The mean number of clients must be greater than one." );
+		    if ( !check_multiplicity( Generate::__customers_per_client ) ) throw std::invalid_argument( "The mean number of clients must be greater than one." );
 		    Flags::override[Flags::CUSTOMERS] = true;
 		    customers_set = true;
 		} else if ( Flags::override[Flags::CUSTOMERS] ) {
-		    throw std::domain_error( "option requires an argument" );
+		    throw std::invalid_argument( "option requires an argument" );
 		}
 		Flags::convert[Flags::CUSTOMERS] = true;
 		break;
@@ -350,7 +353,7 @@ main( int argc, char *argv[] )
 		if ( Flags::lqn2lqx ) throw c;
 		if ( number_of_clients ) delete number_of_clients;
 		number_of_clients = get_RV( std::string( optarg ), constant_default, RV::RandomVariable::DISCREET );
-		if ( !check_multiplicity( number_of_clients ) ) throw std::domain_error( "The number of clients must be greater than zero." );
+		if ( !check_multiplicity( number_of_clients ) ) throw std::invalid_argument( "The number of clients must be greater than zero." );
 		break;
 
 	    case 0x100+'C':		/* Constant */
@@ -373,7 +376,7 @@ main( int argc, char *argv[] )
 		if ( Flags::lqn2lqx ) throw c;
 		reset_RV( &Generate::__number_of_entries, discreet_default, strtod( optarg, &endptr ) );
 		if ( dynamic_cast<RV::Constant *>(Generate::__number_of_entries) && floor((*Generate::__number_of_entries)()) != ceil((*Generate::__number_of_entries)()) ) {
-		    throw std::domain_error( "argument is not a positive integer." );
+		    throw std::invalid_argument( "argument is not a positive integer." );
 		}
 		break;
 
@@ -455,7 +458,7 @@ main( int argc, char *argv[] )
 		if ( Flags::lqn2lqx ) throw c;
 		if ( number_of_layers ) delete number_of_layers;
 		number_of_clients = get_RV( std::string( optarg ), constant_default, RV::RandomVariable::DISCREET );
-		if ( !check_multiplicity( number_of_layers ) ) throw std::domain_error( "The number of layers must be greater than zero." );
+		if ( !check_multiplicity( number_of_layers ) ) throw std::invalid_argument( "The number of layers must be greater than zero." );
 		break;
 
 	    case 0x100+'L':
@@ -504,39 +507,31 @@ main( int argc, char *argv[] )
 		std::transform( Flags::observe.begin(), Flags::observe.end(), Flags::observe.begin(), Flags::set_false );
 		break;
 		
-	    case 'O': {
-		char * old_optarg = optarg;
-		static const char * const strings[] = { "lqn", "lqx", "xml", "json", 0 };
-		int arg = getsubopt( &optarg, const_cast<char * const *>(strings), &endptr );
-		switch ( arg ) {
-		case 0:
-		    Flags::output_format = LQIO::DOM::Document::InputFormat::LQN;
-		    break;
-		case 1:
-		    Flags::output_format = LQIO::DOM::Document::InputFormat::XML;
-		    Flags::spex_output = true;
-		    Flags::lqx_output  = true;
-		    break;
-		case 2:
-		    Flags::output_format = LQIO::DOM::Document::InputFormat::XML;
-		    break;
-		case 3:
-		    Flags::output_format = LQIO::DOM::Document::InputFormat::JSON;
-		    break;
-		default:
-		    ::invalid_argument( c, old_optarg );
-		    exit( 1 );
-		} }
+	    case 'O':
+		if ( optarg ) {
+		    std::map<const std::string,const LQIO::DOM::Document::InputFormat>::const_iterator format = output_format.find( optarg );
+		    if ( format == output_format.end() ) {
+			throw std::invalid_argument( "invalid argument" );
+		    } else {
+			Flags::output_format = format->second;
+			if ( format->second == LQIO::DOM::Document::InputFormat::XML && format->first == "lqx" ) {
+			    Flags::spex_output = true;
+			    Flags::lqx_output  = true;
+			}
+		    }
+		} else {
+		    throw std::invalid_argument( "option requires an argument" );
+		}
 		break;
 
 	    case 'p':			/* processor-multiplicity */
 		if ( optarg ) {
 		    if ( Generate::__processor_multiplicity ) delete Generate::__processor_multiplicity;
 		    Generate::__processor_multiplicity = get_RV( std::string( optarg ), discreet_default, RV::RandomVariable::DISCREET );
-		    if ( !check_multiplicity( Generate::__processor_multiplicity ) ) throw std::domain_error( "The mean processor multiplicity must be greater than one." );
+		    if ( !check_multiplicity( Generate::__processor_multiplicity ) ) throw std::invalid_argument( "The mean processor multiplicity must be greater than one." );
 		    Flags::override[Flags::PROCESSOR_MULTIPLICITY] = true;
 		} else if ( Flags::override[Flags::PROCESSOR_MULTIPLICITY] ) {
-		    throw std::domain_error( "option requires an argument" );
+		    throw std::invalid_argument( "option requires an argument" );
 		}
 		Flags::convert[Flags::PROCESSOR_MULTIPLICITY] = true;
 		break;
@@ -551,7 +546,7 @@ main( int argc, char *argv[] )
 		if ( Flags::lqn2lqx ) throw c;
 		if ( number_of_processors ) delete number_of_processors;
 		number_of_processors = get_RV( std::string( optarg ), constant_default, RV::RandomVariable::DISCREET );
-		if ( !check_multiplicity( number_of_processors ) ) throw std::domain_error( "The number of processors must be greater than zero." );
+		if ( !check_multiplicity( number_of_processors ) ) throw std::invalid_argument( "The number of processors must be greater than zero." );
 		break;
 
 	    case 0x100+'P':
@@ -568,7 +563,7 @@ main( int argc, char *argv[] )
 
 		    const double high = static_cast<double>(strtol( optarg, &endptr, 10 ));
 		    if ( (endptr != 0 && *endptr != '\0') || trunc(high) != high || high < 2. ) {
-			throw std::domain_error( "The total number of customers must be an integer greater than one." );
+			throw std::invalid_argument( "The total number of customers must be an integer greater than one." );
 		    }
 		    const double low = ceil( high / 10. );
 		    const double mid = ceil( high / 5. );
@@ -609,7 +604,7 @@ main( int argc, char *argv[] )
 		if ( Flags::lqn2lqx ) throw c;
 		Flags::reset_pragmas = true;
 		if ( optarg != NULL ) {
-		    throw std::domain_error( "option does not take an argument" );
+		    throw std::invalid_argument( "option does not take an argument" );
 		}
 		break;
 		
@@ -630,10 +625,10 @@ main( int argc, char *argv[] )
 		if ( optarg ) {
 		    if ( Generate::__service_time ) delete Generate::__service_time;
 		    Generate::__service_time = get_RV( std::string( optarg ), continuous_default, RV::RandomVariable::CONTINUOUS );
-		    if ( !check_argument( Generate::__service_time ) ) throw std::domain_error( "Service time must be greater than zero." );
+		    if ( !check_argument( Generate::__service_time ) ) throw std::invalid_argument( "Service time must be greater than zero." );
 		    Flags::override[Flags::SERVICE_TIME] = true;
 		} else if ( Flags::override[Flags::SERVICE_TIME] ) {
-		    throw std::domain_error( "option requires an argument" );
+		    throw std::invalid_argument( "option requires an argument" );
 		}
 		Flags::convert[Flags::SERVICE_TIME] = true;
 		break;
@@ -666,10 +661,10 @@ main( int argc, char *argv[] )
 		if ( optarg ) {
 		    if ( Generate::__task_multiplicity ) delete Generate::__task_multiplicity;
 		    Generate::__task_multiplicity = get_RV( std::string( optarg ), discreet_default, RV::RandomVariable::DISCREET );
-		    if ( !check_multiplicity( Generate::__task_multiplicity ) ) throw std::domain_error( "The mean task multiplicity must be greater than one." );
+		    if ( !check_multiplicity( Generate::__task_multiplicity ) ) throw std::invalid_argument( "The mean task multiplicity must be greater than one." );
 		    Flags::override[Flags::TASK_MULTIPLICITY] = true;
 		} else if ( !Flags::lqn2lqx ) {
-		    throw std::domain_error( "option requires an argument" );
+		    throw std::invalid_argument( "option requires an argument" );
 		}
 		Flags::convert[Flags::TASK_MULTIPLICITY] = true;
 		break;
@@ -684,7 +679,7 @@ main( int argc, char *argv[] )
 		if ( Flags::lqn2lqx ) throw c;
 		if ( number_of_tasks ) delete number_of_tasks;
 		number_of_tasks = get_RV( std::string( optarg ), constant_default, RV::RandomVariable::DISCREET );
-		if ( !check_multiplicity( number_of_tasks ) ) throw std::domain_error( "The number of tasks must be greater than zero." );
+		if ( !check_multiplicity( number_of_tasks ) ) throw std::invalid_argument( "The number of tasks must be greater than zero." );
 		break;
 
 	    case 0x100+'T':
@@ -760,10 +755,10 @@ main( int argc, char *argv[] )
 		if ( optarg ) {
 		    if ( Generate::__rendezvous_rate ) delete Generate::__rendezvous_rate;
 		    Generate::__rendezvous_rate = get_RV( std::string( optarg ), continuous_default, RV::RandomVariable::CONTINUOUS );
-		    if ( !check_argument( Generate::__service_time ) ) throw std::domain_error( "Request rate must be greater than zero." );
+		    if ( !check_argument( Generate::__service_time ) ) throw std::invalid_argument( "Request rate must be greater than zero." );
 		    Flags::override[Flags::REQUEST_RATE] = true;
 		} else if ( Flags::override[Flags::REQUEST_RATE] ) {
-		    throw std::domain_error( "option requires an argument" );
+		    throw std::invalid_argument( "option requires an argument" );
 		}
 		Flags::convert[Flags::REQUEST_RATE] = true;
 		break;
@@ -778,17 +773,17 @@ main( int argc, char *argv[] )
 		if ( Flags::lqn2lqx ) throw c;
 		if ( Generate::__outgoing_requests ) delete Generate::__outgoing_requests;
 		Generate::__outgoing_requests = get_RV( std::string( optarg ), continuous_default, RV::RandomVariable::CONTINUOUS );
-		if ( !check_argument( Generate::__outgoing_requests ) ) throw std::domain_error( "Outgoing requests must be greater than zero." );
+		if ( !check_argument( Generate::__outgoing_requests ) ) throw std::invalid_argument( "Outgoing requests must be greater than zero." );
 		break;
 		
 	    case 'z':
 		if ( optarg ) {
 		    if ( Generate::__think_time ) delete Generate::__think_time;
 		    Generate::__think_time = get_RV( std::string( optarg ), continuous_default, RV::RandomVariable::CONTINUOUS );
-		    if ( !check_argument( Generate::__service_time ) ) throw std::domain_error( "Think time must be greater than zero." );
+		    if ( !check_argument( Generate::__service_time ) ) throw std::invalid_argument( "Think time must be greater than zero." );
 		    Flags::override[Flags::THINK_TIME] = true;
 		} else if ( Flags::override[Flags::THINK_TIME] ) {
-		    throw std::domain_error( "option requires an argument" );
+		    throw std::invalid_argument( "option requires an argument" );
 		}
 		Flags::convert[Flags::THINK_TIME] = true;
 		break;
@@ -815,7 +810,7 @@ main( int argc, char *argv[] )
 	    }
 	}
 
-	catch ( const std::domain_error& err ) {
+	catch ( const std::invalid_argument& err ) {
 	    if ( !optarg ) {
 		std::cerr << LQIO::io_vars.lq_toolname << ": " << err.what() << " -- '"  << longopts.at(optind).name << "'." << std::endl;
 		help();
@@ -900,7 +895,7 @@ lqngen( int argc, char *argv[0] )
 
     } else {
 
-	std::cerr << LQIO::io_vars.lq_toolname << ": arg count." << std::endl;
+	std::cerr << LQIO::io_vars.lq_toolname << ": too many output files specified (output is to " << argv[optind] << ")." << std::endl;
 
     }
 
@@ -1137,7 +1132,7 @@ get_RV( const std::string& arg, RV::RandomVariable * new_dist, RV::RandomVariabl
 	std::map<std::string,RV::RandomVariable *>::const_iterator dist = distributions.find( arg1 );
 	if ( dist != distributions.end() ) {
 	    RV::RandomVariable::distribution_t new_type = dist->second->getType();
-	    if ( new_type != RV::RandomVariable::CONSTANT && new_type != RV::RandomVariable::BOTH && new_type != type ) throw std::domain_error( "invalid distribution for random variable" );
+	    if ( new_type != RV::RandomVariable::CONSTANT && new_type != RV::RandomVariable::BOTH && new_type != type ) throw std::invalid_argument( "invalid distribution for random variable" );
 	    std::string arg2 = arg.substr(sep1+1);
 	    return get_RV_args( dist->second->clone(), arg2 );
 	}
@@ -1152,7 +1147,7 @@ get_RV_args( RV::RandomVariable * dist, const std::string& arg )
     if ( dist->getType() != RV::RandomVariable::CONSTANT ) some_randomness = true;
     const std::size_t sep1 = arg.find( ":" );
     if ( sep1 != std::string::npos ) {
-	if ( dist->nArgs() != 2 ) throw std::domain_error( "number of arguments" );
+	if ( dist->nArgs() != 2 ) throw std::invalid_argument( "number of arguments" );
 	std::string arg1 = arg.substr(0,sep1);
 	std::string arg2 = arg.substr(sep1+1);
 	dist->setArg( 1, arg1 );

@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: model.cc 15380 2022-01-23 03:21:28Z greg $
+ * $Id: model.cc 15441 2022-03-02 14:16:20Z greg $
  *
  * Layer-ization of model.  The basic concept is from the reference
  * below.  However, model partioning is more complex than task vs device.
@@ -1362,9 +1362,7 @@ SRVN_Model::assignSubmodel()
         servers.insert( __cfs_server );
     }
 
-    std::for_each( servers.begin(), servers.end(), Exec1<Entity,unsigned int>( &Entity::setSubmodel, 1 ) );
-
-    return 0;
+    return std::for_each( servers.begin(), servers.end(), Entity::increment_submodel() ).count();
 }
 
 /*----------------------------------------------------------------------*/
