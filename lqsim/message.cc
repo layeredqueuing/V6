@@ -10,10 +10,9 @@
 /*
  * Input output processing.
  *
- * $Id: message.cc 14131 2020-11-25 02:17:53Z greg $
+ * $Id: message.cc 15459 2022-03-09 21:53:20Z greg $
  */
 
-#include <parasol.h>
 #include "lqsim.h"
 #include "entry.h"
 #include "message.h"

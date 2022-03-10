@@ -1,4 +1,4 @@
-/* $Id: para_internals.h 12060 2014-05-29 19:06:06Z greg $ */
+/* $Id: para_internals.h 15459 2022-03-09 21:53:20Z greg $ */
 /************************************************************************/
 /*	para_internals.h - PARASOL library internal header file		*/
 /*									*/
@@ -63,7 +63,7 @@
 #ifndef	_PARA_INTERNALS
 #define	_PARA_INTERNALS
 
-#include	<parasol.h>
+#include <parasol/parasol.h>
 
 
 /************************************************************************/

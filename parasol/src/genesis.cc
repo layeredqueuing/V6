@@ -1,4 +1,4 @@
-// $Id: genesis.cc 12060 2014-05-29 19:06:06Z greg $
+// $Id: genesis.cc 15459 2022-03-09 21:53:20Z greg $
 //=======================================================================
 //	genesis.cc - The simulation startup code.
 //
@@ -26,7 +26,7 @@
 //	Created: 27/06/95 (PRM)
 //
 //=======================================================================
-#include <genesis.h>
+#include <parasol/genesis.h>
 
 long PS_GenesisTask::init = FALSE;
 long PS_ParasolNode::init = FALSE;

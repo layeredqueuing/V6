@@ -1,4 +1,4 @@
-// $Id: node.h 9042 2009-10-14 01:31:21Z greg $
+// $Id: node.h 15459 2022-03-09 21:53:20Z greg $
 //=======================================================================
 //	node.h - PS_AbstractNode, PS_UserNode and PS_SystemNode class
 //		 declarations.
@@ -31,7 +31,7 @@
 #define __NODE_H
 
 #ifndef __PARASOL_ENTITY_H
-#include <para_entity.h>
+#include <parasol/para_entity.h>
 #endif //__PARASOL_ENTITY_H
 
 //=======================================================================

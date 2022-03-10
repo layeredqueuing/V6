@@ -10,11 +10,10 @@
 /*
  * Lqsim-parasol Entry interface.
  *
- * $Id: entry.cc 15319 2022-01-01 17:27:22Z greg $
+ * $Id: entry.cc 15459 2022-03-09 21:53:20Z greg $
  */
 
 #include "lqsim.h"
-#include <parasol.h>
 #include <algorithm>
 #include <cmath>
 #include <cstring>

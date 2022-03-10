@@ -3,8 +3,8 @@
 # 
 # Make file for Parasol simulator libraries, tests, tools, and examples
 # ------------------------------------------------------------------------
-# $Id: Makefile.am 9238 2010-03-05 14:51:10Z greg $
+# $Id: Makefile.am 15459 2022-03-09 21:53:20Z greg $
 # ------------------------------------------------------------------------
 
-SUBDIRS = src doc include tests 
+SUBDIRS = src doc include/parasol tests 
 EXTRA_DIST = README NEWS ChangeLog AUTHORS COPYING 

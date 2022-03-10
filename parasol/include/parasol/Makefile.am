@@ -1,9 +1,9 @@
-# Makefile for $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/parasol/include/Makefile.am $
+# Makefile for $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/parasol/include/parasol/Makefile.am $
 #
 # Copyright (C) 2003 Greg Franks <greg@sce.carleton.ca>
 # 
 # ------------------------------------------------------------------------
-# $Id: Makefile.am 7645 2007-12-10 19:35:21Z greg $
+# $Id: Makefile.am 15457 2022-03-09 15:54:19Z greg $
 # ------------------------------------------------------------------------
 
 noinst_HEADERS = ansidecl.h \

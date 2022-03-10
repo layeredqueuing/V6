@@ -12,7 +12,7 @@
 /*
  * Global vars for setting up simulation.
  *
- * $Id: lqsim.h 15358 2022-01-05 00:27:52Z greg $
+ * $Id: lqsim.h 15459 2022-03-09 21:53:20Z greg $
  */
 
 #if HAVE_CONFIG_H
@@ -23,6 +23,7 @@
 #if HAVE_SYS_TYPES_H
 #include <sys/types.h>    /* Need def for size_t */
 #endif
+#include <parasol/parasol.h>
 
 #define	BUG_313		1
 

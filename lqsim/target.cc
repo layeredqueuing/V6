@@ -1,11 +1,10 @@
 /* target.cc	-- Greg Franks Tue Jun 23 2009
  *
  * ------------------------------------------------------------------------
- * $Id: target.cc 15332 2022-01-02 22:04:56Z greg $
+ * $Id: target.cc 15459 2022-03-09 21:53:20Z greg $
  * ------------------------------------------------------------------------
  */
 
-#include <parasol.h>
 #include "lqsim.h"
 #include <algorithm>
 #include <limits>

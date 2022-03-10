@@ -1,6 +1,6 @@
-// $Id: spinlock.h 9042 2009-10-14 01:31:21Z greg $
+// $Id: semaphore.h 15459 2022-03-09 21:53:20Z greg $
 //=======================================================================
-//	spinlock.h - PS_Spinlock class declaration.
+//	semaphore.h - PS_Semaphore class declaration.
 //
 //	Copyright (C) 1995 School of Computer Science,
 //		Carleton University, Ottawa, Ont., Canada
@@ -26,27 +26,27 @@
 //	Created: 27/06/95 (PRM)
 //
 //=======================================================================
-#ifndef __SPINLOCK_H
-#define __SPINLOCK_H
+#ifndef __SEMAPHORE_H
+#define __SEMAPHORE_H
 
 #ifndef __PARA_ENTITY_H
-#include <para_entity.h>
+#include <parasol/para_entity.h>
 #endif //__PARA_ENTITY_H
 
 //=======================================================================
-// class:	PS_Spinlock
-// description:	Encapsulates PARASOL spinlocks.
+// class:	PS_Semaphore
+// description:	Encapsulates PARASOL semaphores.
 //=======================================================================
-class PS_Spinlock : public PS_ParasolEntity {
+class PS_Semaphore : public PS_ParasolEntity {
 private:
 	static	long 	nextid;		// Next semaphore id
 
 public:
-	PS_Spinlock() : PS_ParasolEntity(nextid++) {};
- 	SYSCALL Lock() const
-	    { return ps_lock(id()); };
-	SYSCALL Unlock() const
-	    { return ps_unlock(id()); };
+	PS_Semaphore(long value = 1) : PS_ParasolEntity(nextid++) { Reset(value); };
+	SYSCALL Wait() const { return ps_wait_semaphore(id()); };
+	SYSCALL Signal() const { return ps_signal_semaphore(id()); };
+	SYSCALL Reset(long value) const 
+	    { return ps_reset_semaphore(id(), value); };
 };
 
-#endif //__SPINLOCK_H 
+#endif //__SEMAPHORE_H

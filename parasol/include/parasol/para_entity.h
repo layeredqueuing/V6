@@ -1,6 +1,6 @@
-// $Id: semaphore.h 9042 2009-10-14 01:31:21Z greg $
+// $Id: para_entity.h 15459 2022-03-09 21:53:20Z greg $
 //=======================================================================
-//	semaphore.h - PS_Semaphore class declaration.
+//	para_entity.h - PS_ParasolEntity class declaration.
 //
 //	Copyright (C) 1995 School of Computer Science,
 //		Carleton University, Ottawa, Ont., Canada
@@ -26,27 +26,31 @@
 //	Created: 27/06/95 (PRM)
 //
 //=======================================================================
-#ifndef __SEMAPHORE_H
-#define __SEMAPHORE_H
-
 #ifndef __PARA_ENTITY_H
-#include <para_entity.h>
-#endif //__PARA_ENTITY_H
+#define __PARA_ENTITY_H
+
+#ifndef __PARASOL_H
+#include <parasol/parasol.h>
+#endif //__PARASOL_H
 
 //=======================================================================
-// class:	PS_Semaphore
-// description:	Encapsulates PARASOL semaphores.
+// class:	PS_ParasolEntity
+// description:	The class from which all other PARASOL classes derive.
 //=======================================================================
-class PS_Semaphore : public PS_ParasolEntity {
+class PS_ParasolEntity {
 private:
-	static	long 	nextid;		// Next semaphore id
+	long	parasol_id;		// PARASOL semaphore id
+
+	void id(long id)
+	    { parasol_id = id; };
+
+protected:
+	PS_ParasolEntity(long eid) { id(eid); };
+	void Abort(const char *message) const;
 
 public:
-	PS_Semaphore(long value = 1) : PS_ParasolEntity(nextid++) { Reset(value); };
-	SYSCALL Wait() const { return ps_wait_semaphore(id()); };
-	SYSCALL Signal() const { return ps_signal_semaphore(id()); };
-	SYSCALL Reset(long value) const 
-	    { return ps_reset_semaphore(id(), value); };
+	long id() const
+	    { return parasol_id; };
 };
 
-#endif //__SEMAPHORE_H
+#endif //__PARA_ENTITY_H

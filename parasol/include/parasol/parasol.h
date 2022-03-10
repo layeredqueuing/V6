@@ -1,4 +1,4 @@
-/* $Id: parasol.h 12186 2014-11-07 20:18:38Z greg $ */
+/* $Id: parasol.h 15459 2022-03-09 21:53:20Z greg $ */
 /************************************************************************/
 /*	parasol.h - main PARASOL header file				*/
 /*									*/
@@ -57,7 +57,7 @@
 #include	<setjmp.h>
 #include	<signal.h>
 #include	<math.h>
-#include	<para_protos.h>
+#include <parasol/para_protos.h>
 #if defined(HAVE_MALLOC_H)
 #include	<malloc.h>
 #endif

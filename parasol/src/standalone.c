@@ -1,4 +1,4 @@
-/* $Id: standalone.c 14125 2020-11-24 19:53:30Z greg $ */
+/* $Id: standalone.c 15459 2022-03-09 21:53:20Z greg $ */
 /************************************************************************/
 /*	para_library.c - PARASOL library source file			*/
 /*									*/
@@ -24,8 +24,8 @@
 /*  the School of Computer Science at Carleton University.		*/
 /************************************************************************/
 
-#include <para_internals.h>
-#include <para_privates.h>
+#include <parasol/para_internals.h>
+#include <parasol/para_privates.h>
 #include <fenv.h>
 #if defined(HAVE_IEEEFP_H)
 #include <ieeefp.h>

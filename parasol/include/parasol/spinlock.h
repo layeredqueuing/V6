@@ -1,6 +1,6 @@
-// $Id: para_entity.h 9042 2009-10-14 01:31:21Z greg $
+// $Id: spinlock.h 15459 2022-03-09 21:53:20Z greg $
 //=======================================================================
-//	para_entity.h - PS_ParasolEntity class declaration.
+//	spinlock.h - PS_Spinlock class declaration.
 //
 //	Copyright (C) 1995 School of Computer Science,
 //		Carleton University, Ottawa, Ont., Canada
@@ -26,31 +26,27 @@
 //	Created: 27/06/95 (PRM)
 //
 //=======================================================================
+#ifndef __SPINLOCK_H
+#define __SPINLOCK_H
+
 #ifndef __PARA_ENTITY_H
-#define __PARA_ENTITY_H
-
-#ifndef __PARASOL_H
-#include <parasol.h>
-#endif //__PARASOL_H
+#include <parasol/para_entity.h>
+#endif //__PARA_ENTITY_H
 
 //=======================================================================
-// class:	PS_ParasolEntity
-// description:	The class from which all other PARASOL classes derive.
+// class:	PS_Spinlock
+// description:	Encapsulates PARASOL spinlocks.
 //=======================================================================
-class PS_ParasolEntity {
+class PS_Spinlock : public PS_ParasolEntity {
 private:
-	long	parasol_id;		// PARASOL semaphore id
-
-	void id(long id)
-	    { parasol_id = id; };
-
-protected:
-	PS_ParasolEntity(long eid) { id(eid); };
-	void Abort(const char *message) const;
+	static	long 	nextid;		// Next semaphore id
 
 public:
-	long id() const
-	    { return parasol_id; };
+	PS_Spinlock() : PS_ParasolEntity(nextid++) {};
+ 	SYSCALL Lock() const
+	    { return ps_lock(id()); };
+	SYSCALL Unlock() const
+	    { return ps_unlock(id()); };
 };
 
-#endif //__PARA_ENTITY_H
+#endif //__SPINLOCK_H 
