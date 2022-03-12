@@ -7,7 +7,7 @@
  * However, to eliminate code here, the spex construction functions will have to save the
  * LQX expressions and then construct the program.
  * ------------------------------------------------------------------------
- * $Id: generate.cc 15455 2022-03-08 00:34:06Z greg $
+ * $Id: generate.cc 15465 2022-03-11 01:43:34Z greg $
  */
 
 #include "lqngen.h"
@@ -271,8 +271,9 @@ Generate::generate()
 
     /* Add any extra calls here -  choose randomly, but don't add duplicate call */
 
-    const unsigned int extra_calls = _call.size() * (*Generate::__outgoing_requests)() - _call.size();
-    if ( extra_calls > 0 ) {
+    const double multiplier = (*Generate::__outgoing_requests)();
+    if ( multiplier > 1.0 ) {
+	const unsigned int extra_calls = _call.size() *  (multiplier - 1.0);
 	const unsigned n_entries = _entry.size();
 	for ( unsigned int i = 0; i < extra_calls; ++i ) {
 	    const unsigned int server_entry = static_cast<unsigned int>((n_entries - stride[REF_LAYER]) * drand48()) + stride[REF_LAYER];

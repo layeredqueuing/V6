@@ -3,14 +3,14 @@
 # Carleton University, Ottawa, Ontario, Canada. K1S 5B6
 #
 #----------------------------------------------------------------------
-# $Id: Makefile.am 15450 2022-03-05 01:08:38Z greg $
+# $Id: Makefile.am 15465 2022-03-11 01:43:34Z greg $
 #----------------------------------------------------------------------
 
 if HAVE_LATEX
 LATEX = latex -shell-escape -interaction=nonstopmode -file-line-error
 FILTER= grep -i ".*:[0-9]*:.*\|warning"
 
-SUBDIRS = model calls activity-templ web-server pseudo-tasks
+SUBDIRS = model calls activity-templ model web-server pseudo-tasks
 DST = 	tutorial
 SRCS =	schema.fig activity-schema.fig
 OBJS = $(SRCS:.fig=.eps) 
@@ -24,7 +24,9 @@ SUFFIXES = .pdf .ps .dvi .bbl .eps .pstex .eps .fig .tex
 	ps2pdf $< $@
 
 .fig.eps:
+if HAVE_FIG2DEV
 	fig2dev -L eps -m 0.7 $< $@
+endif
 
 .dvi.ps:
 	dvips -q -tletter -Ppdf -G0 -o $@ $< 
