@@ -1,5 +1,5 @@
 # ------------------------------------------------------------------------
-# $Id: Makefile.am 15325 2022-01-02 18:15:16Z greg $
+# $Id: Makefile.am 15472 2022-03-21 14:07:32Z greg $
 # ------------------------------------------------------------------------
 ACLOCAL_AMFLAGS=-I config
 SUBDIRS = lqx lqiolib libmva parasol lqns lqsim lqn2csv lqn2ps lqngen petrisrvn qnsolver srvndiff doc xml dist
@@ -27,3 +27,10 @@ $(RPMDIR)/SOURCES/$(PACKAGE)-$(VERSION).tar.gz: $(distdir).tar.gz
 
 $(distdir).tar.gz:
 	$(MAKE) dist
+
+dmg:	$(distdir).dmg
+
+$(distdir).dmg:
+	$(MAKE) install DESTDIR=/tmp/$(distdir)
+	hdiutil create $@ -ov -volname $(distdir) -fs HFS+ -srcfolder "/tmp/$(distdir)/usr/local" -format UDBZ
+	-rm -rf /tmp/$(distdir)

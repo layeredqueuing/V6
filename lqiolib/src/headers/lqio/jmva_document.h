@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- *  $Id: jmva_document.h 15437 2022-02-12 17:03:35Z greg $
+ *  $Id: jmva_document.h 15479 2022-03-30 13:30:58Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  */
@@ -382,7 +382,7 @@ namespace BCMP {
 	
 	/* SPEX */
 	expr_list* _spex_program;
-	std::map<std::string,LQIO::DOM::SymbolExternalVariable*> _variables;	/* Spex vars */
+	std::map<const std::string,LQIO::DOM::SymbolExternalVariable*> _variables;	/* Spex vars */
 
 	/* Maps for asssociating var (the string) to an object */
 	std::map<const Model::Chain *,std::string> _think_time_vars;		/* chain, var 	*/

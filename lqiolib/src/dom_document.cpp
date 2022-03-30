@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_document.cpp 15361 2022-01-05 12:02:48Z greg $
+ *  $Id: dom_document.cpp 15477 2022-03-30 13:21:30Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -114,13 +114,14 @@ namespace LQIO {
 		delete group->second;
 	    }
 
-	    for ( std::map<const char *, const ExternalVariable*>::const_iterator var = _controlVariables.begin(); var != _controlVariables.end(); ++var ) {
+	    /* BUG_277 Delete External Variables */
+
+	    for ( std::map<const std::string, SymbolExternalVariable*>::const_iterator var = _variables.begin(); var != _variables.end(); ++var ) {
 		delete var->second;
 	    }
 
-	    /* BUG_277 Delete External Variables */
-
-	    for ( std::map<std::string, SymbolExternalVariable*>::const_iterator var = _variables.begin(); var != _variables.end(); ++var ) {
+	    /* Now delete the control variables */
+	    for ( std::map<const std::string, const ExternalVariable*>::const_iterator var = _controlVariables.begin(); var != _controlVariables.end(); ++var ) {
 		delete var->second;
 	    }
 
@@ -159,7 +160,7 @@ namespace LQIO {
 	std::string Document::getModelCommentString() const
 	{
 	    const char * s;
-	    const std::map<const char *, const ExternalVariable *>::const_iterator iter = _controlVariables.find(XComment);
+	    const std::map<const std::string, const ExternalVariable *>::const_iterator iter = _controlVariables.find(XComment);
 	    if ( iter != _controlVariables.end() && iter->second != nullptr && iter->second->wasSet() ) {
 		if ( iter->second->getString( s ) ) return std::string(s);
 	    }
@@ -229,7 +230,7 @@ namespace LQIO {
 	{
 	    /* Set to default value if NOT set elsewhere (usually the control program) */
 	    double value = __initialValues[index];
-	    const std::map<const char *, const ExternalVariable *>::const_iterator iter = _controlVariables.find(index);
+	    const std::map<const std::string, const ExternalVariable *>::const_iterator iter = _controlVariables.find(index);
 	    if ( iter != _controlVariables.end() ) {
 		const ExternalVariable * var = iter->second;
 		if ( var != nullptr && var->wasSet() ) {
@@ -241,7 +242,7 @@ namespace LQIO {
 
 	const ExternalVariable * Document::get( const char * index ) const
 	{
-	    const std::map<const char *, const ExternalVariable *>::const_iterator iter = _controlVariables.find(index);
+	    const std::map<const std::string, const ExternalVariable *>::const_iterator iter = _controlVariables.find(index);
 	    if ( iter != _controlVariables.end() ) {
 		const ExternalVariable * var = iter->second;
 		if ( var ) {
@@ -472,7 +473,7 @@ namespace LQIO {
 	    if ( _variables.size() == 0 && !program ) return;	// NOP.
 
 	    /* Make sure all of the variables are registered in the program */
-	    std::map<std::string, SymbolExternalVariable*>::iterator sym_iter;
+	    std::map<const std::string, SymbolExternalVariable*>::iterator sym_iter;
 	    for (sym_iter = _variables.begin(); sym_iter != _variables.end(); ++sym_iter) {
 		SymbolExternalVariable* current = sym_iter->second;
 		current->registerInEnvironment(program);
@@ -1091,7 +1092,7 @@ namespace LQIO {
 	std::ostream& Document::printExternalVariables( std::ostream& output ) const
 	{
 	    /* Check to make sure all external variables were set */
-	    for (std::map<std::string, SymbolExternalVariable*>::const_iterator var_p = _variables.begin(); var_p != _variables.end(); ++var_p) {
+	    for (std::map<const std::string, SymbolExternalVariable*>::const_iterator var_p = _variables.begin(); var_p != _variables.end(); ++var_p) {
 		if ( var_p != _variables.begin() ) {
 		    output << ", ";
 		}

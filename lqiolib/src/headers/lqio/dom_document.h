@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- *  $Id: dom_document.h 15358 2022-01-05 00:27:52Z greg $
+ *  $Id: dom_document.h 15477 2022-03-30 13:21:30Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -260,8 +260,8 @@ namespace LQIO {
 	    std::map<std::string, DecisionPath*> _decisionPaths;    	/* decisionPath.name -> DecisionPath */
 
 	    /* We need to make sure all variables named the same point the same */
-	    std::map<std::string, SymbolExternalVariable*> _variables;
-	    std::map<const char *, const ExternalVariable*> _controlVariables;
+	    std::map<const std::string, SymbolExternalVariable*> _variables;
+	    std::map<const std::string, const ExternalVariable*> _controlVariables;
 	    static std::map<const char *, double> __initialValues;
 
 	    unsigned _nextEntityId;                           	/* for sorting, see _entities 	*/

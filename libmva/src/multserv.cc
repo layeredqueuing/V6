@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- * $Id: multserv.cc 15441 2022-03-02 14:16:20Z greg $
+ * $Id: multserv.cc 15472 2022-03-21 14:07:32Z greg $
  *
  * Server definitions for Multiserver MVA.
  * From
@@ -981,9 +981,24 @@ Zhou_Multi_Server::S_mean( const MVA& solver, const Population& N ) const
  *   MergedP = (MergedS+$W)/(MergedZ + MergedS + $W); //corresponding probability 
  */
 
+#define BUG_349_COMMENT_8 1
 Probability
 Zhou_Multi_Server::P_mean( const MVA& solver, const Population& N ) const
 {
+#if BUG_349_COMMENT_8
+    double sumOf_WX = 0.;
+    for ( unsigned int k = 1; k <= K; ++k ) {
+	const double X = solver.throughput( *this, k );		// Hoist offset(NCust);
+	for ( unsigned int e = 1; e <= E; ++e ) {
+	    sumOf_WX += W[e][k][0] * V(e,k) * X;
+	}
+    }
+    const double sumOf_N = static_cast<double>(N.sum());
+    /* Orignal expression from Murray was S+W, but THAT W is queueing only..., so
+     * don't bother with S_mean...*/
+//    return f * (W) / sumOf_N;
+    return std::min( sumOf_WX / sumOf_N, 1.0 );			// truncate at 1
+#else
 //  double sumOf_X = 0.0;					// sumOf_X cancels out.
     double sumOf_Z = 0.0;
     double sumOf_R = 0.0;
@@ -996,6 +1011,7 @@ Zhou_Multi_Server::P_mean( const MVA& solver, const Population& N ) const
 	sumOf_R += R_k * X_k;					// Weighted mean
     }
     return sumOf_R / (sumOf_R + sumOf_Z);			// (R/X)/((R/X+Z/X) = (R/X)/((R+Z)/X) = R/(R+Z)
+#endif
 }
 
 /* -------------------- Phased Simple Multi-Server -------------------- */

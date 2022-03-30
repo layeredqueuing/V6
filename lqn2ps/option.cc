@@ -1,6 +1,6 @@
 /* srvn2eepic.c	-- Greg Franks Sun Jan 26 2003
  *
- * $Id: option.cc 15462 2022-03-10 02:05:24Z greg $
+ * $Id: option.cc 15477 2022-03-30 13:21:30Z greg $
  */
 
 #include "lqn2ps.h"
@@ -31,6 +31,7 @@ bool Flags::print_alignment_box		= true;
 bool Flags::print_comment		= false;
 bool Flags::print_forwarding_by_depth	= false;
 bool Flags::print_layer_number  	= false;
+bool Flags::print_spex			= false;
 bool Flags::print_submodels     	= false;
 bool Flags::prune			= false;
 bool Flags::rename_model		= false;
