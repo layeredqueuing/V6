@@ -1,5 +1,5 @@
 #----------------------------------------------------------------------
-# $Id: Makefile.am 15280 2021-12-28 13:11:27Z greg $
+# $Id: Makefile.am 15481 2022-03-30 21:53:12Z greg $
 #----------------------------------------------------------------------
 
 AM_CPPFLAGS	= -I..
@@ -22,7 +22,7 @@ if HAVE_PS2PDF
 install-data-local:	srvndiff.pdf
 
 srvndiff.pdf:	$(man1_MANS)
-		groff -man $< | ps2pdf - $@
+		groff -man $(man1_MANS) | ps2pdf - $@
 endif
 
 srvndiff.txt:	$(man1_MANS)

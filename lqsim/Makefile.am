@@ -1,5 +1,5 @@
 #----------------------------------------------------------------------
-# $Id: Makefile.am 15424 2022-02-03 11:01:20Z greg $
+# $Id: Makefile.am 15481 2022-03-30 21:53:12Z greg $
 #----------------------------------------------------------------------
 SUBDIRS		= regression
 
@@ -27,7 +27,7 @@ if HAVE_PS2PDF
 install-data-hook: lqsim.pdf
 
 lqsim.pdf: $(man1_MANS)
-	groff -t -man  $< | ps2pdf - $@
+	groff -t -man $(man1_MANS) | ps2pdf - $@
 
 endif
 

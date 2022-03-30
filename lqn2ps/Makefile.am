@@ -1,5 +1,5 @@
 # ----------------------------------------------------------------------
-# $Id: Makefile.am 15280 2021-12-28 13:11:27Z greg $
+# $Id: Makefile.am 15481 2022-03-30 21:53:12Z greg $
 # ----------------------------------------------------------------------
 
 SUBDIRS		= 
@@ -38,22 +38,20 @@ distclean-local:
 	rm -f config.cache
 
 install-exec-hook:
-	for i in $(OTHEREXE); do \
-	  $(RM) $(DESTDIR)$(bindir)/$$i$(EXEEXT); \
-	  (cd $(DESTDIR)$(bindir); $(LN_S) lqn2ps$(EXEEXT) $$i$(EXEEXT)); \
+	-for i in $(OTHEREXE); do \
+	  (cd $(DESTDIR)$(bindir); rm -f $$i$(EXEEXT); $(LN_S) lqn2ps$(EXEEXT) $$i$(EXEEXT)); \
 	done
 
 install-data-hook:
-	for i in $(OTHEREXE); do \
-	  $(RM) $(DESTDIR)$(mandir)/man1/$$i.1; \
-	  (cd $(DESTDIR)$(mandir)/man1; $(LN_S) $(man1_MANS) $$i.1); \
+	-for i in $(OTHEREXE); do \
+	  (cd $(DESTDIR)$(mandir)/man1; rm -f $$i.1; $(LN_S) $(man1_MANS) $$i.1); \
 	done
 
 if HAVE_PS2PDF
 install-data-local: lqn2ps.pdf 
 
 lqn2ps.pdf: $(man1_MANS)
-	groff -man $< | ps2pdf - $@
+	groff -man $(man1_MANS) | ps2pdf - $@
 endif
 
 lqn2ps.txt: $(man1_MANS)
