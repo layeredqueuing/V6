@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: pop.h 14882 2021-07-07 11:09:54Z greg $
+ * $Id: pop.h 15492 2022-04-01 16:04:00Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -17,6 +17,7 @@
 #if	!defined(POPULATION_H)
 #define	POPULATION_H
 
+#include <numeric>
 #include "vector.h"
 
 class Population 
@@ -78,7 +79,7 @@ public:
     void clear() { _N.clear(); }
     std::ostream& print( std::ostream& output ) const { return _N.print( output ); }
 
-    unsigned sum() const;
+    inline unsigned sum() const { return std::accumulate( _N.begin(), _N.end(), 0.0 ); }
 
 private:
     Vector<unsigned> _N;
