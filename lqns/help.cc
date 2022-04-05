@@ -1,6 +1,6 @@
 /* help.cc	-- Greg Franks Wed Oct 12 2005
  *
- * $Id: help.cc 15358 2022-01-05 00:27:52Z greg $
+ * $Id: help.cc 15518 2022-04-05 13:36:29Z greg $
  */
 
 #include "lqns.h"
@@ -1321,7 +1321,7 @@ Help::specialUnderrelaxation( std::ostream & output, bool verbose ) const
 std::ostream&
 Help::specialGenerateQueueingModel( std::ostream & output, bool verbose ) const
 {
-    output << "This option is used for debugging the solver." << std::endl;
+    output << "This option is used to generate a queueing model for solver in the directory " << emph( *this, "arg" ) << "." << std::endl;
     if ( verbose ) {
 	output << "A directory named " << emph( *this, "arg" )
 	       << " will be created containing source code for invoking the MVA solver directly."  << std::endl;
@@ -2155,7 +2155,7 @@ HelpTroff::preamble( std::ostream& output ) const
     output << __comment << " t -*- nroff -*-" << std::endl
 	   << ".TH lqns 1 \"" << date << "\" \"" << VERSION << "\"" << std::endl;
 
-    output << __comment << " $Id: help.cc 15358 2022-01-05 00:27:52Z greg $" << std::endl
+    output << __comment << " $Id: help.cc 15518 2022-04-05 13:36:29Z greg $" << std::endl
 	   << __comment << std::endl
 	   << __comment << " --------------------------------" << std::endl;
 
@@ -2454,7 +2454,7 @@ HelpLaTeX::preamble( std::ostream& output ) const
 	   << __comment << " Created:             " << date << std::endl
 	   << __comment << "" << std::endl
 	   << __comment << " ----------------------------------------------------------------------" << std::endl
-	   << __comment << " $Id: help.cc 15358 2022-01-05 00:27:52Z greg $" << std::endl
+	   << __comment << " $Id: help.cc 15518 2022-04-05 13:36:29Z greg $" << std::endl
 	   << __comment << " ----------------------------------------------------------------------" << std::endl << std::endl;
 
     output << "\\chapter{Invoking the Analytic Solver ``lqns''}" << std::endl

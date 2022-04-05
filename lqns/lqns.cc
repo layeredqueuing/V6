@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: lqns.cc 15486 2022-04-01 02:18:23Z greg $
+ * $Id: lqns.cc 15518 2022-04-05 13:36:29Z greg $
  *
  * Command line processing.
  *
@@ -19,12 +19,15 @@
 #include <cstdlib>
 #include <cmath>
 #include <errno.h>
-#if HAVE_LIBGEN_H
-#include <libgen.h>
-#endif
+#include <fcntl.h>           /* Definition of AT_* constants */
 #if HAVE_GETOPT_H
 #include <getopt.h>
 #endif
+#if HAVE_LIBGEN_H
+#include <libgen.h>
+#endif
+#include <sys/stat.h>
+#include <unistd.h>
 #include <lqio/commandline.h>
 #include <lqio/filename.h>
 #include <lqio/srvn_spex.h>
@@ -425,8 +428,19 @@ int main (int argc, char *argv[])
     }
     LQIO::io_vars.lq_command_line = command_line.c_str();
 
-    if ( flags.generate && flags.no_execute ) {
-        std::cerr << LQIO::io_vars.lq_toolname << ": -n is incompatible with -zgenerate.  -zgenerate ignored." << std::endl;
+    if ( flags.generate ) {
+	if ( flags.no_execute ) {
+	    std::cerr << LQIO::io_vars.lq_toolname << ": -n is incompatible with -zgenerate.  -zgenerate ignored." << std::endl;
+	} else if ( access( Generate::__directory_name.c_str(), R_OK|W_OK|X_OK ) < 0 && ENOENT ) {
+#if defined(__WINNT__)
+	    int rc = mkdir( Generate::__directory_name.c_str() );
+#else
+	    int rc = mkdir( Generate::__directory_name.c_str(), S_IRUSR|S_IWUSR|S_IXUSR|S_IRGRP|S_IWGRP|S_IXGRP|S_IWOTH|S_IROTH|S_IXOTH );
+#endif
+	    if ( rc < 0 ) {
+		std::cerr << LQIO::io_vars.lq_toolname << ": Cannot create directory " << Generate::__directory_name << ": " << strerror( errno ) << "." << std::endl;
+	    }
+	}
     }
 
     /* Process all command line arguments.  If none specified, then     */
@@ -447,9 +461,9 @@ int main (int argc, char *argv[])
                      << std::endl;
                 exit( INVALID_ARGUMENT );
             }
-            if ( Generate::file_name.size() ) {
+            if ( !Generate::__directory_name.empty() ) {
                 std::cerr << LQIO::io_vars.lq_toolname << ": Too many input files specified with the option: -zgenerate="
-                     << Generate::file_name
+                     << Generate::__directory_name
                      << std::endl;
                 exit( INVALID_ARGUMENT );
             }

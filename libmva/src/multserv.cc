@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- * $Id: multserv.cc 15486 2022-04-01 02:18:23Z greg $
+ * $Id: multserv.cc 15518 2022-04-05 13:36:29Z greg $
  *
  * Server definitions for Multiserver MVA.
  * From
@@ -570,7 +570,7 @@ Phased_Conway_Multi_Server::wait( const MVA& solver, const unsigned k, const Pop
 void
 Markov_Phased_Conway_Multi_Server::wait( const MVA& solver, const unsigned k, const Population& N ) const
 {
-    const Positive sum = effectiveBacklog( solver, N, k ) + PBusy( solver, N, k ) * departureTime( solver, N, k );
+    const Positive sum = effectiveBacklog( solver, N, k ) + solver.PB( *this, N, k ) * departureTime( solver, N, k );
 
     for ( unsigned e = 1; e <= E; ++e ) {
 	if ( !V(e,k) ) continue;
@@ -650,15 +650,6 @@ Markov_Phased_Conway_Multi_Server::meanMinimumOvertaking( const MVA& solver, con
 
     return ot;
 }
-
-
-
-
-Probability
-Markov_Phased_Conway_Multi_Server::PBusy( const MVA& solver, const Population& N, const unsigned k ) const
-{
-    return solver.PB( *this, N, k );
-}
 
 /*----------------------------------------------------------------------*/
 /*                          Rolia Multi Server                          */
@@ -707,9 +698,20 @@ Rolia_Multi_Server::sumOf_SL( const MVA& solver, const Population& N, const unsi
 {
     const double s = solver.sumOf_SL_m( *this, N, k );
     if ( !std::isfinite( s ) ) throw std::domain_error( "Rolia_Multi_Server::sumOf_SL" );
-    return solver.PB2( *this, N, k ) * s  / mu();
+    return PBusy( solver, N, k ) * s  / mu();
 }
 
+
+
+/*
+ * Return the probability that all stations are busy.
+ */
+
+Probability
+Rolia_Multi_Server::PBusy( const MVA& solver, const Population &N, const unsigned k ) const
+{
+    return power( std::min( 1.0, solver.sumOf_U_m( *this, N, k ) / mu() ), static_cast<unsigned>(mu()) );
+}
 
 
 /*
@@ -755,7 +757,7 @@ Rolia_PS_Multi_Server::wait( const MVA& solver, const unsigned k, const Populati
 Positive
 Rolia_PS_Multi_Server::sumOf_L( const MVA& solver, const Population& N, const unsigned k ) const
 {
-    return solver.PB2( *this, N, k ) * solver.sumOf_L_m( *this, N, k );
+    return PBusy( solver, N, k ) * solver.sumOf_L_m( *this, N, k );
 }
 
 /* ------------------------ Rolia Multi Server  ----------------------- */
@@ -791,7 +793,7 @@ Phased_Rolia_Multi_Server::wait( const MVA& solver, const unsigned k, const Popu
 Positive
 Phased_Rolia_Multi_Server::sumOf_SL( const MVA& solver, const Population& N, const unsigned k ) const
 {
-    return solver.PB2( *this, N, k ) * (solver.sumOf_SL_m( *this, N, k ) + solver.sumOf_S2U_m( *this, N, k )) / mu();
+    return PBusy( solver, N, k ) * (solver.sumOf_SL_m( *this, N, k ) + solver.sumOf_S2U_m( *this, N, k )) / mu();
 }
 
 /* --------------------- Markov Rolia Multi Server  ------------------- */
@@ -853,7 +855,7 @@ Phased_Rolia_PS_Multi_Server::wait( const MVA& solver, const unsigned k, const P
 Positive
 Phased_Rolia_PS_Multi_Server::sumOf_L( const MVA& solver, const Population& N, const unsigned k ) const
 {
-    return solver.PB2( *this, N, k ) * ( solver.sumOf_L_m( *this, N, k ) + solver.sumOf_U2_m( *this, N, k ) );
+    return PBusy( solver, N, k ) * ( solver.sumOf_L_m( *this, N, k ) + solver.sumOf_U2_m( *this, N, k ) );
 }
 
 /* ------------------------ Rolia Multi Server  ----------------------- */
@@ -913,44 +915,69 @@ Zhou_Multi_Server::wait( const MVA& solver, const unsigned k, const Population& 
 Positive
 Zhou_Multi_Server::sumOf_SL( const MVA& solver, const Population& N, const unsigned ) const
 {
-    unsigned N_sum = 0;		/* Number of customers visting this station */
-    for ( unsigned int k = 1; k <= K; ++k ) {
-	if ( V(k) == 0 ) continue;
-	N_sum += N[k];
-    }
-    const unsigned m = copies();
-    if ( N_sum == 0 ) return 0;				/* No customers */
+    const unsigned N_sum = sumOf_N( N );		/* Number of customers visting this station */
+    if ( N_sum == 0 ) return 0.;			/* No customers */
 
     const Probability P = P_mean( solver, N );		// Residence time divided by cycle time (1/lambba)
+    if ( P == 0.0 ) return 0.;				/* server not used at all */
+    
+    const unsigned m = copies();
     const double S = S_mean( solver );			// Ratio of service times (by throughput)
-#if BUG_338
-    std::cerr << "Zhou: P_mean" << N << "=" << P << ", S_mean(N)=" << S << std::endl;
-#endif
+
     if ( P == 1.0 ) return static_cast<double>(N_sum - m) * S
 		      / static_cast<double>(m);		/* server full utilized */
 
     const unsigned nMax = std::min(N_sum,m);		// nMax = min(N,m);
     const unsigned Nm1 = N_sum - 1;			// Nm1 = N-1;
 
-    double pw[nMax];					// pw = array_create();
-    pw[0] = std::pow( 1.0 - P, Nm1 ); 			// pw[0]= pow(1-P,Nm1); 
-    for ( unsigned int i = 1; i < nMax; ++i ) {		// for (i = 1; i<=nMaxM1; i = i+1) {
-	pw[i] = pw[i-1] * P * static_cast<double>(N_sum - i)
-	    / (static_cast<double>(i) * (1.0 - P));	// pw[i] = pw[i-1]*P*(N-i)/(i*(1-P));
+    const double pw_0 = std::pow( 1.0 - P, Nm1 );	// pw[0]= pow(1-P,Nm1); 
+    Probability pDash = pw_0;				// pDash = pw[0];
+    double M2 = 0.;					// M2 = 0;
+    if ( pw_0 > 1.0e-10 ) {
+	double pw_im1 = pw_0;
+	for ( unsigned int i = 1; i < nMax; ++i ) {		// for (i = 1; i<=nMaxM1; i = i+1) {
+	    const double pw_i = pw_im1 * P * static_cast<double>(N_sum - i)
+		/ (static_cast<double>(i) * (1.0 - P));		// pw[i] = pw[i-1]*P*(N-i)/(i*(1-P));
+	    pDash += pw_i;					// pDash = pDash + pw[i];
+	    M2 += i * pw_i;					// M2 + i*pw[i];
+	    pw_im1 = pw_i;
+	}
+    } else {
+	double pw_im1 = log( 1.0 - P ) * Nm1;
+	for ( unsigned int i = 1; i < nMax; ++i ) {		// for (i = 1; i<=nMaxM1; i = i+1) {
+	    const double pw_i = pw_im1 + log( P * static_cast<double>(N_sum - i) )
+		- log( static_cast<double>(i) * (1.0 - P) );	// pw[i] = pw[i-1]*P*(N-i)/(i*(1-P));
+	    pDash += exp( pw_i );				// pDash = pDash + pw[i];
+	    M2 += i * exp( pw_i );				// M2 + i*pw[i];
+	    pw_im1 = pw_i;
+	}
     }
 
-    Probability pDash = pw[0];				// pDash = pw[0];
-    double M2 = 0.;					// M2 = 0;
-    for ( unsigned int i = 1; i < nMax; ++i ) { 	// for (i = 1; i<=nMaxM1; i = i+1) {
-	pDash += pw[i];					// pDash = pDash + pw[i];
-	M2 += i * pw[i];				// M2 + i*pw[i];
-    }
-    const double L = P * Nm1 - static_cast<double>(m - 1)
-	* (1.0 - pDash) - M2; 				// L = P*(Nm1)-(m-1)*(1-pDash) - M2;
+    const double L = P * Nm1  				// L = P*(Nm1)-(m-1)*(1-pDash) - M2;
+	- static_cast<double>(m - 1) * (1.0 - pDash) - M2;
     if ( 0. > L && L > -0.0000001 ) return 0;		// Floating point precision
+#if DEBUG_MVA
+    if ( MVA::debug_P ) std::cout << closedIndex << ": P=" << P << ", pw[0]=" << pw_0 << ", pDash=" << pDash << ", M2=" << M2 << ", L=" << L << ", S=" << S << std::endl;
+#endif
     return L * S / static_cast<double>(m);		// return(L*S/m);
 }
 
+
+/*
+ * Return the total number of customers that can possibly be at this
+ * station
+ */
+
+unsigned int
+Zhou_Multi_Server::sumOf_N( const Population& N ) const
+{
+    unsigned int N_sum = 0;
+    for ( unsigned int k = 1; k <= K; ++k ) {
+	if ( V(k) == 0 ) continue;
+	N_sum += N[k];
+    }
+    return N_sum;
+}
 
 /*
  * Mean service time by throughput.

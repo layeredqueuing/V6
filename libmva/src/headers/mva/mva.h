@@ -9,7 +9,7 @@
  * November, 1994
  * August, 2005
  *
- * $Id: mva.h 15415 2022-02-01 15:02:57Z greg $
+ * $Id: mva.h 15518 2022-04-05 13:36:29Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -114,7 +114,6 @@ public:
     double sumOf_SP2( const Server& station, const Population &N, const unsigned j ) const;
     double sumOf_alphaP( const Server& station, const Population &N ) const;
     double PB(  const Server& station, const Population &N, const unsigned j ) const;
-    double PB2( const Server& station, const Population &N, const unsigned j ) const;
     virtual Probability priorityInflation( const Server& station, const Population &N, const unsigned k ) const = 0;
     double thinkTime( const unsigned k ) const { return Z[k]; }
     double throughput( const unsigned k ) const;

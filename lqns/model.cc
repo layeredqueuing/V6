@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: model.cc 15441 2022-03-02 14:16:20Z greg $
+ * $Id: model.cc 15518 2022-04-05 13:36:29Z greg $
  *
  * Layer-ization of model.  The basic concept is from the reference
  * below.  However, model partioning is more complex than task vs device.
@@ -98,12 +98,6 @@ std::set<Entry *,Model::lt_replica<Entry>> Model::__entry;
 int
 Model::solve( solve_using solve_function, const std::string& inputFileName, const std::string& outputFileName, LQIO::DOM::Document::OutputFormat outputFormat )
 {
-    /* Open input file. */
-
-    if ( !flags.no_execute && flags.generate && Generate::file_name.size() == 0 ) {
-        Generate::file_name = LQIO::Filename( inputFileName )();
-    }
-
     /* Loading the model */
     LQIO::DOM::Document* document = Model::load(inputFileName,outputFileName);
 
