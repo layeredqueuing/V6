@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!-- $Id: sockshop1.lqnx 15358 2022-01-05 00:27:52Z greg $ -->
+<!-- $Id: sockshop1.lqnx 15366 2022-01-11 16:01:08Z greg $ -->
 <!-- lqn2xml -->
 <lqn-model name="sockshop" description="lqn2xml 6.1 solution for model from: sockshop.lqn." xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="file:///C:/Program Files/LQN Solvers/lqn.xsd">
    <solver-params comment="Siyu's version solved using LQX" conv_val="1e-06" it_limit="200" underrelax_coeff="0.9" print_int="1">
@@ -202,6 +202,7 @@ E4 = entry("logout");
 P1 = processor("LoginP");
 T3 = task("Userlogin");
 
+println( "$N1, $N2, $W, $S1, $S2, $ZZ1, $ZZ2, $tp1, $tp2, $RT1, $RT2, $X1, $X2" );
 for (x=0;x<6;x=x+1){
    for (y=0;y<6;y=y+1){
       $n1 = N1[x];
@@ -233,7 +234,7 @@ for (x=0;x<6;x=x+1){
          RT2 = $n2/(E2.throughput)-$Z2;
 
       }
-      println ($n1," ",$n2," ",$W," ",S1," ",S2," ",ZZ1," ",ZZ2," " ,tp1," ",tp2," ",RT1," ",RT2," ", E1.throughput," ",E2.throughput);
+      println_spaced(", ",$n1,$n2,$W,S1,S2,ZZ1,ZZ2,tp1,tp2,RT1,RT2,E1.throughput,E2.throughput);
    }
 }
 
