@@ -2,7 +2,7 @@
 # Copyright (C) 2005 Greg Franks <greg@sce.carleton.ca>
 #
 # ------------------------------------------------------------------------
-# $Id: Makefile.am 14114 2020-11-21 13:38:09Z greg $
+# $Id: Makefile.am 15566 2022-04-19 19:29:41Z greg $
 # ------------------------------------------------------------------------
 
 SRVN=	../lqsim
@@ -17,7 +17,8 @@ SANITY=	01-sanity.lqxo \
 	05-sanity.lqxo \
 	06-sanity.lqxo \
 	07-sanity.lqxo \
-	09-sanity.lqxo 
+	09-sanity.lqxo \
+	31-overtaking.lqxo
 INTER=	10-interlock.lqxo \
 	11-interlock.lqxo \
 	12-interlock.lqxo \

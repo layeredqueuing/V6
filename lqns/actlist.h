@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: actlist.h 15559 2022-04-19 02:11:22Z greg $
+ * $Id: actlist.h 15562 2022-04-19 14:30:31Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -525,14 +525,13 @@ class RepeatActivityList : public ForkActivityList
 {
 private:
     struct find_children {
-	find_children( const RepeatActivityList& self, const Activity::Children& path ) : _self(self), _path(path) {}
+	find_children( const Activity::Children& path ) : _path(path) {}
 	unsigned operator()( unsigned arg1, const Activity * arg2 ) const {
 	    std::deque<const AndOrForkActivityList *> forkStack;    // For matching forks/joins.
-	    Activity::Children path( _path, forkStack, _self.rateBranch( arg2 ) );
+	    Activity::Children path( _path, forkStack );
 	    return std::max( arg1, arg2->findChildren(path) );
 	}
     private:
-	const RepeatActivityList& _self;
 	const Activity::Children& _path;
     };
 

@@ -11,7 +11,7 @@
  * July 2007
  *
  * ------------------------------------------------------------------------
- * $Id: activity.h 15559 2022-04-19 02:11:22Z greg $
+ * $Id: activity.h 15562 2022-04-19 14:30:31Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -151,7 +151,7 @@ public:
     public:
 	Children( Call::stack& callStack, bool directPath, bool followCalls );
 	Children( const Children& src, double rate=1.0 );
-	Children( const Children& src, std::deque<const AndOrForkActivityList *>& forkStack, double rate );
+	Children( const Children& src, std::deque<const AndOrForkActivityList *>& forkStack, double rate=1.0 );
 
 	Call::stack& getCallStack() { return _callStack; }
 	unsigned depth() const { return _callStack.depth(); }

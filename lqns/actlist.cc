@@ -10,7 +10,7 @@
  * February 1997
  *
  * ------------------------------------------------------------------------
- * $Id: actlist.cc 15559 2022-04-19 02:11:22Z greg $
+ * $Id: actlist.cc 15562 2022-04-19 14:30:31Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -1995,7 +1995,7 @@ RepeatActivityList::collectToEntry( const Activity * activity, VirtualEntry * en
 unsigned
 RepeatActivityList::findChildren( Activity::Children& path ) const
 {
-    return std::accumulate( activityList().begin(), activityList().end(), ForkActivityList::findChildren( path ), find_children( *this, path ) );
+    return std::accumulate( activityList().begin(), activityList().end(), ForkActivityList::findChildren( path ), find_children( path ) );
 }
 
 

@@ -2,7 +2,7 @@
 # Copyright (C) 2005 Greg Franks <greg@sce.carleton.ca>
 #
 # ------------------------------------------------------------------------
-# $Id: Makefile.am 14890 2021-07-07 19:26:50Z greg $
+# $Id: Makefile.am 15566 2022-04-19 19:29:41Z greg $
 # ------------------------------------------------------------------------
 
 SRVN=	../lqns
@@ -33,6 +33,7 @@ MULTI=	20-multiserver.lqxo \
 	22-multiserver.lqxo \
 	23-multiserver.lqxo \
 	24-multiserver.lqxo
+OVER=	31-overtaking.lqxo
 ACT=	40-activities.lqxo \
 	41-activities.lqxo \
 	42-activities.lqxo \
@@ -75,7 +76,7 @@ DISTTEST=disttest
 
 
 # Can't do: $(SYNC)  Should omit $(SIM) to, as the results aren't meaningful.
-OBJS=	$(SANITY) $(INTER) $(MULTI) $(ACT) $(REPL) $(FORK) $(OTHER) # $(FAIR) 
+OBJS=	$(SANITY) $(INTER) $(MULTI) $(OVER) $(ACT) $(REPL) $(FORK) $(OTHER) # $(FAIR) 
 if QUORUM
 #OBJS +=	$(QUORUM)
 endif
