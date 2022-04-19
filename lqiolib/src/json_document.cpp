@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: json_document.cpp 15363 2022-01-05 14:09:57Z greg $
+ * $Id: json_document.cpp 15535 2022-04-13 13:41:38Z greg $
  *
  * Read in JSON input files.
  *
@@ -666,8 +666,11 @@ namespace LQIO {
 			    }
 			}
 		    } else if ( !entry ) {
-			LQIO::solution_error( LQIO::ERR_NOT_DEFINED, entry_name.c_str() );
+			throw undefined_symbol( entry_name );
 		    } else {
+			if ( entry->getTask() == nullptr )  {
+			    entry->setTask(dynamic_cast<Task *>(parent));
+			}
 			handleResults( entry, obj );
 		    }
 		}

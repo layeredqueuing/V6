@@ -8,7 +8,7 @@
  * January 2003
  *
  * ------------------------------------------------------------------------
- * $Id: entry.cc 15264 2021-12-26 20:28:39Z greg $
+ * $Id: entry.cc 15535 2022-04-13 13:41:38Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -1387,8 +1387,10 @@ Entry::check() const
 	/* Service time for the entry? */
 
 	if ( !hasServiceTime ) {
-	    LQIO::solution_error( LQIO::WRN_NO_SERVICE_TIME, name().c_str() );
 	    const_cast<Entry *>(this)->getPhase( 1 );	/* force phase presence. */
+	    if ( !owner()->hasThinkTime() ) {
+		LQIO::solution_error( LQIO::WRN_NO_SERVICE_TIME, name().c_str() );
+	    }
 	}
 
 	/* Set some globals for output formatting */

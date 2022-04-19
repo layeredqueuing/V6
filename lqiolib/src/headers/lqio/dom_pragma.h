@@ -8,7 +8,7 @@
 /************************************************************************/
 
 /*
- * $Id: dom_pragma.h 15437 2022-02-12 17:03:35Z greg $
+ * $Id: dom_pragma.h 15535 2022-04-13 13:41:38Z greg $
  */
 
 #ifndef __LQIO_DOM_PRAGMA_H__
@@ -176,6 +176,7 @@ namespace LQIO {
 	    static const char * _variance_;
 	    static const char * _warning_;
 	    static const char * _yes_;
+	    static const char * _zhang_;		// Multiserver
 	    static const char * _zhou_;			// Multiserver
 	};
     }

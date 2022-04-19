@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: actlist.h 14882 2021-07-07 11:09:54Z greg $
+ * $Id: actlist.h 15559 2022-04-19 02:11:22Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -299,7 +299,7 @@ public:
     virtual void followInterlock( Interlock::CollectTable& ) const;
     virtual bool getInterlockedTasks( Interlock::CollectTasks& ) const;
 
-    virtual double prBranch( const Activity * ) const = 0;
+    virtual Probability prBranch( const Activity * ) const = 0;
 
     virtual std::ostream& printSubmodelWait( std::ostream& output, unsigned offset ) const;
 
@@ -343,7 +343,7 @@ public:
     virtual void callsPerform( const Phase::CallExec& ) const;
     virtual unsigned concurrentThreads( unsigned ) const;
 
-    virtual double prBranch( const Activity * ) const;
+    virtual Probability prBranch( const Activity * ) const;
 
 protected:
     virtual const char * typeStr() const { return "|"; }
@@ -366,7 +366,7 @@ public:
     virtual AndForkActivityList& add( Activity * anActivity );
     virtual bool isFork() const { return true; }
 
-    virtual double prBranch( const Activity * ) const { return 1.0; }
+    virtual Probability prBranch( const Activity * ) const { return 1.0; }
 
     virtual bool check() const;
 

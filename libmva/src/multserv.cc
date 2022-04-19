@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- * $Id: multserv.cc 15518 2022-04-05 13:36:29Z greg $
+ * $Id: multserv.cc 15552 2022-04-18 15:42:19Z greg $
  *
  * Server definitions for Multiserver MVA.
  * From
@@ -921,7 +921,7 @@ Zhou_Multi_Server::sumOf_SL( const MVA& solver, const Population& N, const unsig
     const Probability P = P_mean( solver, N );		// Residence time divided by cycle time (1/lambba)
     if ( P == 0.0 ) return 0.;				/* server not used at all */
     
-    const unsigned m = copies();
+    const unsigned m = static_cast<unsigned>(mu());
     const double S = S_mean( solver );			// Ratio of service times (by throughput)
 
     if ( P == 1.0 ) return static_cast<double>(N_sum - m) * S
@@ -1019,10 +1019,10 @@ Zhou_Multi_Server::P_mean( const MVA& solver, const Population& N ) const
 {
 #if BUG_349_COMMENT_8
     double sumOf_WX = 0.;
-    double sumOf_N  = 0.;
+    unsigned int sumOf_N  = 0;
     for ( unsigned int k = 1; k <= K; ++k ) {
 	if ( V(k) == 0 ) continue;				// No visits for this class.
-	sumOf_N += static_cast<double>(N[k]);
+	sumOf_N += N[k];
 	const double X = solver.throughput( *this, k );		// Hoist offset(NCust);
 	for ( unsigned int e = 1; e <= E; ++e ) {
 	    sumOf_WX += W[e][k][0] * V(e,k) * X;
@@ -1031,7 +1031,7 @@ Zhou_Multi_Server::P_mean( const MVA& solver, const Population& N ) const
     /* Orignal expression from Murray was S+W, but THAT W is queueing only..., so
      * don't bother with S_mean...*/
 //    return f * (W) / sumOf_N;
-    return std::min( sumOf_WX / sumOf_N, 1.0 );			// truncate at 1
+    return std::min( sumOf_WX / static_cast<double>(sumOf_N), 1.0 );	// truncate at 1
 #else
 //  double sumOf_X = 0.0;					// sumOf_X cancels out.
     double sumOf_Z = 0.0;

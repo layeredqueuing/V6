@@ -10,7 +10,7 @@
  * November, 1994
  *
  * ------------------------------------------------------------------------
- * $Id: task.cc 15323 2022-01-02 16:13:23Z greg $
+ * $Id: task.cc 15559 2022-04-19 02:11:22Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -2195,7 +2195,7 @@ ServerTask::makeServer( const unsigned nChains )
 		    if ( dynamic_cast<Conway_Multi_Server *>(_station) && _station->marginalProbabilitiesSize() == copies() ) return nullptr;
 		    _station = new Conway_Multi_Server( copies(), nEntries(), nChains, maxPhase());
 		} else {
-		    if ( dynamic_cast<Rolia_Multi_Server *>(_station) && _station->copies() == copies() ) return nullptr;
+		    if ( dynamic_cast<Rolia_Multi_Server *>(_station) && _station->mu() == copies() ) return nullptr;
 		    _station = new Rolia_Multi_Server(  copies(), nEntries(), nChains, maxPhase());
 		}
 		break;
@@ -2221,12 +2221,12 @@ ServerTask::makeServer( const unsigned nChains )
 		break;
 
 	    case Pragma::Multiserver::ROLIA:
-		if ( dynamic_cast<Rolia_Multi_Server *>(_station) && _station->copies() == copies() ) return nullptr;
+		if ( dynamic_cast<Rolia_Multi_Server *>(_station) && _station->mu() == copies() ) return nullptr;
 		_station = new Rolia_Multi_Server(     copies(), nEntries(), nChains, maxPhase());
 		break;
 
 	    case Pragma::Multiserver::ROLIA_PS:
-		if ( dynamic_cast<Rolia_PS_Multi_Server *>(_station) && _station->copies() == copies() ) return nullptr;
+		if ( dynamic_cast<Rolia_PS_Multi_Server *>(_station) && _station->mu() == copies() ) return nullptr;
 		_station = new Rolia_PS_Multi_Server(  copies(), nEntries(), nChains, maxPhase());
 		break;
 
@@ -2236,12 +2236,12 @@ ServerTask::makeServer( const unsigned nChains )
 		break;
 
 	    case Pragma::Multiserver::SURI:
-		if ( dynamic_cast<Suri_Multi_Server *>(_station)  && _station->copies() == copies()) return nullptr;
+		if ( dynamic_cast<Suri_Multi_Server *>(_station)  && _station->mu() == copies()) return nullptr;
 		_station = new Suri_Multi_Server(    copies(), nEntries(), nChains, maxPhase());
 		break;
 
 	    case Pragma::Multiserver::ZHOU:
-		if ( dynamic_cast<Zhou_Multi_Server *>(_station)  && _station->copies() == copies()) return nullptr;
+		if ( dynamic_cast<Zhou_Multi_Server *>(_station)  && _station->mu() == copies()) return nullptr;
 		_station = new Zhou_Multi_Server(    copies(), nEntries(), nChains, maxPhase());
 		break;
 	    }
@@ -2269,18 +2269,18 @@ ServerTask::makeServer( const unsigned nChains )
 
 	    case Pragma::Multiserver::REISER_PS:
 	    case Pragma::Multiserver::ROLIA_PS:
-		if ( dynamic_cast<Markov_Phased_Rolia_PS_Multi_Server *>(_station) && _station->copies() == copies()) return nullptr;
+		if ( dynamic_cast<Markov_Phased_Rolia_PS_Multi_Server *>(_station) && _station->mu() == copies()) return nullptr;
 		_station = new Markov_Phased_Rolia_PS_Multi_Server(  copies(), nEntries(), nChains, maxPhase());
 		break;
 
 	    case Pragma::Multiserver::SURI:
-		if ( dynamic_cast<Markov_Phased_Suri_Multi_Server *>(_station) && _station->copies() == copies()) return nullptr;
+		if ( dynamic_cast<Markov_Phased_Suri_Multi_Server *>(_station) && _station->mu() == copies()) return nullptr;
 		throw LQIO::not_implemented( "Task::makeServer" );
 		_station = new Markov_Phased_Suri_Multi_Server(     copies(), nEntries(), nChains, maxPhase());
 		break;
 
 	    case Pragma::Multiserver::ZHOU:
-		if ( dynamic_cast<Markov_Phased_Zhou_Multi_Server *>(_station) && _station->copies() == copies()) return nullptr;
+		if ( dynamic_cast<Markov_Phased_Zhou_Multi_Server *>(_station) && _station->mu() == copies()) return nullptr;
 		_station = new Markov_Phased_Zhou_Multi_Server(     copies(), nEntries(), nChains, maxPhase());
 		break;
 	    }
@@ -2304,17 +2304,17 @@ ServerTask::makeServer( const unsigned nChains )
 
 
 	    case Pragma::Multiserver::ROLIA:
-		if ( dynamic_cast<Phased_Rolia_Multi_Server *>(_station) && _station->copies() == copies() ) return nullptr;
+		if ( dynamic_cast<Phased_Rolia_Multi_Server *>(_station) && _station->mu() == copies() ) return nullptr;
 		_station = new Phased_Rolia_Multi_Server(     copies(), nEntries(), nChains, maxPhase());
 		break;
 
 	    case Pragma::Multiserver::ROLIA_PS:
-		if ( dynamic_cast<Phased_Rolia_PS_Multi_Server *>(_station) && _station->copies() == copies() ) return nullptr;
+		if ( dynamic_cast<Phased_Rolia_PS_Multi_Server *>(_station) && _station->mu() == copies() ) return nullptr;
 		_station = new Phased_Rolia_PS_Multi_Server(  copies(), nEntries(), nChains, maxPhase());
 		break;
 
 	    case Pragma::Multiserver::ZHOU:
-		if ( dynamic_cast<Phased_Zhou_Multi_Server *>(_station)  && _station->copies() == copies()) return nullptr;
+		if ( dynamic_cast<Phased_Zhou_Multi_Server *>(_station)  && _station->mu() == copies()) return nullptr;
 		_station = new Phased_Zhou_Multi_Server(    copies(), nEntries(), nChains, maxPhase());
 		break;
 

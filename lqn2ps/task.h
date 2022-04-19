@@ -10,7 +10,7 @@
  * April 2010.
  *
  * ------------------------------------------------------------------------
- * $Id: task.h 15441 2022-03-02 14:16:20Z greg $
+ * $Id: task.h 15535 2022-04-13 13:41:38Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -86,13 +86,14 @@ public:
     static Task* create( const LQIO::DOM::Task* domTask, std::vector<Entry *>& entries );
 
 protected:
-    Task( const LQIO::DOM::Task* dom, const Processor * aProc, const Share * aShare, const std::vector<Entry *>& entries );
+    Task( const LQIO::DOM::Task* dom, const Processor * processor, const Share * share, const std::vector<Entry *>& entries );
 
 public:
     virtual ~Task();
-    virtual Task * clone( unsigned int, const std::string& aName, const Processor * aProcessor, const Share * aShare ) const = 0;
+    virtual Task * clone( unsigned int, const std::string& name, const Processor * processor, const Share * share ) const = 0;
 
-    Entity& addProcessor( const Processor * aProcessor ) { _processors.insert(aProcessor); return *this; }
+    Entity& addProcessor( const Processor * processor ) { _processors.insert(processor); return *this; }
+    Entity& removeProcessor( const Processor * processor ) { _processors.erase(processor); return *this; }
     const std::set<const Processor *>& processors() const { return _processors; }
     bool hasProcessor( const Processor * ) const;
     const Processor * processor() const;
@@ -251,7 +252,7 @@ private:
     Task& expandActivities( const Task& src, int replica );
 
 protected:
-    LQIO::DOM::Task * cloneDOM( const std::string& aName, LQIO::DOM::Processor * dom_processor ) const;
+    LQIO::DOM::Task * cloneDOM( const std::string& name, LQIO::DOM::Processor * dom_processor ) const;
     const std::vector<Entry *>& groupEntries( int replica, std::vector<Entry *>& newEntryList  ) const;
 
 public:
@@ -289,8 +290,8 @@ inline std::ostream& operator<<( std::ostream& output, const Task& self ) { self
 
 class ReferenceTask : public Task {
 public:
-    ReferenceTask( const LQIO::DOM::Task* dom, const Processor * aProc, const Share * aShare, const std::vector<Entry *>& aCltn );
-    virtual ReferenceTask * clone( unsigned int, const std::string& aName, const Processor * aProcessor, const Share * aShare ) const;
+    ReferenceTask( const LQIO::DOM::Task* dom, const Processor * processor, const Share * share, const std::vector<Entry *>& aCltn );
+    virtual ReferenceTask * clone( unsigned int, const std::string& name, const Processor * processor, const Share * share ) const;
 
     virtual double getIndex() const { return index(); }
 
@@ -322,8 +323,8 @@ public:
 
 class ServerTask : public Task {
 public:
-    ServerTask( const LQIO::DOM::Task* dom, const Processor * aProc, const Share * aShare, const std::vector<Entry *>& aCltn );
-    virtual ServerTask * clone( unsigned int, const std::string& aName, const Processor * aProcessor, const Share * aShare ) const;
+    ServerTask( const LQIO::DOM::Task* dom, const Processor * processor, const Share * share, const std::vector<Entry *>& aCltn );
+    virtual ServerTask * clone( unsigned int, const std::string& name, const Processor * processor, const Share * share ) const;
 
     virtual bool isServerTask() const   { return true; }
     virtual bool canConvertToReferenceTask() const;
@@ -333,8 +334,8 @@ public:
 
 class SemaphoreTask : public Task {
 public:
-    SemaphoreTask( const LQIO::DOM::Task* dom, const Processor * aProc, const Share * aShare, const std::vector<Entry *>& entries );
-    virtual SemaphoreTask * clone( unsigned int, const std::string& aName, const Processor * aProcessor, const Share * aShare ) const;
+    SemaphoreTask( const LQIO::DOM::Task* dom, const Processor * processor, const Share * share, const std::vector<Entry *>& entries );
+    virtual SemaphoreTask * clone( unsigned int, const std::string& name, const Processor * processor, const Share * share ) const;
 
     virtual bool isServerTask() const   { return true; }
 
@@ -343,8 +344,8 @@ private:
 
 class RWLockTask : public Task {
 public:
-    RWLockTask( const LQIO::DOM::Task* dom, const Processor * aProc, const Share * aShare, const std::vector<Entry *>& entries );
-    virtual RWLockTask * clone( unsigned int, const std::string& aName, const Processor * aProcessor, const Share * aShare ) const;
+    RWLockTask( const LQIO::DOM::Task* dom, const Processor * processor, const Share * share, const std::vector<Entry *>& entries );
+    virtual RWLockTask * clone( unsigned int, const std::string& name , const Processor * processor, const Share * share ) const;
 
     virtual bool isServerTask() const   { return true; }
 

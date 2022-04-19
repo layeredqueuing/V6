@@ -1,5 +1,5 @@
 /*
- * $Id: makeobj.h 13127 2017-08-28 18:13:09Z greg $
+ * $Id: makeobj.h 15548 2022-04-18 14:18:48Z greg $
  *
  * Stochastic RendezVous Network header
  */
@@ -11,8 +11,8 @@
 #include <map>
 #include <wspnlib/object.h>
 
-void create_arc(LAYER layer, int type, struct trans_object *transition, struct place_object *place);
-void create_arc_mult(LAYER layer, int type, struct trans_object *transition, struct place_object *place, short mult );
+void create_arc(LAYER layer, int type, const struct trans_object *transition, const struct place_object *place);
+void create_arc_mult(LAYER layer, int type, const struct trans_object *transition, const struct place_object *place, short mult );
 void groupize(void);
 void free_group_store(void);
 unsigned no_rpar(const char *format, ...);

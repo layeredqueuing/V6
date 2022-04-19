@@ -10,7 +10,7 @@
 /************************************************************************/
 
 /*
- * $Id: model.h 15330 2022-01-02 20:49:03Z greg $
+ * $Id: model.h 15548 2022-04-18 14:18:48Z greg $
  *
  * Solve LQN using petrinets.
  */
@@ -19,6 +19,7 @@
 #define PETRISRVN_MODEL_H
 
 #include <string>
+#include <vector>
 #if HAVE_SYS_TIMES_H
 #include <sys/times.h>
 #endif
@@ -39,17 +40,22 @@ class Task;
 class Entry;
 class Phase;
 struct solution_stats_t;
-
-struct debug_place_info {
-    struct place_object * place;
-    Phase * c;			/* Calling entry		*/
-    Phase * d;			/* Called entry			*/
-    unsigned m;			/* Instance of caller.		*/
-};
-
-#define	DIMDBGPLC	(DIME+1)*2
+struct place_object;
 
 class Model {
+private:
+    struct inst_arrival {
+	inst_arrival( double _x_pos, double _y_pos, const Phase * _a, const unsigned int _m, const Entry * _b, const unsigned int _n, const place_object * _ab_place ) :
+	    x_pos(_x_pos), y_pos(_y_pos), a(_a), m(_m), b(_b), n(_n), ab_place(_ab_place) {}
+	const double x_pos;
+	const double y_pos;
+	const Phase * a;
+	const unsigned int m;
+	const Entry * b;
+	const unsigned int n;
+	const struct place_object * ab_place;
+    };
+    
 public:
     typedef bool (Model::*solve_using)();
     typedef void (Model::*queue_fnptr)( double x_pos,		/* x coordinate.		*/
@@ -64,7 +70,7 @@ public:
 					const double prob_fwd,
 					const unsigned k,	/* an index.			*/
 					const bool async_call,
-					struct debug_place_info ins_place[DIMPH+1][DIMDBGPLC][MAX_MULT] );
+					std::vector<Model::inst_arrival>& ph2_place );
 
 private:
     explicit Model( LQIO::DOM::Document *, const std::string&, const std::string&, LQIO::DOM::Document::OutputFormat );
@@ -114,8 +120,8 @@ private:
 			 const unsigned ne,
 			 const unsigned max_m,	/* Multiplicity of Src.		*/
 			 unsigned k,		/* an index.			*/
-			 struct debug_place_info ins_place[DIMPH+1][DIMDBGPLC][MAX_MULT],
-			 queue_fnptr queue_func );
+			 queue_fnptr queue_func,
+			 std::vector<Model::inst_arrival>& ph2_place );
     void fifo_queue( double x_pos,		/* x coordinate.		*/
 		     double y_pos,		/* y coordinate.		*/
 		     double idle_x,
@@ -128,7 +134,7 @@ private:
 		     const double prob_fwd,
 		     const unsigned k,		/* an index.			*/
 		     const bool async_call,
-		     struct debug_place_info ins_place[DIMPH+1][DIMDBGPLC][MAX_MULT] );
+		     std::vector<Model::inst_arrival>& ph2_place );
     void random_queue( double x_pos,		/* x coordinate.		*/
 		       double y_pos,		/* y coordinate.		*/
 		       double idle_x,
@@ -141,7 +147,7 @@ private:
 		       const double prob_fwd,
 		       const unsigned k,	/* an index.			*/
 		       const bool async_call,
-		       struct debug_place_info ins_place[DIMPH+1][DIMDBGPLC][MAX_MULT] );
+		       std::vector<Model::inst_arrival>& ph2_place );
     struct trans_object * queue_prologue( double x_pos,		/* X coordinate.		*/
 					  double y_pos,		/* Y coordinate.		*/
 					  Phase * a,		/* sending entry.		*/
@@ -169,14 +175,9 @@ private:
     void create_phase_instr_net( double idle_x, double y_pos, 
 				 Phase * a, unsigned m,
 				 Entry * b, unsigned n, unsigned k,
-				 struct trans_object * r_trans, struct trans_object * q_trans, struct trans_object * s_trans, 
-				 struct debug_place_info ins_place[DIMPH+1][DIMDBGPLC][MAX_MULT] );
-    void create_inservice_net( double x_pos, double y_pos,
-			       Phase * a,	/* Entry of calling task 'i'	*/
-			       Entry * b,	/* Entry of server 'j'		*/
-			       unsigned m,	/* Instance of task 'i'		*/
-			       struct debug_place_info ins_place[DIMPH+1][DIMDBGPLC][MAX_MULT] );
-
+				 struct trans_object * r_trans, struct trans_object * q_trans, struct trans_object * s_trans,
+				 std::vector<Model::inst_arrival>& );
+    void create_inservice_net( const Phase * c, const Entry * d, unsigned int k, const std::vector<Model::inst_arrival>& ph2_place );
     void build_open_arrivals ();
 
     void print() const;
