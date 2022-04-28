@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: pragma.cc 15535 2022-04-13 13:41:38Z greg $ *
+ * $Id: pragma.cc 15573 2022-04-28 19:43:31Z greg $ *
  * Pragma processing and definitions.
  *
  * Copyright the Real-Time and Distributed Systems Group,
@@ -234,13 +234,13 @@ void Pragma::setMultiserver(const std::string& value)
     static const std::map<const std::string,const Pragma::Multiserver> __multiserver_pragma = {
 	{ LQIO::DOM::Pragma::_bruell_,		Pragma::Multiserver::BRUELL },
 	{ LQIO::DOM::Pragma::_conway_,		Pragma::Multiserver::CONWAY },
+	{ LQIO::DOM::Pragma::_experimental_,	Pragma::Multiserver::EXPERIMENTAL },
 	{ LQIO::DOM::Pragma::_reiser_,		Pragma::Multiserver::REISER },
 	{ LQIO::DOM::Pragma::_reiser_ps_,	Pragma::Multiserver::REISER_PS },
 	{ LQIO::DOM::Pragma::_rolia_,		Pragma::Multiserver::ROLIA },
 	{ LQIO::DOM::Pragma::_rolia_ps_,	Pragma::Multiserver::ROLIA_PS },
 	{ LQIO::DOM::Pragma::_schmidt_,		Pragma::Multiserver::SCHMIDT },
 	{ LQIO::DOM::Pragma::_suri_,		Pragma::Multiserver::SURI },
-	{ LQIO::DOM::Pragma::_zhang_,		Pragma::Multiserver::ZHANG },
 	{ LQIO::DOM::Pragma::_zhou_,		Pragma::Multiserver::ZHOU }
     };
     const std::map<const std::string,const Pragma::Multiserver>::const_iterator pragma = __multiserver_pragma.find( value );
