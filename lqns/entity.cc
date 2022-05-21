@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: entity.cc 15323 2022-01-02 16:13:23Z greg $
+ * $Id: entity.cc 15583 2022-05-21 00:18:56Z greg $
  *
  * Everything you wanted to know about a task or processor, but were
  * afraid to ask.
@@ -87,13 +87,11 @@ Entity::Entity( LQIO::DOM::Entity* dom, const std::vector<Entry *>& entries )
       _replica_number(1),		/* This object is not a replica	*/
       _pruned(false)
 {
-    attributes.initialized      = 0;		/* entity was initialized.	*/
-    attributes.closed_model	= 0;		/* Stn in in closed model.     	*/
-    attributes.open_model	= 0;		/* Stn is in open model.	*/
-    attributes.deterministic    = 0;		/* an entry has det. phase.	*/
-    attributes.pure_delay       = 0;		/* Special task of some form.	*/
-    attributes.pure_server	= 1;		/* Can use FCFS schedulging.	*/
-    attributes.variance         = 0;		/* */
+    _attributes[Attributes::initialized]    = false;	/* entity was initialized.	*/
+    _attributes[Attributes::closed_model]   = false;	/* Stn in in closed model.     	*/
+    _attributes[Attributes::open_model]	    = false;	/* Stn is in open model.	*/
+    _attributes[Attributes::deterministic]  = false;	/* an entry has det. phase[	*/
+    _attributes[Attributes::variance]       = false;	/* */
 }
 
 
@@ -108,6 +106,7 @@ Entity::Entity( const Entity& src, unsigned int replica )
       _population(src._population),
       _thinkTime(src._thinkTime),
       _station(nullptr),		/* Reference tasks don't have server stations. */
+      _attributes(src._attributes),
       _interlock( *this ),
       _submodel(0),
       _maxPhase(1),
@@ -117,13 +116,6 @@ Entity::Entity( const Entity& src, unsigned int replica )
       _replica_number(replica),		/* This object is a replica	*/
       _pruned(false)
 {
-    attributes.initialized      = src.attributes.initialized;
-    attributes.closed_model	= src.attributes.closed_model;
-    attributes.open_model	= src.attributes.open_model;
-    attributes.deterministic    = src.attributes.deterministic;
-    attributes.pure_delay       = src.attributes.pure_delay;
-    attributes.pure_server	= src.attributes.pure_server;
-    attributes.variance         = src.attributes.variance;
 }
 
 
@@ -146,10 +138,10 @@ Entity&
 Entity::configure( const unsigned nSubmodels )
 {
     std::for_each( entries().begin(), entries().end(), Exec1<Entry,unsigned>( &Entry::configure, nSubmodels ) );
-    if ( std::any_of( entries().begin(), entries().end(), Predicate<Entry>( &Entry::hasDeterministicPhases ) ) ) attributes.deterministic = 1;
+    if ( std::any_of( entries().begin(), entries().end(), Predicate<Entry>( &Entry::hasDeterministicPhases ) ) ) _attributes.at(Attributes::deterministic) = true;
     if ( !Pragma::variance(Pragma::Variance::NONE)
 	 && ((nEntries() > 1 && Pragma::entry_variance())
-	     || std::any_of( entries().begin(), entries().end(), Predicate<Entry>( &Entry::hasVariance ) )) ) attributes.variance = 1;
+	     || std::any_of( entries().begin(), entries().end(), Predicate<Entry>( &Entry::hasVariance ) )) ) _attributes.at(Attributes::variance) = true;
     _maxPhase = (*std::max_element( entries().begin(), entries().end(), Entry::max_phase ))->maxPhase();
     return *this;
 }
@@ -895,8 +887,10 @@ Entity::initServerStation( MVASubmodel& submodel )
 	}
 
 	/* -- Set service time for entries with visits only. -- */
-	for ( ChainVector::const_iterator k = chains.begin(); k != chains.end(); ++k ) {
-	    setServiceTime( (*entry), *k );
+	if ( isInClosedModel() ) {
+	    for ( ChainVector::const_iterator k = chains.begin(); k != chains.end(); ++k ) {
+		setServiceTime( (*entry), *k );
+	    }
 	}
 
 	/*

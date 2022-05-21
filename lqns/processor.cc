@@ -10,7 +10,7 @@
  * November, 1994
  *
  * ------------------------------------------------------------------------
- * $Id: processor.cc 15559 2022-04-19 02:11:22Z greg $
+ * $Id: processor.cc 15583 2022-05-21 00:18:56Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -134,7 +134,7 @@ Processor::configure( const unsigned nSubmodels )
     }
     Entity::configure( nSubmodels );
     if ( Pragma::forceMultiserver( Pragma::ForceMultiserver::PROCESSORS ) ) {
-	attributes.variance = 0;
+	setVarianceAttribute(false);
     }
     
     return *this;

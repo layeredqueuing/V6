@@ -10,7 +10,7 @@
  * November, 1994
  *
  * ------------------------------------------------------------------------
- * $Id: task.cc 15559 2022-04-19 02:11:22Z greg $
+ * $Id: task.cc 15583 2022-05-21 00:18:56Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -287,10 +287,10 @@ Task::configure( const unsigned nSubmodels )
     Entity::configure( nSubmodels );
 
     if ( hasOpenArrivals() ) {
-	attributes.open_model = true;
+	isInOpenModel( true );
     }
     if ( Pragma::forceMultiserver( Pragma::ForceMultiserver::TASKS ) ) {
-	attributes.variance = 0;
+	setVarianceAttribute( false );
     }
 
     return *this;
@@ -713,8 +713,7 @@ Task::countCallers( std::set<Task *>& reject ) const
 
 	    if ( (*call)->hasRendezvous() ) {
 
-		std::pair<std::set<Task *>::const_iterator,bool> rc = reject.insert(client);
-		if ( rc.second == false ) continue;		/* exits already */
+		if ( reject.insert(client).second == false ) continue;		/* exits already */
 
 		double delta = 0.0;
 		if ( client->isInfinite() ) {
@@ -726,9 +725,11 @@ Task::countCallers( std::set<Task *>& reject ) const
 			const_cast<Task *>(this)->isInClosedModel( true  );	/* Inherit from caller */
 		    }
 		} else if ( client->isMultiServer() ) {
+		    client->isInClosedModel( true );
 		    delta = client->countCallers( reject );
 		    const_cast<Task *>(this)->isInClosedModel( true );
 		} else {
+		    client->isInClosedModel( true );
 		    delta = static_cast<double>(client->copies());
 		    const_cast<Task *>(this)->isInClosedModel( true );
 		}
@@ -925,38 +926,42 @@ Task::initClientStation( Submodel& submodel )
     const std::vector<Entry *>& entries = this->entries();
 #endif
 
-    const ChainVector& chains = clientChains( n );
-    for ( ChainVector::const_iterator k = chains.begin(); k != chains.end(); ++k ) {
-	for ( std::vector<Entry *>::const_iterator entry = entries.begin(); entry != entries.end(); ++entry ) {
-	    const unsigned e = (*entry)->index();
+    if ( isInClosedModel() ) {
+	const ChainVector& chains = clientChains( n );
+	for ( ChainVector::const_iterator k = chains.begin(); k != chains.end(); ++k ) {
+	    for ( std::vector<Entry *>::const_iterator entry = entries.begin(); entry != entries.end(); ++entry ) {
+		const unsigned e = (*entry)->index();
 
-	    for ( unsigned p = 1; p <= (*entry)->maxPhase(); ++p ) {
-		station->setService( e, *k, p, (*entry)->waitExcept( n, *k, p ) );
-	    }
-	    station->setVisits( e, *k, 1, (*entry)->prVisit() );	// As client, called-by phase does not matter.
+		for ( unsigned p = 1; p <= (*entry)->maxPhase(); ++p ) {
+		    station->setService( e, *k, p, (*entry)->waitExcept( n, *k, p ) );
+		}
+		station->setVisits( e, *k, 1, (*entry)->prVisit() );	// As client, called-by phase does not matter.
 
-	    if ( isReferenceTask() ) {
-		station->setRealCustomers( e, *k, population() );
-	    } else {
-		station->setRealCustomers( e, *k, (*entry)->utilization() );
+		if ( isReferenceTask() ) {
+		    station->setRealCustomers( e, *k, population() );
+		} else {
+		    station->setRealCustomers( e, *k, (*entry)->utilization() );
+		}
 	    }
+
+	    /* Set idle times for stations. */
+	    submodel.setThinkTime( *k, thinkTime( n, *k ) );
+
 	}
 
-	/* Set idle times for stations. */
-	submodel.setThinkTime( *k, thinkTime( n, *k ) );
+	if ( hasThreads() && !Pragma::threads(Pragma::Threads::NONE) ) {
+	    forkOverlapFactor( submodel );
+	}
+
+	/* Set visit ratios to all servers for this client */
+
+	callsPerform( &Call::setVisits, n );
+	callsPerform( &Call::clearILWait, n );
     }
 
-    if ( hasThreads() && !Pragma::threads(Pragma::Threads::NONE) ) {
-	forkOverlapFactor( submodel );
-    }
-
-    /* Set visit ratios to all servers for this client */
     /* This will also set arrival rates for open class from sendNoReply */
 
-    callsPerform( &Call::setVisits, n );
-    callsPerform( &Call::clearILWait, n );
     openCallsPerform( &Call::setLambda, n );
-
     return *this;
 }
 
@@ -1218,6 +1223,8 @@ Task::isSendingTaskTo( const Entry * entry ) const
 const Task&
 Task::setMaxCustomers( const MVASubmodel& submodel ) const
 {
+    if ( !isInClosedModel() ) return *this;
+    
     const ChainVector& chain = clientChains( submodel.number() );
     Server * station = clientStation( submodel.number() );
 
@@ -1239,7 +1246,7 @@ Task::setMaxCustomers( const MVASubmodel& submodel ) const
 const Task&
 Task::setRealCustomers(	const MVASubmodel& submodel, const Entity * server ) const
 {
-    if ( throughput() == 0.0 ) return *this;
+    if ( !isInClosedModel() || throughput() == 0.0 ) return *this;
 
     const ChainVector& chain = clientChains( submodel.number() );
     Server * station = server->serverStation();
@@ -1748,14 +1755,12 @@ Task::insertDOMResults(void) const
 	std::for_each( precedences().begin(), precedences().end(), ConstExec<ActivityList>( &ActivityList::insertDOMResults ) );
     }
 
-    unsigned int count = 0;
     for ( std::vector<Entry *>::const_iterator entry = entries().begin(); entry != entries().end(); ++entry ) {
 	(*entry)->computeVariance();
 	(*entry)->insertDOMResults(&totalPhaseUtils[0]);
 
 	totalProcUtil += (*entry)->processorUtilization();
 	totalThroughput += (*entry)->throughput();
-	count += 1;
     }
 
     /* Store totals */
@@ -1788,7 +1793,7 @@ Task::printSubmodelWait( std::ostream& output ) const
     if ( flags.trace_virtual_entry ) {
 	std::for_each ( _precedences.begin(), _precedences.end(), ConstPrint1<ActivityList,unsigned>( &ActivityList::printSubmodelWait, output, 2 ) );
     } else {
-	std::for_each ( threads().begin(), threads().end(), ConstPrint1<Entry,unsigned>( &Entry::printSubmodelWait, output, 0 ) );
+	std::for_each ( std::next(threads().begin()), threads().end(), ConstPrint1<Entry,unsigned>( &Entry::printSubmodelWait, output, 0 ) );
     }
     return output;
 }
@@ -1864,6 +1869,7 @@ Task::printJoinDelay( std::ostream& output ) const
 ReferenceTask::ReferenceTask( LQIO::DOM::Task* dom, const Processor * processor, const Group * group, const std::vector<Entry *>& entries )
     : Task( dom, processor, group, entries )
 {
+    isInClosedModel(true);
 }
 
 
@@ -2086,26 +2092,6 @@ ServerTask::check() const
 
 
 /*
- * Count up the number of callers to this task which is essential if the
- * Infinite server is used as a client in a lower level model.  The
- * multiplicity is ignore otherwise.
- */
-
-ServerTask&
-ServerTask::configure( const unsigned nSubmodels )
-{
-    Task::configure( nSubmodels );
-
-    /* Tag this task as special if necessary. */
-
-    if ( isInfinite() && getProcessor()->isInfinite() ) {
-	isPureDelay( true );
-    }
-    return *this;
-}
-
-
-/*
  * Return true if the population is infinite (i.e., an open source)
  */
 
@@ -2124,7 +2110,7 @@ ServerTask::hasInfinitePopulation() const
 bool
 ServerTask::hasVariance() const
 {
-    return  !isInfinite() && !isMultiServer() && attributes.variance != 0;
+    return  !isInfinite() && !isMultiServer() && Entity::hasVariance();
 }
 
 

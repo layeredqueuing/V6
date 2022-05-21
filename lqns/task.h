@@ -10,7 +10,7 @@
  * November, 1994
  * May 2009.
  *
- * $Id: task.h 14894 2021-07-09 16:22:28Z greg $
+ * $Id: task.h 15583 2022-05-21 00:18:56Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -371,7 +371,6 @@ protected:
 
 public:
     virtual bool check() const;
-    virtual ServerTask& configure( const unsigned );
     virtual unsigned queueLength() const;
 
     virtual bool hasVariance() const;

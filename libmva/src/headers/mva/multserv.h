@@ -10,7 +10,7 @@
  * November, 1994
  * November, 2021
  *
- * $Id: multserv.h 15552 2022-04-18 15:42:19Z greg $
+ * $Id: multserv.h 15583 2022-05-21 00:18:56Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -705,7 +705,7 @@ public:
     virtual void mixedWait( const MVA& solver, const Population& N ) const { return Reiser_Multi_Server::mixedWait( solver, N ); }
     virtual void openWait() const { return Reiser_Multi_Server::openWait(); }
 
-    virtual int priorityServer() const { return 1; }
+    virtual bool priorityServer() const { return true; }
     virtual const char * typeStr() const { return "HOL_Reiser_Multi_Server"; }
 };
 #endif

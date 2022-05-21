@@ -1,7 +1,7 @@
 /* -*- c++ -*-
  * layer.h	-- Greg Franks
  *
- * $Id: layer.h 15573 2022-04-28 19:43:31Z greg $
+ * $Id: layer.h 15583 2022-05-21 00:18:56Z greg $
  */
 
 #ifndef _LQN2PS_LAYER_H
