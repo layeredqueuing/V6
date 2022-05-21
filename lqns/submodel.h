@@ -7,7 +7,7 @@
  *
  * June 2007
  *
- * $Id: submodel.h 14882 2021-07-07 11:09:54Z greg $
+ * $Id: submodel.h 15585 2022-05-21 01:05:09Z greg $
  */
 
 #ifndef _SUBMODEL_H
@@ -167,9 +167,6 @@ public:
     virtual unsigned n_openStns() const { return _openStation.size(); }
     virtual Vector<double> * getOverlapFactor() const { return _overlapFactor; } 
 
-    bool hasClosedModel() const { return _closedModel != nullptr; }
-    bool hasOpenModel() const { return _openModel != nullptr; }
-    
 #if PAN_REPLICATION
     virtual double nrFactor( const Server *, const unsigned e, const unsigned k ) const;
 #endif

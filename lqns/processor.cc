@@ -10,7 +10,7 @@
  * November, 1994
  *
  * ------------------------------------------------------------------------
- * $Id: processor.cc 15583 2022-05-21 00:18:56Z greg $
+ * $Id: processor.cc 15585 2022-05-21 01:05:09Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -492,7 +492,7 @@ Processor::saveServerResults( const MVASubmodel& submodel, double relax )
 
     _utilization = 0.0;
     for ( std::set<Task *>::const_iterator client = clients.begin(); client != clients.end(); ++client ) {
-	if ( submodel.hasClosedModel() ) {
+	if ( isInClosedModel() ) {
 	    const ChainVector& chains = (*client)->clientChains( n );
 	    for ( ChainVector::const_iterator k = chains.begin(); k != chains.end(); ++k ) {
 		if ( hasServerChain( *k ) ) {
