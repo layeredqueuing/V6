@@ -1,6 +1,6 @@
 /* help.cc	-- Greg Franks Wed Oct 12 2005
  *
- * $Id: help.cc 15518 2022-04-05 13:36:29Z greg $
+ * $Id: help.cc 15605 2022-05-27 19:55:44Z greg $
  */
 
 #include "lqns.h"
@@ -79,6 +79,7 @@ static const std::map<const std::string,const std::string> opt_help = {
     { "print-interval",				"Output the intermediate solution of the model after <n> iterations." },
     { "reset-mva",				"Reset the MVA calculation prior to solving a submodel." },
     { "trace-mva",				"Trace the operation of the MVA solver." },
+    { "debug-submodels",			"Print out submodels." },
     { "debug-json",				"Output debugging information while parsing JSON input." },
     { "debug-lqx",				"Output debugging information while parsing LQX input." },
     { "debug-xml",				"Output debugging information while parsing XML input." },
@@ -132,6 +133,7 @@ const std::map<const int,const Help::help_fptr> Help::__option_table =
     { 512+'c',	&Help::flagPrintComment },
     { 512+'p',	&Help::flagPrintInterval },
     { 512+'r',	&Help::flagReloadLQX },
+    { 256+'S',  &Help::flagDebugSubmodels },
     { 256+'t',	&Help::flagTraceMVA },
     { 512+'j',	&Help::flagDebugJSON },
     { 512+'l',	&Help::flagDebugLQX },
@@ -683,6 +685,19 @@ Help::flagDebugSRVN( std::ostream& output, bool verbose ) const
 }
 
 std::ostream&
+Help::flagDebugSubmodels( std::ostream& output, bool verbose ) const
+{
+    output << opt_help.at( "debug-submodels" )
+	   << "The output for each submodel consists of the number of customers for closed classes, closed class clients, " << std::endl
+	   << "closed class servers, open class servers, and the calls from clients to servers in the submodel." << std::endl
+	   << "Calls are shown from entries to entries, or from tasks to processors." << std::endl
+	   << "Synchronous calls are shown using " << tr( *this, "->" ) << ", " << std::endl
+	   << "asynchronous calls are shownn using " << tr( *this, "~>" ) << ", and " << std::endl
+	   << "processor calls are shown using " << tr( *this, "*>" ) << "." << std::endl;
+    return output;
+}
+
+std::ostream&
 Help::flagDebugXML( std::ostream& output, bool verbose ) const
 {
     output << "Output XML" << ix( *this, "XML!debug" ) << " elements and attributes as they are being parsed." << std::endl
@@ -1067,13 +1082,6 @@ Help::debugJSON( std::ostream & output, bool verbose ) const
 }
 
 std::ostream&
-Help::debugLayers( std::ostream & output, bool verbose ) const
-{
-    output << "Print out the contents of all of the layers found in the model." << std::endl;
-    return output;
-}
-
-std::ostream&
 Help::debugLQX( std::ostream & output, bool verbose ) const
 {
     output << "Print out the actions the LQX parser while reading an LQX program." << std::endl;
@@ -1112,6 +1120,13 @@ std::ostream&
 Help::debugSRVN( std::ostream & output, bool verbose ) const
 {
     output << opt_help.at( "debug-srvn" ) << std::endl;
+    return output;
+}
+
+std::ostream&
+Help::debugSubmodels( std::ostream & output, bool verbose ) const
+{
+    output << "Print out the contents of all of the submodels found in the model." << std::endl;
     return output;
 }
 
@@ -2155,7 +2170,7 @@ HelpTroff::preamble( std::ostream& output ) const
     output << __comment << " t -*- nroff -*-" << std::endl
 	   << ".TH lqns 1 \"" << date << "\" \"" << VERSION << "\"" << std::endl;
 
-    output << __comment << " $Id: help.cc 15518 2022-04-05 13:36:29Z greg $" << std::endl
+    output << __comment << " $Id: help.cc 15605 2022-05-27 19:55:44Z greg $" << std::endl
 	   << __comment << std::endl
 	   << __comment << " --------------------------------" << std::endl;
 
@@ -2454,7 +2469,7 @@ HelpLaTeX::preamble( std::ostream& output ) const
 	   << __comment << " Created:             " << date << std::endl
 	   << __comment << "" << std::endl
 	   << __comment << " ----------------------------------------------------------------------" << std::endl
-	   << __comment << " $Id: help.cc 15518 2022-04-05 13:36:29Z greg $" << std::endl
+	   << __comment << " $Id: help.cc 15605 2022-05-27 19:55:44Z greg $" << std::endl
 	   << __comment << " ----------------------------------------------------------------------" << std::endl << std::endl;
 
     output << "\\chapter{Invoking the Analytic Solver ``lqns''}" << std::endl
@@ -2489,7 +2504,7 @@ std::ostream&
 HelpLaTeX::tr( std::ostream& output, const std::string& s ) const
 {
     for ( std::string::const_iterator c = s.begin(); c != s.end(); ++c ) {
-	if ( *c == '_' || *c == '#' ) {
+	if ( *c == '_' || *c == '#' || *c == '~' ) {
 	    output << "\\";
 	}
 	output << *c;

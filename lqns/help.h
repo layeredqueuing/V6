@@ -1,7 +1,7 @@
 /* -*- C++ -*-
  * help.h	-- Greg Franks
  *
- * $Id: help.h 15064 2021-10-10 15:04:28Z greg $
+ * $Id: help.h 15605 2022-05-27 19:55:44Z greg $
  */
 
 #ifndef _HELP_H
@@ -141,6 +141,7 @@ private:
     std::ostream& flagDebugLQX( std::ostream& output, bool verbose ) const;
     std::ostream& flagDebugSPEX( std::ostream& output, bool verbose ) const;
     std::ostream& flagDebugSRVN( std::ostream& output, bool verbose ) const;
+    std::ostream& flagDebugSubmodels( std::ostream& output, bool verbose ) const;
     std::ostream& flagDebugXML( std::ostream& output, bool verbose ) const;
     std::ostream& flagError( std::ostream& output, bool verbose ) const;
     std::ostream& flagExactMVA( std::ostream& output, bool verbose ) const;
@@ -165,10 +166,10 @@ private:
     std::ostream& flagReloadLQX( std::ostream& output, bool verbose ) const;
     std::ostream& flagResetMVA( std::ostream& output, bool verbose ) const;
     std::ostream& flagRestartLQX( std::ostream& output, bool verbose ) const;
+    std::ostream& flagSRVNLayering( std::ostream& output, bool verbose ) const;
     std::ostream& flagSchweitzerMVA( std::ostream& output, bool verbose ) const;
     std::ostream& flagSpecial( std::ostream& output, bool verbose ) const;
     std::ostream& flagSquashedLayering( std::ostream& output, bool verbose ) const;
-    std::ostream& flagSRVNLayering( std::ostream& output, bool verbose ) const;
     std::ostream& flagStopOnMessageLoss( std::ostream& output, bool verbose ) const;
     std::ostream& flagTrace( std::ostream& output, bool verbose ) const;
     std::ostream& flagTraceMVA( std::ostream& output, bool verbose ) const;
@@ -187,12 +188,12 @@ public:
     std::ostream& debugJSON( std::ostream& output, bool verbose ) const;
     std::ostream& debugJoins( std::ostream & output, bool verbose ) const;
     std::ostream& debugLQX( std::ostream & output, bool verbose ) const;
-    std::ostream& debugLayers( std::ostream & output, bool verbose ) const;
     std::ostream& debugMVA( std::ostream & output, bool verbose ) const;
     std::ostream& debugOvertaking( std::ostream & output, bool verbose ) const;
     std::ostream& debugQuorum( std::ostream & output, bool verbose ) const;
     std::ostream& debugSPEX( std::ostream& output, bool verbose ) const;
     std::ostream& debugSRVN( std::ostream& output, bool verbose ) const;
+    std::ostream& debugSubmodels( std::ostream & output, bool verbose ) const;
     std::ostream& debugVariance( std::ostream & output, bool verbose ) const;
     std::ostream& debugXML( std::ostream & output, bool verbose ) const;
 

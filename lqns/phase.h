@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: phase.h 15048 2021-10-07 15:10:18Z greg $
+ * $Id: phase.h 15601 2022-05-27 16:12:58Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -31,7 +31,6 @@ class DeviceEntry;
 class Entity;
 class Entry;
 class MVASubmodel;
-class ProcessorCall;
 class Submodel;
 class Task;
 class TaskEntry;
@@ -258,8 +257,8 @@ public:
 
     Phase& setInterlockedFlow( const MVASubmodel& );
     void setInterlockedCall(const unsigned submodel);
-    void addSrcCall( Call * aCall ) { _callList.insert(aCall); }
-    void removeSrcCall( Call *aCall ) { _callList.erase(aCall); }
+    void addSrcCall( Call * aCall ) { _calls.insert(aCall); }
+    void removeSrcCall( Call *aCall ) { _calls.erase(aCall); }
     virtual unsigned int getReplicaNumber() const;
 
     /* Instance Variable access */
@@ -285,7 +284,7 @@ public:
     Phase& forward( Entry *, const LQIO::DOM::Call* callDOMInfo );
     double forward( const Entry * ) const;
 
-    const std::set<Call *>& callList() const { return _callList; }
+    const std::set<Call *>& callList() const { return _calls; }
 
     /* Calls to processors */
 	
@@ -305,7 +304,7 @@ public:
     virtual double throughput() const;
     double utilization() const;
     double processorUtilization() const;
-    bool isUsed() const { return _callList.size() > 0.0 || serviceTime() > 0.0; }
+    bool isUsed() const { return _calls.size() > 0.0 || serviceTime() > 0.0; }
     bool hasVariance() const;
     virtual bool isPseudo() const { return false; }		// quorum
     
@@ -369,11 +368,9 @@ private:
 
     double cfsThinkTime( double groupRatio );
 
-protected:
-    const Entry * _entry;		/* Root for activity			*/
-    std::set<Call *> _callList;         /* Who I call.                          */
-
 private:
+    const Entry * _entry;		/* Root for activity			*/
+    std::set<Call *> _calls;         	/* Who I call.                          */
     std::vector<DeviceInfo *> _devices;	/* Will replace below			*/
 #if PAN_REPLICATION
     VectorMath<double> _surrogateDelay;	/* Saved old surrogate delay. REP N-R	*/

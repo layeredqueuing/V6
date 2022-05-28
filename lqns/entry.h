@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: entry.h 15048 2021-10-07 15:10:18Z greg $
+ * $Id: entry.h 15601 2022-05-27 16:12:58Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -163,6 +163,28 @@ protected:
 	double operator()( double sum, const Phase& phase ) const { return sum + phase._wait[_submodel]; }
     private:
 	const unsigned int _submodel;
+    };
+
+
+private:
+    class SRVNManip {
+    public:
+	SRVNManip( std::ostream& (*f)( std::ostream&, const Entry& ), const Entry& entry ) : _f(f), _entry(entry) {}
+    private:
+	std::ostream& (*_f)( std::ostream&, const Entry& );
+	const Entry & _entry;
+
+	friend std::ostream& operator<<( std::ostream& os, const SRVNManip& m ) { return m._f(os,m._entry); }
+    };
+
+
+    struct print_call {
+	print_call( std::ostream& output, unsigned int submodel, const std::string& arrow ) : _output(output), _submodel(submodel), _arrow(arrow) {}
+	void operator()( const CallInfo::Item& call ) const;
+    private:
+	std::ostream& _output;
+	const unsigned int _submodel;
+	const std::string& _arrow;
     };
 
 public:
@@ -396,6 +418,7 @@ public:
 
     /* Printing */
 
+    SRVNManip print_name() const { return SRVNManip( output_name, *this ); }
     std::ostream& printCalls( std::ostream& output, unsigned int submodel=0 ) const;
     std::ostream& printSubmodelWait( std::ostream& output, unsigned offset ) const;
     static std::string fold( const std::string& s1, const Entry * e2 );
@@ -411,6 +434,8 @@ private:
     bool isSendingTask( const MVASubmodel& submodel ) const;
     unsigned callingTo1(const Entry * dst_entry ) const;
     double fractionUtilizationTo(const Entry * dst_entry ) const;
+
+    static std::ostream& output_name( std::ostream& output, const Entry& );
 
 protected:
     LQIO::DOM::Entry* _dom;	

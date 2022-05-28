@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: lqns.cc 15518 2022-04-05 13:36:29Z greg $
+ * $Id: lqns.cc 15605 2022-05-27 19:55:44Z greg $
  *
  * Command line processing.
  *
@@ -99,6 +99,7 @@ const struct option longopts[] =
     { "print-interval",				optional_argument, nullptr, 512+'p' },
     { "reset-mva",				no_argument,	   nullptr, 256+'r' },
     { "trace-mva",				no_argument,	   nullptr, 256+'t' },
+    { "debug-submodels",			no_argument,	   nullptr, 256+'S' },
     { "debug-json",				no_argument,	   nullptr, 512+'j' },
     { "debug-lqx",				no_argument,	   nullptr, 512+'l' },
     { "debug-spex",				no_argument,	   nullptr, 512+'s' },
@@ -339,6 +340,10 @@ int main (int argc, char *argv[])
 		pragmas.insert( LQIO::DOM::Pragma::_mva_, LQIO::DOM::Pragma::_schweitzer_ );
 		break;
 
+	    case 256+'S':
+		Options::Debug::submodels( optarg != nullptr ? optarg : std::string("") );
+		break;
+		    
 	    case 512+'s':
 		flags.print_lqx = true;
 		break;

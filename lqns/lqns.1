@@ -1,6 +1,6 @@
 .\" t -*- nroff -*-
 .TH lqns 1 "27 December 2021" "6.2"
-.\" $Id: lqns.1 15380 2022-01-23 03:21:28Z greg $
+.\" $Id: lqns.1 15601 2022-05-27 16:12:58Z greg $
 .\"
 .\" --------------------------------
 .SH "NAME"
@@ -46,7 +46,7 @@ This option is used to compute the ``Type 1 throughput bounds'' only.
 These bounds are computed assuming no contention anywhere in the model
 and represent the guaranteed not to exceed values.
 .TP
-\fB\-c\fP, \fB\-\-convergence\fR=\fIarg\fR
+\fB\-c\fP, \fB\-\-convergence-value\fR=\fIarg\fR
 Set the convergence value to \fIarg\fP.  
 \fIArg\fP must be a number between 0.0 and 1.0.
 .TP
@@ -64,14 +64,14 @@ Print out the fork-join matching process.
 \fBinterlock\fR
 Print out the interlocking table and the interlocking between all tasks and processors.
 .TP
-\fBlayers\fR
-Print out the contents of all of the layers found in the model.
-.TP
 \fBlqx\fR
 Print out the actions the LQX parser while reading an LQX program.
 .TP
 \fBovertaking\fR
 Print the overtaking probabilities in the output file.
+.TP
+\fBsubmodels\fR
+Print out the contents of all of the submodels found in the model.
 .TP
 \fBvariance\fR
 Print out variance calculation.
@@ -240,7 +240,7 @@ Set the convergence value to \fIarg\fP.
 For multiple runs, reinitialize all service times at processors.
 .TP
 \fBgenerate\fR=\fIarg\fR
-This option is used for debugging the solver.
+This option is used to generate a queueing model for solver in the directory \fIarg\fP.
 A directory named \fIarg\fP will be created containing source code for invoking the MVA solver directly.
 .TP
 \fBiteration-limit\fR=\fIarg\fR

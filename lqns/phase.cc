@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: phase.cc 15583 2022-05-21 00:18:56Z greg $
+ * $Id: phase.cc 15601 2022-05-27 16:12:58Z greg $
  *
  * Everything you wanted to know about an phase, but were afraid to ask.
  *
@@ -270,7 +270,7 @@ NullPhase::insertDOMHistogram( LQIO::DOM::Histogram * histogram, const double m,
 Phase::Phase( const std::string& name )
     : NullPhase( name ),
       _entry(nullptr),
-      _callList(),
+      _calls(),
       _devices(),
       _prOvertaking(0.),
       _cfs_delay(0.0),
@@ -284,7 +284,7 @@ Phase::Phase( const std::string& name )
 Phase::Phase( const Phase& src, unsigned int replica )
     : NullPhase(src),
       _entry(src._entry != nullptr ? Entry::find( src._entry->name(), replica ) : nullptr ),	/* Only phases have entries */
-      _callList(),		// Done after all entries created
+      _calls(),		// Done after all entries created
       _devices(),
       _prOvertaking(0.)
 {
@@ -1779,7 +1779,7 @@ Phase::initProcessor()
 	
     if ( hasServiceTime() ) {
 	std::ostringstream entry_name;
-	entry_name << owner()->name() << "." << owner()->getReplicaNumber() << ':' << name();
+	entry_name << owner()->print_name() << ':' << name();
 	_devices.push_back( new DeviceInfo( *this, entry_name.str(), DeviceInfo::Type::HOST ) );
 	if ( owner()->getProcessor()->isCFSserver() ) {
 	    initCFSProcessor();

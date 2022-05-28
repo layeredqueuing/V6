@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: open.cc 15583 2022-05-21 00:18:56Z greg $
+ * $Id: open.cc 15605 2022-05-27 19:55:44Z greg $
  *
  * Open Network solver.
  *
@@ -7,7 +7,7 @@
  * Department of Systems and Computer Engineering,
  * Carleton University, Ottawa, Ontario, Canada. K1S 5B6
  *
- * $Date: 2022-05-20 20:18:56 -0400 (Fri, 20 May 2022) $
+ * $Date: 2022-05-27 15:55:44 -0400 (Fri, 27 May 2022) $
  * ----------------------------------------------------------------------
  * Conventions:
  *    E - (scalar) number of entries for a given station.
@@ -223,12 +223,12 @@ Open::entryThroughput( const Server& aStation, const unsigned e ) const
 {
     if ( aStation.V( e, 0 ) == 0 ) {
 	return 0;
-    } else if ( aStation.Rho() < aStation.mu() ) {
-	return aStation.V( e, 0 );
-    } else if ( !std::isfinite(aStation.mu()) && !std::isfinite(aStation.S( e, 0 )) ) {
-	return aStation.V( e, 0 );		/* BUG_566 Infinite Server */
-    } else {
+    } else if ( aStation.Rho() < aStation.mu() || !std::isfinite( aStation.mu() ) || aStation.S( e, 0 ) == 0.0 ) {
+	return aStation.V( e, 0 );		/* throughput = arrival rate */
+    } else if ( std::isfinite( aStation.Rho() ) ) {
 	return aStation.V( e, 0 ) * aStation.mu() / aStation.Rho();	/* Server overloaded.  Scale back throughput */
+    } else {
+	return 1.0 / aStation.S( e, 0 );	/* Punt.  Limit to service rate */
     }
 }
 
@@ -265,8 +265,8 @@ Open::print( std::ostream& output ) const
 	const unsigned E = Q[m]->nEntries();
 
 	for ( unsigned e = 1; e <= E; ++e ) {
+	    if ( Q[m]->V(e,0) == 0. ) continue;
 	    const double W = Q[m]->R(e,0);
-	    if ( !W ) continue;
 
 	    count += 1;
 	    if ( count == 1 ) {

@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: entity.h 15583 2022-05-21 00:18:56Z greg $
+ * $Id: entity.h 15605 2022-05-27 19:55:44Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -48,11 +48,12 @@ class Entity {
     friend class Generate;
 
     enum class Attributes {
-	initialized,		/* Task was initialized.	*/
-	closed_model,		/* Stn in in closed model.	*/
-	open_model,		/* Stn is in open model.	*/
-	deterministic,		/* an entry has det. phase.	*/
- 	variance		/* an entry has Cv_sqn != 1.	*/
+	initialized,		/* Task was initialized.		*/
+	closed_server,		/* Stn is server in closed model.	*/
+	closed_client,		/* Stn is client in closed model.	*/
+	open_server,		/* Stn is server in open model.		*/
+	deterministic,		/* an entry has det. phase.		*/
+ 	variance		/* an entry has Cv_sqn != 1.		*/
     };
 
 
@@ -125,12 +126,12 @@ public:
 private:
     class SRVNManip {
     public:
-	SRVNManip( std::ostream& (*f)(std::ostream&, const Entity & ), const Entity & entity ) : _f(f), _entity(entity) {}
+	SRVNManip( std::ostream& (*f)( std::ostream&, const Entity& ), const Entity& entity ) : _f(f), _entity(entity) {}
     private:
 	std::ostream& (*_f)( std::ostream&, const Entity& );
 	const Entity & _entity;
 
-	friend std::ostream& operator<<(std::ostream & os, const SRVNManip& m ) { return m._f(os,m._entity); }
+	friend std::ostream& operator<<( std::ostream& os, const SRVNManip& m ) { return m._f(os,m._entity); }
     };
 
 private:
@@ -201,7 +202,7 @@ public:
     virtual unsigned int fanIn( const Task * ) const = 0;
 
     double throughput() const;
-    double utilization() const;
+    double utilization() const { return _utilization; }
     double saturation() const;
 
     /* Queries */
@@ -218,10 +219,12 @@ public:
     bool hasThreads() const { return nThreads() > 1; }
     virtual bool hasSynchs() const { return false; }
     bool hasILWait() const ;
-    bool isInOpenModel() const { return _attributes.at(Attributes::open_model); }
-    Entity& isInOpenModel( const bool yesOrNo ) { _attributes.at(Attributes::open_model) = yesOrNo; return *this; }
-    bool isInClosedModel() const { return _attributes.at(Attributes::closed_model); }
-    Entity& isInClosedModel( const bool yesOrNo ) { _attributes.at(Attributes::closed_model) = yesOrNo; return *this; }
+    bool isOpenModelServer() const   { return _attributes.at(Attributes::open_server); }
+    bool isClosedModelServer() const { return _attributes.at(Attributes::closed_server); }
+    bool isClosedModelClient() const { return _attributes.at(Attributes::closed_client); }
+    Entity& setOpenModelServer( const bool yesOrNo )   { _attributes.at(Attributes::open_server) = yesOrNo; return *this; }
+    Entity& setClosedModelServer( const bool yesOrNo ) { _attributes.at(Attributes::closed_server) = yesOrNo; return *this; }
+    Entity& setClosedModelClient( const bool yesOrNo ) { _attributes.at(Attributes::closed_client) = yesOrNo; return *this; }
     Entity& initialized( const bool yesOrNo ) { _attributes.at(Attributes::initialized) = yesOrNo; return *this; }
     bool initialized() const { return _attributes.at(Attributes::initialized); }
     virtual bool isUsed() const { return submodel() > 0; }
@@ -252,7 +255,7 @@ public:
     unsigned maxPhase() const { return _maxPhase; }
 
     unsigned nEntries() const { return _entries.size(); }
-    virtual unsigned nClients() const = 0;
+    virtual unsigned nClients() const { return _tasks.size(); }
     std::set<Task *>& getClients( std::set<Task *>& ) const;
     double nCustomers( ) const;
     const std::set<const Entry *>& commonEntries() const { return _interlock.commonEntries(); }
@@ -321,30 +324,36 @@ public:
     virtual unsigned concurrentThreads() const { return 1; }	/* Return the number of threads. */
     virtual void joinOverlapFactor( const Submodel& ) const {};	/* NOP? */
 	
+protected:
+    Entity& setUtilization( double );
+    virtual unsigned validScheduling() const;
+    virtual scheduling_type defaultScheduling() const { return SCHEDULE_FIFO; }
+    virtual double computeUtilization( const MVASubmodel& );
+	
+private:
+    void setServiceTime( const Entry * anEntry, unsigned k ) const;
+    void setInterlock( Submodel& ) const;
+    double computeIdleTime( const unsigned, const double ) const;
+
+public:
     /* Printing */
 
     virtual std::ostream& print( std::ostream& ) const = 0;
     virtual std::ostream& printJoinDelay( std::ostream& output ) const { return output; }
     static SRVNManip print_server_chains( const Entity& entity ) { return SRVNManip( output_server_chains, entity ); }
+    SRVNManip print_name() const { return SRVNManip( output_name, *this ); }
     SRVNManip print_info() const { return SRVNManip( output_info, *this ); }
     SRVNManip print_type() const { return SRVNManip( output_type, *this ); }
     SRVNManip print_entries() const { return SRVNManip( output_entries, *this ); }
     static std::string fold( const std::string& s1, const Entity* );
 
 private:
+    static std::ostream& output_name( std::ostream& output, const Entity& );
     static std::ostream& output_type( std::ostream& output, const Entity& );
     static std::ostream& output_server_chains( std::ostream& output, const Entity& );
     static std::ostream& output_info( std::ostream& output, const Entity& );
     static std::ostream& output_entries( std::ostream& output, const Entity& );
     
-protected:
-    virtual unsigned validScheduling() const;
-    virtual scheduling_type defaultScheduling() const { return SCHEDULE_FIFO; }
-    double computeIdleTime( const unsigned, const double ) const;
-	
-private:
-    void setServiceTime( const Entry * anEntry, unsigned k ) const;
-
 private:
     LQIO::DOM::Entity* _dom;		/* The DOM Representation	*/
 

@@ -10,7 +10,7 @@
  * November, 1994
  *
  * ------------------------------------------------------------------------
- * $Id: processor.cc 15585 2022-05-21 01:05:09Z greg $
+ * $Id: processor.cc 15605 2022-05-27 19:55:44Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -42,17 +42,13 @@ bool Processor::__prune = false;
 /* ------------------------ Constructors etc. ------------------------- */
 
 Processor::Processor( LQIO::DOM::Processor* dom )
-    : Entity( dom, std::vector<Entry *>() ),
-      _tasks(),
-      _utilization(0.0)
+    : Entity( dom, std::vector<Entry *>() )
 {
 }
 
 
 Processor::Processor( const Processor& processor, unsigned int replica )
-    : Entity( processor, replica ),
-      _tasks(),
-      _utilization(0.0)
+    : Entity( processor, replica )
 {
 }
 
@@ -155,11 +151,13 @@ Processor::initPopulation()
 
     for ( std::set<const Task *>::const_iterator task = tasks().begin(); task != tasks().end(); ++task ) {
 	std::set<Task *> sources;		/* Cltn of tasks already visited. */
-	if ( (*task)->countCallers( sources ) > 0. ) {
-	    isInClosedModel( true );
+	const double callers = (*task)->countCallers( sources );
+	if ( std::isfinite( callers ) && callers  > 0. ) {
+	    setClosedModelServer( true );
+	    const_cast<Task *>(*task)->setClosedModelClient( true );
 	}
-	if ( (*task)->isInfinite() && (*task)->isInOpenModel() ) {
-	    isInOpenModel( true );
+	if ( (*task)->isInfinite() && (*task)->isOpenModelServer() ) {
+	    setOpenModelServer( true );
 	}
     }
     return *this;
@@ -474,36 +472,31 @@ const Entity&
 Processor::sanityCheck() const
 {
     Entity::sanityCheck();
-    if ( _utilization > 0 && std::abs( utilization() - _utilization ) / _utilization > 0.001 ) {
-	LQIO::solution_error( ADV_UTILIZATION_MISMATCH, utilization(), _utilization, name().c_str() );
-    }
     return *this;
 }
 
 
-Entity&
-Processor::saveServerResults( const MVASubmodel& submodel, double relax )
+double
+Processor::computeUtilization( const MVASubmodel& submodel )
 {
-    Entity::saveServerResults( submodel, relax );
-
     const Server * station = serverStation();
     const std::set<Task *>& clients = submodel.getClients();
     const unsigned int n = submodel.number();
 
-    _utilization = 0.0;
+    double utilization = 0.0;
     for ( std::set<Task *>::const_iterator client = clients.begin(); client != clients.end(); ++client ) {
-	if ( isInClosedModel() ) {
+	if ( isClosedModelServer() ) {
 	    const ChainVector& chains = (*client)->clientChains( n );
 	    for ( ChainVector::const_iterator k = chains.begin(); k != chains.end(); ++k ) {
 		if ( hasServerChain( *k ) ) {
-		    _utilization += submodel.closedModelUtilization( *station, *k );
+		    utilization += submodel.closedModelUtilization( *station, *k );
 		}
 	    }
 	}
-	_utilization += submodel.openModelUtilization( *station );
+	utilization += submodel.openModelUtilization( *station );
     }
     
-    return *this;
+    return utilization;
 }
 
 
@@ -593,7 +586,7 @@ Processor::print( std::ostream& output ) const
 {
     const std::ios_base::fmtflags oldFlags = output.setf( std::ios::left, std::ios::adjustfield );
     std::ostringstream ss;
-    ss << name() << "." << getReplicaNumber();
+    ss << print_name();
     output << std::setw(10) << ss.str()
 	   << " " << std::setw(15) << print_info()
 	   << " " << std::setw(9)  << print_type(); 
@@ -603,11 +596,26 @@ Processor::print( std::ostream& output ) const
     output.flags(oldFlags);
     return output;
 }
+
+
+/*
+ * Print out who calls this processor (by submodel if submodel != 0 )
+ */
+
+std::ostream&
+Processor::printTasks( std::ostream& output, unsigned int submodel ) const
+{
+    if ( submodel != 0 && this->submodel() != submodel ) return output;
+    for ( std::set<const Task *>::const_iterator task = _tasks.begin(); task != _tasks.end(); ++task ) {
+	if ( (isPruned() && (*task)->isPruned()) ) continue;
+	output << std::setw(2) << " " << (*task)->print_name() << " *> " << print_name() << std::endl;
+    }
+    return output;
+}
 
 /* -------------------------------------------------------------------- */
 /*			      CFS Processor				*/
 /* -------------------------------------------------------------------- */
-
 
 bool
 CFS_Processor::check() const

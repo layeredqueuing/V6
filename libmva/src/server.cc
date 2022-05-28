@@ -1,5 +1,5 @@
 /*  -*- C++ -*-
- * $Id: server.cc 15323 2022-01-02 16:13:23Z greg $
+ * $Id: server.cc 15605 2022-05-27 19:55:44Z greg $
  *
  * Copyright the Real-Time and Distributed Systems Group,
  * Department of Systems and Computer Engineering,
@@ -1739,6 +1739,8 @@ HVFCFS_Server::MG1( const unsigned e ) const
 
     if ( sum == 0 ) {
 	return 0.0;		/* No service time, so no queue. */
+    } else if ( rho() == 1.0 ) {
+	return std::numeric_limits<double>::infinity();
     } else {
 	return rho() * ( sum + myVariance[e][0][0] / sum ) / (2.0 * (1.0 - rho()));
     }
