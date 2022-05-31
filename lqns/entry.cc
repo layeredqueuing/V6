@@ -12,7 +12,7 @@
  * July 2007.
  *
  * ------------------------------------------------------------------------
- * $Id: entry.cc 15601 2022-05-27 16:12:58Z greg $
+ * $Id: entry.cc 15611 2022-05-31 12:24:50Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -143,6 +143,7 @@ Entry::operator==( const Entry& entry ) const
 double Entry::openArrivalRate() const
 {
     if ( hasOpenArrivals() ) {
+	Entry::totalOpenArrivals += 1;
 	try {
 	    return getDOM()->getOpenArrivalRateValue();
 	}
@@ -202,6 +203,10 @@ Entry::check() const
     }
     if ( maxPhase() > 1 && owner()->isInfinite() ) {
 	LQIO::solution_error( WRN_MULTI_PHASE_INFINITE_SERVER, name().c_str(), owner()->name().c_str(), maxPhase() );
+    }
+
+    if ( !owner()->isReferenceTask() && !isCalled() ) {
+	LQIO::solution_error( LQIO::WRN_NO_REQUESTS_TO_ENTRY, name().c_str() );
     }
 
     /* Forwarding probabilities o.k.? */
