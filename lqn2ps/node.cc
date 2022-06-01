@@ -1,6 +1,6 @@
 /* node.cc	-- Greg Franks Wed Jan 29 2003
  *
- * $Id: node.cc 15424 2022-02-03 11:01:20Z greg $
+ * $Id: node.cc 15615 2022-06-01 12:27:08Z greg $
  */
 
 #include "lqn2ps.h"
@@ -104,7 +104,7 @@ Node::draw_queue( std::ostream& output, const Point& aPoint, const double radius
 std::ostream&
 Node::multi_server( std::ostream& output, const Point& centerBottom, const double radius ) const
 {
-    Arc * anArc = Arc::newArc( 3, Graphic::ArrowHead::NONE );
+    Arc * anArc = Arc::newArc( 3, Graphic::Arrowhead::NONE );
     const double offset = radius * 14.0 / 9.0;
 
     anArc->penColour( penColour() );

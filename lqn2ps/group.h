@@ -1,7 +1,7 @@
 /* -*- c++ -*-
  * group.h	-- Greg Franks
  *
- * $Id: group.h 15264 2021-12-26 20:28:39Z greg $
+ * $Id: group.h 15615 2022-06-01 12:27:08Z greg $
  */
 
 #ifndef _GROUP_H
@@ -41,10 +41,10 @@ public:
     virtual Group& resizeBox();
     virtual Group const& positionLabel() const;
 
-    double width() const { return myNode->width(); }
-    double height() const { return myNode->height(); }
-    double x() const { return myNode->left(); }
-    double y() const { return myNode->bottom(); }
+    double width() const { return _node->width(); }
+    double height() const { return _node->height(); }
+    double x() const { return _node->left(); }
+    double y() const { return _node->bottom(); }
 
     virtual const Processor * processor() const { return 0; }
     virtual bool isPseudoGroup() const { return false; }
@@ -66,8 +66,8 @@ public:
     static std::vector<Group *> __groups;
 
 protected:
-    Label * myLabel;
-    Node * myNode;
+    Label * _label;
+    Node * _node;
     std::vector<Layer> _layers;
 
 private:

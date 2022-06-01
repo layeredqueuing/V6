@@ -10,7 +10,7 @@
  * November, 1994
  *
  * ------------------------------------------------------------------------
- * $Id: task.cc 15611 2022-05-31 12:24:50Z greg $
+ * $Id: task.cc 15615 2022-06-01 12:27:08Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -2018,7 +2018,7 @@ Server *
 ReferenceTask::makeServer( const unsigned )
 {
     throw LQIO::should_not_implement( "ReferenceTask::makeServer" );
-    return 0;
+    return nullptr;
 }
 
 
@@ -2032,7 +2032,7 @@ ReferenceTask::sanityCheck() const
 {
     const double u = utilization() / copies();
     if ( (!(hasThinkTime() || thinkTime() > 0.) && u < 0.99) || 1.01 < u ) {
-	LQIO::solution_error( ADV_INVALID, name().c_str(), utilization(), copies() );
+	LQIO::solution_error( ADV_INVALID_UTILIZATION, getDOM()->getTypeName(), name().c_str(), copies(), utilization() );
     }
     return *this;
 }
