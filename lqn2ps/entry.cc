@@ -8,7 +8,7 @@
  * January 2003
  *
  * ------------------------------------------------------------------------
- * $Id: entry.cc 15615 2022-06-01 12:27:08Z greg $
+ * $Id: entry.cc 15620 2022-06-01 22:32:18Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -1925,9 +1925,9 @@ Entry::label()
 	if ( Flags::print[ENTRY_UTILIZATION].opts.value.b ) {
 	    _label->newLine() << begin_math( &Label::rho ) << "=" << opt_pct(utilization()) << end_math();
 	}
-	if ( Flags::print[PROCESSOR_UTILIZATION].opts.value.b ) {
-	    _label->newLine() << begin_math( &Label::rho ) << "=" << opt_pct(processorUtilization()) << end_math();
-	}
+//	if ( Flags::print[PROCESSOR_UTILIZATION].opts.value.b ) {
+//	    _label->newLine() << begin_math( &Label::rho ) << "=" << opt_pct(processorUtilization()) << end_math();
+//	}
     }
 
     /* Now do calls. */

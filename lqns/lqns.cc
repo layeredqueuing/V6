@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: lqns.cc 15605 2022-05-27 19:55:44Z greg $
+ * $Id: lqns.cc 15620 2022-06-01 22:32:18Z greg $
  *
  * Command line processing.
  *
@@ -98,7 +98,7 @@ const struct option longopts[] =
     { "print-comment",				no_argument,	   nullptr, 512+'c' },
     { "print-interval",				optional_argument, nullptr, 512+'p' },
     { "reset-mva",				no_argument,	   nullptr, 256+'r' },
-    { "trace-mva",				no_argument,	   nullptr, 256+'t' },
+    { "trace-mva",				optional_argument, nullptr, 256+'t' },
     { "debug-submodels",			no_argument,	   nullptr, 256+'S' },
     { "debug-json",				no_argument,	   nullptr, 512+'j' },
     { "debug-lqx",				no_argument,	   nullptr, 512+'l' },
@@ -363,7 +363,7 @@ int main (int argc, char *argv[])
 		break;
 
 	    case 256+'t':
-		flags.trace_mva = true;
+		Options::Trace::mva( optarg != nullptr ? optarg : std::string("") );
 		break;
 
 	    case 'u':
@@ -371,8 +371,7 @@ int main (int argc, char *argv[])
 		break;
 
 	    case 'v':
-		flags.verbose = true;
-		LQIO::Spex::__verbose = true;
+		Options::Trace::verbose( optarg != nullptr ? optarg : std::string("") );
 		break;
 
 	    case 'V':
@@ -507,12 +506,10 @@ void init_flags()
     flags.trace_cfs		= false;
     flags.trace_convergence     = false;
     flags.trace_customers	= false;
-    flags.trace_delta_wait      = false;
     flags.trace_forks           = false;
     flags.trace_idle_time       = false;
     flags.trace_interlock       = false;
     flags.trace_intermediate    = false;
-    flags.trace_mva             = false;
     flags.trace_overtaking      = false;
     flags.trace_replication     = false;
     flags.trace_virtual_entry   = false;
@@ -523,7 +520,6 @@ void init_flags()
 #else
     flags.min_steps             = 2;            /* Default of 2 steps. */
 #endif
-    flags.verbose               = false;
 
     flags.ignore_overhanging_threads = false;
     flags.full_reinitialize          = false;               /* Maybe a pragma?                      */

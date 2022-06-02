@@ -1,6 +1,6 @@
 /* -*- c++ -*-
  * submodel.C	-- Greg Franks Wed Dec 11 1996
- * $Id: submodel.cc 15601 2022-05-27 16:12:58Z greg $
+ * $Id: submodel.cc 15621 2022-06-01 22:40:41Z greg $
  *
  * MVA submodel creation and solution.  This class is the interface
  * between the input model consisting of processors, tasks, and entries,
@@ -739,10 +739,10 @@ MVASubmodel&
 MVASubmodel::solve( long iterations, MVACount& MVAStats, const double relax )
 {
     if ( _servers.empty() ) return *this;
-    if ( flags.verbose ) std::cerr << '.';
+    if ( Options::Trace::verbose() ) std::cerr << '.';
     if ( flags.reset_mva ) { _closedModel->reset(); }
 
-    const bool trace = flags.trace_mva && (flags.trace_submodel == 0 || flags.trace_submodel == number() );
+    const bool trace = Options::Trace::mva( number() );
 
     MVAStats.start( nChains(), _servers.size() );
 
@@ -770,7 +770,7 @@ MVASubmodel::solve( long iterations, MVACount& MVAStats, const double relax )
 
 	if ( usePanReplication() ) {
 
-	    if ( flags.trace_mva  ) {
+	    if ( trace  ) {
 		std::cout << std::endl << "Current master iteration = " << iterations << std::endl
 		     << "  Replication Iteration Number (submodel=" <<number() <<") = " << iter << std::endl
 		     << "  deltaRep = " << deltaRep << ", convergence_value = " << Model::__convergence_value << std::endl;
@@ -864,7 +864,7 @@ MVASubmodel::solve( long iterations, MVACount& MVAStats, const double relax )
 
 	/* --- Compute and save new values for entry service times. --- */
 
-	if ( flags.trace_delta_wait ) {
+	if ( Options::Trace::delta_wait( number() ) ) {
 	    std::cout << "------ updateWait for submodel " << number() << ", iteration " << iterations << " ------" << std::endl;
 	}
 
@@ -959,6 +959,8 @@ MVASubmodel::openModelUtilization( const Server& station ) const
 std::ostream&
 MVASubmodel::print( std::ostream& output ) const
 {
+    if ( !Options::Debug::submodels( number() ) ) return output;
+    
     output << "----------------------- Submodel  " << number() << " -----------------------" << std::endl
 	   << "Customers: " <<  _customers << std::endl
 	   << "Clients: " << std::endl;
@@ -1157,7 +1159,7 @@ CFSSubmodel::redistribute::operator()( Entity * server )
     if ( processor == nullptr ) return;
 
     const std::set<Group *>& groups = processor->groups();
-    const bool trace = flags.trace_cfs && (flags.trace_submodel == 0 || flags.trace_submodel == _submodel.number() );
+    const bool trace = flags.trace_cfs && (Options::Trace::mva(_submodel.number()) );
 
     std::for_each( groups.begin(), groups.end(), Exec<Group>( &Group::setSpareStatus ) );
 

@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: phase.cc 15601 2022-05-27 16:12:58Z greg $
+ * $Id: phase.cc 15620 2022-06-01 22:32:18Z greg $
  *
  * Everything you wanted to know about an phase, but were afraid to ask.
  *
@@ -1120,7 +1120,7 @@ Phase::updateWait( const Submodel& submodel, const double relax )
 
     under_relax( _wait[n], newWait, relax );
 
-    if ( oldWait && flags.trace_delta_wait ) {
+    if ( oldWait && Options::Trace::delta_wait( n ) ) {
 	std::cout << "Phase::updateWait(" << n << "," << relax << ") for " << name() << std::endl;
 	std::cout << "        Sum of wait=" << newWait << ", _wait[" << n << "]=" << _wait[n] << std::endl;
     }

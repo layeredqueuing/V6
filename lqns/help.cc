@@ -1,6 +1,6 @@
 /* help.cc	-- Greg Franks Wed Oct 12 2005
  *
- * $Id: help.cc 15605 2022-05-27 19:55:44Z greg $
+ * $Id: help.cc 15620 2022-06-01 22:32:18Z greg $
  */
 
 #include "lqns.h"
@@ -78,7 +78,7 @@ static const std::map<const std::string,const std::string> opt_help = {
     { "print-comment",				"Add the model comment as the first line of output when running with SPEX input." },
     { "print-interval",				"Output the intermediate solution of the model after <n> iterations." },
     { "reset-mva",				"Reset the MVA calculation prior to solving a submodel." },
-    { "trace-mva",				"Trace the operation of the MVA solver." },
+    { "trace-mva",				"Trace the operation of the MVA solver. ARG is a 64 bit number where the bit position is the submodel to trace." },
     { "debug-submodels",			"Print out submodels." },
     { "debug-json",				"Output debugging information while parsing JSON input." },
     { "debug-lqx",				"Output debugging information while parsing LQX input." },
@@ -992,7 +992,9 @@ Help::flagTrace( std::ostream& output, bool verbose ) const
 std::ostream&
 Help::flagTraceMVA( std::ostream& output, bool verbose ) const
 {
-    output << "Output the inputs and results of each MVA submodel for every iteration of the solver." << std::endl;
+    output << "Output the inputs and results of each MVA submodel for every iteration of the solver." << std::endl
+	   << "The optional argument is a bit set of the submodels to output.  Submodel 1 is 0x1, " << std::endl
+	   << "submodel 2 is 0x2, submodel 3 is 0x4, etc.  By default all submodels are traced." << std::endl;
     return output;
 }
 
@@ -2170,7 +2172,7 @@ HelpTroff::preamble( std::ostream& output ) const
     output << __comment << " t -*- nroff -*-" << std::endl
 	   << ".TH lqns 1 \"" << date << "\" \"" << VERSION << "\"" << std::endl;
 
-    output << __comment << " $Id: help.cc 15605 2022-05-27 19:55:44Z greg $" << std::endl
+    output << __comment << " $Id: help.cc 15620 2022-06-01 22:32:18Z greg $" << std::endl
 	   << __comment << std::endl
 	   << __comment << " --------------------------------" << std::endl;
 
@@ -2469,7 +2471,7 @@ HelpLaTeX::preamble( std::ostream& output ) const
 	   << __comment << " Created:             " << date << std::endl
 	   << __comment << "" << std::endl
 	   << __comment << " ----------------------------------------------------------------------" << std::endl
-	   << __comment << " $Id: help.cc 15605 2022-05-27 19:55:44Z greg $" << std::endl
+	   << __comment << " $Id: help.cc 15620 2022-06-01 22:32:18Z greg $" << std::endl
 	   << __comment << " ----------------------------------------------------------------------" << std::endl << std::endl;
 
     output << "\\chapter{Invoking the Analytic Solver ``lqns''}" << std::endl

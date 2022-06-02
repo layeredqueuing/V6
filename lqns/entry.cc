@@ -12,7 +12,7 @@
  * July 2007.
  *
  * ------------------------------------------------------------------------
- * $Id: entry.cc 15611 2022-05-31 12:24:50Z greg $
+ * $Id: entry.cc 15621 2022-06-01 22:40:41Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -33,6 +33,7 @@
 #include "errmsg.h"
 #include "flags.h"
 #include "model.h"
+#include "option.h"
 #include "pragma.h"
 #include "processor.h"
 #include "randomvar.h"
@@ -143,7 +144,6 @@ Entry::operator==( const Entry& entry ) const
 double Entry::openArrivalRate() const
 {
     if ( hasOpenArrivals() ) {
-	Entry::totalOpenArrivals += 1;
 	try {
 	    return getDOM()->getOpenArrivalRateValue();
 	}
@@ -179,6 +179,9 @@ bool
 Entry::check() const
 {
     const double precision = 100000.0;		/* round to nearest 1/precision */
+    if ( hasOpenArrivals() ) {
+    	Entry::totalOpenArrivals += 1;
+    }
     if ( isStandardEntry() ) {
 	std::for_each( _phase.begin(), _phase.end(), Predicate<Phase>( &Phase::check ) );
     } else if ( isActivityEntry() ) {
@@ -322,7 +325,7 @@ Entry::initThroughputBound()
     } else {
 	_throughputBound = 0.0;
     }
-    setThroughput( _throughputBound );		/* Push bound to entries/phases/activities */
+    saveThroughput( _throughputBound );		/* Push bound to entries/phases/activities */
     return *this;
 }
 
@@ -1835,7 +1838,7 @@ TaskEntry::updateWait( const Submodel& submodel, const double relax )
 	getStartActivity()->collect( activityStack, entryStack, collect );
 	entryStack.pop_back();
 
-	if ( flags.trace_delta_wait || flags.trace_activities ) {
+	if ( Options::Trace::delta_wait( n ) || flags.trace_activities ) {
 	    std::cout << "--DW--  Entry(with Activities) " << name()
 		      << ", submodel " << n << std::endl;
 	    std::cout << "        Wait=";

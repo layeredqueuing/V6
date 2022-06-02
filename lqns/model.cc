@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: model.cc 15601 2022-05-27 16:12:58Z greg $
+ * $Id: model.cc 15620 2022-06-01 22:32:18Z greg $
  *
  * Layer-ization of model.  The basic concept is from the reference
  * below.  However, model partioning is more complex than task vs device.
@@ -165,7 +165,7 @@ Model::solve( solve_using solve_function, const std::string& inputFileName, cons
 
     } else {
 
-	if ( flags.verbose ) {
+	if ( Options::Trace::verbose() ) {
 	    std::cerr << "Compile LQX..." << std::endl;
 	}
 
@@ -222,7 +222,7 @@ Model::solve( solve_using solve_function, const std::string& inputFileName, cons
 LQIO::DOM::Document*
 Model::load( const std::string& input_filename, const std::string& output_filename )
 {
-    if ( flags.verbose ) std::cerr << "Load: " << input_filename << "..." << std::endl;
+    if ( Options::Trace::verbose() ) std::cerr << "Load: " << input_filename << "..." << std::endl;
 
     /*
      * Initialize everything that needs it before parsing
@@ -255,7 +255,7 @@ bool
 Model::prepare(const LQIO::DOM::Document* document)
 {
     /* Tell the user that we are starting to load up */
-    if ( flags.verbose ) std::cerr << "Prepare: ..." << std::endl;
+    if ( Options::Trace::verbose() ) std::cerr << "Prepare: ..." << std::endl;
 
     /* Update the pragma list from the document (merge), then set globals here as this has to be done prior to runlqx() */
     Pragma::set( document->getPragmaList() );
@@ -411,7 +411,7 @@ Model::create( const LQIO::DOM::Document * document, const std::string& inputFil
      * disable model checking and expansion at this stage with LQX programs
      */
 
-    if ( flags.verbose ) std::cerr << "Create: " << Pragma::getLayeringStr() << " layers..." << std::endl;
+    if ( Options::Trace::verbose() ) std::cerr << "Create: " << Pragma::getLayeringStr() << " layers..." << std::endl;
 
     create_func f = create_funcs.at(Pragma::layering());
     Model * model = (*f)( document, inputFileName, outputFileName, outputFormat );
@@ -511,7 +511,7 @@ Model::~Model()
 bool
 Model::initialize()
 {
-    if ( flags.verbose ) std::cerr << "Initialize..." << std::endl;
+    if ( Options::Trace::verbose() ) std::cerr << "Initialize..." << std::endl;
 
      _runDPS = false;
     if ( !_model_initialized ) {
@@ -520,7 +520,7 @@ Model::initialize()
 
 	std::for_each( __task.begin(), __task.end(), Exec<Task>( &Task::initProcessor ) );	/* Set Processor Service times.	*/
 
-	if ( flags.verbose ) std::cerr << "Generate... " << std::endl;
+	if ( Options::Trace::verbose() ) std::cerr << "Generate... " << std::endl;
 	if ( generate( assignSubmodel() ) ) {
 	    _model_initialized = true;
 	    optimize();
@@ -604,7 +604,7 @@ Model::extend()
 bool
 Model::check()
 {
-    if ( flags.verbose ) std::cerr << "Check..." << std::endl;
+    if ( Options::Trace::verbose() ) std::cerr << "Check..." << std::endl;
 
     if ( LQIO::io_vars.anError() ) return false;	/* Don't bother */
 
@@ -803,7 +803,7 @@ Model::compute()
 	return true;
     }
 
-    if ( flags.verbose ) std::cerr << "Solve..." << std::endl;
+    if ( Options::Trace::verbose() ) std::cerr << "Solve..." << std::endl;
 
     report.start();
 
@@ -834,7 +834,7 @@ Model::compute()
     if ( flags.generate ) {
 	Generate::makefile( nSubmodels() );	/* We are dumping C source -- make a makefile. */
     }
-    if ( flags.verbose ) {
+    if ( Options::Trace::verbose() ) {
 	report.print( std::cout );
     }
 
@@ -1114,7 +1114,7 @@ MOL_Model::addToSubmodel()
 double
 MOL_Model::run()
 {
-    const bool verbose = flags.trace_convergence || flags.verbose;
+    const bool verbose = flags.trace_convergence || Options::Trace::verbose();
     SolveSubmodel solveSubmodel( *this, verbose );		/* Helper class for iterator */
 
     double delta = 0.0;
@@ -1177,7 +1177,7 @@ void
 BackPropogate_MOL_Model::backPropogate()
 {
     if ( nSubmodels() < 4 ) return;
-    const bool verbose = flags.trace_convergence || flags.verbose;
+    const bool verbose = flags.trace_convergence || Options::Trace::verbose();
     std::for_each( _submodels.rbegin() + 2, _submodels.rend() - 1, SolveSubmodel( *this, verbose ) );
 }
 
@@ -1223,7 +1223,7 @@ Batch_Model::addToSubmodel()
 
     for ( std::set<Processor *>::const_iterator processor = __processor.begin(); processor != __processor.end(); ++processor ) {
 	const unsigned int i = (*processor)->submodel();
-	if ( i <= 0 ) continue;		// Device not used.
+	if ( i == 0 ) continue;		// Device not used.
 	_submodels[i]->addServer( *processor );
     }
 
@@ -1266,7 +1266,7 @@ double
 Batch_Model::run()
 {
     double delta = 0.0;
-    const bool verbose = (flags.trace_convergence || flags.verbose) && !(flags.trace_mva || flags.trace_wait);
+    const bool verbose = (flags.trace_convergence || Options::Trace::verbose()) && !(Options::Trace::mva() || flags.trace_wait);
     const double count = __task.size() + __processor.size();
 
     do {
@@ -1295,9 +1295,9 @@ Batch_Model::run()
 	    printSubmodelWait();
 	}
 
-	if ( flags.trace_mva || flags.trace_wait ) {
+	if ( Options::Trace::mva() || flags.trace_wait ) {
 	    std::cout << std::endl << "-*- -- -*- " << _iterations << ":   " << delta << " -*- -- -*-" << std::endl << std::endl;
-	} else if ( flags.verbose || flags.trace_convergence ) {
+	} else if ( Options::Trace::verbose() || flags.trace_convergence ) {
 	    std::cerr << " [" << delta << "]" << std::endl;
 	}
     } while ( ( _iterations < flags.min_steps || delta > __convergence_value ) && _iterations < __iteration_limit );
@@ -1318,7 +1318,7 @@ void
 BackPropogate_Batch_Model::backPropogate()
 {
     if ( nSubmodels() < 3 ) return;
-    const bool verbose = (flags.trace_convergence || flags.verbose) && !(flags.trace_mva || flags.trace_wait);
+    const bool verbose = (flags.trace_convergence || Options::Trace::verbose()) && !(Options::Trace::mva() || flags.trace_wait);
     std::for_each( _submodels.rbegin() + 1, _submodels.rend() - 1, SolveSubmodel( *this, verbose ) );
 }
 
