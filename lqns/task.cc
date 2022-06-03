@@ -10,7 +10,7 @@
  * November, 1994
  *
  * ------------------------------------------------------------------------
- * $Id: task.cc 15615 2022-06-01 12:27:08Z greg $
+ * $Id: task.cc 15627 2022-06-02 13:41:34Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -945,7 +945,7 @@ Task::initClientStation( Submodel& submodel )
 	    }
 
 	    /* Set idle times for stations. */
-	    submodel.setThinkTime( *k, thinkTime( n, *k ) );
+	    static_cast<MVASubmodel&>(submodel).setThinkTime( *k, thinkTime( n, *k ) );
 
 	}
 

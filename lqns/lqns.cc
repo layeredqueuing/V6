@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: lqns.cc 15620 2022-06-01 22:32:18Z greg $
+ * $Id: lqns.cc 15627 2022-06-02 13:41:34Z greg $
  *
  * Command line processing.
  *
@@ -529,12 +529,12 @@ void init_flags()
  * Common underrelaxation code.
  */
 
-void
-under_relax( double& old_value, const double new_value, const double relax )
+double
+under_relax( const double old_value, const double new_value, const double relax )
 {
     if ( std::isfinite( new_value ) && std::isfinite( old_value ) ) {
-	old_value = new_value * relax + old_value * (1.0 - relax);
+	return new_value * relax + old_value * (1.0 - relax);
     } else {
-	old_value = new_value;
+	return new_value;
     }
 }

@@ -2,7 +2,7 @@
 # Copyright (C) 2005 Greg Franks <greg@sce.carleton.ca>
 #
 # ------------------------------------------------------------------------
-# $Id: Makefile.am 15566 2022-04-19 19:29:41Z greg $
+# $Id: Makefile.am 15632 2022-06-03 09:59:14Z greg $
 # ------------------------------------------------------------------------
 
 SRVN=	../lqns
@@ -130,7 +130,12 @@ check-syntax:
 
 check-verbose:
 	FILES=`echo $(OBJS) | tr -s " " "\n" | srvndiff $(DIFFOPTS) -@- . ../../models/regression/lqns-results`; \
-	for i in $$FILES; do j=`echo $$i | sed -e's/lqxo/p/'`; srvndiff -A +t ../../models/regression/lqns-results/$$j $$i; done
+	for i in $$FILES; do j=`echo $$i | sed -e's/lqxo/p/'`; srvndiff -a +t ../../models/regression/lqns-results/$$j $$i; done
+
+check-summary:	$(OBJS)
+	@-echo $(OBJS) | tr -s " " "\n" > .files
+	srvndiff -Ia -S10. -T +t -@.files ../../models/regression/{sim,lqns}-results .
+	@-rm .files
 
 disttest: disttest.o randomvar.o
 	$(CXX) -L../../libmva/src/.libs -lmva -o $@ disttest.o randomvar.o

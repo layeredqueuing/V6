@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: model.cc 15620 2022-06-01 22:32:18Z greg $
+ * $Id: model.cc 15632 2022-06-03 09:59:14Z greg $
  *
  * Layer-ization of model.  The basic concept is from the reference
  * below.  However, model partioning is more complex than task vs device.
@@ -1039,7 +1039,7 @@ Model::topologicalSort()
     /* Stop the process here and now on any error. */
 
     if ( LQIO::io_vars.anError() ) {
-	throw exception_handled( "Model::topologicalSort" );
+	throw std::runtime_error( "Model::topologicalSort" );
     }
     return max_depth;
 }

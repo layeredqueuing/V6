@@ -1,6 +1,6 @@
 /* help.cc	-- Greg Franks Wed Oct 12 2005
  *
- * $Id: help.cc 15620 2022-06-01 22:32:18Z greg $
+ * $Id: help.cc 15627 2022-06-02 13:41:34Z greg $
  */
 
 #include "lqns.h"
@@ -59,13 +59,13 @@ static const std::map<const std::string,const std::string> opt_help = {
     { "xml",					"Ouptut results in XML format." },
     { "special",				"Set special options.  See -Hz." },
     { LQIO::DOM::Pragma::_exact_,		"Use exact MVA instead of Linearizer for solving submodels." },
-    { LQIO::DOM::Pragma::_schweitzer_,		"Use Schweitzer approximate MVA instead of Linearizer." },
-    { "batch-layering",				"Default layering strategy." },
+    { LQIO::DOM::Pragma::_schweitzer_,		"Use Schweitzer approximate MVA instead of Linearizer for solving submodels." },
+    { "batch-layering",				"Default layering strategy where a submodel consists of the servers at a layer and each server's clients." },
     { "hwsw-layering",				"Use HW/SW layering instead of batched layering." },
     { "method-of-layers",			"Use the Method of Layers instead of batched layering." },
     { "squashed-layering",			"Use only one submodel to solve the model." },
     { "srvn-layering",				"Use one server per layer instead of batched layering." },
-    { "processor-sharing",			"Use processor sharing scheduling at fifo scheduled processors." },
+    { "processor-sharing",			"Use processor sharing scheduling at FIFO scheduled processors." },
 #if HAVE_LIBGSL && HAVE_LIBGSLCBLAS
     { "quorum",					"Quorum." },
 #endif
@@ -78,8 +78,8 @@ static const std::map<const std::string,const std::string> opt_help = {
     { "print-comment",				"Add the model comment as the first line of output when running with SPEX input." },
     { "print-interval",				"Output the intermediate solution of the model after <n> iterations." },
     { "reset-mva",				"Reset the MVA calculation prior to solving a submodel." },
-    { "trace-mva",				"Trace the operation of the MVA solver. ARG is a 64 bit number where the bit position is the submodel to trace." },
-    { "debug-submodels",			"Print out submodels." },
+    { "trace-mva",				"Trace the operation of the MVA solver. <n> is a 64 bit number where the bit position is the submodel to trace." },
+    { "debug-submodels",			"Print out submodels. <n> is a 64 bit number where the bit position is the submodel output." },
     { "debug-json",				"Output debugging information while parsing JSON input." },
     { "debug-lqx",				"Output debugging information while parsing LQX input." },
     { "debug-xml",				"Output debugging information while parsing XML input." },
@@ -352,6 +352,8 @@ usage ( const char * optarg )
 		    s += "=<n>";
 		    break;
 
+		case 256+'t':
+		case 256+'S':
 		case 512+'p':
 		    s += "[=<n>]";
 		    break;
@@ -2172,7 +2174,7 @@ HelpTroff::preamble( std::ostream& output ) const
     output << __comment << " t -*- nroff -*-" << std::endl
 	   << ".TH lqns 1 \"" << date << "\" \"" << VERSION << "\"" << std::endl;
 
-    output << __comment << " $Id: help.cc 15620 2022-06-01 22:32:18Z greg $" << std::endl
+    output << __comment << " $Id: help.cc 15627 2022-06-02 13:41:34Z greg $" << std::endl
 	   << __comment << std::endl
 	   << __comment << " --------------------------------" << std::endl;
 
@@ -2471,7 +2473,7 @@ HelpLaTeX::preamble( std::ostream& output ) const
 	   << __comment << " Created:             " << date << std::endl
 	   << __comment << "" << std::endl
 	   << __comment << " ----------------------------------------------------------------------" << std::endl
-	   << __comment << " $Id: help.cc 15620 2022-06-01 22:32:18Z greg $" << std::endl
+	   << __comment << " $Id: help.cc 15627 2022-06-02 13:41:34Z greg $" << std::endl
 	   << __comment << " ----------------------------------------------------------------------" << std::endl << std::endl;
 
     output << "\\chapter{Invoking the Analytic Solver ``lqns''}" << std::endl

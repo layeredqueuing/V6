@@ -2,7 +2,7 @@
  *
  * $URL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/runlqx.cc $
  * ------------------------------------------------------------------------
- * $Id: runlqx.cc 15620 2022-06-01 22:32:18Z greg $
+ * $Id: runlqx.cc 15632 2022-06-03 09:59:14Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -84,7 +84,8 @@ namespace SolverInterface
 		ok = false;
 	    }
 	}
-	catch ( const exception_handled& error ) {
+	catch ( const std::range_error& error ) {
+	    std::cerr << LQIO::io_vars.lq_toolname << ": range error - " << error.what() << std::endl;
 	    LQIO::io_vars.error_count += 1;
 	    ok = false;
 	}

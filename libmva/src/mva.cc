@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: mva.cc 15583 2022-05-21 00:18:56Z greg $
+ * $Id: mva.cc 15627 2022-06-02 13:41:34Z greg $
  *
  * MVA solvers: Exact, Bard-Schweitzer, Linearizer and Linearizer2.
  * Abstract superclass does no operation by itself.
@@ -514,10 +514,10 @@ MVA::step( const Population& N, const unsigned currPri )
 	    }
 	}
 
-	if ( sum <= 0.0 ) {
-	    X[n][k] = std::numeric_limits<double>::infinity();
-	} else if ( !std::isfinite( sum ) ) {
+	if ( N[k] == 0 || !std::isfinite( sum ) ) {
 	    X[n][k] = 0.;
+	} else if ( sum <= 0.0 ) {
+	    X[n][k] = std::numeric_limits<double>::infinity();
 	} else {
 	    X[n][k] = N[k] / sum;					// throughput
 #if defined (DEBUG2)

@@ -12,7 +12,7 @@
  * July 2007.
  *
  * ------------------------------------------------------------------------
- * $Id: entry.cc 15621 2022-06-01 22:40:41Z greg $
+ * $Id: entry.cc 15627 2022-06-02 13:41:34Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -1817,7 +1817,7 @@ TaskEntry::updateWait( const Submodel& submodel, const double relax )
     /* Open arrivals first... */
 
     if ( _nextOpenWait > 0.0 ) {
-	under_relax( _openWait, _nextOpenWait, relax );
+	_openWait = under_relax( _openWait, _nextOpenWait, relax );
     }
 
     /* Scan calls to other task for matches with submodel. */

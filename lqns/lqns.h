@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: lqns.h 14882 2021-07-07 11:09:54Z greg $
+ * $Id: lqns.h 15632 2022-06-03 09:59:14Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -49,14 +49,7 @@ template <typename Type> inline void Delete( Type x ) { delete x; }
  * adjustment.  
  */
 
-void under_relax( double& old_value, const double new_value, const double relax );
-
-class exception_handled : public std::runtime_error
-{
-public:
-    explicit exception_handled( const std::string& aStr ) : std::runtime_error(aStr.c_str()) {}
-    virtual ~exception_handled() throw() {}
-};
+double under_relax( const double old_value, const double new_value, const double relax );
 
 static inline void throw_bad_parameter() { throw std::domain_error( "invalid parameter" ); }
 
