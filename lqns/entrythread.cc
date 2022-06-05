@@ -1,11 +1,11 @@
 /* thread.cc	-- Greg Franks Fri May  2 2003
- * $Id: entrythread.cc 15632 2022-06-03 09:59:14Z greg $
+ * $Id: entrythread.cc 15639 2022-06-03 16:47:21Z greg $
  *
  */
 
-
 #include "lqns.h"
 #include <limits>
+#include <cmath>
 #include "actlist.h"
 #include "entity.h"
 #include "entrythread.h"
