@@ -1,7 +1,7 @@
 /* -*- c++ -*-
  * Lqsim-parasol task interface.
  *
- * $Id: task.h 15459 2022-03-09 21:53:20Z greg $
+ * $Id: task.h 15663 2022-06-09 23:46:11Z greg $
  */
 
 /************************************************************************/
@@ -148,6 +148,7 @@ public:
     bool is_multiserver() const { return multiplicity() > 1; }
     bool is_reference_task() const { return type() == Type::CLIENT; }
     virtual bool is_sync_server() const { return false; }
+    virtual bool is_aysnc_inf_server() const { return false; }
     bool has_activities() const { return _activity.size() > 0; }	/* True if activities present.	*/
     bool has_threads() const { return _forks.size() > 0; }
     bool has_think_time() const;
@@ -254,6 +255,7 @@ public:
 
     void set_synchronization_server();
     virtual bool is_sync_server() const { return _sync_server; }
+    virtual bool is_aysnc_inf_server() const;
     virtual int worker_port() const { return _worker_port; }
 
     virtual bool start();

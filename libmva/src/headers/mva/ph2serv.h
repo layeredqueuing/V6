@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: ph2serv.h 15583 2022-05-21 00:18:56Z greg $
+ * $Id: ph2serv.h 15662 2022-06-09 23:45:43Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -62,7 +62,9 @@ public:
 
     virtual std::ostream& printOutput( std::ostream& output, const unsigned = 0 ) const;
 
-    virtual const char * typeStr() const { return "Rolia_Phased_Server"; }
+    virtual const std::string& typeStr() const { return __type_str; }
+
+    static const std::string __type_str;
 
 protected:
     Positive overtaking( const unsigned k ) const;
@@ -89,7 +91,9 @@ public:
     virtual void wait( const MVA& solver, const unsigned k, const Population & N ) const;
 
     virtual bool priorityServer() const { return true; }
-    virtual const char * typeStr() const { return "HOL_Rolia_Phased_Server"; }
+    virtual const std::string& typeStr() const { return __type_str; }
+
+    static const std::string __type_str;
 };
 
 
@@ -107,7 +111,9 @@ public:
     virtual void wait( const MVA& solver, const unsigned k, const Population & N ) const;
 
     virtual bool priorityServer() const { return true; }
-    virtual const char * typeStr() const { return "PR_Rolia_Phased_Server"; }
+    virtual const std::string& typeStr() const { return __type_str; }
+
+    static const std::string __type_str;
 };
 
 
@@ -129,7 +135,9 @@ public:
 
     virtual void openWait() const { HVFCFS_Server::openWait(); }
 
-    virtual const char * typeStr() const { return "HVFCFS_Rolia_Phased_Server"; }
+    virtual const std::string& typeStr() const { return __type_str; }
+
+    static const std::string __type_str;
 
 protected:
     virtual std::ostream& printInput( std::ostream& output, const unsigned e, const unsigned k ) const { return HVFCFS_Server::printInput( output, e, k ); }
@@ -150,7 +158,9 @@ public:
     virtual void wait( const MVA& solver, const unsigned k, const Population & N ) const;
 
     virtual bool priorityServer() const { return true; }
-    virtual const char * typeStr() const { return "HOL_HVFCFS_Rolia_Phased_Server"; }
+    virtual const std::string& typeStr() const { return __type_str; }
+
+    static const std::string __type_str;
 };
 
 
@@ -168,7 +178,9 @@ public:
     virtual void wait( const MVA& solver, const unsigned k, const Population & N ) const;
 
     virtual bool priorityServer() const { return true; }
-    virtual const char * typeStr() const { return "PR_HVFCFS_Rolia_Phased_Server"; }
+    virtual const std::string& typeStr() const { return __type_str; }
+
+    static const std::string __type_str;
 };
 
 
@@ -187,7 +199,9 @@ public:
 
     virtual std::ostream& printOutput( std::ostream& output, const unsigned = 0 ) const;
 
-    virtual const char * typeStr() const { return "Simple_Phased_Server"; }
+    virtual const std::string& typeStr() const { return __type_str; }
+
+    static const std::string __type_str;
 
 protected:
     Positive sumOf_S2U( const MVA& solver, const Population& N, const unsigned k ) const;
@@ -208,7 +222,9 @@ public:
     virtual void wait( const MVA& solver, const unsigned k, const Population & N ) const;
 
     virtual bool priorityServer() const { return true; }
-    virtual const char * typeStr() const { return "HOL_Simple_Phased_Server"; }
+    virtual const std::string& typeStr() const { return __type_str; }
+
+    static const std::string __type_str;
 };
 
 
@@ -226,7 +242,9 @@ public:
     virtual void wait( const MVA& solver, const unsigned k, const Population & N ) const;
 
     virtual bool priorityServer() const { return true; }
-    virtual const char * typeStr() const { return "PR_Simple_Phased_Server"; }
+    virtual const std::string& typeStr() const { return __type_str; }
+
+    static const std::string __type_str;
 };
 
 
@@ -248,8 +266,11 @@ public:
 
     virtual void openWait() const { HVFCFS_Server::openWait(); }
 
-    virtual const char * typeStr() const { return "HVFCFS_Simple_Phased_Server"; }
+    virtual const std::string& typeStr() const { return __type_str; }
 
+    static const std::string __type_str;
+
+protected:
     virtual std::ostream& printInput( std::ostream& output, const unsigned e, const unsigned k ) const { return HVFCFS_Server::printInput( output, e, k ); } 
 };
 
@@ -268,7 +289,9 @@ public:
     virtual void wait( const MVA& solver, const unsigned k, const Population & N ) const;
 
     virtual bool priorityServer() const { return true; }
-    virtual const char * typeStr() const { return "HOL_HVFCFS_Simple_Phased_Server"; }
+    virtual const std::string& typeStr() const { return __type_str; }
+
+    static const std::string __type_str;
 };
 
 /* ------ Multiple-phase, Multiple Entry Server with Priorities ------- */
@@ -284,7 +307,9 @@ public:
     virtual void wait( const MVA& solver, const unsigned k, const Population & N ) const;
 
     virtual bool priorityServer() const { return true; }
-    virtual const char * typeStr() const { return "PR_HVFCFS_Simple_Phased_Server"; }
+    virtual const std::string& typeStr() const { return __type_str; }
+
+    static const std::string __type_str;
 };
 
 /* ------------------- Markov based Phased Server  -------------------- */
@@ -304,7 +329,9 @@ public:
     virtual Probability *** getPrOt( const unsigned e ) const;
     virtual double prOt( const unsigned e, const unsigned k, const unsigned p ) const { return prOvertake[e][k][0][p]; }
     virtual Probability PrOT_e( const unsigned e, const unsigned p_j ) const;
-    virtual const char * typeStr() const { return "Markov_Phased_Server"; }
+    virtual const std::string& typeStr() const { return __type_str; }
+
+    static const std::string __type_str;
 
 protected:
     Positive overtaking( const unsigned k, const unsigned p_i ) const;
@@ -337,7 +364,9 @@ public:
     virtual void wait( const MVA& solver, const unsigned k, const Population & N ) const;
 
     virtual bool priorityServer() const { return true; }
-    virtual const char * typeStr() const { return "HOL_Markov_Phased_Server"; }
+    virtual const std::string& typeStr() const { return __type_str; }
+
+    static const std::string __type_str;
 };
 
 
@@ -355,7 +384,9 @@ public:
     virtual void wait( const MVA& solver, const unsigned k, const Population & N ) const;
 
     virtual bool priorityServer() const { return true; }
-    virtual const char * typeStr() const { return "PR_Markov_Phased_Server"; }
+    virtual const std::string& typeStr() const { return __type_str; }
+
+    static const std::string __type_str;
 };
 
 
@@ -378,7 +409,9 @@ public:
 
     virtual void openWait() const { HVFCFS_Server::openWait(); }
 
-    virtual const char * typeStr() const { return "HVFCFS_Markov_Phased_Server"; }
+    virtual const std::string& typeStr() const { return __type_str; }
+
+    static const std::string __type_str;
 
 protected:
     virtual std::ostream& printInput( std::ostream&, const unsigned, const unsigned ) const;
@@ -398,7 +431,9 @@ public:
     virtual void wait( const MVA& solver, const unsigned k, const Population & N ) const;
 
     virtual bool priorityServer() const { return true; }
-    virtual const char * typeStr() const { return "HOL_HVFCFS_Markov_Phased_Server"; }
+    virtual const std::string& typeStr() const { return __type_str; }
+
+    static const std::string __type_str;
 };
 
 /* ------ Multiple-phase, Multiple Entry Server with Priorities ------- */
@@ -414,6 +449,8 @@ public:
     virtual void wait( const MVA& solver, const unsigned k, const Population & N ) const;
 
     virtual bool priorityServer() const { return true; }
-    virtual const char * typeStr() const { return "PR_HVFCFS_Markov_Phased_Server"; }
+    virtual const std::string& typeStr() const { return __type_str; }
+
+    static const std::string __type_str;
 };
 #endif

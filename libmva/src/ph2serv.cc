@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: ph2serv.cc 15611 2022-05-31 12:24:50Z greg $
+ * $Id: ph2serv.cc 15662 2022-06-09 23:45:43Z greg $
  *
  * Server definitions for MVA.  More complicated that those in server.C
  *
@@ -99,6 +99,8 @@ Phased_Server::openWait() const
 }
 
 /* ---------------- Multi-phase, Single Entry Server ------------------ */
+
+const std::string Rolia_Phased_Server::__type_str = "Rolia_Phased_Server";
 
 /*
  * Destructor...
@@ -226,6 +228,8 @@ Rolia_Phased_Server::printOutput( std::ostream& output, const unsigned i ) const
 
 /* --------- Multi-phase, Single Entry Server with Priorities --------- */
 
+const std::string HOL_Rolia_Phased_Server::__type_str = "HOL_Rolia_Phased_Server";
+
 /*
  * Waiting time expression for Server with Phases.  [rolia], pg 109.
  * NO entries!
@@ -250,6 +254,8 @@ HOL_Rolia_Phased_Server::wait( const MVA& solver, const unsigned k, const Popula
 
 /* --------- Multi-phase, Single Entry Server with Priorities --------- */
 
+const std::string PR_Rolia_Phased_Server::__type_str = "PR_Rolia_Phased_Server";
+
 /*
  * Waiting time expression for Server with Phases.  [rolia], pg 109.
  * NO entries!
@@ -272,6 +278,7 @@ PR_Rolia_Phased_Server::wait( const MVA& solver, const unsigned k, const Populat
 
 /* ----------------- High Variance Phased FIFO Server ----------------- */
 
+const std::string HVFCFS_Rolia_Phased_Server::__type_str = "HVFCFS_Rolia_Phased_Server";
 /*
  * Waiting time expression for server with entries and multiple phases.
  * See [rolia], pg 135.
@@ -296,6 +303,7 @@ HVFCFS_Rolia_Phased_Server::wait( const MVA& solver, const unsigned k, const Pop
 
 /* ------ Multiple-phase, Multiple Entry Server with Priorities ------- */
 
+const std::string HOL_HVFCFS_Rolia_Phased_Server::__type_str = "HOL_HVFCFS_Rolia_Phased_Server";
 
 /*
  * Waiting time expression for server with entries and multiple phases.
@@ -325,6 +333,7 @@ HOL_HVFCFS_Rolia_Phased_Server::wait( const MVA& solver, const unsigned k, const
 
 /* ------ Multiple-phase, Multiple Entry Server with Priorities ------- */
 
+const std::string PR_HVFCFS_Rolia_Phased_Server::__type_str = "PR_HVFCFS_Rolia_Phased_Server";
 
 /*
  * Waiting time expression for server with entries and multiple phases.
@@ -347,6 +356,8 @@ PR_HVFCFS_Rolia_Phased_Server::wait( const MVA& solver, const unsigned k, const 
 }
 
 /* --------- Multi-phase, Single Entry Server, U Correction ------------ */
+
+const std::string Simple_Phased_Server::__type_str = "Simple_Phased_Server";
 
 /*
  * Return overtaking component.  There are two parts.  The
@@ -405,6 +416,8 @@ Simple_Phased_Server::printOutput( std::ostream& output, const unsigned i ) cons
 
 /* -- Multi-phase, Single Entry Server with Priorities, U Correction -- */
 
+const std::string HOL_Simple_Phased_Server::__type_str = "HOL_Simple_Phased_Server";
+
 /*
  */
 
@@ -427,6 +440,8 @@ HOL_Simple_Phased_Server::wait( const MVA& solver, const unsigned k, const Popul
 
 /* -- Multi-phase, Single Entry Server with Priorities, U Correction -- */
 
+const std::string PR_Simple_Phased_Server::__type_str = "PR_Simple_Phased_Server";
+
 /*
  */
 
@@ -446,6 +461,8 @@ PR_Simple_Phased_Server::wait( const MVA& solver, const unsigned k, const Popula
 }
 
 /* ---------- High Variance Phased FIFO Server, U Correction ---------- */
+
+const std::string HVFCFS_Simple_Phased_Server::__type_str = "HVFCFS_Simple_Phased_Server";
 
 /*
  * Waiting time expression for server with entries and multiple phases.
@@ -472,6 +489,7 @@ HVFCFS_Simple_Phased_Server::wait( const MVA& solver, const unsigned k, const Po
 
 /* Multiple-phase, Multiple Entry Server with Priorities, U Correction */
 
+const std::string HOL_HVFCFS_Simple_Phased_Server::__type_str = "HOL_HVFCFS_Simple_Phased_Server";
 
 /*
  * Waiting time expression for server with entries and multiple phases.
@@ -500,6 +518,7 @@ HOL_HVFCFS_Simple_Phased_Server::wait( const MVA& solver, const unsigned k, cons
 
 /* Multiple-phase, Multiple Entry Server with Priorities, U Correction */
 
+const std::string PR_HVFCFS_Simple_Phased_Server::__type_str = "PR_HVFCFS_Simple_Phased_Server";
 
 /*
  * Waiting time expression for server with entries and multiple phases.
@@ -522,6 +541,8 @@ PR_HVFCFS_Simple_Phased_Server::wait( const MVA& solver, const unsigned k, const
 }
 
 /* ------------------- Markov based Phased Server  -------------------- */
+
+const std::string Markov_Phased_Server::__type_str = "Markov_Phased_Server";
 
 /*
  * Destructor.
@@ -752,6 +773,8 @@ Markov_Phased_Server::printOvertaking( std::ostream& output, const unsigned e, c
 
 /* ------------ Markov based Phased Server with Priorities ------------ */
 
+const std::string HOL_Markov_Phased_Server::__type_str = "HOL_Markov_Phased_Server";
+
 /*
  * Waiting time expression for server with entries and multiple phases.
  * See [].
@@ -775,6 +798,8 @@ HOL_Markov_Phased_Server::wait( const MVA& solver, const unsigned k, const Popul
 
 /* ------------ Markov based Phased Server with Priorities ------------ */
 
+const std::string PR_Markov_Phased_Server::__type_str = "PR_Markov_Phased_Server";
+
 /*
  * Waiting time expression for server with entries and multiple phases.
  * See [].
@@ -796,6 +821,8 @@ PR_Markov_Phased_Server::wait( const MVA& solver, const unsigned k, const Popula
 }
 
 /* ----------------- High Variance Phased FIFO Server ----------------- */
+
+const std::string HVFCFS_Markov_Phased_Server::__type_str = "HVFCFS_Markov_Phased_Server";
 
 /*
  * Clear variables.
@@ -854,6 +881,8 @@ HVFCFS_Markov_Phased_Server::printInput( std::ostream& output, const unsigned e,
 
 /* ------ Multiple-phase, Multiple Entry Server with Priorities ------- */
 
+const std::string HOL_HVFCFS_Markov_Phased_Server::__type_str = "HOL_HVFCFS_Markov_Phased_Server";
+
 /*
  * Waiting time expression for server with entries and multiple phases.
  */
@@ -876,6 +905,8 @@ HOL_HVFCFS_Markov_Phased_Server::wait( const MVA& solver, const unsigned k, cons
 }
 
 /* ------ Multiple-phase, Multiple Entry Server with Priorities ------- */
+
+const std::string PR_HVFCFS_Markov_Phased_Server::__type_str = "PR_HVFCFS_Markov_Phased_Server";
 
 /*
  * Waiting time expression for server with entries and multiple phases.

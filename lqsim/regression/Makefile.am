@@ -2,7 +2,7 @@
 # Copyright (C) 2005 Greg Franks <greg@sce.carleton.ca>
 #
 # ------------------------------------------------------------------------
-# $Id: Makefile.am 15566 2022-04-19 19:29:41Z greg $
+# $Id: Makefile.am 15663 2022-06-09 23:46:11Z greg $
 # ------------------------------------------------------------------------
 
 SRVN=	../lqsim
@@ -40,6 +40,8 @@ ACT=	40-activities.lqxo \
 	44-activities.lqxo \
 	45-activities.lqxo \
 	46-activities.lqxo 
+OVER=	31-overtaking.lqxo \
+	32-async-inf.lqxo \
 REPL=	50-replication-flat.lqxo \
 	51-replication-flat.lqxo \
 	52-replication-flat.lqxo \
@@ -74,7 +76,7 @@ OTHER=	90-A01.lqxo \
 	92-open.lqxo \
 	93-simple-ucm.lqxo
 
-OBJS=	$(SANITY) $(INTER) $(MULTI) $(ACT) $(REPL) $(SEMA) $(SIM) $(SYNC) $(FORK) $(OTHER)
+OBJS=	$(SANITY) $(INTER) $(MULTI) $(OVER) $(ACT) $(REPL) $(SEMA) $(SIM) $(SYNC) $(FORK) $(OTHER)
 
 SRCS=	$(OBJS:.lqxo=.lqnx)
 
@@ -156,3 +158,9 @@ sync:	$(SYNC)
 
 other:	$(OTHER)
 	echo $(OTHER) | tr -s " " "\n" | srvndiff -Q -@- -S0.02 . ../../models/regression-xml/sim-results
+
+quick:
+	$(MAKE) OPTS='-S123456 -T10000' EPSILON='-A +t -S10.0' check
+
+32-async-inf.lqxo: 32-async-inf.lqnx
+	$(SRVN) -C1.0,250000,1000000 -Pstop-on-message-loss=f -w -S1049217653 32-async-inf.lqnx

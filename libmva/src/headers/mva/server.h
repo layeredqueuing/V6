@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: server.h 15583 2022-05-21 00:18:56Z greg $
+ * $Id: server.h 15662 2022-06-09 23:45:43Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -145,7 +145,7 @@ public:
     virtual bool infiniteServer() const { return false; }
     virtual bool priorityServer() const { return false; }
 
-    virtual const char * typeStr() const = 0;
+    virtual const std::string& typeStr() const = 0;
 
     /* Computation -- closed */
 
@@ -242,7 +242,10 @@ public:
 
     virtual bool infiniteServer() const { return true; }
 
-    virtual const char * typeStr() const { return "Infinite_Server"; }
+    virtual const std::string& typeStr() const { return __type_str; }
+
+public:
+    static const std::string __type_str;
 };
 
 
@@ -257,7 +260,9 @@ public:
     virtual ~Client() {}
 
     virtual void wait( const MVA& solver, const unsigned k, const Population & N ) const;
-    virtual const char * typeStr() const { return "Client"; }
+    virtual const std::string& typeStr() const { return __type_str; }
+
+    static const std::string __type_str;
 };
 
 
@@ -280,7 +285,9 @@ public:
     virtual void openWait() const;
 
     virtual double SorQ (const unsigned e, const unsigned k) const { return 1.0; }
-    virtual const char * typeStr() const { return "PS_Server"; }
+    virtual const std::string& typeStr() const { return __type_str; }
+
+    static const std::string __type_str;
 };
 
 
@@ -299,7 +306,9 @@ public:
     virtual void openWait() const;
 
     virtual bool priorityServer() const { return true; }
-    virtual const char * typeStr() const { return "PR_PS_Server"; }
+    virtual const std::string& typeStr() const { return __type_str; }
+
+    static const std::string __type_str;
 };
 
 
@@ -317,7 +326,9 @@ public:
     virtual void openWait() const;
 
     virtual bool priorityServer() const { return true; }
-    virtual const char * typeStr() const { return "HOL_PS_Server"; }
+    virtual const std::string& typeStr() const { return __type_str; }
+
+    static const std::string __type_str;
 };
 
 
@@ -340,7 +351,9 @@ public:
 #endif
     virtual void openWait() const;
 
-    virtual const char * typeStr() const { return "FCFS_Server"; }
+    virtual const std::string& typeStr() const { return __type_str; }
+
+    static const std::string __type_str;
 };
 
 
@@ -359,7 +372,9 @@ public:
     virtual void openWait() const;
 
     virtual bool priorityServer() const { return true; }
-    virtual const char * typeStr() const { return "PR_FCFS_Server"; }
+    virtual const std::string& typeStr() const { return __type_str; }
+
+    static const std::string __type_str;
 };
 
 
@@ -377,7 +392,9 @@ public:
     virtual void openWait() const;
 
     virtual bool priorityServer() const { return true; }
-    virtual const char * typeStr() const { return "HOL_FCFS_Server"; }
+    virtual const std::string& typeStr() const { return __type_str; }
+
+    static const std::string __type_str;
 };
 
 
@@ -401,7 +418,9 @@ public:
 
     virtual void openWait() const;
 
-    virtual const char * typeStr() const { return "HVFCFS_Server"; }
+    virtual const std::string& typeStr() const { return __type_str; }
+
+    static const std::string __type_str;
 
 protected:
     virtual std::ostream& printInput( std::ostream&, const unsigned, const unsigned ) const;
@@ -429,7 +448,8 @@ public:
 
     virtual void wait( const MVA& solver, const unsigned k, const Population & N ) const;
     virtual bool priorityServer() const { return true; }
-    virtual const char * typeStr() const { return "PR_HVFCFS_Server"; }
+    virtual const std::string& typeStr() const { return __type_str; }
+    static const std::string __type_str;
 };
 
 
@@ -446,7 +466,9 @@ public:
 
     virtual void wait( const MVA& solver, const unsigned k, const Population & N ) const;
     virtual bool priorityServer() const { return true; }
-    virtual const char * typeStr() const { return "HOL_HVFCFS_Server"; }
+    virtual const std::string& typeStr() const { return __type_str; }
+
+    static const std::string __type_str;
 };
 
 
@@ -467,7 +489,9 @@ public:
     virtual void wait( const MVA& solver, const unsigned k, const Population & N ) const;
     virtual bool priorityServer() const { return true; }
     virtual void setMaxWait (const unsigned e, double maxWait) {_maxWait[e] = maxWait; }
-    virtual const char * typeStr() const { return "CFS_Server"; }
+    virtual const std::string& typeStr() const { return __type_str; }
+
+    static const std::string __type_str;
 
 private:
     double * _maxWait; /* array of maximum wait for each device entry */

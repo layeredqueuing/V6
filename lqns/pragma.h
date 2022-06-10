@@ -10,7 +10,7 @@
  * November, 1994
  * December, 2020
  *
- * $Id: pragma.h 15583 2022-05-21 00:18:56Z greg $
+ * $Id: pragma.h 15663 2022-06-09 23:46:11Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -28,7 +28,8 @@ extern LQIO::DOM::Pragma pragmas;
 /* -------------------------------------------------------------------- */
 
 class Pragma {
-
+    friend class Generate;
+    
 public:
     typedef void (Pragma::*fptr)(const std::string&);
 
@@ -378,5 +379,6 @@ private:
     static Pragma * __cache;
     static const std::map<const std::string,const Pragma::fptr> __set_pragma;
     static const std::map<const std::string,const Pragma::Layering> __layering_pragma;
+    static const std::map<const std::string,const Pragma::Multiserver> __multiserver_pragma;
 };
 #endif

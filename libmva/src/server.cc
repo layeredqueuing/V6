@@ -1,5 +1,5 @@
 /*  -*- C++ -*-
- * $Id: server.cc 15607 2022-05-28 17:58:31Z greg $
+ * $Id: server.cc 15662 2022-06-09 23:45:43Z greg $
  *
  * Copyright the Real-Time and Distributed Systems Group,
  * Department of Systems and Computer Engineering,
@@ -1135,6 +1135,8 @@ Server::printWait( std::ostream& output, const unsigned k ) const
 
 /* --------------------- Generic Infinite Server ---------------------- */
 
+const std::string Infinite_Server::__type_str = "Infinite_Server";
+
 /*
  * Capacity function.	For a delay server, the capacity is infinite.
  * We are assuming IEEE arithmetic here.
@@ -1209,6 +1211,7 @@ Infinite_Server::alpha( const unsigned ) const
 
 /* ----------------------------- Client ------------------------------- */
 
+const std::string Client::__type_str = "Client";
 
 /*
  * Waiting time expression for an infinite server with NO phases.
@@ -1231,6 +1234,8 @@ Client::wait( const MVA&, const unsigned k, const Population & ) const
 }
 
 /* -------------------- Processor Sharing Server ---------------------- */
+
+const std::string PS_Server::__type_str = "PS_Server";
 
 /*
  * Waiting time expression for PS server.  No phases and one entry.
@@ -1324,6 +1329,8 @@ PS_Server::openWait() const
 
 /* ------------------- PS Server with priorities. ------------------- */
 
+const std::string PR_PS_Server::__type_str = "PR_PS_Server";
+
 /*
  * Waiting time expression for PS server.  No phases and one entry.
  */
@@ -1357,6 +1364,8 @@ PR_PS_Server::openWait() const
 }
 
 /* ------------------- PS Server with priorities. ------------------- */
+
+const std::string HOL_PS_Server::__type_str = "HOL_PS_Server";
 
 /*
  * Waiting time expression for PS server.  No phases and one entry.
@@ -1393,6 +1402,8 @@ HOL_PS_Server::openWait() const
 }
 
 /* ---------------------- Generic FIFO Server -------------------------	*/
+
+const std::string FCFS_Server::__type_str = "FCFS_Server";
 
 /*
  * Waiting time expression for FCFS server.  No phases and one entry.
@@ -1483,6 +1494,8 @@ FCFS_Server::openWait() const
 
 /* ------------------- FCFS Server with priorities. ------------------- */
 
+const std::string PR_FCFS_Server::__type_str = "PR_FCFS_Server";
+
 /*
  * Waiting time expression for FCFS server.  No phases and one entry.
  */
@@ -1516,6 +1529,8 @@ PR_FCFS_Server::openWait() const
 }
 
 /* ------------------- FCFS Server with priorities. ------------------- */
+
+const std::string HOL_FCFS_Server::__type_str = "HOL_FCFS_Server";
 
 /*
  * Waiting time expression for FCFS server.  No phases and one entry.
@@ -1552,6 +1567,8 @@ HOL_FCFS_Server::openWait() const
 }
 
 /* ------------------- High Variation FIFO Server --------------------- */
+
+const std::string HVFCFS_Server::__type_str = "HVFCFS_Server";
 
 /*
  * Free storage
@@ -1795,6 +1812,8 @@ HVFCFS_Server::printInput( std::ostream& output, const unsigned e, const unsigne
 
 /* ------------------- FCFS Server with priorities. ------------------- */
 
+const std::string PR_HVFCFS_Server::__type_str = "PR_HVFCFS_Server";
+
 /*
  * Waiting time expression for FCFS server.  No phases and one entry.
  */
@@ -1815,6 +1834,8 @@ PR_HVFCFS_Server::wait( const MVA& solver, const unsigned k, const Population& N
 }
 
 /* -------------- HOL Priority High Variation FIFO Server ------------- */
+
+const std::string HOL_HVFCFS_Server::__type_str = "HOL_HVFCFS_Server";
 
 /*
  * Waiting time expression for FIFO servers with high variabilty in
@@ -1840,6 +1861,8 @@ HOL_HVFCFS_Server::wait( const MVA& solver, const unsigned k, const Population& 
 }
 
 /* ------------------- CFS Server --------------------- */
+
+const std::string CFS_Server::__type_str = "CFS_Server";
 
 /*
  * Free storage
