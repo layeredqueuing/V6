@@ -1,5 +1,5 @@
 /*
- * $Id: qnsolver.cc 15462 2022-03-10 02:05:24Z greg $
+ * $Id: qnsolver.cc 15669 2022-06-10 19:35:23Z greg $
  */
 
 #include "config.h"
