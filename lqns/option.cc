@@ -1,6 +1,6 @@
 /* option.cc -- Greg Franks Wed Oct 12 2005
  *
- * $Id: option.cc 15678 2022-06-21 15:01:56Z greg $
+ * $Id: option.cc 15684 2022-06-21 19:11:28Z greg $
  */
 
 #include "lqns.h"
@@ -134,7 +134,7 @@ std::map<const std::string, const Options::Trace> Options::Trace::__table =
     { "idle-time",     Trace( &Trace::idle_time,      false, &Help::traceIdleTime ) },
     { "interlock",     Trace( &Trace::interlock,      false, &Help::traceInterlock ) },
     { "intermediate",  Trace( &Trace::intermediate,   false, &Help::traceIntermediate ) },
-    { "mva",	       Trace( &Trace::mva,            true,  &Help::traceMva ) },
+    { "mva",	       Trace( &Trace::mva,            true,  &Help::traceMVA ) },
     { "overtaking",    Trace( &Trace::overtaking,     false, &Help::traceOvertaking ) },
 //  { "processor",     Trace( &Trace::processor,      true,  &Help::traceProcessor ) },
     { "quorum",        Trace( &Trace::quorum,         false, &Help::traceQuorum ) },

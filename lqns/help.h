@@ -1,7 +1,7 @@
 /* -*- C++ -*-
  * help.h	-- Greg Franks
  *
- * $Id: help.h 15678 2022-06-21 15:01:56Z greg $
+ * $Id: help.h 15684 2022-06-21 19:11:28Z greg $
  */
 
 #ifndef _HELP_H
@@ -207,7 +207,7 @@ public:
     std::ostream& traceIdleTime( std::ostream & output, bool verbose ) const;
     std::ostream& traceInterlock( std::ostream & output, bool verbose ) const;
     std::ostream& traceIntermediate( std::ostream & output, bool verbose ) const;
-    std::ostream& traceMva( std::ostream & output, bool verbose ) const;
+    std::ostream& traceMVA( std::ostream & output, bool verbose ) const;
     std::ostream& traceOvertaking( std::ostream & output, bool verbose ) const;
     std::ostream& traceQuorum( std::ostream & output, bool verbose ) const;
     std::ostream& traceReplication( std::ostream & output, bool verbose ) const;
@@ -302,7 +302,6 @@ public:
     std::ostream& pragmaMVAFast( std::ostream& output, bool verbose ) const;
     std::ostream& pragmaMVAOneStep( std::ostream& output, bool verbose ) const;
     std::ostream& pragmaMVAOneStepLinearizer( std::ostream& output, bool verbose ) const;
-    std::ostream& pragmaMVAFractional( std::ostream& output, bool verbose ) const;
 
     std::ostream& pragmaOvertakingMarkov( std::ostream& output, bool verbose ) const;
     std::ostream& pragmaOvertakingRolia( std::ostream& output, bool verbose ) const;
