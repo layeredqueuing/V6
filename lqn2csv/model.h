@@ -9,7 +9,7 @@
  *
  * October, 2021
  *
- * $Id: model.h 15663 2022-06-09 23:46:11Z greg $
+ * $Id: model.h 15678 2022-06-21 15:01:56Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -52,7 +52,7 @@ namespace Model {
 	    TASK
 	};
 
-	static const std::map<Object::Type,const std::string> __object_type;
+	static const std::map<const Object::Type,const std::pair<const std::string,const std::string>> __object_type;
     };
     
     class Result {

@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: gnuplot.cc 15518 2022-04-05 13:36:29Z greg $
+ * $Id: gnuplot.cc 15678 2022-06-21 15:01:56Z greg $
  *
  * Command line processing.
  *
@@ -146,7 +146,7 @@ Model::GnuPlot::plot()
 	if ( _y2_axis.find( result->first ) != _y2_axis.end() ) {
 	    _output << " axis x1y2";
 	}
-	_output << " title \"" << Model::Object::__object_type.at(Model::Result::__results.at(result->second).type)
+	_output << " title \"" << Model::Object::__object_type.at(Model::Result::__results.at(result->second).type).first
 	       << " " << result->first << " " << Model::Result::__results.at(result->second).name << "\"";
     }
     _output << std::endl;

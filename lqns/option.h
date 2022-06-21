@@ -1,7 +1,7 @@
 /* -*- C++ -*-
- * help.h	-- Greg Franks
+ * option.h	-- Greg Franks
  *
- * $Id: option.h 15620 2022-06-01 22:32:18Z greg $
+ * $Id: option.h 15678 2022-06-21 15:01:56Z greg $
  */
 
 #ifndef _OPTION_H
@@ -138,16 +138,12 @@ namespace Options
 	static std::map<const std::string, const Special> __table;
 
     public:
-	static void iteration_limit( const std::string& ); 
 	static void print_interval( const std::string& );
 	static void overtaking( const std::string& );
-	static void convergence_value( const std::string& );
-	static void underrelaxation( const std::string& );
 
     private:
 	static void single_step( const std::string& );
 	static void generate_queueing_model( const std::string& );
-	static void mol_ms_underrelaxation( const std::string& );
 	static void make_man( const std::string& );
 	static void make_tex( const std::string& );
 	static void min_steps( const std::string& );
