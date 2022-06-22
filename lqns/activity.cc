@@ -11,7 +11,7 @@
  * July 2007
  *
  * ------------------------------------------------------------------------
- * $Id: activity.cc 15323 2022-01-02 16:13:23Z greg $
+ * $Id: activity.cc 15692 2022-06-22 18:05:12Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -183,7 +183,7 @@ Activity::check() const
 
 
 /*
- * Done after findChildren.  Rerutns true (for count_if).
+ * Done after findChildren.  Returns true (for count_if).
  */
 
 bool
@@ -210,7 +210,7 @@ ActivityList *
 Activity::prevFork( ActivityList * aList )
 {
     if ( _prevFork ) {
-	LQIO::input_error2( LQIO::ERR_DUPLICATE_ACTIVITY_RVALUE, owner()->name().c_str(), name().c_str() );
+	LQIO::input_error2( LQIO::ERR_DUPLICATE_ACTIVITY_RVALUE, owner()->name().c_str(), name().c_str(), _prevFork->getDOM()->getLineNumber() );
     } else if ( isStartActivity() && !entry()->isVirtualEntry() ) {
 	LQIO::input_error2( LQIO::ERR_IS_START_ACTIVITY, owner()->name().c_str(), name().c_str() );
     } else {
@@ -229,7 +229,7 @@ ActivityList *
 Activity::nextJoin( ActivityList * aList )
 {
     if ( _nextJoin ) {
-	LQIO::input_error2( LQIO::ERR_DUPLICATE_ACTIVITY_LVALUE, owner()->name().c_str(), name().c_str() );
+	LQIO::input_error2( LQIO::ERR_DUPLICATE_ACTIVITY_LVALUE, owner()->name().c_str(), name().c_str(), _nextJoin->getDOM()->getLineNumber() );
     } else {
 	_nextJoin = aList;
     }

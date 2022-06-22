@@ -3,7 +3,7 @@
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
  *
- *  $Id: dom_actlist.h 15222 2021-12-15 15:41:14Z greg $
+ *  $Id: dom_actlist.h 15689 2022-06-22 14:42:22Z greg $
  */
 
 #ifndef __LQIO_DOM_ACTLIST__
@@ -54,9 +54,9 @@ namespace LQIO {
 	    const Task * getTask() const;
 	    const std::vector<const Activity*>& getList() const;
 	    const ActivityList::Type getListType() const;
-	    ActivityList& add(const Activity* activity, const ExternalVariable * arg=NULL);
-
-	    void addValue( const Activity* activity, double arg );
+	    ActivityList& add(const Activity* activity, const ExternalVariable * arg=nullptr);
+	    ActivityList& addValue( const Activity* activity, double arg );
+	    
 	    const ExternalVariable * getParameter(const Activity* activity) const;
 	    double getParameterValue(const Activity* activity) const;
       

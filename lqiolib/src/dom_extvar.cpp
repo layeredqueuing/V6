@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_extvar.cpp 14964 2021-09-10 15:27:44Z greg $
+ *  $Id: dom_extvar.cpp 15689 2022-06-22 14:42:22Z greg $
  *
  *  Created by Martin Mroz on 02/03/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -214,10 +214,13 @@ namespace LQIO {
 	    }
 	}
 
-	const std::string& ConstantExternalVariable::getName() const
+	const std::string ConstantExternalVariable::getName() const
 	{
-	    static const std::string s = "";
-	    return s;
+	    switch ( getType() ) {
+	    case Type::DOUBLE: std::to_string( _value.d );
+	    case Type::STRING: return _value.s;
+	    default: return "<<unassigned>>";
+	    }
 	}
 
 	bool ConstantExternalVariable::wasSet() const

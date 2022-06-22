@@ -8,7 +8,7 @@
 /************************************************************************/
 
 /*
- * $Id: error.h 15323 2022-01-02 16:13:23Z greg $
+ * $Id: error.h 15689 2022-06-22 14:42:22Z greg $
  */
 
 #if	!defined(SRVNIO_LIB_ERROR_H)
@@ -197,26 +197,6 @@ namespace LQIO {
     void severity_action ( unsigned severity );
     void verrprintf ( FILE *, const severity_t, const char *, unsigned int, unsigned int, const char *, va_list );
                 
-    class element_error : public std::runtime_error
-    {
-    public:
-	explicit element_error( const std::string& s ) : runtime_error( s ) {}
-    };
-
-
-    class missing_attribute : public std::runtime_error
-    {
-    public:
-	explicit missing_attribute( const std::string& attribute ) : runtime_error( attribute ) {}
-    };
-
-
-    class unexpected_attribute : public std::runtime_error
-    {
-    public:
-	explicit unexpected_attribute( const std::string& attribute ) : runtime_error( attribute ) {}
-    };
-
     class undefined_symbol : public std::runtime_error
     {
     public:

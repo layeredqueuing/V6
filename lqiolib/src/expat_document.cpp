@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- * $Id: expat_document.cpp 15535 2022-04-13 13:41:38Z greg $
+ * $Id: expat_document.cpp 15690 2022-06-22 17:20:25Z greg $
  *
  * Read in XML input files.
  *
@@ -215,7 +215,7 @@ namespace LQIO {
 #endif
 	    }
 	    /* Halt on any error. */
-	    catch ( const LQIO::element_error& e ) {
+	    catch ( const XML::element_error& e ) {
 		input_error( "Unexpected element <%s> ", e.what() );
 		rc = false;
 	    }
@@ -272,10 +272,10 @@ namespace LQIO {
 	    catch ( const LQIO::duplicate_symbol& e ) {
 		LQIO::input_error2( LQIO::ERR_DUPLICATE_SYMBOL, el, e.what() );
 	    }
-            catch ( const LQIO::missing_attribute & e ) {
+            catch ( const XML::missing_attribute & e ) {
 		LQIO::input_error2( LQIO::ERR_MISSING_ATTRIBUTE, el, e.what() );
             }
-            catch ( const LQIO::unexpected_attribute & e ) {
+            catch ( const XML::unexpected_attribute & e ) {
 		LQIO::input_error2( LQIO::ERR_UNEXPECTED_ATTRIBUTE, el, e.what() );
             }
             catch ( const LQIO::undefined_symbol & e ) {
@@ -421,7 +421,7 @@ namespace LQIO {
                 Document::__debugXML = (Document::__debugXML || XML::getBoolAttribute(attributes,Xxml_debug));
                 _stack.push( parse_stack_t(element,&Expat_Document::startModelType,nullptr) );
             } else {
-                throw element_error( element );
+                throw XML::element_error( element );
             }
         }
 
@@ -461,7 +461,7 @@ namespace LQIO {
                 _stack.push( parse_stack_t(element,&Expat_Document::startSPEXResults,&Expat_Document::endSPEXResults,object) );
 
             } else {
-                throw element_error( element );
+                XML::throw_element_error( element, attributes );
             }
         }
 
@@ -507,7 +507,7 @@ namespace LQIO {
                 _stack.push( parse_stack_t(element,&Expat_Document::startNOP,&Expat_Document::endSPEXObservationType,object) );
 		
             } else {
-                throw element_error( element );
+                XML::throw_element_error( element, attributes );
             }
         }
 
@@ -528,7 +528,7 @@ namespace LQIO {
                 _stack.push( parse_stack_t(element,&Expat_Document::startNOP,0) );
 /* !!! SPEX document observations */
             } else {
-                throw element_error( element );
+                XML::throw_element_error( element, attributes );
             }
         }
 
@@ -554,7 +554,7 @@ namespace LQIO {
 		try {
 		    handleResults( processor, attributes );
 		}
-		catch ( const unexpected_attribute& e ) {
+		catch ( const XML::unexpected_attribute& e ) {
 		    LQIO::input_error2( LQIO::ERR_UNEXPECTED_ATTRIBUTE, element, *attributes );
 		}
                 _stack.push( parse_stack_t(element,&Expat_Document::startOutputResultType,processor) );
@@ -563,7 +563,7 @@ namespace LQIO {
 		try {
 		    handleSPEXObservation( processor, attributes );
 		}
-		catch ( const unexpected_attribute& e ) {
+		catch ( const XML::unexpected_attribute& e ) {
 		    LQIO::input_error2( LQIO::ERR_UNEXPECTED_ATTRIBUTE, element, *attributes );
 		}
                 _stack.push( parse_stack_t(element,&Expat_Document::startSPEXObservationType,&Expat_Document::endSPEXObservationType,processor) );
@@ -577,7 +577,7 @@ namespace LQIO {
                 _stack.push( parse_stack_t(element,&Expat_Document::startGroupType,group) );
 
             } else {
-                throw element_error( element );
+                XML::throw_element_error( element, attributes );
             }
         }
 
@@ -597,7 +597,7 @@ namespace LQIO {
 		try {
 		    handleResults( group, attributes );
 		}
-		catch ( const unexpected_attribute& e ) {
+		catch ( const XML::unexpected_attribute& e ) {
 		    LQIO::input_error2( LQIO::ERR_UNEXPECTED_ATTRIBUTE, element, *attributes );
 		}
                 _stack.push( parse_stack_t(element,&Expat_Document::startOutputResultType,group) );
@@ -606,7 +606,7 @@ namespace LQIO {
 		try {
 		    handleSPEXObservation( group, attributes );
 		}
-		catch ( const unexpected_attribute& e ) {
+		catch ( const XML::unexpected_attribute& e ) {
 		    LQIO::input_error2( LQIO::ERR_UNEXPECTED_ATTRIBUTE, element, *attributes );
 		}
                 _stack.push( parse_stack_t(element,&Expat_Document::startSPEXObservationType,&Expat_Document::endSPEXObservationType,group) );
@@ -616,7 +616,7 @@ namespace LQIO {
                 _stack.push( parse_stack_t(element,&Expat_Document::startTaskType,task) );
 
             } else {
-                throw element_error( element );
+                XML::throw_element_error( element, attributes );
             }
         }
 
@@ -640,7 +640,7 @@ namespace LQIO {
 		try {
 		    handleResults( task, attributes );
 		}
-		catch ( const unexpected_attribute& e ) {
+		catch ( const XML::unexpected_attribute& e ) {
 		    LQIO::input_error2( LQIO::ERR_UNEXPECTED_ATTRIBUTE, element, *attributes );
 		}
                 _stack.push( parse_stack_t(element,&Expat_Document::startOutputResultType,task) );
@@ -649,7 +649,7 @@ namespace LQIO {
 		try {
 		    handleSPEXObservation( task, attributes );
 		}
-		catch ( const unexpected_attribute& e ) {
+		catch ( const XML::unexpected_attribute& e ) {
 		    LQIO::input_error2( LQIO::ERR_UNEXPECTED_ATTRIBUTE, element, *attributes );
 		}
                 _stack.push( parse_stack_t(element,&Expat_Document::startSPEXObservationType,&Expat_Document::endSPEXObservationType,task) );
@@ -681,7 +681,7 @@ namespace LQIO {
                 _stack.push( parse_stack_t(element,&Expat_Document::startTaskActivityGraph,task) );
 
             } else {
-                throw element_error( element );
+                XML::throw_element_error( element, attributes );
             }
         }
 
@@ -707,7 +707,7 @@ namespace LQIO {
 		try {
 		    handleResults( decision, attributes );
 		}
-		catch ( const unexpected_attribute& e ) {
+		catch ( const XML::unexpected_attribute& e ) {
 		    LQIO::input_error2( LQIO::ERR_UNEXPECTED_ATTRIBUTE, element, *attributes );
 		}
                 _stack.push( parse_stack_t(element,&Expat_Document::startOutputResultType,decision) );
@@ -716,7 +716,7 @@ namespace LQIO {
 		try {
 		    handleSPEXObservation( decision, attributes );
 		}
-		catch ( const unexpected_attribute& e ) {
+		catch ( const XML::unexpected_attribute& e ) {
 		    LQIO::input_error2( LQIO::ERR_UNEXPECTED_ATTRIBUTE, element, *attributes );
 		}
                 _stack.push( parse_stack_t(element,&Expat_Document::startSPEXObservationType,&Expat_Document::endSPEXObservationType,decision) );
@@ -730,7 +730,7 @@ namespace LQIO {
 		    _stack.push( parse_stack_t(element,&Expat_Document::startProcessorType,processor) );
 		*/
             } else {
-                throw element_error( element );
+		XML::throw_element_error( element, attributes );
             }
 	}
 
@@ -753,7 +753,7 @@ namespace LQIO {
 		try {
 		    handleResults( decisionpath, attributes );
 		}
-		catch ( const unexpected_attribute& e ) {
+		catch ( const XML::unexpected_attribute& e ) {
 		    LQIO::input_error2( LQIO::ERR_UNEXPECTED_ATTRIBUTE, element, *attributes );
 		}
                 _stack.push( parse_stack_t(element,&Expat_Document::startOutputResultType,decisionpath) );
@@ -762,13 +762,13 @@ namespace LQIO {
 		try {
 		    handleSPEXObservation( decisionpath, attributes );
 		}
-		catch ( const unexpected_attribute& e ) {
+		catch ( const XML::unexpected_attribute& e ) {
 		    LQIO::input_error2( LQIO::ERR_UNEXPECTED_ATTRIBUTE, element, *attributes );
 		}
                 _stack.push( parse_stack_t(element,&Expat_Document::startSPEXObservationType,&Expat_Document::endSPEXObservationType,decisionpath) );
 
             } else {
-                throw element_error( element );
+		XML::throw_element_error( element, attributes );
             }
 	}
 
@@ -794,7 +794,7 @@ namespace LQIO {
 		try {
 		    handleResults( entry, attributes );
 		}
-		catch ( const unexpected_attribute& e ) {
+		catch ( const XML::unexpected_attribute& e ) {
 		    LQIO::input_error2( LQIO::ERR_UNEXPECTED_ATTRIBUTE, element, *attributes );
 		}
                 _stack.push( parse_stack_t(element,&Expat_Document::startOutputResultType,entry) );
@@ -803,7 +803,7 @@ namespace LQIO {
 		try {
 		    handleSPEXObservation( entry, attributes );
 		}
-		catch ( const unexpected_attribute& e ) {
+		catch ( const XML::unexpected_attribute& e ) {
 		    LQIO::input_error2( LQIO::ERR_UNEXPECTED_ATTRIBUTE, element, *attributes );
 		}
                 _stack.push( parse_stack_t(element,&Expat_Document::startSPEXObservationType,&Expat_Document::endSPEXObservationType,entry) );
@@ -820,7 +820,7 @@ namespace LQIO {
                 _stack.push( parse_stack_t(element,&Expat_Document::startPhaseActivities,entry) );
 
             } else {
-                throw element_error( element );
+                XML::throw_element_error( element, attributes );
             }
         }
 
@@ -841,7 +841,7 @@ namespace LQIO {
                 _stack.push( parse_stack_t(element,&Expat_Document::startActivityDefBase,phase) );
 
             } else {
-                throw element_error( element );
+                XML::throw_element_error( element, attributes );
 
             }
         }
@@ -867,7 +867,7 @@ namespace LQIO {
 		try {
 		    handleResults( activity, attributes );
 		}
-		catch ( const unexpected_attribute& e ) {
+		catch ( const XML::unexpected_attribute& e ) {
 		    LQIO::input_error2( LQIO::ERR_UNEXPECTED_ATTRIBUTE, element, *attributes );
 		}
                 _stack.push( parse_stack_t(element,&Expat_Document::startOutputResultType,activity) );
@@ -876,7 +876,7 @@ namespace LQIO {
 		try {
 		    handleSPEXObservation( activity, attributes );
 		}
-		catch ( const unexpected_attribute& e ) {
+		catch ( const XML::unexpected_attribute& e ) {
 		    LQIO::input_error2( LQIO::ERR_UNEXPECTED_ATTRIBUTE, element, *attributes );
 		}
                 _stack.push( parse_stack_t(element,&Expat_Document::startSPEXObservationType,&Expat_Document::endSPEXObservationType,activity) );
@@ -902,7 +902,7 @@ namespace LQIO {
                 _stack.push( parse_stack_t(element,&Expat_Document::startActivityMakingCallType,call) );
 
             } else {
-                throw element_error( element );
+                XML::throw_element_error( element, attributes );
             }
         }
 
@@ -921,7 +921,7 @@ namespace LQIO {
 		    try {
 			handleResults( call, attributes );
 		    }
-		    catch ( const unexpected_attribute& e ) {
+		    catch ( const XML::unexpected_attribute& e ) {
 			LQIO::input_error2( LQIO::ERR_UNEXPECTED_ATTRIBUTE, element, *attributes );
 		    }
                 }
@@ -931,7 +931,7 @@ namespace LQIO {
 		try {
 		    handleSPEXObservation( call, attributes );
 		}
-		catch ( const unexpected_attribute& e ) {
+		catch ( const XML::unexpected_attribute& e ) {
 		    LQIO::input_error2( LQIO::ERR_UNEXPECTED_ATTRIBUTE, element, *attributes );
 		}
                 _stack.push( parse_stack_t(element,&Expat_Document::startSPEXObservationType,&Expat_Document::endSPEXObservationType,call) );
@@ -941,7 +941,7 @@ namespace LQIO {
 		_stack.push( parse_stack_t(element,&Expat_Document::startOutputDistributionType,histogram) );
 
             } else {
-                throw element_error( element );
+                XML::throw_element_error( element, attributes );
             }
         }
 
@@ -953,7 +953,7 @@ namespace LQIO {
 		    try {
 			handleResults( call, attributes );
 		    }
-		    catch ( const unexpected_attribute& e ) {
+		    catch ( const XML::unexpected_attribute& e ) {
 			LQIO::input_error2( LQIO::ERR_UNEXPECTED_ATTRIBUTE, element, *attributes );
 		    }
                 }
@@ -963,7 +963,7 @@ namespace LQIO {
 		try {
 		    handleSPEXObservation( call, attributes );
 		}
-		catch ( const unexpected_attribute& e ) {
+		catch ( const XML::unexpected_attribute& e ) {
 		    LQIO::input_error2( LQIO::ERR_UNEXPECTED_ATTRIBUTE, element, *attributes );
 		}
                 _stack.push( parse_stack_t(element,&Expat_Document::startSPEXObservationType,&Expat_Document::endSPEXObservationType,call) );
@@ -973,7 +973,7 @@ namespace LQIO {
 		_stack.push( parse_stack_t(element,&Expat_Document::startOutputDistributionType,histogram) );
 
             } else {
-                throw element_error( element );
+                XML::throw_element_error( element, attributes );
             }
         }
 
@@ -1006,7 +1006,7 @@ namespace LQIO {
                     _stack.push( parse_stack_t(element,&Expat_Document::startReplyActivity,entry,task) );
                 }
             } else {
-                throw element_error( element );
+                XML::throw_element_error( element, attributes );
             }
         }
 
@@ -1087,13 +1087,13 @@ namespace LQIO {
                         if ( activity_name ) {
                             Activity* activity = dynamic_cast<Task *>(task)->getActivity(activity_name);
                             activity->inputFrom(post_list);
-                            post_list->add(activity,nullptr);              /* Special count case */
+                            post_list->add(activity);              /* Special count case */
                         }
                     }
                     break;
                 }
             } else {
-                throw element_error( element );
+                XML::throw_element_error( element, attributes );
             }
         }
 
@@ -1114,7 +1114,7 @@ namespace LQIO {
                 _stack.push( parse_stack_t(element,&Expat_Document::startJoinResultType,activity_list) );
 
             } else {
-                throw element_error( element );
+                XML::throw_element_error( element, attributes );
             }
         }
 
@@ -1146,7 +1146,7 @@ namespace LQIO {
                 }
                 _stack.push( parse_stack_t(element,&Expat_Document::startNOP,0) );
             } else {
-                throw element_error( element );
+                XML::throw_element_error( element, attributes );
             }
         }
 
@@ -1160,7 +1160,7 @@ namespace LQIO {
             } else if ( strcasecmp( element, Xresult_conf_99 ) == 0 ) {
                 _stack.push( parse_stack_t(element,&Expat_Document::startNOP,0) );
             } else {
-                throw element_error( element );
+                XML::throw_element_error( element, attributes );
             }
         }
 
@@ -1174,7 +1174,7 @@ namespace LQIO {
             } else if ( strcasecmp( element, Xresult_conf_99 ) == 0 ) {
                 _stack.push( parse_stack_t(element,&Expat_Document::startNOP,0) );
             } else {
-                throw element_error( element );
+                XML::throw_element_error( element, attributes );
             }
         }
 
@@ -1186,7 +1186,7 @@ namespace LQIO {
                 handleHistogramBin( object, element, attributes );
                 _stack.push( parse_stack_t(element,&Expat_Document::startNOP,0) );
             } else {
-                throw element_error( element );
+                XML::throw_element_error( element, attributes );
             }
         }
 
@@ -1202,7 +1202,7 @@ namespace LQIO {
                 _stack.push( parse_stack_t(element,&Expat_Document::startNOP,0) );
 
 	    } else {
-		throw element_error( element );
+		XML::throw_element_error( element, attributes );
 	    }
 	}
 
@@ -1265,12 +1265,12 @@ namespace LQIO {
         void
         Expat_Document::startLQX( DocumentObject * object, const XML_Char * element, const XML_Char ** attributes )
         {
-            throw element_error( element );             /* Should not get here. */
+            XML::throw_element_error( element, attributes );             /* Should not get here. */
         }
 
 	void Expat_Document::startSPEXParameters( DocumentObject * object, const XML_Char * element, const XML_Char ** attributes )
         {
-            throw element_error( element );             /* Should not get here. */
+            XML::throw_element_error( element, attributes );             /* Should not get here. */
         }
 
 	void Expat_Document::endSPEXParameters( DocumentObject * object, const XML_Char * element )
@@ -1280,7 +1280,7 @@ namespace LQIO {
 
 	void Expat_Document::startSPEXResults( DocumentObject * object, const XML_Char * element, const XML_Char ** attributes )
         {
-            throw element_error( element );             /* Should not get here. */
+            XML::throw_element_error( element, attributes );             /* Should not get here. */
         }
 
 	void Expat_Document::endSPEXResults( DocumentObject * object, const XML_Char * element )
@@ -1290,7 +1290,7 @@ namespace LQIO {
 
 	void Expat_Document::startSPEXConvergence( DocumentObject * object, const XML_Char * element, const XML_Char ** attributes )
         {
-            throw element_error( element );             /* Should not get here. */
+            XML::throw_element_error( element, attributes );             /* Should not get here. */
         }
 
 	void Expat_Document::endSPEXConvergence( DocumentObject * object, const XML_Char * element )
@@ -1301,7 +1301,7 @@ namespace LQIO {
         void
         Expat_Document::startNOP( DocumentObject * object, const XML_Char * element, const XML_Char ** attributes )
         {
-            throw element_error( element );             /* Should not get here. */
+            XML::throw_element_error( element, attributes );             /* Should not get here. */
         }
 
         /* ------------------------------------------------------------------------ */
@@ -1696,9 +1696,9 @@ namespace LQIO {
                 }
             }
             if ( !source ) {
-                throw missing_attribute( Xsource );
+                throw XML::missing_attribute( Xsource );
             } else if ( !value ) {
-                throw missing_attribute( Xvalue );
+                throw XML::missing_attribute( Xvalue );
             } else {
                 dynamic_cast<LQIO::DOM::Task *>(object)->setFanIn( source, _document.db_build_parameter_variable(value,nullptr) );
             }
@@ -1724,9 +1724,9 @@ namespace LQIO {
                 }
             }
             if ( !destination ) {
-                throw missing_attribute( Xdest );
+                throw XML::missing_attribute( Xdest );
             } else if ( !value ) {
-                throw missing_attribute( Xvalue );
+                throw XML::missing_attribute( Xvalue );
             } else {
                 dynamic_cast<LQIO::DOM::Task *>(object)->setFanOut( destination, _document.db_build_parameter_variable(value,nullptr) );
             }
@@ -2166,7 +2166,7 @@ namespace LQIO {
                         (object->*func)( value );
                     }
                 } else {
-		    throw unexpected_attribute( *attributes );
+		    throw XML::unexpected_attribute( *attributes );
                 }
             }
         }
@@ -2245,7 +2245,7 @@ namespace LQIO {
 		    }
 
                 } else {
-		    throw unexpected_attribute( *attributes );
+		    throw XML::unexpected_attribute( *attributes );
                 }
             }
 	}
@@ -2307,7 +2307,7 @@ namespace LQIO {
 
 	/* 
 	 * Return either a constant or a variable by converting attribute.  If the attribute is NOT found
-	 * use the default (if present), or throw missing_attribute.
+	 * use the default (if present), or throw XML::missing_attribute.
 	 */
 	
 	LQIO::DOM::ExternalVariable *
@@ -2321,7 +2321,7 @@ namespace LQIO {
 		}
 	    }
 	    if ( !s ) {
-		throw LQIO::missing_attribute( attribute );
+		throw XML::missing_attribute( attribute );
 	    } else {
 		return _document.db_build_parameter_variable( s, nullptr );
 	    }
