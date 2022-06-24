@@ -9,7 +9,7 @@
 /*
  * Input processing.
  *
- * $Id: model.cc 15663 2022-06-09 23:46:11Z greg $
+ * $Id: model.cc 15711 2022-06-24 01:28:02Z greg $
  */
 
 #include "lqsim.h"
@@ -569,7 +569,7 @@ Model::start()
     }
 
     if ( deferred_exception ) {
-	throw_bad_parameter();
+	throw std::domain_error( "invalid parameter" );
     }
     return LQIO::io_vars.anError() == 0;
 }

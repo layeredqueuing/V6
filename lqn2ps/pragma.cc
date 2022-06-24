@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: pragma.cc 15437 2022-02-12 17:03:35Z greg $ *
+ * $Id: pragma.cc 15711 2022-06-24 01:28:02Z greg $ *
  * Pragma processing and definitions.
  *
  * Copyright the Real-Time and Distributed Systems Group,
@@ -209,7 +209,7 @@ void Pragma::setPrune(const std::string& value)
 }
 
 
-LQIO::severity_t severityLevel()
+LQIO::error_severity severityLevel()
 {
     return LQIO::io_vars.severity_level;
 }

@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: pragma.cc 15681 2022-06-21 18:26:37Z greg $ *
+ * $Id: pragma.cc 15711 2022-06-24 01:28:02Z greg $ *
  * Pragma processing and definitions.
  *
  * Copyright the Real-Time and Distributed Systems Group,
@@ -81,7 +81,7 @@ Pragma::Pragma() :
 #if RESCHEDULE
     _reschedule_on_async_send(false),
 #endif
-    _severity_level(LQIO::NO_ERROR),
+    _severity_level(LQIO::error_severity::ALL),
     _spex_comment(false),
     _spex_header(true),
     _stop_on_bogus_utilization(0.),		/* Not a bool.	U > nn */

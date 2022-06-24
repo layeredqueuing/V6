@@ -10,7 +10,7 @@
  * November, 1994
  * March, 2004
  *
- * $Id: call.h 15632 2022-06-03 09:59:14Z greg $
+ * $Id: call.h 15711 2022-06-24 01:28:02Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -320,9 +320,6 @@ private:
     double getInterlockedFlow() const { return std::max( _interlockedFlow, 0.0 ); }
     double interlockPr() const;
 
-protected:
-    virtual void parameter_error( const std::string& ) const = 0;
-
 private:
     double getDOMValue() const;
 
@@ -355,7 +352,6 @@ public:
     virtual NullCall& initWait() { return *this; }
     virtual Entry * srcEntry() const { return nullptr; }
     virtual bool isCalledBy( const Entry * ) const { return false; }
-    virtual void parameter_error( const std::string& ) const;
 };
 
 /* -------------------------------------------------------------------- */
@@ -364,7 +360,6 @@ class FromEntry : virtual protected Call {
 public:
     FromEntry( const Entry * entry ) : _entry(entry) {}
     const Entry * srcEntry() const { return _entry; }
-    virtual void parameter_error( const std::string& ) const;
 
 private:
     const Entry * _entry;
@@ -401,7 +396,6 @@ private:
 class FromActivity : virtual protected Call {
 public:
     FromActivity() {}
-    virtual void parameter_error( const std::string& ) const;
     const Entry * srcEntry() const;
 };
 

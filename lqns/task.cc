@@ -10,7 +10,7 @@
  * November, 1994
  *
  * ------------------------------------------------------------------------
- * $Id: task.cc 15627 2022-06-02 13:41:34Z greg $
+ * $Id: task.cc 15711 2022-06-24 01:28:02Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -340,6 +340,9 @@ Task::linkForkToJoin()
 	try {
 	    (*activity)->findChildren( path );
 	}
+	catch ( const bad_external_join& error ) {
+	    LQIO::solution_error( LQIO::ERR_JOIN_BAD_PATH, name().c_str(), (*activity)->name().c_str(), error.what() );
+	}
 	catch ( const activity_cycle& error ) {
 	    LQIO::solution_error( LQIO::ERR_CYCLE_IN_ACTIVITY_GRAPH, name().c_str(), error.what() );
 	}
@@ -468,8 +471,7 @@ Task::priority() const
 	return getDOM()->getPriorityValue();
     }
     catch ( const std::domain_error &e ) {
-	LQIO::solution_error( LQIO::ERR_INVALID_PARAMETER, "priority", getDOM()->getTypeName(), name().c_str(), e.what() );
-	throw_bad_parameter();
+	getDOM()->throw_invalid_parameter( "priority", e.what() );
     }
     return 0;
 }
@@ -486,7 +488,7 @@ Task::fanIn( const Task * aClient ) const
     }
     catch ( const std::domain_error& e ) {
 	LQIO::solution_error( ERR_INVALID_FANINOUT_PARAMETER, "fan in", name().c_str(), aClient->name().c_str(), e.what() );
-	throw_bad_parameter();
+	throw std::domain_error( std::string( "invalid parameter: " ) + e.what() );
     }
     return 1;
 }
@@ -499,7 +501,7 @@ Task::fanOut( const Entity * aServer ) const
     }
     catch ( const std::domain_error& e ) {
 	LQIO::solution_error( ERR_INVALID_FANINOUT_PARAMETER, "fan out", name().c_str(), aServer->name().c_str(), e.what() );
-	throw_bad_parameter();
+	throw std::domain_error( std::string( "invalid parameter: " ) + e.what() );
     }
     return 1;
 }
@@ -1890,8 +1892,7 @@ ReferenceTask::copies() const
 	return getDOM()->getCopiesValue();
     }
     catch ( const std::domain_error &e ) {
-	solution_error( LQIO::ERR_INVALID_PARAMETER, "multiplicity", getDOM()->getTypeName(), name().c_str(), e.what() );
-	throw_bad_parameter();
+	getDOM()->throw_invalid_parameter( "multiplicity", e.what() );
     }
     return 1;
 }
@@ -1951,8 +1952,7 @@ ReferenceTask::recalculateDynamicValues()
 	_thinkTime = dynamic_cast<LQIO::DOM::Task *>(getDOM())->getThinkTimeValue();
     }
     catch ( const std::domain_error& e ) {
-	solution_error( LQIO::ERR_INVALID_PARAMETER, "think time", getDOM()->getTypeName(), name().c_str(), e.what() );
-	throw_bad_parameter();
+	getDOM()->throw_invalid_parameter( "think time", e.what() );
     }
     return *this;
 }
@@ -2066,8 +2066,7 @@ ServerTask::queueLength() const
 	return getDOM()->getQueueLengthValue();
     }
     catch ( const std::domain_error& e ) {
-	solution_error( LQIO::ERR_INVALID_PARAMETER, "queue length", getDOM()->getTypeName(), name().c_str(), e.what() );
-	throw_bad_parameter();
+	getDOM()->throw_invalid_parameter( "queue length", e.what() );
     }
     return 0;
 }
@@ -2459,7 +2458,7 @@ SemaphoreTask::check() const
 	LQIO::solution_error( LQIO::ERR_ENTRY_COUNT_FOR_TASK, name().c_str(), nEntries(), N_SEMAPHORE_ENTRIES );
     }
 
-    LQIO::io_vars.error_messages[LQIO::WRN_NO_REQUESTS_TO_ENTRY].severity = LQIO::WARNING_ONLY;
+    LQIO::io_vars.error_messages[LQIO::WRN_NO_REQUESTS_TO_ENTRY].severity = LQIO::error_severity::WARNING;
     for ( std::vector<Entry *>::const_iterator entry = entries().begin(); entry != entries().end(); ++entry ) {
 	if ( (*entry)->hasOpenArrivals() ) {
 	    Entry::totalOpenArrivals += 1;

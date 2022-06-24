@@ -10,7 +10,7 @@
  * November, 1994
  * December, 2020
  *
- * $Id: pragma.h 15663 2022-06-09 23:46:11Z greg $
+ * $Id: pragma.h 15711 2022-06-24 01:28:02Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -200,7 +200,7 @@ public:
 	}
 #endif
 
-    static LQIO::severity_t severityLevel()
+    static LQIO::error_severity severityLevel()
 	{
 	    assert( __cache != nullptr );
 	    return __cache->_severity_level;
@@ -357,7 +357,7 @@ private:
 #if RESCHEDULE
     bool _reschedule_on_async_send;
 #endif
-    LQIO::severity_t _severity_level;
+    LQIO::error_severity _severity_level;
     bool _spex_comment;
     bool _spex_header;
     double _stop_on_bogus_utilization;

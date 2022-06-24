@@ -12,7 +12,7 @@
 /*
  * Global vars for setting up simulation.
  *
- * $Id: lqsim.h 15459 2022-03-09 21:53:20Z greg $
+ * $Id: lqsim.h 15711 2022-06-24 01:28:02Z greg $
  */
 
 #if HAVE_CONFIG_H
@@ -243,6 +243,4 @@ template <class Type> struct Predicate
 private:
     const predicate _p;
 };
-
-static inline void throw_bad_parameter() { throw std::domain_error( "invalid parameter" ); }
 #endif

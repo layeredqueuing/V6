@@ -36,11 +36,11 @@ const std::map<const std::string,Pragma::fptr> Pragma::__set_pragma = {
 };
 
 Pragma::Pragma() :
-    _abort_on_dropped_message(true),  /* halt on dropped msgs.	*/
+    _abort_on_dropped_message(true),  	/* halt on dropped msgs.	*/
     _quorum_delayed_calls(false),	/* quorum reply (bug_311)	*/
     _reschedule_on_async_send(false),	/* force schedule after snr.	*/
     _scheduling_model(SCHEDULE_SLICE),
-    _severity_level(LQIO::NO_ERROR),
+    _severity_level(LQIO::error_severity::ALL),
     _spex_comment(false),
     _spex_header(true),
     _block_period(0.0),

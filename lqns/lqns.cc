@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: lqns.cc 15678 2022-06-21 15:01:56Z greg $
+ * $Id: lqns.cc 15711 2022-06-24 01:28:02Z greg $
  *
  * Command line processing.
  *
@@ -137,10 +137,10 @@ int main (int argc, char *argv[])
 
     char * options;
 
-    LQIO::io_vars.init( VERSION, basename( argv[0] ), severity_action, local_error_messages, LSTLCLERRMSG-LQIO::LSTGBLERRMSG );
+    LQIO::io_vars.init( VERSION, basename( argv[0] ), LQIO::severity_action, local_error_messages, LSTLCLERRMSG-LQIO::LSTGBLERRMSG );
     command_line = LQIO::io_vars.lq_toolname;
 
-    sscanf( "$Date: 2022-06-21 11:01:56 -0400 (Tue, 21 Jun 2022) $", "%*s %s %*s", copyrightDate );
+    sscanf( "$Date: 2022-06-23 21:28:02 -0400 (Thu, 23 Jun 2022) $", "%*s %s %*s", copyrightDate );
 
     matherr_disposition = FP_IMMEDIATE_ABORT;
 
@@ -161,7 +161,7 @@ int main (int argc, char *argv[])
 	try {
 	    switch ( c ) {
 	    case 'a':
-		pragmas.insert( LQIO::DOM::Pragma::_severity_level_, LQIO::DOM::Pragma::_run_time_ );
+		pragmas.insert( LQIO::DOM::Pragma::_severity_level_, LQIO::DOM::Pragma::_warning_ );
 		break;
 
 	    case 'b':
@@ -391,7 +391,7 @@ int main (int argc, char *argv[])
 		break;
 
 	    case 'w':
-		pragmas.insert(LQIO::DOM::Pragma::_severity_level_,LQIO::DOM::Pragma::_advisory_);
+		pragmas.insert(LQIO::DOM::Pragma::_severity_level_,LQIO::DOM::Pragma::_run_time_);
 		break;
 
 	    case 'x':

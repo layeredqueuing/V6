@@ -2,7 +2,7 @@
  *
  * $HeadURL$
  * ------------------------------------------------------------------------
- * $Id: pragma.h 14964 2021-09-10 15:27:44Z greg $
+ * $Id: pragma.h 15709 2022-06-23 17:51:30Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -28,7 +28,7 @@ public:
     
     scheduling_type processor_scheduling() const { return _processor_scheduling; }
     bool reschedule_on_async_send() const { return _reschedule_on_async_send; }
-    LQIO::severity_t severity_level() { return _severity_level; }
+    LQIO::error_severity severity_level() { return _severity_level; }
     bool spex_comment() const { return _spex_comment; }
     bool spex_header() const { return _spex_header; }
     bool stop_on_message_loss() const { return _stop_on_message_loss; }
@@ -55,7 +55,7 @@ private:
 private:
     scheduling_type _processor_scheduling;
     bool _reschedule_on_async_send;
-    LQIO::severity_t _severity_level;
+    LQIO::error_severity _severity_level;
     bool _spex_comment;
     bool _spex_header;
     bool _stop_on_message_loss;

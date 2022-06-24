@@ -2,7 +2,7 @@
 # Copyright (C) 2005 Greg Franks <greg@sce.carleton.ca>
 #
 # ------------------------------------------------------------------------
-# $Id: Makefile.am 15663 2022-06-09 23:46:11Z greg $
+# $Id: Makefile.am 15709 2022-06-23 17:51:30Z greg $
 # ------------------------------------------------------------------------
 
 SRVN=	../lqsim
@@ -158,9 +158,6 @@ sync:	$(SYNC)
 
 other:	$(OTHER)
 	echo $(OTHER) | tr -s " " "\n" | srvndiff -Q -@- -S0.02 . ../../models/regression-xml/sim-results
-
-quick:
-	$(MAKE) OPTS='-S123456 -T10000' EPSILON='-A +t -S10.0' check
 
 32-async-inf.lqxo: 32-async-inf.lqnx
 	$(SRVN) -C1.0,250000,1000000 -Pstop-on-message-loss=f -w -S1049217653 32-async-inf.lqnx

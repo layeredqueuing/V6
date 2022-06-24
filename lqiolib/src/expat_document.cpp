@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- * $Id: expat_document.cpp 15690 2022-06-22 17:20:25Z greg $
+ * $Id: expat_document.cpp 15699 2022-06-23 11:56:35Z greg $
  *
  * Read in XML input files.
  *
@@ -239,7 +239,7 @@ namespace LQIO {
         {
             va_list args;
             va_start( args, fmt );
-            verrprintf( stderr, RUNTIME_ERROR, _input_file_name.c_str(),  XML_GetCurrentLineNumber(_parser), 0, fmt, args );
+            verrprintf( stderr, LQIO::error_severity::ERROR, _input_file_name.c_str(),  XML_GetCurrentLineNumber(_parser), 0, fmt, args );
             va_end( args );
         }
 

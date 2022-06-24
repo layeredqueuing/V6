@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: entity.cc 15632 2022-06-03 09:59:14Z greg $
+ * $Id: entity.cc 15711 2022-06-24 01:28:02Z greg $
  *
  * Everything you wanted to know about a task or processor, but were
  * afraid to ask.
@@ -240,8 +240,7 @@ Entity::copies() const
 	    value = getDOM()->getCopiesValue();
 	}
 	catch ( const std::domain_error& e ) {
-	    solution_error( LQIO::ERR_INVALID_PARAMETER, "multiplicity", getDOM()->getTypeName(), name().c_str(), e.what() );
-	    throw_bad_parameter();
+	    getDOM()->throw_invalid_parameter( "multiplicity", e.what() );
 	}
     }
     return value;
@@ -260,8 +259,7 @@ Entity::replicas() const
 	value = getDOM()->getReplicasValue();
     }
     catch ( const std::domain_error &e ) {
-	solution_error( LQIO::ERR_INVALID_PARAMETER, "replicas", getDOM()->getTypeName(), name().c_str(), e.what() );
-	throw_bad_parameter();
+	getDOM()->throw_invalid_parameter( "replicas", e.what() );
     }
     return value;
 }

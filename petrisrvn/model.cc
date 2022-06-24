@@ -8,7 +8,7 @@
 /************************************************************************/
 
 /*
- * $Id: model.cc 15548 2022-04-18 14:18:48Z greg $
+ * $Id: model.cc 15711 2022-06-24 01:28:02Z greg $
  *
  * Load the SRVN model.
  */
@@ -1440,7 +1440,7 @@ Model::build_open_arrivals ()
 	}
 	catch ( const std::domain_error& e ) {
 	    solution_error( LQIO::ERR_INVALID_PARAMETER, "open arrival rate", "entry", dst_entry->name(), e.what() );
-	    throw_bad_parameter();
+	    throw std::domain_error( std::string( "invalid parameter: " ) + e.what() ); 
 	}
 	phase->setName(buf);
 

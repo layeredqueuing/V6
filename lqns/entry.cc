@@ -12,7 +12,7 @@
  * July 2007.
  *
  * ------------------------------------------------------------------------
- * $Id: entry.cc 15627 2022-06-02 13:41:34Z greg $
+ * $Id: entry.cc 15711 2022-06-24 01:28:02Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -148,8 +148,7 @@ double Entry::openArrivalRate() const
 	    return getDOM()->getOpenArrivalRateValue();
 	}
 	catch ( const std::domain_error& e ) {
-	    solution_error( LQIO::ERR_INVALID_PARAMETER, "open arrival rate", "entry", name().c_str(), e.what() );
-	    throw_bad_parameter();
+	    getDOM()->throw_invalid_parameter( "open arrival rate", e.what() );
 	}
     }
     return 0.;
@@ -163,8 +162,7 @@ int Entry::priority() const
 	    return getDOM()->getEntryPriorityValue();
 	}
 	catch ( const std::domain_error& e ) {
-	    solution_error( LQIO::ERR_INVALID_PARAMETER, "priority", "entry", name().c_str(), e.what() );
-	    throw_bad_parameter();
+	    getDOM()->throw_invalid_parameter( "priority", e.what() );
 	}
     }
     return 0;
@@ -193,7 +191,7 @@ Entry::check() const
 	    //(replies == 1 || (replies == 0 && owner->hasQuorum()))
 	    //Only tasks have activity entries.
 	    if ( replies != 1.0 && (replies != 0.0 || !dynamic_cast<const Task *>(owner())->hasQuorum()) ) {
-		LQIO::solution_error( LQIO::ERR_NON_UNITY_REPLIES, replies, name().c_str() );
+		LQIO::solution_error( LQIO::ERR_NON_UNITY_REPLIES, name().c_str(), replies );
 	    }
 	    assert( activityStack.size() == 0 );
 	}
@@ -301,7 +299,7 @@ Entry::findChildren( Call::stack& callStack, const bool directPath ) const
 	    LQIO::solution_error( LQIO::ERR_CYCLE_IN_ACTIVITY_GRAPH, owner()->name().c_str(), error.what() );
 	}
 	catch ( const bad_external_join& error ) {
-	    LQIO::solution_error( LQIO::ERR_JOIN_BAD_PATH, name().c_str(), owner()->name().c_str(), error.what() );
+	    abort();
 	}
     } else {
 	max_depth = std::accumulate( _phase.begin(), _phase.end(), 0, max_two_args<Phase,Call::stack&,bool>( &Phase::findChildren, callStack, directPath ) );
@@ -2122,7 +2120,7 @@ Entry::create(LQIO::DOM::Entry* dom, unsigned int index )
     const std::string& entry_name = dom->getName();
 
     if ( Entry::find( entry_name ) != nullptr ) {
-	LQIO::input_error2( LQIO::ERR_DUPLICATE_SYMBOL, "Entry", entry_name.c_str() );
+	LQIO::input_error2( LQIO::ERR_DUPLICATE_SYMBOL, dom->getTypeName(), entry_name.c_str() );
 	return nullptr;
     } else {
 	Entry * entry = new TaskEntry( dom, index );

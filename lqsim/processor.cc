@@ -9,7 +9,7 @@
 /*
  * Lqsim-parasol Processor interface.
  *
- * $Id: processor.cc 15459 2022-03-09 21:53:20Z greg $
+ * $Id: processor.cc 15711 2022-06-24 01:28:02Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -112,8 +112,7 @@ Processor::multiplicity() const
 	    value = getDOM()->getCopiesValue();
 	}
 	catch ( const std::domain_error& e ) {
-	    solution_error( LQIO::ERR_INVALID_PARAMETER, "multiplicity", "processor", e.what() );
-	    throw_bad_parameter();
+	    getDOM()->throw_invalid_parameter( "multiplicity", e.what() );
 	}
     }
     return value;
