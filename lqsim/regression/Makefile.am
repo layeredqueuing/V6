@@ -2,7 +2,7 @@
 # Copyright (C) 2005 Greg Franks <greg@sce.carleton.ca>
 #
 # ------------------------------------------------------------------------
-# $Id: Makefile.am 15709 2022-06-23 17:51:30Z greg $
+# $Id: Makefile.am 15715 2022-06-24 12:25:12Z greg $
 # ------------------------------------------------------------------------
 
 SRVN=	../lqsim
@@ -41,7 +41,7 @@ ACT=	40-activities.lqxo \
 	45-activities.lqxo \
 	46-activities.lqxo 
 OVER=	31-overtaking.lqxo \
-	32-async-inf.lqxo \
+	32-async-inf.lqxo 
 REPL=	50-replication-flat.lqxo \
 	51-replication-flat.lqxo \
 	52-replication-flat.lqxo \
