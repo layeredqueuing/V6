@@ -8,7 +8,7 @@
 /************************************************************************/
 
 /*
- * $Id: model.cc 15711 2022-06-24 01:28:02Z greg $
+ * $Id: model.cc 15719 2022-06-27 12:54:03Z greg $
  *
  * Load the SRVN model.
  */
@@ -204,10 +204,10 @@ Model::solve( solve_using solver_function, const std::string& inputFileName, LQI
 		LQIO::io_vars.error_count += 1;
 		status = EXCEPTION_EXIT;
 	    }
-	    catch ( const std::logic_error& error ) {
-		std::cerr << LQIO::io_vars.lq_toolname << ": logic error - " << error.what() << std::endl;
+	    catch ( const std::domain_error& error ) {
+		std::cerr << LQIO::io_vars.lq_toolname << ": domain error - " << error.what() << std::endl;
 		LQIO::io_vars.error_count += 1;
-		status = EXCEPTION_EXIT;
+		status = INVALID_INPUT;
 	    }
 	}
     }

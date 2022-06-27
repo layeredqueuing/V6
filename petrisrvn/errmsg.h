@@ -8,7 +8,7 @@
  */
 
 /*
- * $Id: errmsg.h 13831 2020-09-18 12:51:41Z greg $
+ * $Id: errmsg.h 15719 2022-06-27 12:54:03Z greg $
  */
 
 #include <lqio/glblerr.h>
@@ -24,6 +24,7 @@ enum {
     ERR_SEND_NO_REPLIES_PROHIBITED,
     ERR_BOGUS_REFERENCE_TASK,
     ERR_MULTI_SYNC_SERVER,
+    ERR_COMMON_ENTRY_EXTERNAL_SYNC,
     WRN_CONVERGENCE,
     WRN_PREEMPTIVE_SCHEDULING,
     ADV_MESSAGES_LOST,

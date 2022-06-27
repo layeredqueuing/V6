@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: phase.cc 14882 2021-07-07 11:09:54Z greg $
+ * $Id: phase.cc 15719 2022-06-27 12:54:03Z greg $
  *
  * Everything you wanted to know about a phase, but were afraid to ask.
  *
@@ -131,7 +131,7 @@ Phase::thinkTime() const
 bool
 Phase::hasCV_sqr() const 
 {
-    return !LQIO::DOM::ExternalVariable::isDefault( getDOM()->getCoeffOfVariationSquared(), 1.0 );
+    return getDOM() != nullptr && !LQIO::DOM::ExternalVariable::isDefault( getDOM()->getCoeffOfVariationSquared(), 1.0 );
 }
 
 

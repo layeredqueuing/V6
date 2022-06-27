@@ -11,7 +11,7 @@
  * July 2007
  *
  * ------------------------------------------------------------------------
- * $Id: activity.h 15562 2022-04-19 14:30:31Z greg $
+ * $Id: activity.h 15719 2022-06-27 12:54:03Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -149,9 +149,11 @@ public:
 
     class Children {
     public:
-	Children( Call::stack& callStack, bool directPath, bool followCalls );
-	Children( const Children& src, double rate=1.0 );
-	Children( const Children& src, std::deque<const AndOrForkActivityList *>& forkStack, double rate=1.0 );
+	Children( Call::stack& callStack, bool directPath, bool followCalls ) : _callStack(callStack), _directPath(directPath), _follow_calls(followCalls), _activityStack(), _forkStack(), _rate(1.), _replyAllowed(true) {}
+	Children( const Children& src ) : _callStack(src._callStack), _directPath(src._directPath), _follow_calls(src._follow_calls), _activityStack(src._activityStack), _forkStack(src._forkStack), _rate(src._rate), _replyAllowed(src._replyAllowed) {}
+	Children( const Children& src, double rate ) : _callStack(src._callStack), _directPath(src._directPath), _follow_calls(src._follow_calls), _activityStack(src._activityStack), _forkStack(src._forkStack), _rate(src._rate * rate), _replyAllowed(false) {}
+	Children( const Children& src, std::deque<const AndOrForkActivityList *>& forkStack ) : _callStack(src._callStack), _directPath(src._directPath), _follow_calls(src._follow_calls), _activityStack(src._activityStack), _forkStack(forkStack), _rate(src._rate), _replyAllowed(src._replyAllowed) {}
+	Children( const Children& src, std::deque<const AndOrForkActivityList *>& forkStack, double rate ) : _callStack(src._callStack), _directPath(src._directPath), _follow_calls(src._follow_calls), _activityStack(src._activityStack), _forkStack(forkStack), _rate(src._rate * rate), _replyAllowed(false) {}
 
 	Call::stack& getCallStack() { return _callStack; }
 	unsigned depth() const { return _callStack.depth(); }
@@ -162,6 +164,9 @@ public:
 	std::deque<const AndOrForkActivityList *>& getForkStack() { return _forkStack; }
 
 	double getRate() const { return _rate; }
+	void setRate( double rate ) { _rate = rate; }
+	bool canReply() const { return _replyAllowed; }
+	void setReplyAllowed( bool arg ) { _replyAllowed = arg; }
 
 	bool find( const Activity * activity ) const { return std::find( _activityStack.begin(), _activityStack.end(), activity ) != _activityStack.end(); }
 	void push_activity( const Activity * activity ) { _activityStack.push_back( activity ); }
@@ -178,6 +183,7 @@ public:
 	std::deque<const Activity *> _activityStack;		// For checking for cycles.
 	std::deque<const AndOrForkActivityList *> _forkStack; 	// For matching forks/joins.
 	double _rate;
+	bool _replyAllowed;
     };
     
 public:

@@ -2,7 +2,7 @@
  *
  * $HeadURL$
  * ------------------------------------------------------------------------
- * $Id: runlqx.cc 15396 2022-01-27 02:37:32Z greg $
+ * $Id: runlqx.cc 15719 2022-06-27 12:54:03Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -85,7 +85,7 @@ namespace SolverInterface
 	catch ( const std::runtime_error & error ) {
 	    throw LQX::RuntimeException( error.what() );
 	}
-	catch ( const std::logic_error& error ) {
+	catch ( const std::domain_error& error ) {
 	    throw LQX::RuntimeException( error.what() );
 	}
 	return LQX::Symbol::encodeBoolean(false);

@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: glblerr.cpp 15708 2022-06-23 17:25:01Z greg $
+ * $Id: glblerr.cpp 15719 2022-06-27 12:54:03Z greg $
  *
  * Error messages common to solvers.
  *
@@ -35,7 +35,7 @@ namespace LQIO {
         { error_severity::ERROR,    "Element \"%s\", unexpected attribute: \"%s\"." },                                                          /* ERR_UNEXPECTED_ATTRIBUTE             */
         { error_severity::ERROR,    "Element \"%s\", invalid argument to attribute: \"%s\"." },                                                 /* ERR_INVALID_ARGUMENT                 */
         { error_severity::ERROR,    "Entry \"%s\" accepts both rendezvous and send-no-reply messages." },                                       /* ERR_OPEN_AND_CLOSED_CLASSES          */
-        { error_severity::ERROR,    "Entry \"%s\" generates 4.2f replies."  },                                                                  /* ERR_NON_UNITY_REPLIES                */
+        { error_severity::ERROR,    "Entry \"%s\" generates %4.2f replies." },                                                                  /* ERR_NON_UNITY_REPLIES                */
         { error_severity::ERROR,    "Entry \"%s\" has invalid forwarding probability of %g." },                                                 /* ERR_INVALID_FORWARDING_PROBABILITY   */
         { error_severity::ERROR,    "Entry \"%s\" is not part of task \"%s\"."},                                                                /* ERR_WRONG_TASK_FOR_ENTRY             */
         { error_severity::ERROR,    "Entry \"%s\" is not specified." },                                                                         /* ERR_ENTRY_NOT_SPECIFIED              */

@@ -1,6 +1,6 @@
 /* model.cc	-- Greg Franks Mon Feb  3 2003
  *
- * $Id: model.cc 15711 2022-06-24 01:28:02Z greg $
+ * $Id: model.cc 15719 2022-06-27 12:54:03Z greg $
  *
  * Load, slice, and dice the lqn model.
  */
@@ -2651,7 +2651,7 @@ Batch_Model::layerize()
 
 	/* find who calls me and stick them in too */
 	for ( std::vector<Entry *>::const_iterator entry = (*task)->entries().begin(); entry != (*task)->entries().end(); ++entry ) {
-	    if ( (graphical_output() || queueing_output()) && (*entry)->hasOpenArrivalRate() ) {
+	    if ( (graphical_output() || queueing_output()) && (*task)->level() > 0 && (*entry)->hasOpenArrivalRate() ) {
 		_layers.at((*task)->level()-1).append( new OpenArrivalSource(*entry) );
 	    }
 	}
