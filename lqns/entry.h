@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: entry.h 15601 2022-05-27 16:12:58Z greg $
+ * $Id: entry.h 15762 2022-07-25 16:16:52Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -209,7 +209,6 @@ private:
 public:
     static bool joinsPresent;
     static bool deterministicPhases;
-    static unsigned totalOpenArrivals;
     static unsigned max_phases;		/* maximum phase encountered.	*/
 	
     int operator==( const Entry& anEntry ) const;
@@ -310,7 +309,6 @@ public:
     bool isWaitEntry() const { return _semaphoreType == LQIO::DOM::Entry::Semaphore::WAIT; }
     bool isInterlocked( const Entry * dstEntry) const { return _interlock[dstEntry->entryId()].all > 0.0; }
     bool isInterlockedFrom( const Entry * srcEntry ) const { return srcEntry->isInterlocked(this); }
-    bool isReferenceTaskEntry() const;
 	
     bool hasDeterministicPhases() const { return getDOM()->hasDeterministicPhases(); }
     bool hasNonExponentialPhases() const { return getDOM()->hasNonExponentialPhases(); }

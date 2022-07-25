@@ -9,7 +9,7 @@
 /*
  * Input output processing.
  *
- * $Id: group.cc 15711 2022-06-24 01:28:02Z greg $
+ * $Id: group.cc 15760 2022-07-25 14:36:17Z greg $
  */
 
 #include "lqsim.h"
@@ -136,24 +136,26 @@ void
 Group::add( const std::pair<std::string,LQIO::DOM::Group*>& p )
 {
     const std::string& group_name = p.first;
-    LQIO::DOM::Group* domGroup = p.second;
+    LQIO::DOM::Group* dom = p.second;
     
-    /* Extract variables from the DOM */
-    const std::string& processor_name = domGroup->getProcessor()->getName();
-
-    const Processor* aProcessor = Processor::find(processor_name);
-    if ( !aProcessor ) {
-	LQIO::input_error2( LQIO::ERR_NOT_DEFINED, processor_name.c_str() );
-	return;
-    } else if ( aProcessor->discipline() != SCHEDULE_CFS ) {
-	LQIO::input_error2( LQIO::WRN_NON_CFS_PROCESSOR, domGroup->getName().c_str(), processor_name.c_str() );
-    }
-
     if ( Group::find( group_name ) ) {
-	LQIO::input_error2( LQIO::ERR_DUPLICATE_SYMBOL, "Group", group_name.c_str() );
-    } else {
-	__groups.insert( new Group( domGroup, *aProcessor ) );
+	dom->input_error( LQIO::ERR_DUPLICATE_SYMBOL );
+	return;
     }
+
+    /* Extract variables from the DOM */
+    const std::string& processor_name = dom->getProcessor()->getName();
+    const Processor* processor = Processor::find(processor_name);
+    if ( !processor ) {
+	dom->input_error( LQIO::ERR_NOT_DEFINED, processor_name.c_str() );
+	return;
+    } else if ( processor->discipline() != SCHEDULE_CFS ) {
+	dom->getProcessor()->input_error( LQIO::WRN_NON_CFS_PROCESSOR );
+    }
+
+    Group * aGroup = new Group( dom, *processor );
+//    aGroup->set_share( dom->getGroupShareValue() );		// set local copy. May update with multiserver.
+    __groups.insert( aGroup );
 }
 
 

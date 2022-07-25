@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: lqns.cc 15711 2022-06-24 01:28:02Z greg $
+ * $Id: lqns.cc 15762 2022-07-25 16:16:52Z greg $
  *
  * Command line processing.
  *
@@ -137,10 +137,12 @@ int main (int argc, char *argv[])
 
     char * options;
 
-    LQIO::io_vars.init( VERSION, basename( argv[0] ), LQIO::severity_action, local_error_messages, LSTLCLERRMSG-LQIO::LSTGBLERRMSG );
+    LQIO::io_vars.init( VERSION, basename( argv[0] ), LQIO::severity_action );
+    std::copy( local_error_messages.begin(), local_error_messages.end(), std::inserter( LQIO::error_messages, LQIO::error_messages.begin() ) );
+    
     command_line = LQIO::io_vars.lq_toolname;
 
-    sscanf( "$Date: 2022-06-23 21:28:02 -0400 (Thu, 23 Jun 2022) $", "%*s %s %*s", copyrightDate );
+    sscanf( "$Date: 2022-07-25 12:16:52 -0400 (Mon, 25 Jul 2022) $", "%*s %s %*s", copyrightDate );
 
     matherr_disposition = FP_IMMEDIATE_ABORT;
 

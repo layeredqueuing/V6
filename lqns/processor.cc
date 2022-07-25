@@ -10,7 +10,7 @@
  * November, 1994
  *
  * ------------------------------------------------------------------------
- * $Id: processor.cc 15711 2022-06-24 01:28:02Z greg $
+ * $Id: processor.cc 15762 2022-07-25 16:16:52Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -67,29 +67,21 @@ Processor::~Processor()
 bool
 Processor::check() const
 {
-    bool rc = true;
-
+    bool rc = Entity::check();
+    
     /* Check replication */
 
     const unsigned int proc_replicas = this->replicas();
     for ( std::set<const Task *>::const_iterator task = tasks().begin(); task != tasks().end(); ++task ) {
 	double temp = static_cast<double>((*task)->replicas()) / static_cast<double>(proc_replicas);
 	if ( trunc( temp ) != temp  ) {			/* Integer multiple */
-	    LQIO::solution_error( ERR_REPLICATION_PROCESSOR, (*task)->replicas(), (*task)->name().c_str(), proc_replicas, name().c_str() );
+	    LQIO::runtime_error( LQIO::ERR_REPLICATION_PROCESSOR, (*task)->replicas(), (*task)->name().c_str(), proc_replicas, name().c_str() );
 	    rc = false;
 	}
     }
     
-    if ( !schedulingIsOk( validScheduling() ) ) {
-	LQIO::solution_error( LQIO::WRN_SCHEDULING_NOT_SUPPORTED,
-			      scheduling_label[static_cast<unsigned int>(scheduling())].str,
-			      getDOM()->getTypeName(),
-			      name().c_str() );
-	getDOM()->setSchedulingType(defaultScheduling());
-    }
-
     if ( copies() != 1 && scheduling() == SCHEDULE_DELAY ) {
-	solution_error( LQIO::WRN_INFINITE_MULTI_SERVER, "Processor", name().c_str(), copies() );
+	getDOM()->runtime_error( LQIO::WRN_INFINITE_MULTI_SERVER, copies() );
 	getDOM()->setCopies(new LQIO::DOM::ConstantExternalVariable(1.0));
     }
     return rc;
@@ -107,7 +99,7 @@ Processor::configure( const unsigned nSubmodels )
 {
     if ( nEntries() == 0 ) {
 	if ( isInteresting() || nClients() == 0 ) {
-	    LQIO::solution_error( LQIO::WRN_NO_TASKS_DEFINED_FOR_PROCESSOR, name().c_str() );
+	    getDOM()->runtime_error( LQIO::WRN_PROCESSOR_HAS_NO_TASKS );
 	}
 	return *this;
     }
@@ -126,7 +118,7 @@ Processor::configure( const unsigned nSubmodels )
     }
     if ( maxS > 0. && minS / maxS < 0.1
 	 && !schedulingIsOk( SCHED_PS_BIT|SCHED_PS_HOL_BIT|SCHED_PS_PPR_BIT|SCHED_DELAY_BIT ) ) {
-	LQIO::solution_error( ADV_SERVICE_TIME_RANGE, getDOM()->getTypeName(), name().c_str(), minS, maxS );
+	LQIO::runtime_error( ADV_SERVICE_TIME_RANGE, getDOM()->getTypeName(), name().c_str(), minS, maxS );
     }
     Entity::configure( nSubmodels );
     if ( Pragma::forceMultiserver( Pragma::ForceMultiserver::PROCESSORS ) ) {
@@ -537,8 +529,10 @@ Processor::create( const std::pair<std::string,LQIO::DOM::Processor*>& p )
     assert( name.size() > 0 );
 
     if ( Processor::find( name ) ) {
-	LQIO::input_error2( LQIO::ERR_DUPLICATE_SYMBOL, "Processor", name.c_str() );
+	dom->runtime_error( LQIO::ERR_DUPLICATE_SYMBOL );
 	return;
+    } else {
+	Model::__processor.insert( new Processor( dom ) );
     }
 
     const scheduling_type sched_type = dom->getSchedulingType();
@@ -619,19 +613,11 @@ Processor::printTasks( std::ostream& output, unsigned int submodel ) const
 bool
 CFS_Processor::check() const
 {
-    bool rc = true;
-    const unsigned int proc_replicas = this->replicas();
-    for ( std::set<const Task *>::const_iterator task = tasks().begin(); task != tasks().end(); ++task ) {
-	double temp = static_cast<double>((*task)->replicas()) / static_cast<double>(proc_replicas);
-	if ( trunc( temp ) != temp  ) {			/* Integer multiple */
-	    LQIO::solution_error( ERR_REPLICATION_PROCESSOR, (*task)->replicas(), (*task)->name().c_str(), proc_replicas, name().c_str() );
-	    rc = false;
-	}
-    }
-    
+    bool rc = Processor::check();
+
     const double sum = std::accumulate( groups().begin(), groups().end(), 0., add_using<Group>( &Group::getOriginalShare ) );
     if ( sum <= 0.0 || 1.0 < sum ) {
-	LQIO::solution_error( LQIO::ERR_INVALID_GROUP_SHARE, name().c_str(), sum );
+	getDOM()->runtime_error( LQIO::ERR_INVALID_GROUP_SHARE, sum );
 	rc = false;
     }
     return rc;

@@ -37,7 +37,7 @@ const std::map<const std::string,Pragma::fptr> Pragma::__set_pragma = {
 
 Pragma::Pragma() :
     _abort_on_dropped_message(true),  	/* halt on dropped msgs.	*/
-    _quorum_delayed_calls(false),	/* quorum reply (bug_311)	*/
+    _quorum_delayed_calls(false),	/* Quorum reply (BUG_311)	*/
     _reschedule_on_async_send(false),	/* force schedule after snr.	*/
     _scheduling_model(SCHEDULE_SLICE),
     _severity_level(LQIO::error_severity::ALL),
@@ -69,7 +69,7 @@ Pragma::set( const std::map<std::string,std::string>& list )
 		(__pragmas->*f)(i->second);
 	    }
 	    catch ( const std::domain_error& e ) {
-		LQIO::solution_error( LQIO::WRN_PRAGMA_ARGUMENT_INVALID, param.c_str(), e.what() );
+		LQIO::runtime_error( LQIO::WRN_PRAGMA_ARGUMENT_INVALID, param.c_str(), e.what() );
 	    }
 	}
     }

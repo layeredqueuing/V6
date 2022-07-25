@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_document.cpp 15699 2022-06-23 11:56:35Z greg $
+ *  $Id: dom_document.cpp 15760 2022-07-25 14:36:17Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -760,12 +760,10 @@ namespace LQIO {
 	}
 
 	void
-	Document::db_check_set_entry(Entry* entry, const std::string& entry_name, Entry::Type requisiteType)
+	Document::db_check_set_entry(Entry* entry, Entry::Type requisiteType)
 	{
-	    if ( !entry ) {
-		input_error2( ERR_NOT_DEFINED, entry_name.c_str() );
-	    } else if ( requisiteType != Entry::Type::NOT_DEFINED && !entry->entryTypeOk( requisiteType ) ) {
-		input_error2( ERR_MIXED_ENTRY_TYPES, entry_name.c_str() );
+	    if ( requisiteType != Entry::Type::NOT_DEFINED && !entry->entryTypeOk( requisiteType ) ) {
+		entry->input_error( ERR_MIXED_ENTRY_TYPES );
 	    }
 	}
 
@@ -934,7 +932,7 @@ namespace LQIO {
 		    filename.backup();
 		    output.open( filename(), std::ios::out );
 		    if ( !output ) {
-			solution_error( LQIO::ERR_CANT_OPEN_FILE, filename().c_str(), strerror( errno ) );
+			runtime_error( LQIO::ERR_CANT_OPEN_FILE, filename().c_str(), strerror( errno ) );
 		    } else {
 			print( output, extension->first );
 			output.close();
@@ -947,7 +945,7 @@ namespace LQIO {
 
 		output.open( filename(), std::ios::out );
 		if ( !output ) {
-		    solution_error( LQIO::ERR_CANT_OPEN_FILE, filename().c_str(), strerror( errno ) );
+		    runtime_error( LQIO::ERR_CANT_OPEN_FILE, filename().c_str(), strerror( errno ) );
 		} else if ( rtf_output ) {
 		    print( output, LQIO::DOM::Document::OutputFormat::RTF );
 		} else {
@@ -964,7 +962,7 @@ namespace LQIO {
 
 		output.open( output_file_name, std::ios::out );
 		if ( !output ) {
-		    solution_error( LQIO::ERR_CANT_OPEN_FILE, output_file_name.c_str(), strerror( errno ) );
+		    runtime_error( LQIO::ERR_CANT_OPEN_FILE, output_file_name.c_str(), strerror( errno ) );
 		} else if ( __output_extensions.find( output_format ) != __output_extensions.end() ) {
 		    print( output, output_format );
 		} else if ( rtf_output ) {
@@ -1115,20 +1113,14 @@ namespace LQIO {
 	severity_action(action),
 	max_error(10),
 	error_count(0),
-	severity_level(LQIO::error_severity::ALL),
-	error_messages()
+	severity_level(LQIO::error_severity::ALL)
     {
-	error_messages.insert( error_messages.begin(), global_error_messages, global_error_messages+LSTGBLERRMSG+1 );
     }
 
-    void lqio_params_stats::init( const std::string& version, const std::string& toolname, void (*sa)(error_severity), ErrorMessageType * local_error_messages, size_t size )
+    void lqio_params_stats::init( const std::string& version, const std::string& toolname, void (*sa)(error_severity) )
     {
 	lq_version = version;
 	lq_toolname = toolname;
 	severity_action = sa;
-	if ( local_error_messages != nullptr ) {
-	    error_messages.insert( error_messages.end(), local_error_messages, local_error_messages+size+1 );
-	}
-	LQIO::io_vars.max_error = error_messages.size();
     }
 }

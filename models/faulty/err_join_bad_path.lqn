@@ -1,4 +1,4 @@
-# $Id: err_join_bad_path.lqn 15708 2022-06-23 17:25:01Z greg $
+# $Id: err_join_bad_path.lqn 15763 2022-07-25 16:51:57Z greg $
 # ------------------------------------------------------------------------
 
 G "ERR_JOIN_BAD_PATH" 	# Model comment 

@@ -10,7 +10,7 @@
  * November, 2008
  *
  * ------------------------------------------------------------------------
- * $Id: group.cc 14882 2021-07-07 11:09:54Z greg $
+ * $Id: group.cc 15762 2022-07-25 16:16:52Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -259,23 +259,25 @@ Group::find( const std::string& group_name, unsigned int replica )
 void 
 Group::create( const std::pair<std::string,LQIO::DOM::Group*>& p )
 {
-    LQIO::DOM::Group* group_dom = p.second;
+    LQIO::DOM::Group* dom = p.second;
     const std::string& group_name = p.first;
     
+    /* Extract variables from the DOM */
+    CFS_Processor* processor = dynamic_cast<CFS_Processor *>(Processor::find(dom->getProcessor()->getName()));
+    if (processor == nullptr) { return; }
+	
     /* Check that no group was added with the existing name */
     if ( Group::find( group_name ) != nullptr ) {
-	LQIO::input_error2( LQIO::ERR_DUPLICATE_SYMBOL, "Group", group_name.c_str() );
+	dom->runtime_error(LQIO::ERR_DUPLICATE_SYMBOL );
 	return;
     } 
        	
-    /* Extract variables from the DOM */
-    CFS_Processor* processor = dynamic_cast<CFS_Processor *>(Processor::find(group_dom->getProcessor()->getName()));
-	
     /* Generate a new group with the parameters and add it to the list */
-    Group * group = new Group( group_dom, processor );
+    Group * group = new Group( dom, processor );
 
-    if ( processor != nullptr ) {
-	processor->addGroup( group );
-    }
+    processor->addGroup( group );
     Model::__group.insert( group );
+
+    /* Generate a new group with the parameters and add it to the list */
+    Model::__group.insert( new Group( dom, processor ) );
 }

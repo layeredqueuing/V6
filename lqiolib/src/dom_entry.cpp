@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_entry.cpp 15305 2021-12-31 16:01:37Z greg $
+ *  $Id: dom_entry.cpp 15760 2022-07-25 14:36:17Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -296,15 +296,13 @@ namespace LQIO {
 		|| (_type == Entry::Type::STANDARD_NOT_DEFINED && newType == Entry::Type::STANDARD)
 		|| (_type == Entry::Type::ACTIVITY_NOT_DEFINED && newType == Entry::Type::ACTIVITY) ) {
 		_type = newType;
-		return true;
 	    } else if ( (_type == Entry::Type::STANDARD_NOT_DEFINED && newType != Entry::Type::STANDARD)
 			|| (_type == Entry::Type::ACTIVITY_NOT_DEFINED && newType != Entry::Type::ACTIVITY) ) {
 		const std::map<const Entry::Type,const std::string>::const_iterator i = entry_types.find(_type);
 		const std::map<const Entry::Type,const std::string>::const_iterator j = entry_types.find(newType);
 		assert ( i != entry_types.end() && j != entry_types.end() );
-		LQIO::solution_error( LQIO::WRN_ENTRY_TYPE_MISMATCH, getName().c_str(), i->second.c_str(), j->second.c_str() );
+		runtime_error( LQIO::WRN_ENTRY_TYPE_MISMATCH, i->second.c_str(), j->second.c_str() );
 		_type = newType;
-		return true;
 	    }
 	    return _type == newType;
 	}
@@ -423,7 +421,7 @@ namespace LQIO {
 	{
 	    /* Stores the given StartActivity of the Entry */ 
 	    if ( _startActivity && startActivity != nullptr ) {
-		input_error2( ERR_DUPLICATE_START_ACTIVITY, getName().c_str(), startActivity->getName().c_str() );
+		input_error( ERR_DUPLICATE_START_ACTIVITY, startActivity->getName().c_str() );
 	    } else {
 		_startActivity = startActivity;
 		if ( startActivity != nullptr ) {

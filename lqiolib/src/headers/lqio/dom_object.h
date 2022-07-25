@@ -1,5 +1,5 @@
 /*  -*- C++ -*-
- *  $Id: dom_object.h 15699 2022-06-23 11:56:35Z greg $
+ *  $Id: dom_object.h 15760 2022-07-25 14:36:17Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -10,6 +10,7 @@
 #define __LQIO_DOM_OBJECT__
 
 #include <string>
+#include "error.h"
 
 namespace LQIO {
     namespace DOM {
@@ -42,6 +43,8 @@ namespace LQIO {
 	public:
 	    virtual ~DocumentObject();
 
+	    void input_error( unsigned code, ... ) const;
+	    void runtime_error( unsigned code, ... ) const;
 	    virtual void throw_invalid_parameter( const std::string&, const std::string& ) const;
 
 	    /* Accessors and Mutators */
@@ -54,6 +57,8 @@ namespace LQIO {
 	    bool hasResults() const;
 	    void setComment( const std::string& );
 	    const std::string& getComment() const;
+	    error_severity getSeverity( unsigned code ) const;
+	    DocumentObject& setSeverity( unsigned code, error_severity );
 
 	protected:
 	    const ExternalVariable * checkIntegerVariable( const ExternalVariable * var, int floor_value ) const;
@@ -61,6 +66,9 @@ namespace LQIO {
 	    const ExternalVariable * checkDoubleVariable( const ExternalVariable * var, double floor_value, double ceiling_value = 0.0 ) const;
 	    double getDoubleValue( const ExternalVariable * var, double floor_value, double ceiling_value = 0.0 ) const;
 	    
+	    virtual std::string inputErrorPreamble( unsigned int code ) const;
+	    virtual std::string runtimeErrorPreamble( unsigned int code ) const;
+
 	public:
 	    virtual bool hasHistogram() const { return false; }		/* Any object could have a histogram... */
 	    virtual const Histogram* getHistogram() const { subclass(); return nullptr; }	/* But don't... */
@@ -270,6 +278,9 @@ namespace LQIO {
 	private:
 	    void subclass() const;
 
+	protected:
+	    static std::map<unsigned, LQIO::error_message_type> __error_messages;
+	    
 	private:
 	    const Document * _document;		/* Pointer to the root. 	*/
 	    const size_t _sequenceNumber;
@@ -277,7 +288,7 @@ namespace LQIO {
 	    std::string _name;
 	    std::string _comment;
 
-	    static size_t sequenceNumber;
+	    static size_t __sequenceNumber;
 	};
     }
 }

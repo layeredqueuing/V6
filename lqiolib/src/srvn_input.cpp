@@ -1,5 +1,5 @@
 /*
- *  $Id: srvn_input.cpp 15699 2022-06-23 11:56:35Z greg $
+ *  $Id: srvn_input.cpp 15760 2022-07-25 14:36:17Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -105,10 +105,10 @@ static void set_phase_name( const LQIO::DOM::Entry * entry, LQIO::DOM::Phase * p
 void *
 srvn_add_processor( const char *processor_name, scheduling_type scheduling_flag, void * cpu_quantum )
 {
-    LQIO::DOM::Processor* processor = 0;
+    LQIO::DOM::Processor* processor = LQIO::DOM::__document->getProcessorByName(processor_name);
 
-    if ( LQIO::DOM::__document->getProcessorByName(processor_name) ) {
-	LQIO::input_error2( LQIO::ERR_DUPLICATE_SYMBOL, "Processor", processor_name );
+    if ( processor != nullptr ) {
+	processor->input_error( LQIO::ERR_DUPLICATE_SYMBOL );
 	return nullptr;
     } 
 
@@ -116,16 +116,20 @@ srvn_add_processor( const char *processor_name, scheduling_type scheduling_flag,
 //					  new LQIO::DOM::ConstantExternalVariable(1) );	/* Set the default to 1 */
 
     if ( !LQIO::DOM::Common_IO::is_default_value( static_cast<LQIO::DOM::ExternalVariable *>(cpu_quantum), 0. ) ) {
-	if ( scheduling_flag == SCHEDULE_FIFO
-	      || scheduling_flag == SCHEDULE_HOL
-	      || scheduling_flag == SCHEDULE_PPR
-	      || scheduling_flag == SCHEDULE_RAND ) {
-	    input_error2( LQIO::WRN_QUANTUM_SCHEDULING, processor_name, scheduling_label[scheduling_flag].str );
+	if ( scheduling_flag == SCHEDULE_DELAY
+	     || scheduling_flag == SCHEDULE_FIFO
+	     || scheduling_flag == SCHEDULE_HOL
+	     || scheduling_flag == SCHEDULE_PPR
+	     || scheduling_flag == SCHEDULE_RAND ) {
+	    processor->input_error( LQIO::WRN_QUANTUM_SCHEDULING, scheduling_label[scheduling_flag].str );
 	} else {
 	    processor->setQuantum( static_cast<LQIO::DOM::ExternalVariable *>(cpu_quantum) );
 	}
-    } else if ( scheduling_flag == SCHEDULE_CFS ) {
-	input_error2( LQIO::ERR_NO_QUANTUM_SCHEDULING, processor_name, scheduling_label[scheduling_flag].str );
+    } else if ( scheduling_flag == SCHEDULE_CFS 
+		|| scheduling_flag == SCHEDULE_PS
+		|| scheduling_flag == SCHEDULE_PS_HOL
+		|| scheduling_flag == SCHEDULE_PS_PPR) {
+	processor->input_error( LQIO::ERR_NO_QUANTUM_SCHEDULING, scheduling_label[scheduling_flag].str );
     }
 
     /* Map into the document */
@@ -143,19 +147,20 @@ srvn_add_group( const char *group_name, void * group_share, const char *processo
     }
     
     /* Check if this group exists yet */
-    if (LQIO::DOM::__document->getGroupByName(group_name) != nullptr) {
-	LQIO::input_error2( LQIO::ERR_DUPLICATE_SYMBOL, "Group", group_name );
+    LQIO::DOM::Group* group = LQIO::DOM::__document->getGroupByName(group_name);
+    if ( group != nullptr) {
+	group->input_error( LQIO::ERR_DUPLICATE_SYMBOL );
 	return nullptr;
     }
 
     if ( processor->getSchedulingType() != SCHEDULE_CFS ) {
-	LQIO::input_error2( LQIO::WRN_NON_CFS_PROCESSOR, group_name, processor_name );
+	group->input_error( LQIO::WRN_NON_CFS_PROCESSOR, processor_name );
 	return nullptr;		/* Ignore group */
     }
     
     /* Store the group inside of the Document */
-    LQIO::DOM::Group* group = new LQIO::DOM::Group(LQIO::DOM::__document, group_name, processor, 
-						   static_cast<LQIO::DOM::ExternalVariable *>( group_share ), static_cast<bool>(cap) );
+    group = new LQIO::DOM::Group(LQIO::DOM::__document, group_name, processor, 
+				 static_cast<LQIO::DOM::ExternalVariable *>( group_share ), static_cast<bool>(cap) );
     LQIO::DOM::__document->addGroup(group);
     processor->addGroup(group);
     return group;
@@ -171,13 +176,13 @@ srvn_add_task (const char * task_name, const scheduling_type scheduling, const v
 	return nullptr;
     }
 
-    LQIO::DOM::Task* task = 0;
-    if ( LQIO::DOM::__document->getTaskByName(task_name) ) {
-	LQIO::input_error2( LQIO::ERR_DUPLICATE_SYMBOL, "Task", task_name );
+    LQIO::DOM::Task* task = LQIO::DOM::__document->getTaskByName(task_name);
+    if ( task != nullptr ) {
+	task->input_error( LQIO::ERR_DUPLICATE_SYMBOL );
 	return nullptr;
 
     } else if ( entries == nullptr ) {
-	LQIO::input_error2( LQIO::ERR_NO_ENTRIES_DEFINED_FOR_TASK, task_name );
+	task->input_error( LQIO::ERR_TASK_HAS_NO_ENTRIES );
 	return nullptr;
     } else if ( scheduling == SCHEDULE_SEMAPHORE ) {
 	task = new LQIO::DOM::SemaphoreTask( LQIO::DOM::__document, task_name, *static_cast<const std::vector<LQIO::DOM::Entry *>*>(entries), processor );
@@ -230,15 +235,14 @@ srvn_add_entry (const char * entry_name, const void * entry_list)
     /* This method adds an entry for the current name, with given next entry */
 
     std::vector<LQIO::DOM::Entry *> * entries = const_cast<std::vector<LQIO::DOM::Entry *>*>(static_cast<const std::vector<LQIO::DOM::Entry *> *>(entry_list));
-    if ( LQIO::DOM::__document->getEntryByName(entry_name) ) {
-	LQIO::input_error2( LQIO::ERR_DUPLICATE_SYMBOL, "Entry", entry_name );
+    LQIO::DOM::Entry* entry = LQIO::DOM::__document->getEntryByName(entry_name);
+    if ( entry != nullptr  ) {
+	entry->input_error( LQIO::ERR_DUPLICATE_SYMBOL );
     } else {
-
 	if ( !entries ) {
 	    entries = new std::vector<LQIO::DOM::Entry *>;
 	}
-
-	LQIO::DOM::Entry* entry = new LQIO::DOM::Entry(LQIO::DOM::__document, entry_name );
+	entry = new LQIO::DOM::Entry(LQIO::DOM::__document, entry_name );
 	entries->push_back(entry);
 	LQIO::DOM::__document->addEntry(entry);
     }
@@ -288,7 +292,7 @@ srvn_set_phase_type_flag (void * entry_v, unsigned n_phases, ...)
     LQIO::DOM::Entry* entry = static_cast<LQIO::DOM::Entry*>(entry_v);
     if ( !entry ) return; 
 
-    LQIO::DOM::Document::db_check_set_entry(entry, entry->getName(), LQIO::DOM::Entry::Type::STANDARD);
+    LQIO::DOM::Document::db_check_set_entry(entry, LQIO::DOM::Entry::Type::STANDARD);
     
     /* Push all the times */
     va_list ap;
@@ -339,7 +343,7 @@ srvn_store_coeff_of_variation (void * entry_v, unsigned n_phases, ...)
     LQIO::DOM::Entry* entry = static_cast<LQIO::DOM::Entry*>(entry_v);
     if ( !entry ) return;
 
-    LQIO::DOM::Document::db_check_set_entry(entry, entry->getName(), LQIO::DOM::Entry::Type::STANDARD);
+    LQIO::DOM::Document::db_check_set_entry(entry, LQIO::DOM::Entry::Type::STANDARD);
 
     /* Push all the times */
     va_list ap;
@@ -366,7 +370,7 @@ srvn_store_entry_priority ( void * entry_v, const int arg )
     LQIO::DOM::Entry* entry = static_cast<LQIO::DOM::Entry*>(entry_v);
     if ( !entry ) return;
 
-    LQIO::DOM::Document::db_check_set_entry(entry, entry->getName());
+    LQIO::DOM::Document::db_check_set_entry(entry);
     
     /* Store the open arrival rate */
     entry->setEntryPriority(new LQIO::DOM::ConstantExternalVariable(arg));
@@ -378,7 +382,7 @@ srvn_store_open_arrival_rate (void  * entry_v, void * arg )
     /* Obtain the entry that we will be adding the phase times to */
     LQIO::DOM::Entry* entry = static_cast<LQIO::DOM::Entry*>(entry_v);
     if ( !entry ) return;
-    LQIO::DOM::Document::db_check_set_entry(entry, entry->getName());
+    LQIO::DOM::Document::db_check_set_entry(entry);
     
     /* Store the open arrival rate */
     entry->setOpenArrivalRate(static_cast<LQIO::DOM::ExternalVariable *>(arg));
@@ -392,7 +396,7 @@ srvn_store_phase_service_time (void * entry_v, unsigned n_phases, ... )
     if ( !entry ) return;
 
     /* Make sure that this is a standard entry */
-    LQIO::DOM::Document::db_check_set_entry(entry, entry->getName(), LQIO::DOM::Entry::Type::STANDARD);
+    LQIO::DOM::Document::db_check_set_entry(entry, LQIO::DOM::Entry::Type::STANDARD);
     
     /* Push all the times */
     va_list ap;
@@ -416,7 +420,7 @@ srvn_store_phase_think_time ( void * entry_v, unsigned n_phases, ... )
     LQIO::DOM::Entry* entry = static_cast<LQIO::DOM::Entry*>(entry_v);
     if ( !entry ) return;
 
-    LQIO::DOM::Document::db_check_set_entry(entry, entry->getName(), LQIO::DOM::Entry::Type::STANDARD);
+    LQIO::DOM::Document::db_check_set_entry(entry, LQIO::DOM::Entry::Type::STANDARD);
     
     /* Push all the times */
     va_list ap;
@@ -452,8 +456,8 @@ srvn_store_prob_forward_data ( void * from_entry_v, void * to_entry_v, void * pr
 	return;
     }
 
-    LQIO::DOM::Document::db_check_set_entry(from_entry, from_entry->getName());
-    LQIO::DOM::Document::db_check_set_entry(to_entry, to_entry->getName());
+    LQIO::DOM::Document::db_check_set_entry(from_entry);
+    LQIO::DOM::Document::db_check_set_entry(to_entry);
     
     /* Build a variable for the storage of the P(fwd) and set it on the originator */
     LQIO::DOM::Call * call = from_entry->getForwardingToTarget(to_entry);
@@ -483,8 +487,8 @@ srvn_store_rnv_data (void * from_entry_v, void * to_entry_v, unsigned n_phases, 
 	return;
     }
     /* Make sure that this is a standard entry */
-    LQIO::DOM::Document::db_check_set_entry(from_entry, from_entry->getName(), LQIO::DOM::Entry::Type::STANDARD);
-    LQIO::DOM::Document::db_check_set_entry(to_entry, to_entry->getName());
+    LQIO::DOM::Document::db_check_set_entry(from_entry, LQIO::DOM::Entry::Type::STANDARD);
+    LQIO::DOM::Document::db_check_set_entry(to_entry);
     
     /* Push all the times */
     va_list ap;
@@ -535,8 +539,8 @@ srvn_store_snr_data ( void * from_entry_v, void * to_entry_v, unsigned n_phases,
 	return;
     }
     /* Make sure that this is a standard entry */
-    LQIO::DOM::Document::db_check_set_entry(from_entry, from_entry->getName(), LQIO::DOM::Entry::Type::STANDARD);
-    LQIO::DOM::Document::db_check_set_entry(to_entry, to_entry->getName());
+    LQIO::DOM::Document::db_check_set_entry(from_entry, LQIO::DOM::Entry::Type::STANDARD);
+    LQIO::DOM::Document::db_check_set_entry(to_entry);
     
     /* Push all the times */
     va_list ap;
@@ -578,7 +582,7 @@ srvn_set_start_activity ( void * entry_v, const char * startActivityName )
 {
     LQIO::DOM::Entry* entry = static_cast<LQIO::DOM::Entry *>(entry_v);
     if ( !entry ) return;
-    LQIO::DOM::Document::db_check_set_entry(entry, entry->getName(), LQIO::DOM::Entry::Type::ACTIVITY);
+    LQIO::DOM::Document::db_check_set_entry(entry, LQIO::DOM::Entry::Type::ACTIVITY);
     LQIO::DOM::Task* task = const_cast<LQIO::DOM::Task*>(entry->getTask());
     LQIO::DOM::Activity* activity = task->getActivity(startActivityName, true);
     entry->setStartActivity(activity);
@@ -633,7 +637,7 @@ srvn_set_task_multiplicity( void * task_v, void * copies )
     LQIO::DOM::Task * task = static_cast<LQIO::DOM::Task *>(task_v);
     if ( task == nullptr || copies == nullptr ) return;
     if ( schedule_customer( task->getSchedulingType() ) && is_infinity( static_cast<LQIO::DOM::ExternalVariable *>(copies) ) ) {
-	LQIO::input_error2( LQIO::ERR_REFERENCE_TASK_IS_INFINITE, task->getName().c_str() );
+	task->input_error( LQIO::ERR_REFERENCE_TASK_IS_INFINITE );
     } else {
 	task->setCopies( static_cast<LQIO::DOM::ExternalVariable *>(copies) );
     }
@@ -673,7 +677,7 @@ srvn_set_task_think_time( void * task_v, void * time )
     if ( schedule_customer( task->getSchedulingType() ) ) {
 	task->setThinkTime( static_cast<LQIO::DOM::ExternalVariable *>(time) );
     } else {
-	LQIO::input_error2( LQIO::ERR_NON_REF_THINK_TIME, task->getName().c_str() );
+	task->input_error( LQIO::ERR_NON_REF_THINK_TIME );
     }
 }
 
@@ -739,7 +743,7 @@ srvn_store_activity_rnv_data( void * activity, void * dst_entry_v, void * calls 
 {
     LQIO::DOM::Entry* dst_entry = static_cast<LQIO::DOM::Entry *>(dst_entry_v);
     if ( !activity || !dst_entry ) return nullptr;
-    LQIO::DOM::Document::db_check_set_entry(dst_entry, dst_entry->getName());
+    LQIO::DOM::Document::db_check_set_entry(dst_entry);
     
     LQIO::DOM::Call* call = new LQIO::DOM::Call(LQIO::DOM::__document, LQIO::DOM::Call::Type::RENDEZVOUS, static_cast<LQIO::DOM::Activity *>(activity), dst_entry,
 						static_cast<LQIO::DOM::ExternalVariable *>(calls));
@@ -760,7 +764,7 @@ srvn_store_activity_snr_data ( void * activity, void * dst_entry_v, void * calls
 {
     LQIO::DOM::Entry* dst_entry = static_cast<LQIO::DOM::Entry *>(dst_entry_v);
     if ( !activity || !dst_entry ) return nullptr;
-    LQIO::DOM::Document::db_check_set_entry(dst_entry, dst_entry->getName());
+    LQIO::DOM::Document::db_check_set_entry(dst_entry);
     
     LQIO::DOM::Call* call = new LQIO::DOM::Call(LQIO::DOM::__document, LQIO::DOM::Call::Type::SEND_NO_REPLY, static_cast<LQIO::DOM::Activity *>(activity), dst_entry,
 						static_cast<LQIO::DOM::ExternalVariable *>(calls));
@@ -798,7 +802,7 @@ srvn_set_histogram ( void * entry_v, const unsigned phase, const double min, con
 {
     /* Grab the entry */
     LQIO::DOM::Entry* entry = static_cast<LQIO::DOM::Entry *>(entry_v);
-    LQIO::DOM::Document::db_check_set_entry(entry, entry->getName());
+    LQIO::DOM::Document::db_check_set_entry(entry);
     if ( !entry ) return;
     
     /* Grab the phase and store the histogram.  DO NOT Create a phase. */
@@ -822,7 +826,7 @@ srvn_act_add_reply ( const void * task, const void * entry, void * entry_list )
     
     /* Now we need to find an entry for the given name */
     if ( domEntry->getTask() != task ) {
-	LQIO::input_error2( LQIO::ERR_WRONG_TASK_FOR_ENTRY, domEntry->getName().c_str(), domTask->getName().c_str() );
+	domEntry->input_error( LQIO::ERR_WRONG_TASK_FOR_ENTRY, domTask->getName().c_str() );
     } else {
 	localEntryList->push_back(const_cast<LQIO::DOM::Entry *>(domEntry));
     }
@@ -1014,7 +1018,7 @@ namespace LQIO {
 
 	    /* Configure the activity */
 	    if (activity->isStartActivity()) {
-		input_error2( ERR_IS_START_ACTIVITY, activity->getTask()->getName().c_str(), activity->getName().c_str() );
+		activity->input_error( ERR_IS_START_ACTIVITY );
 	    } else {
 		if (!activityList) {
 		    activityList = new ActivityList(LQIO::DOM::__document,domTask,ActivityList::Type::AND_FORK);
@@ -1090,10 +1094,10 @@ namespace LQIO {
 	    /* Configure the activity */
 	    double value = 0.;
 	    if ( probability->wasSet() && probability->getValue(value) && (value < 0. || 1. < value) ) {
-		input_error2( ERR_INVALID_PROBABILITY, probability );
+		activityList->input_error( ERR_INVALID_OR_BRANCH_PROBABILITY, activity->getName().c_str(), value );
 	    } else {
 		if (activity->isStartActivity()) {
-		    input_error2( ERR_IS_START_ACTIVITY, activity->getTask()->getName().c_str(), activity->getName().c_str() );
+		    activity->input_error( ERR_IS_START_ACTIVITY );
 		} else {
 		    if (activityList == nullptr) {
 			activityList = new ActivityList(LQIO::DOM::__document,domTask,ActivityList::Type::OR_FORK);

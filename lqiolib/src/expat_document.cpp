@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- * $Id: expat_document.cpp 15699 2022-06-23 11:56:35Z greg $
+ * $Id: expat_document.cpp 15760 2022-07-25 14:36:17Z greg $
  *
  * Read in XML input files.
  *
@@ -98,10 +98,10 @@ namespace LQIO {
 		    LQX::Program* program;
 		    /* If we have an LQX program, then we need to compute */
 		    if ( Spex::__parameter_list != nullptr ) {
-			LQIO::solution_error( LQIO::ERR_LQX_SPEX, input_filename.c_str() );
+			runtime_error( LQIO::ERR_LQX_SPEX, input_filename.c_str() );
 			return false;
 		    } else if ( (program = LQX::Program::loadFromText(input_filename.c_str(), document.getLQXProgramLineNumber(), program_text.c_str())) == nullptr ) {
-			LQIO::solution_error( LQIO::ERR_LQX_COMPILATION, input_filename.c_str() );
+			runtime_error( LQIO::ERR_LQX_COMPILATION, input_filename.c_str() );
 			return false;
 		    } else {
 			document.setLQXProgram( program );
@@ -282,7 +282,7 @@ namespace LQIO {
 		LQIO::input_error2( LQIO::ERR_NOT_DEFINED, e.what() );
             }
 	    catch ( const std::domain_error & e ) {
-		LQIO::input_error( "Domain error: %s ", e.what() );
+		LQIO::input_error2( LQIO::ERR_INVALID_ARGUMENT, el, e.what() );
 	    }
             catch ( const std::invalid_argument & e ) {
 		LQIO::input_error2( LQIO::ERR_INVALID_ARGUMENT, el, e.what() );
@@ -1371,16 +1371,20 @@ namespace LQIO {
 
 		LQIO::DOM::ExternalVariable * quantum = getOptionalAttribute(attributes,Xquantum);
 		if ( !is_default_value( quantum, 0. ) ) {
-                    if ( scheduling_flag == SCHEDULE_FIFO
+                    if ( scheduling_flag == SCHEDULE_DELAY
+                         || scheduling_flag == SCHEDULE_FIFO
                          || scheduling_flag == SCHEDULE_HOL
                          || scheduling_flag == SCHEDULE_PPR
                          || scheduling_flag == SCHEDULE_RAND ) {
-                        input_error2( LQIO::WRN_QUANTUM_SCHEDULING, processor_name, scheduling_label[scheduling_flag].str );
+                        processor->input_error( LQIO::WRN_QUANTUM_SCHEDULING, scheduling_label[scheduling_flag].str );
                     } else {
                         processor->setQuantum( quantum );
                     }
-                } else if ( scheduling_flag == SCHEDULE_CFS ) {
-                    input_error2( LQIO::ERR_NO_QUANTUM_SCHEDULING, processor_name, scheduling_label[scheduling_flag].str );
+                } else if ( scheduling_flag == SCHEDULE_CFS 
+			    || scheduling_flag == SCHEDULE_PS
+			    || scheduling_flag == SCHEDULE_PS_HOL
+			    || scheduling_flag == SCHEDULE_PS_PPR) {
+                    processor->input_error( LQIO::ERR_NO_QUANTUM_SCHEDULING, scheduling_label[scheduling_flag].str );
                 }
 
 
@@ -1413,7 +1417,7 @@ namespace LQIO {
 	    const XML_Char * group_name = XML::getStringAttribute(attributes,Xname);
 	    Group* group = _document.getGroupByName( group_name );
 	    if ( dynamic_cast<Processor *>(processor)->getSchedulingType() != SCHEDULE_CFS ) {
-		LQIO::input_error2( LQIO::WRN_NON_CFS_PROCESSOR, group_name, processor->getName().c_str() );
+		group->input_error( LQIO::WRN_NON_CFS_PROCESSOR, processor->getName().c_str() );
 		return processor;
 	    } else if ( _createObjects ) {
 		if ( group ) {
@@ -1541,7 +1545,7 @@ namespace LQIO {
                     if ( sched_type == SCHEDULE_CUSTOMER ) {
                         task->setThinkTime( think_time );
 		    } else {
-                        LQIO::input_error2( LQIO::ERR_NON_REF_THINK_TIME, task_name );
+                        task->input_error( LQIO::ERR_NON_REF_THINK_TIME );
                     }
                 }
 
@@ -1835,7 +1839,7 @@ namespace LQIO {
 
             if ( _createObjects ) {
                 phase->setName( XML::getStringAttribute(attributes,Xname) );
-                _document.db_check_set_entry(dynamic_cast<Entry *>(entry), entry->getName(), DOM::Entry::Type::STANDARD);
+                _document.db_check_set_entry(dynamic_cast<Entry *>(entry), DOM::Entry::Type::STANDARD);
             }
 
             handleActivity( phase, attributes );
@@ -1855,10 +1859,10 @@ namespace LQIO {
 		}
                 activity->setIsSpecified(true);
 
-                const XML_Char * first_entry = XML::getStringAttribute(attributes,Xbound_to_entry,"");
-                if ( strlen(first_entry) > 0 ) {
-                    Entry* entry = _document.getEntryByName(first_entry);
-                    _document.db_check_set_entry(entry, first_entry, Entry::Type::ACTIVITY);
+                const XML_Char * entry_name = XML::getStringAttribute(attributes,Xbound_to_entry,"");
+                if ( strlen(entry_name) > 0 ) {
+                    Entry* entry = _document.getEntryByName(entry_name);
+                    _document.db_check_set_entry(entry, Entry::Type::ACTIVITY);
                     entry->setStartActivity(activity);
                 }
 
@@ -1977,8 +1981,8 @@ namespace LQIO {
             if ( _createObjects ) {
                 /* Make sure that this is a standard entry */
                 if ( !from_entry ) internal_error( __FILE__, __LINE__, "missing from entry" );
-                _document.db_check_set_entry(const_cast<Entry *>(from_entry), from_entry->getName(), Entry::Type::STANDARD);
-                _document.db_check_set_entry(to_entry, dest_entry_name, Entry::Type::NOT_DEFINED);
+                _document.db_check_set_entry(const_cast<Entry *>(from_entry), Entry::Type::STANDARD);
+                _document.db_check_set_entry(to_entry, Entry::Type::NOT_DEFINED);
 
                 /* Push all the times */
 

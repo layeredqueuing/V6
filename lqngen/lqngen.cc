@@ -3,7 +3,7 @@
  * If invoked as lqngen, generate a model.
  * In invoked as lqn2lqx, convert model to lqx.
  *
- * $Id: lqngen.cc 15711 2022-06-24 01:28:02Z greg $
+ * $Id: lqngen.cc 15760 2022-07-25 14:36:17Z greg $
  */
 
 #include "lqngen.h"
@@ -1164,10 +1164,10 @@ get_RV_args( RV::RandomVariable * dist, const std::string& arg )
  */
 
 void
-LQIO::severity_action (LQIO::error_severity severity)
+LQIO::severity_action (error_severity severity)
 {
     switch( severity ) {
-    case LQIO::error_severity::FATAL:
+	case LQIO::error_severity::FATAL:
 	(void) abort();
 	break;
 

@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: model.cc 15632 2022-06-03 09:59:14Z greg $
+ * $Id: model.cc 15762 2022-07-25 16:16:52Z greg $
  *
  * Layer-ization of model.  The basic concept is from the reference
  * below.  However, model partioning is more complex than task vs device.
@@ -128,7 +128,7 @@ Model::solve( solve_using solve_function, const std::string& inputFileName, cons
 
 	/* There is no control flow program, check for $-variables */
 	if (document->getSymbolExternalVariableCount() != 0) {
-	    LQIO::solution_error( LQIO::ERR_LQX_VARIABLE_RESOLUTION, inputFileName.c_str() );
+	    LQIO::runtime_error( LQIO::ERR_LQX_VARIABLE_RESOLUTION, inputFileName.c_str() );
 	    status = INVALID_INPUT;
 	} else {
 	    /* Make sure values are up to date */
@@ -183,7 +183,7 @@ Model::solve( solve_using solve_function, const std::string& inputFileName, cons
 	if ( !outputFileName.empty() && outputFileName != "-" && LQIO::Filename::isRegularFile(outputFileName.c_str()) ) {
 	    output = fopen( outputFileName.c_str(), "w" );
 	    if ( !output ) {
-		solution_error( LQIO::ERR_CANT_OPEN_FILE, outputFileName.c_str(), strerror( errno ) );
+		LQIO::runtime_error( LQIO::ERR_CANT_OPEN_FILE, outputFileName.c_str(), strerror( errno ) );
 		status = FILEIO_ERROR;
 	    } else {
 		environment->setDefaultOutput( output );      /* Default is stdout */
@@ -193,11 +193,11 @@ Model::solve( solve_using solve_function, const std::string& inputFileName, cons
 	if ( status == 0 ) {
 	    /* Invoke the LQX program itself */
 	    if ( !program->invoke() ) {
-		LQIO::solution_error( LQIO::ERR_LQX_EXECUTION, inputFileName.c_str() );
+		LQIO::runtime_error( LQIO::ERR_LQX_EXECUTION, inputFileName.c_str() );
 		status = INVALID_INPUT;
 	    } else if ( !SolverInterface::Solve::solveCallViaLQX ) {
 		/* There was no call to solve the LQX */
-		LQIO::solution_error( LQIO::ADV_LQX_IMPLICIT_SOLVE, inputFileName.c_str() );
+		LQIO::runtime_error( LQIO::ADV_LQX_IMPLICIT_SOLVE, inputFileName.c_str() );
 		std::vector<LQX::SymbolAutoRef> args;
 		environment->invokeGlobalMethod("solve", &args);
 	    }
@@ -612,9 +612,10 @@ Model::check()
     rc = std::all_of( __processor.begin(), __processor.end(), Predicate<Processor>( &Processor::check ) ) && rc;
     rc = std::all_of( __task.begin(), __task.end(), Predicate<Task>( &Task::check ) ) && rc;
 
-    if ( std::none_of( __task.begin(), __task.end(), Predicate<Task>( &Task::isReferenceTask ) ) && Entry::totalOpenArrivals == 0 ) {
+    if ( std::none_of( __task.begin(), __task.end(), Predicate<Task>( &Task::isReferenceTask ) )
+	 && std::none_of( __task.begin(), __task.end(), Predicate<Task>( &Task::hasOpenArrivals ) ) ) {
 	rc = false;
-	LQIO::solution_error( LQIO::ERR_NO_REFERENCE_TASKS );
+	LQIO::runtime_error( LQIO::ERR_NO_REFERENCE_TASKS );
     }
 
     return rc && !LQIO::io_vars.anError();
@@ -812,13 +813,13 @@ Model::compute()
     report.finish( _converged, delta, _iterations );
     sanityCheck();
     if ( !_converged ) {
-	LQIO::solution_error( ADV_SOLVER_ITERATION_LIMIT, _iterations, delta, __convergence_value );
+	LQIO::runtime_error( ADV_SOLVER_ITERATION_LIMIT, _iterations, delta, __convergence_value );
     }
     if ( report.faultCount() ) {
-	LQIO::solution_error( ADV_MVA_FAULTS, report.faultCount() );
+	LQIO::runtime_error( ADV_MVA_FAULTS, report.faultCount() );
     }
     if ( flags.ignore_overhanging_threads ) {
-	LQIO::solution_error( ADV_NO_OVERHANG );
+	LQIO::runtime_error( ADV_NO_OVERHANG );
     }
 
     /* OK.  It solved. Now save the output. */
@@ -855,7 +856,7 @@ Model::reload()
     LQIO::Filename directory_name( hasOutputFileName() ? _output_file_name : _input_file_name, "d" );		/* Get the base file name */
 
     if ( access( directory_name().c_str(), R_OK|X_OK ) < 0 ) {
-	solution_error( LQIO::ERR_CANT_OPEN_DIRECTORY, directory_name().c_str(), strerror( errno ) );
+	LQIO::runtime_error( LQIO::ERR_CANT_OPEN_DIRECTORY, directory_name().c_str(), strerror( errno ) );
 	throw LQX::RuntimeException( "--reload-lqx can't load results." );
     }
 
@@ -1032,7 +1033,7 @@ Model::topologicalSort()
 	}
 	catch( const Call::call_cycle& error ) {
 	    std::string msg = std::accumulate( callStack.rbegin(), callStack.rend(), callStack.back()->dstName(), &Call::stack::fold );
-	    LQIO::solution_error( LQIO::ERR_CYCLE_IN_CALL_GRAPH, msg.c_str() );
+	    (*task)->getDOM()->runtime_error( LQIO::ERR_CYCLE_IN_CALL_GRAPH, msg.c_str() );
 	}
     }
 

@@ -1,5 +1,5 @@
 /*
- *  $Id: srvn_spex.cpp 15573 2022-04-28 19:43:31Z greg $
+ *  $Id: srvn_spex.cpp 15760 2022-07-25 14:36:17Z greg $
  *
  *  Created by Greg Franks on 2012/05/03.
  *  Copyright 2012 __MyCompanyName__. All rights reserved.
@@ -298,7 +298,7 @@ namespace LQIO {
 	    object = new LQX::MethodInvocationExpression( call->getTypeName(), object, new LQX::ConstantValueExpression( dst->getName() ), NULL );
 	    return observation( object, call, obs );
 	} else {
-	    LQIO::solution_error( WRN_INVALID_SPEX_RESULT_PHASE, phase, obs.getKeyCode().c_str(), src->getName().c_str() );
+	    LQIO::runtime_error( WRN_INVALID_SPEX_RESULT_PHASE, phase, obs.getKeyCode().c_str(), src->getName().c_str() );
 	    return nullptr;
 	}
 
@@ -1201,7 +1201,7 @@ void spex_set_program( void * param_arg, void * result_arg, void * convergence_a
     }
 	
     if ( LQIO::spex.__observations.empty() ) {
-	LQIO::solution_error( LQIO::WRN_NO_SPEX_OBSERVATIONS );
+	LQIO::runtime_error( LQIO::WRN_NO_SPEX_OBSERVATIONS );
     }
 
     /* Handle this here -- can't change after program is compiled */
@@ -1287,7 +1287,7 @@ void * spex_array_assignment( const char * name, void * list, const bool constan
 	LQIO::input_error2( LQIO::ERR_DUPLICATE_SYMBOL, "variable", name );
 	return nullptr;
     } else if ( !constant_expression ) {
-	LQIO::input_error( "Arrays must contain constants only.\n" );
+	LQIO::input_error2( LQIO::ERR_NOT_A_CONSTANT, name );
 	return nullptr;
     }
 

@@ -9,19 +9,14 @@
 /************************************************************************/
 
 /*
- * $Id: errmsg.h 15332 2022-01-02 22:04:56Z greg $
+ * $Id: errmsg.h 15760 2022-07-25 14:36:17Z greg $
  */
 
 #include <lqio/glblerr.h>
 
-extern "C" {
-    extern void severity_action(unsigned severity);
-}
-
 enum {
     FTL_ACTIVITY_STACK_FULL=LQIO::LSTGBLERRMSG+1,
     FTL_MSG_POOL_EMPTY,
-    ERR_REPLICATION,
     ERR_REPLY_NOT_FOUND,
     ERR_CANNOT_CREATE_X,
     ERR_DELAY_MULTIPLY_DEFINED,
@@ -30,12 +25,11 @@ enum {
     ERR_QUANTUM_SPECIFIED_FOR_FIFO,
     ERR_SIGNAL_NO_WAIT,
     ERR_INITIALIZATION_FAILED,
-    ADV_PRECISION,
     ADV_DEADLOCK,
+    ADV_PRECISION,
     WRN_NO_PHASE_FOR_HISTOGRAM,
     WRN_NO_QUANTUM_FOR_PS,
-    WRN_INVALID_PRIORITY,
-    LSTLCLERRMSG=WRN_INVALID_PRIORITY
+    WRN_INVALID_PRIORITY
 };
 
-extern struct LQIO::error_message_type local_error_messages[];
+extern std::vector< std::pair<unsigned, LQIO::error_message_type> > local_error_messages;

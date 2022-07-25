@@ -8,7 +8,7 @@
 /************************************************************************/
 
 /*
- * $Id: petrisrvn.cc 15711 2022-06-24 01:28:02Z greg $
+ * $Id: petrisrvn.cc 15763 2022-07-25 16:51:57Z greg $
  *
  * Generate a Petri-net from an SRVN description.
  *
@@ -181,7 +181,9 @@ main(int argc, char *argv[])
 
     int status  = NORMAL_TERMINATION;
 
-    LQIO::io_vars.init( VERSION, basename( argv[0] ), LQIO::severity_action, local_error_messages, LSTLCLERRMSG-LQIO::LSTGBLERRMSG );
+    LQIO::io_vars.init( VERSION, basename( argv[0] ), LQIO::severity_action );
+    std::copy( local_error_messages.begin(), local_error_messages.end(), std::inserter( LQIO::error_messages, LQIO::error_messages.begin() ) );
+
     command_line = LQIO::io_vars.lq_toolname;
 
     /* Check for non-empty non-regular file "empty" -- used by GreatSPN */

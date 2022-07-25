@@ -1,6 +1,6 @@
 /* model.cc	-- Greg Franks Mon Feb  3 2003
  *
- * $Id: model.cc 15719 2022-06-27 12:54:03Z greg $
+ * $Id: model.cc 15760 2022-07-25 14:36:17Z greg $
  *
  * Load, slice, and dice the lqn model.
  */
@@ -464,7 +464,7 @@ Model::create( const std::string& input_file_name, const LQIO::DOM::Pragma& prag
 		Flags::instantiate  = true;
 
 		if (program == NULL) {
-		    LQIO::solution_error( LQIO::ERR_LQX_COMPILATION, input_file_name.c_str() );
+		    LQIO::runtime_error( LQIO::ERR_LQX_COMPILATION, input_file_name.c_str() );
 		} else { 
 		    /* Attempt to run the program */
 		    document->registerExternalSymbolsWithProgram(program);
@@ -485,7 +485,7 @@ Model::create( const std::string& input_file_name, const LQIO::DOM::Pragma& prag
 		    if ( output_file_name.size() > 0 && output_file_name != "-" && LQIO::Filename::isRegularFile(output_file_name) ) {
 			output = fopen( output_file_name.c_str(), "w" );
 			if ( !output ) {
-			    solution_error( LQIO::ERR_CANT_OPEN_FILE, output_file_name.c_str(), strerror( errno ) );
+			    runtime_error( LQIO::ERR_CANT_OPEN_FILE, output_file_name.c_str(), strerror( errno ) );
 			    status = FILEIO_ERROR;
 			} else {
 			    program->getEnvironment()->setDefaultOutput( output );	/* Default is stdout */
@@ -497,10 +497,10 @@ Model::create( const std::string& input_file_name, const LQIO::DOM::Pragma& prag
 		    } else if ( status == 0 ) {
 			/* Invoke the LQX program itself */
 			if ( !program->invoke() ) {
-			    LQIO::solution_error( LQIO::ERR_LQX_EXECUTION, input_file_name.c_str() );
+			    LQIO::runtime_error( LQIO::ERR_LQX_EXECUTION, input_file_name.c_str() );
 			} else if ( !SolverInterface::Solve::solveCallViaLQX ) {
 			    /* There was no call to solve the LQX */
-			    LQIO::solution_error( LQIO::ADV_LQX_IMPLICIT_SOLVE, input_file_name.c_str() );
+			    LQIO::runtime_error( LQIO::ADV_LQX_IMPLICIT_SOLVE, input_file_name.c_str() );
 			    std::vector<LQX::SymbolAutoRef> args;
 			    program->getEnvironment()->invokeGlobalMethod("solve", &args);
 			}
@@ -763,7 +763,7 @@ Model::process()
     }
 
     if ( !totalize() ) {
-	LQIO::solution_error( ERR_NO_OBJECTS );
+	LQIO::runtime_error( ERR_NO_OBJECTS );
 	return false;
     }
 
@@ -982,7 +982,7 @@ Model::reload()
     LQIO::Filename directory_name( hasOutputFileName() ? _outputFileName : _inputFileName, "d" );		/* Get the base file name */
 
     if ( access( directory_name().c_str(), R_OK|X_OK ) < 0 ) {
-	solution_error( LQIO::ERR_CANT_OPEN_DIRECTORY, directory_name().c_str(), strerror( errno ) );
+	runtime_error( LQIO::ERR_CANT_OPEN_DIRECTORY, directory_name().c_str(), strerror( errno ) );
 	throw LQX::RuntimeException( "--reload-lqx can't load results." );
     }
 
@@ -1067,7 +1067,7 @@ Model::prune()
 	std::for_each ( Task::__tasks.begin(), Task::__tasks.end(), Exec<Task>( &Task::relink ) );
     }
     catch ( const std::domain_error& e ) {
-	LQIO::solution_error( ERR_UNASSIGNED_VARIABLES );
+	LQIO::runtime_error( ERR_UNASSIGNED_VARIABLES );
     }
     
     return Flags::ignore_errors() || !LQIO::io_vars.anError();
@@ -1085,7 +1085,7 @@ Model::generate()
 
     for ( std::set<Task *>::const_iterator task = Task::__tasks.begin(); task != Task::__tasks.end(); ++task ) {
 	if ( !(*task)->isReachable() ) {
-	    LQIO::solution_error( LQIO::WRN_NOT_USED, "Task", (*task)->name().c_str() );
+	    dynamic_cast<const LQIO::DOM::Task *>((*task)->getDOM())->runtime_error( LQIO::WRN_NOT_USED );
 	} else if ( (*task)->hasActivities() ) {
 	    (*task)->generate();
 	}
@@ -1119,7 +1119,7 @@ Model::topologicalSort()
 	}
 	catch( const Call::cycle_error& error ) {
 	    max_depth = std::max( error.depth(), max_depth );
-	    LQIO::solution_error( LQIO::ERR_CYCLE_IN_CALL_GRAPH, error.what() );
+	    (*task)->getDOM()->runtime_error( LQIO::ERR_CYCLE_IN_CALL_GRAPH, error.what() );
 	}
 
 	i += 1;
@@ -1169,6 +1169,10 @@ Model::check() const
 {
     for_each( Processor::__processors.begin(), Processor::__processors.end(), Predicate<Entity>( &Entity::check ) );
     for_each( Task::__tasks.begin(), Task::__tasks.end(), Predicate<Entity>( &Entity::check ) );
+    if ( std::none_of( Task::__tasks.begin(), Task::__tasks.end(), Predicate<Task>( &Task::isReferenceTask ) ) && 
+	 std::none_of( Task::__tasks.begin(), Task::__tasks.end(), Predicate<Task>( &Task::hasOpenArrivals ) ) ) {
+	LQIO::runtime_error( LQIO::ERR_NO_REFERENCE_TASKS );
+    }
     return !LQIO::io_vars.anError();
 }
 
@@ -1683,7 +1687,7 @@ Model::expand()
 	for_each( old_entry.begin(), old_entry.end(), Exec<Entry>( &Entry::expandCalls ) );
     }
     catch ( const std::domain_error& e ) {
-	LQIO::solution_error( ERR_REPLICATION_NOT_SET, e.what() );
+	LQIO::runtime_error( ERR_REPLICATION_NOT_SET, e.what() );
 	return *this;
     }
 
@@ -2950,7 +2954,7 @@ Squashed_Model::generate()
     for ( std::set<Processor *>::const_iterator nextProcessor = Processor::__processors.begin(); nextProcessor != Processor::__processors.end(); ++nextProcessor ) {
 	Processor * aProcessor = *nextProcessor;
 	if ( aProcessor->level() == 0 ) {
-	    LQIO::solution_error( LQIO::WRN_NOT_USED, "Processor", aProcessor->name().c_str() );
+	    dynamic_cast<const LQIO::DOM::Processor *>(aProcessor->getDOM())->runtime_error( LQIO::WRN_NOT_USED );
 	} else {
 	    aProcessor->setLevel( SERVER_LEVEL );
 	}

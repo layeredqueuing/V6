@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: call.cc 15711 2022-06-24 01:28:02Z greg $
+ * $Id: call.cc 15762 2022-07-25 16:16:52Z greg $
  *
  * Everything you wanted to know about a call to an entry, but were afraid to ask.
  *
@@ -190,9 +190,9 @@ Call::check() const
 	if ( fanIn == 0 || fanOut == 0 || srcReplicas * fanOut != dstReplicas * fanIn ) {
 	    const std::string& srcName = srcTask()->name();
 	    const std::string& dstName = dstTask()->name();
-	    LQIO::solution_error( ERR_REPLICATION, 
-				  fanOut, srcName.c_str(), srcReplicas,
-				  fanIn,  dstName.c_str(), dstReplicas );
+	    LQIO::runtime_error( LQIO::ERR_REPLICATION, 
+				 fanOut, srcName.c_str(), srcReplicas,
+				 fanIn,  dstName.c_str(), dstReplicas );
 	    return false;
 	}
     }
@@ -614,7 +614,6 @@ Call::saveWait( const unsigned k, const unsigned p, const double )
 /*			      Interlock					*/
 /************************************************************************/
 
-
 bool
 Call::isRealCustomer( const MVASubmodel& submodel, const Entity * server, unsigned int k ) const
 {
@@ -784,7 +783,6 @@ Call::saveILWait( const unsigned k, const unsigned p, const double )
 	}
     }
 }
-
 
 
 double
@@ -969,9 +967,9 @@ ForwardedCall::check() const
 	if ( fanIn == 0 || fanOut == 0 || srcReplicas * fanOut != dstReplicas * fanIn ) {
 	    const std::string& srcName = srcTask->name();
 	    const std::string& dstName = dstTask()->name();
-	    LQIO::solution_error( ERR_REPLICATION, 
-				  fanOut, srcName.c_str(), srcReplicas,
-				  fanIn,  dstName.c_str(), dstReplicas );
+	    LQIO::runtime_error( LQIO::ERR_REPLICATION, 
+				 fanOut, srcName.c_str(), srcReplicas,
+				 fanIn,  dstName.c_str(), dstReplicas );
 	    return false;
 	}
     }

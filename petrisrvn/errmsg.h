@@ -8,19 +8,15 @@
  */
 
 /*
- * $Id: errmsg.h 15719 2022-06-27 12:54:03Z greg $
+ * $Id: errmsg.h 15763 2022-07-25 16:51:57Z greg $
  */
 
 #include <lqio/glblerr.h>
-
-extern "C" {
-    extern void severity_action(unsigned severity);
-}
+#include <vector>
 
 enum {
     FTL_TAG_TABLE_FULL=LQIO::LSTGBLERRMSG+1,
     ERR_DELAY_MULTIPLY_DEFINED,
-    ERR_REPLICATION,
     ERR_SEND_NO_REPLIES_PROHIBITED,
     ERR_BOGUS_REFERENCE_TASK,
     ERR_MULTI_SYNC_SERVER,
@@ -29,8 +25,7 @@ enum {
     WRN_PREEMPTIVE_SCHEDULING,
     ADV_MESSAGES_LOST,
     ADV_OPEN_ARRIVALS_DONT_MATCH,
-    ADV_ERLANG_N,
-    LSTLCLERRMSG=ADV_ERLANG_N
+    ADV_ERLANG_N
 };
 
-extern struct LQIO::error_message_type local_error_messages[];
+extern std::vector< std::pair<unsigned, LQIO::error_message_type> > local_error_messages;

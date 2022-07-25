@@ -1,7 +1,7 @@
 /* target.cc	-- Greg Franks Tue Jun 23 2009
  *
  * ------------------------------------------------------------------------
- * $Id: target.cc 15711 2022-06-24 01:28:02Z greg $
+ * $Id: target.cc 15760 2022-07-25 14:36:17Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -84,7 +84,7 @@ tar_t::send_asynchronous( const Entry * src, const int priority )
     } else {
 	ps_record_stat( r_loss_prob.raw, 1 );
 	if ( Pragma::__pragmas->abort_on_dropped_message() ) {
-	    LQIO::solution_error( FTL_MSG_POOL_EMPTY, src->name(), _entry->name() );
+	    LQIO::runtime_error( FTL_MSG_POOL_EMPTY, src->name(), _entry->name() );
 	} else {
 	    messages_lost = true;
 	}
@@ -95,7 +95,7 @@ void
 tar_t::configure()
 {
     if ( _entry->task()->is_reference_task() ) {
-	LQIO::solution_error( LQIO::ERR_REFERENCE_TASK_IS_RECEIVER, _entry->task()->name(), _entry->name() );
+	_entry->task()->getDOM()->runtime_error( LQIO::ERR_REFERENCE_TASK_IS_RECEIVER, _entry->name() );
     } else if ( _type == Type::call ) {
 	_reply = (_dom._call->getCallType() == LQIO::DOM::Call::Type::RENDEZVOUS || _dom._call->getCallType() == LQIO::DOM::Call::Type::FORWARD);
 	try { 
@@ -192,6 +192,7 @@ tar_t::insertDOMResults()
     }
 
     if ( number_blocks > 1 ) {
+
 	double varDelay, varDelayVariance;
 	const double meanLossVariance = r_loss_prob.variance();
 
@@ -270,7 +271,6 @@ double
 Targets::configure( const LQIO::DOM::DocumentObject * dom, bool normalize )
 {
     double sum	= 0.0;
-    const char * srcName = (dom != nullptr) ? dom->getName().c_str() : "-";
     _type = (dynamic_cast<const LQIO::DOM::Phase *>(dom) != nullptr) ? dynamic_cast<const LQIO::DOM::Phase *>(dom)->getPhaseTypeFlag() : LQIO::DOM::Phase::Type::STOCHASTIC;
     
     for ( std::vector<tar_t>::iterator tp = _target.begin(); tp != _target.end(); ++tp ) {
@@ -279,14 +279,10 @@ Targets::configure( const LQIO::DOM::DocumentObject * dom, bool normalize )
 	tp->_tprob = sum;
     }
 
-    if ( _type != LQIO::DOM::Phase::Type::DETERMINISTIC ) {
-	if ( normalize ) {
-	    sum += 1.0;
-	    for ( std::vector<tar_t>::iterator tp = _target.begin(); tp != _target.end(); ++tp ) {
-		tp->_tprob /= sum;
-	    }
-	} else if ( sum > 1. ) {
-	    LQIO::solution_error( LQIO::ERR_INVALID_FORWARDING_PROBABILITY, srcName, sum );
+    if ( _type != LQIO::DOM::Phase::Type::DETERMINISTIC && normalize ) {
+	sum += 1.0;
+	for ( std::vector<tar_t>::iterator tp = _target.begin(); tp != _target.end(); ++tp ) {
+	    tp->_tprob /= sum;
 	}
     }
 

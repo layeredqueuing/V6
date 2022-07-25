@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- *  $Id: dom_document.h 15477 2022-03-30 13:21:30Z greg $
+ *  $Id: dom_document.h 15760 2022-07-25 14:36:17Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -213,7 +213,7 @@ namespace LQIO {
 
 	    /* Semi-private */
 
-	    static void db_check_set_entry(DOM::Entry* entry, const std::string& toEntryName, DOM::Entry::Type requisiteType = DOM::Entry::Type::NOT_DEFINED );
+	    static void db_check_set_entry(DOM::Entry* entry, DOM::Entry::Type requisiteType = DOM::Entry::Type::NOT_DEFINED );
 	    DOM::ExternalVariable* db_build_parameter_variable(const char* input, bool* isSymbol);
 	    static void lqx_parser_trace( FILE * );
 	    static std::string __input_file_name;

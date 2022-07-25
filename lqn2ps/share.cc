@@ -2,7 +2,7 @@
  * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqn2ps/share.cc $
  *
  * ------------------------------------------------------------------------
- * $Id: share.cc 14882 2021-07-07 11:09:54Z greg $
+ * $Id: share.cc 15760 2022-07-25 14:36:17Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -42,21 +42,21 @@ void
 Share::create( const std::pair<std::string,LQIO::DOM::Group *>& p )
 {
     const std::string& group_name = p.first;
-    const LQIO::DOM::Group* domGroup = p.second;
-    const std::string& processor_name = domGroup->getProcessor()->getName();
-    Processor* aProcessor = Processor::find( processor_name );
+    const LQIO::DOM::Group* group = p.second;
+    const std::string& processor_name = group->getProcessor()->getName();
+    Processor* processor = Processor::find( processor_name );
 
-    if ( !aProcessor ) return;
+    if ( !processor ) return;
 
     if ( std::any_of( __share.begin(), __share.end(), EQStr<Share>( group_name ) ) ) {
-	LQIO::input_error2( LQIO::ERR_DUPLICATE_SYMBOL, "Group", group_name.c_str() );
+	group->input_error( LQIO::ERR_DUPLICATE_SYMBOL );
 	return;
     } 
-    if ( aProcessor->scheduling() != SCHEDULE_CFS ) {
-	LQIO::input_error2( LQIO::WRN_NON_CFS_PROCESSOR, group_name.c_str(), processor_name.c_str() );
+    if ( processor->scheduling() != SCHEDULE_CFS ) {
+	group->input_error( LQIO::WRN_NON_CFS_PROCESSOR, processor_name.c_str() );
     }
 
-    Share * aShare = new Share( domGroup, aProcessor );
+    Share * aShare = new Share( group, processor );
     __share.insert(aShare);
 }
 

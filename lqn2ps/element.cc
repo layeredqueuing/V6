@@ -1,6 +1,6 @@
 /* element.cc	-- Greg Franks Wed Feb 12 2003
  *
- * $Id: element.cc 15615 2022-06-01 12:27:08Z greg $
+ * $Id: element.cc 15760 2022-07-25 14:36:17Z greg $
  */
 
 #include "element.h"
@@ -144,7 +144,7 @@ Element::followCalls( std::pair<std::vector<Call *>::const_iterator,std::vector<
 	}
 	catch ( const Call::cycle_error& error ) {
 	    if ( path != 0 ) {
-		LQIO::solution_error( LQIO::ERR_CYCLE_IN_CALL_GRAPH, error.what() );
+		getDOM()->runtime_error( LQIO::ERR_CYCLE_IN_CALL_GRAPH, error.what() );
 	    }
 	}
     }

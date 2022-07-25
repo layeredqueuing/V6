@@ -1,6 +1,6 @@
 /* srvn2eepic.c	-- Greg Franks Sun Jan 26 2003
  *
- * $Id: option.cc 15711 2022-06-24 01:28:02Z greg $
+ * $Id: option.cc 15760 2022-07-25 14:36:17Z greg $
  */
 
 #include "lqn2ps.h"
@@ -414,7 +414,7 @@ special( const std::string& parameter, const std::string& value, LQIO::DOM::Prag
 	    break;
 
 	case Special::QUORUM_REPLY:
-	    LQIO::io_vars.error_messages[LQIO::ERR_REPLY_NOT_GENERATED].severity = LQIO::error_severity::WARNING;
+	    LQIO::error_messages.at(LQIO::ERR_REPLY_NOT_GENERATED).severity = LQIO::error_severity::WARNING;
 	    break;
 
 	case Special::SORT:

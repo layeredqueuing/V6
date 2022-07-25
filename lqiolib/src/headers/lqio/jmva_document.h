@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- *  $Id: jmva_document.h 15479 2022-03-30 13:30:58Z greg $
+ *  $Id: jmva_document.h 15760 2022-07-25 14:36:17Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  */
@@ -141,6 +141,8 @@ namespace BCMP {
 
     private:
 	bool parse();
+	static void input_error( const std::string& );
+	static void input_error( const std::string&, const std::string& );
 
     public:
 	const BCMP::Model& model() const { return _model; }

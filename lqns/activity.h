@@ -11,7 +11,7 @@
  * July 2007
  *
  * ------------------------------------------------------------------------
- * $Id: activity.h 15719 2022-06-27 12:54:03Z greg $
+ * $Id: activity.h 15762 2022-07-25 16:16:52Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -171,10 +171,10 @@ public:
 	bool find( const Activity * activity ) const { return std::find( _activityStack.begin(), _activityStack.end(), activity ) != _activityStack.end(); }
 	void push_activity( const Activity * activity ) { _activityStack.push_back( activity ); }
 	void pop_activity() { _activityStack.pop_back(); }
-	const Activity * top_activity() const { return _activityStack.back(); }
+	const Activity * top_activity() { return _activityStack.empty() ? nullptr : _activityStack.back(); }
 	void push_fork( const AndOrForkActivityList * fork_list ) { _forkStack.push_back( fork_list ); }
 	void pop_fork() { _forkStack.pop_back(); }
-	const AndOrForkActivityList * top_fork() { return _forkStack.back(); }
+	const AndOrForkActivityList * top_fork() { return _forkStack.empty() ? nullptr : _forkStack.back(); }
 
     private:
 	Call::stack& _callStack;

@@ -9,7 +9,7 @@
  * January 2003
  *
  * ------------------------------------------------------------------------
- * $Id: entry.h 15615 2022-06-01 12:27:08Z greg $
+ * $Id: entry.h 15760 2022-07-25 14:36:17Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -63,7 +63,6 @@ public:
 public:
     static Entry * create(LQIO::DOM::Entry* domEntry );
 
-    static unsigned totalOpenArrivals;
     static unsigned max_phases;		/* maximum phase encounterd.	*/
     static const char * phaseTypeFlagStr [];
     static unsigned int max_phase( unsigned int a, const std::pair<unsigned,Phase>& p ) { return std::max( a, p.first ); }

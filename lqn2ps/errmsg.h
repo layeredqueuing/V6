@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: errmsg.h 14882 2021-07-07 11:09:54Z greg $
+ * $Id: errmsg.h 15760 2022-07-25 14:36:17Z greg $
  *
  * Copyright the Real-Time and Distributed Systems Group,
  * Department of Systems and Computer Engineering,
@@ -21,20 +21,11 @@
 
 /* #include <values.h> */
 #include <lqio/glblerr.h>
-#include "lqn2ps.h"
-
-class Entry;
-
-extern "C" {
-    extern void severity_action(unsigned severity);
-    extern void init_errmsg(void);
-}
+#include <vector>
 
 enum {
     FTL_LAYERIZATION=LQIO::LSTGBLERRMSG+1,
     ERR_ACTIVITY_NOT_REACHABLE,
-    ERR_REPLICATION_PROCESSOR,
-    ERR_REPLICATION,
     ERR_REPLICATION_NOT_SET,
     ERR_NO_CALLS_TO_ENTRY,
     ERR_NO_OBJECTS,
@@ -43,9 +34,8 @@ enum {
     ERR_UNASSIGNED_VARIABLES,
     ERR_BCMP_CONVERSION_FAILURE,
     WRN_COEFFICIENT_OF_VARIATION,
-    WRN_MIXED_PHASE_TYPE,
-    LSTLCLERRMSG=WRN_MIXED_PHASE_TYPE
+    WRN_MIXED_PHASE_TYPE
 };
 
-extern struct LQIO::error_message_type local_error_messages[];
+extern std::vector< std::pair<unsigned, LQIO::error_message_type> > local_error_messages;
 #endif

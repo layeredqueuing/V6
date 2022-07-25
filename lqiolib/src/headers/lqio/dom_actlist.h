@@ -3,7 +3,7 @@
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
  *
- *  $Id: dom_actlist.h 15689 2022-06-22 14:42:22Z greg $
+ *  $Id: dom_actlist.h 15760 2022-07-25 14:36:17Z greg $
  */
 
 #ifndef __LQIO_DOM_ACTLIST__
@@ -41,11 +41,18 @@ namespace LQIO {
 	    ActivityList(const Document * document,const Task *,ActivityList::Type type );
 	    virtual ~ActivityList();
       
+	private:
+	    ActivityList& operator=(const ActivityList&) = delete;
+	    ActivityList( const ActivityList& ) = delete;
+
+	public:
 	    /* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- [Input Values] -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */
       
 	    /* Accessors and Mutators */
 	    const char * getTypeName() const { return __typeName; }
-
+	    const std::string getListName() const;
+	    void activitiesForName( const Activity*& first, const Activity*& last ) const;
+	    
 	    bool isJoinList() const;
 	    bool isForkList() const;
       
@@ -54,6 +61,7 @@ namespace LQIO {
 	    const Task * getTask() const;
 	    const std::vector<const Activity*>& getList() const;
 	    const ActivityList::Type getListType() const;
+	    const std::string& getListTypeName() const;
 	    ActivityList& add(const Activity* activity, const ExternalVariable * arg=nullptr);
 	    ActivityList& addValue( const Activity* activity, double arg );
 	    
@@ -66,26 +74,10 @@ namespace LQIO {
 	    void setPrevious(ActivityList* previous);
 	    ActivityList* getPrevious() const;
       
-	    /* 
-	     * Processed flag for clients -- multiple clients may have the same
-	     * activity list (ptr) leading to possible duplications upon 
-	     * re-processing. Setting this flag will help keep track of that. Optional.
-	     */
-	    void setProcessed(const bool flag) { _processed = flag; }
-	    const bool getProcessed() const { return _processed; }
-
-	    /*
-	     * Return activities that make up the "name" of the list.
-	     */
-
-	    void activitiesForName( const Activity** first, const Activity** last ) const;
-      
-	private:
-	    ActivityList& operator=(const ActivityList&);
-	    ActivityList( const ActivityList& );
+	    virtual std::string inputErrorPreamble( unsigned int code ) const;
+	    virtual std::string runtimeErrorPreamble( unsigned int code ) const;
 
 	private:
-      
 	    /* Instance variables */
 	    const Task * _task;
 	    std::vector<const Activity*> _list;
@@ -93,10 +85,20 @@ namespace LQIO {
 	    ActivityList::Type _type;
 	    ActivityList* _next;
 	    ActivityList* _prev;
-	    bool _processed;
       
 	public:
 	    static const char * __typeName;
+	    static const std::map<const Type, const std::string> __op;
+	    static const std::map<const Type, const std::string> __listTypeName;
+
+	private:
+	    /* Used to concatentate activity list names into a string */
+	    struct fold {
+		fold( const std::string& op ) : _op(op) {}
+		std::string operator()( const std::string& s1, const Activity * a2 ) const { return s1 + " " + _op + " " + a2->getName(); }
+	    private:
+		const std::string& _op;
+	    };
 	};
 
 	/* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */

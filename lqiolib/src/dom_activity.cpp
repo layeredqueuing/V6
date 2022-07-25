@@ -1,11 +1,12 @@
 /*
- *  $Id: dom_activity.cpp 15692 2022-06-22 18:05:12Z greg $
+ *  $Id: dom_activity.cpp 15760 2022-07-25 14:36:17Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
  *
  */
 
+#include <cstdarg>
 #include "dom_activity.h"
 #include "dom_actlist.h"
 #include "dom_task.h"
@@ -43,6 +44,37 @@ namespace LQIO {
 	{
 	}
 
+	/*
+	 * Error detected during input processing.  Line number if found from parser.
+	 */
+	
+	std::string Activity::inputErrorPreamble( unsigned int code ) const
+	{
+	    const error_message_type& error = DocumentObject::__error_messages.at(code);
+	    std::string buf = LQIO::DOM::Document::__input_file_name + ":" + std::to_string(LQIO_lineno)
+		+ ": " + severity_table.at(error.severity)
+		+ ": Task \"" + getTask()->getName() + "\", activity \"" + getName() + "\" " + error.message;
+	    if ( code == LQIO::ERR_DUPLICATE_SYMBOL && getLineNumber() != LQIO_lineno ) {
+		buf += std::string( " at line " ) + std::to_string(getLineNumber());
+	    }
+	    buf += std::string( ".\n" );
+	    return buf;
+	}
+
+	/*
+	 * Error detected during runtime.  Line number is found from object.
+	 */
+	
+	std::string Activity::runtimeErrorPreamble( unsigned int code ) const
+	{
+	    const error_message_type& error = __error_messages.at(code);
+	    std::string buf = LQIO::DOM::Document::__input_file_name + ":" + std::to_string(getLineNumber())
+		+ ": " + severity_table.at(error.severity)
+		+ ": Task \"" + getTask()->getName() + "\", activity \"" + getName() + "\" " + error.message + ".\n";
+	    return buf;
+	}
+
+    
 	std::vector<DOM::Entry*>& Activity::getReplyList() 
 	{
 	    /* Returns the ReplyList of the Activity */
@@ -74,7 +106,7 @@ namespace LQIO {
 	void Activity::outputTo(ActivityList* outputList)
 	{
 	    if (_outputList != nullptr && outputList != nullptr) {
-		input_error2( ERR_DUPLICATE_ACTIVITY_LVALUE, getTask()->getName().c_str(), getName().c_str(), _outputList->getLineNumber() );
+		input_error( ERR_DUPLICATE_ACTIVITY_LVALUE, _outputList->getLineNumber() );
 	    } else {
 		_outputList = outputList;
 	    }
@@ -83,9 +115,9 @@ namespace LQIO {
 	void Activity::inputFrom(ActivityList* inputList)
 	{
 	    if (_inputList != nullptr && inputList != nullptr) {
-		input_error2( ERR_DUPLICATE_ACTIVITY_RVALUE, getTask()->getName().c_str(), getName().c_str(), _inputList->getLineNumber() );
+		input_error( ERR_DUPLICATE_ACTIVITY_RVALUE, _inputList->getLineNumber() );
 	    } else if ( isStartActivity() ) {
-		input_error2( ERR_IS_START_ACTIVITY, getTask()->getName().c_str(), getName().c_str() );
+		input_error( ERR_IS_START_ACTIVITY );
 	    } else {
 		_inputList = inputList;
 	    }

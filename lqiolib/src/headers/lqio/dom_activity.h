@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- *  $Id: dom_activity.h 15689 2022-06-22 14:42:22Z greg $
+ *  $Id: dom_activity.h 15760 2022-07-25 14:36:17Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -43,7 +43,12 @@ namespace LQIO {
 	    void inputFrom(ActivityList* inputList);
 	    ActivityList* getOutputToList() const { return _outputList; }
 	    ActivityList* getInputFromList() const { return _inputList; }
-      
+
+	protected:
+	    virtual std::string inputErrorPreamble( unsigned int code ) const;
+	    virtual std::string runtimeErrorPreamble( unsigned int code ) const;
+
+	public:
 	    /* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- [More Result Values] -=-=-=-=-=-=-=-=-=-=-=-=-=-=-= */
       
 	    /* Storage of the additional parameters */

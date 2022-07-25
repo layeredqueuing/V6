@@ -204,7 +204,7 @@ bool ActivityList::check_external_joins() const
     for ( e1 = 0; e1 + 1 < this->n_acts(); ++e1 ) {
 	for ( e2 = e1 + 1; e2 < this->n_acts(); ++e2 ) {
 	    if ( this->entry[e1] == this->entry[e2] ) {
-		LQIO::solution_error( ERR_COMMON_ENTRY_EXTERNAL_SYNC, this->entry[e1]->task()->name(), this->entry[e1]->name() );
+		LQIO::runtime_error( ERR_COMMON_ENTRY_EXTERNAL_SYNC, this->entry[e1]->task()->name(), this->entry[e1]->name() );
 		return false;
 	    }
 	}
@@ -256,12 +256,12 @@ void ActivityList::find_fork_list( const Task * curr_task, std::deque<Activity *
     for ( unsigned int i = 0; i < this->n_acts(); ++i ) {
 	if ( this->list[i] != curr_activity ) {
 	    if ( setjmp( loop_env ) != 0 ) {
-		curr_activity->activity_cycle_error( LQIO::ERR_CYCLE_IN_ACTIVITY_GRAPH, curr_task->name(), activity_stack );
+		curr_activity->activity_cycle_error( activity_stack );
 	    } else {
 		int j = backtrack( this->list[i], fork_stack, this->list[i] );
 		if ( j >= 0 ) {
 		    if ( !this->set_join_type( JoinType::INTERNAL_FORK_JOIN ) ) {
-			path_error( LQIO::ERR_JOIN_BAD_PATH, curr_task->name(), activity_stack );
+			get_dom()->runtime_error( LQIO::ERR_BAD_PATH_TO_JOIN, this->list[i]->name() );
 		    } else if ( !this->u.join.fork[i] || std::find( fork_stack.begin(), fork_stack.end(), this->u.join.fork[i] ) != fork_stack.end() ) {
 			ActivityList * fork_list = fork_stack[j];
 			if ( (   fork_list->type() == Type::AND_FORK && this->type() == Type::AND_JOIN)
@@ -271,10 +271,11 @@ void ActivityList::find_fork_list( const Task * curr_task, std::deque<Activity *
 			    fork_list->u.fork.join = this;
 			} else if ( fork_list->type() == Type::OR_FORK && this->type() == Type::AND_JOIN ) {
 			    /* Or fork connected to AND join? */
-			    path_error( LQIO::ERR_JOIN_BAD_PATH, curr_task->name(), activity_stack );
+			    const LQIO::DOM::ActivityList * dom = fork_list->get_dom();
+			    get_dom()->runtime_error( LQIO::ERR_FORK_JOIN_MISMATCH, dom->getListTypeName().c_str(), dom->getListName().c_str(), dom->getLineNumber() );
 			} else {
 			    /* This one is o.k., but is causing grief.. */
-			    path_error( LQIO::ERR_JOIN_BAD_PATH, curr_task->name(), activity_stack );
+			    get_dom()->runtime_error( LQIO::ERR_BAD_PATH_TO_JOIN, this->list[i]->name() );
 			}
 		    }
 
@@ -296,9 +297,9 @@ void ActivityList::find_fork_list( const Task * curr_task, std::deque<Activity *
 		    }
 		} else {
 		    if ( !this->set_join_type( JoinType::SYNCHRONIZATION ) ) {
-			path_error( LQIO::ERR_JOIN_BAD_PATH, curr_task->name(), activity_stack );
+			get_dom()->runtime_error( LQIO::ERR_BAD_PATH_TO_JOIN, curr_activity->name() );
 		    } else if ( !add_to_join_list( j, activity_stack[0] ) ) {
-			path_error( LQIO::ERR_JOIN_BAD_PATH, curr_task->name(), activity_stack );
+			get_dom()->runtime_error( LQIO::ERR_BAD_PATH_TO_JOIN, curr_activity->name() );
 		    }
 		}
 	    }
@@ -573,7 +574,7 @@ ActivityList::fork_count_replies( std::deque<Activity *>& activity_stack,  const
 	    unsigned branch_phase = curr_phase;
 	    const double prob = LQIO::DOM::to_double(*this->u.fork.prob[i]);
 	    if ( prob < 0. || 1.0 < prob ) {
-		LQIO::solution_error( LQIO::ERR_INVALID_PROBABILITY, prob );
+		get_dom()->runtime_error( LQIO::ERR_INVALID_OR_BRANCH_PROBABILITY, list[i]->get_dom()->getName().c_str(), prob );
 		break;
 	    } 
 	    sum += this->list[i]->count_replies( activity_stack, e, rate * prob, curr_phase, branch_phase );
@@ -582,7 +583,7 @@ ActivityList::fork_count_replies( std::deque<Activity *>& activity_stack,  const
 	    }
 	}
 	if ( sum < 1.0 - EPSILON || 1.0 + EPSILON < sum ) {
-	    LQIO::solution_error( LQIO::ERR_OR_BRANCH_PROBABILITIES, fork_join_name(), e->task()->name(), sum );
+	    get_dom()->runtime_error( LQIO::ERR_OR_BRANCH_PROBABILITIES, sum );
 	}
 	break;
 
@@ -663,7 +664,7 @@ ActivityList::path_error( int err, const char * task_name, std::deque<Activity *
 	ap = activity_stack[i-1];
 	l += snprintf( &buf[l], BUFSIZ-l, ", %s", ap->name() );
     }
-    LQIO::solution_error( err, buf2, task_name, buf );
+    LQIO::runtime_error( err, buf2, task_name, buf );
     free( buf2 );
 }
 
