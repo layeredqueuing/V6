@@ -10,7 +10,7 @@
  * November, 1994
  * November, 2021
  *
- * $Id: multserv.h 15662 2022-06-09 23:45:43Z greg $
+ * $Id: multserv.h 15827 2022-08-14 15:20:00Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -47,7 +47,7 @@ public:
     virtual const std::string& typeStr() const { return __type_str; }
     virtual std::ostream& printHeading( std::ostream& output = std::cout ) const;
 
-    virtual unsigned int marginalProbabilitiesSize() const { return J; }
+    virtual unsigned int getMarginalProbabilitiesSize() const { return J; }
 
     static const std::string __type_str;
     
@@ -334,7 +334,7 @@ public:
     virtual void mixedWait( const MVA& solver, const Population& N ) const { return Reiser_Multi_Server::mixedWait( solver, N ); }
     virtual void openWait() const { return Reiser_Multi_Server::openWait(); }
 
-    virtual unsigned int marginalProbabilitiesSize() const { return 0; }	/* No need for marginals	*/
+    virtual unsigned int getMarginalProbabilitiesSize() const { return 0; }	/* No need for marginals	*/
 
     virtual const std::string& typeStr() const { return __type_str; }
 
@@ -522,7 +522,7 @@ public:
     virtual void mixedWait( const MVA& solver, const Population& N ) const { return Reiser_Multi_Server::mixedWait( solver, N ); }
     virtual void openWait() const { return Reiser_Multi_Server::openWait(); }
 
-    virtual unsigned int marginalProbabilitiesSize() const { return 0; }	/* No need for marginals	*/
+    virtual unsigned int getMarginalProbabilitiesSize() const { return 0; }	/* No need for marginals	*/
 
     virtual const std::string& typeStr() const { return __type_str; }
 
@@ -616,8 +616,8 @@ public:
 	  Reiser_Multi_Server(copies,e,k,p) {}
 
     virtual void setMarginalProbabilitiesSize( const Population &N );
-    virtual unsigned int marginalProbabilitiesSize() const { return marginalSize; }
-    virtual int vectorProbabilities() const { return 1; }
+    virtual unsigned int getMarginalProbabilitiesSize() const { return marginalSize; }
+    virtual bool useStateProbabilities() const { return true; }
 
     virtual double muS( const Population& N, const unsigned k ) const;
 
@@ -629,7 +629,7 @@ public:
 
     static const std::string __type_str;
 
-protected:
+private:
     unsigned marginalSize;
 };
 
@@ -655,7 +655,6 @@ public:
 
     virtual double muS( const Population& N, const unsigned k ) const;
 
-    virtual void wait( const MVA& solver, const unsigned k, const Population & N ) const;
     virtual void mixedWait( const MVA& solver, const Population& N ) const { return Reiser_Multi_Server::mixedWait( solver, N ); }
     virtual void openWait() const { return Reiser_Multi_Server::openWait(); }
 
@@ -685,7 +684,7 @@ public:
     virtual void mixedWait( const MVA& solver, const Population& N ) const;
     virtual void openWait() const;
 
-    virtual unsigned int marginalProbabilitiesSize() const { return 0; }
+    virtual unsigned int getMarginalProbabilitiesSize() const { return 0; }
 
     virtual const std::string& typeStr() const { return __type_str; }
 

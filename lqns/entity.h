@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: entity.h 15762 2022-07-25 16:16:52Z greg $
+ * $Id: entity.h 15827 2022-08-14 15:20:00Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -336,6 +336,8 @@ private:
     double computeIdleTime( const unsigned, const double ) const;
 
 public:
+    virtual const Entity& insertDOMResults() const;
+
     /* Printing */
 
     virtual std::ostream& print( std::ostream& ) const = 0;
@@ -373,6 +375,10 @@ private:
     double _utilization;		/* Utilization			*/
     mutable double _lastUtilization;	/* For convergence test.	*/
     double _weight;			/* weighting interlock flow  	*/
+#if defined(BUG_393)
+    std::vector<double> _marginalQueueProbabilities;
+#endif
+
     /* MVA interface */
 
     ChainVector _serverChains;		/* Chains for this server.	*/

@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_activity.cpp 15760 2022-07-25 14:36:17Z greg $
+ *  $Id: dom_activity.cpp 15854 2022-08-18 22:32:33Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -50,11 +50,19 @@ namespace LQIO {
 	
 	std::string Activity::inputErrorPreamble( unsigned int code ) const
 	{
+	    std::string object_name = "task";
+	    const Task * task = getTask();
+	    if ( task != nullptr && task->getSchedulingType() == SCHEDULE_CUSTOMER ) {
+		object_name.insert( 0, "Reference " );
+	    } else {
+		object_name[0] = std::toupper( object_name[0] );
+	    }
+
 	    const error_message_type& error = DocumentObject::__error_messages.at(code);
 	    std::string buf = LQIO::DOM::Document::__input_file_name + ":" + std::to_string(LQIO_lineno)
 		+ ": " + severity_table.at(error.severity)
-		+ ": Task \"" + getTask()->getName() + "\", activity \"" + getName() + "\" " + error.message;
-	    if ( code == LQIO::ERR_DUPLICATE_SYMBOL && getLineNumber() != LQIO_lineno ) {
+		+ ": " + object_name + " \"" + getTask()->getName() + "\", activity \"" + getName() + "\" " + error.message;
+	    if ( code == LQIO::ERR_DUPLICATE_SYMBOL && getLineNumber() != static_cast<size_t>(LQIO_lineno) ) {
 		buf += std::string( " at line " ) + std::to_string(getLineNumber());
 	    }
 	    buf += std::string( ".\n" );
@@ -67,10 +75,18 @@ namespace LQIO {
 	
 	std::string Activity::runtimeErrorPreamble( unsigned int code ) const
 	{
+	    std::string object_name = "task";
+	    const Task * task = getTask();
+	    if ( task != nullptr && task->getSchedulingType() == SCHEDULE_CUSTOMER ) {
+		object_name.insert( 0, "Reference " );
+	    } else {
+		object_name[0] = std::toupper( object_name[0] );
+	    }
+
 	    const error_message_type& error = __error_messages.at(code);
 	    std::string buf = LQIO::DOM::Document::__input_file_name + ":" + std::to_string(getLineNumber())
 		+ ": " + severity_table.at(error.severity)
-		+ ": Task \"" + getTask()->getName() + "\", activity \"" + getName() + "\" " + error.message + ".\n";
+		+ ": " + object_name + " \"" + getTask()->getName() + "\", activity \"" + getName() + "\" " + error.message + ".\n";
 	    return buf;
 	}
 

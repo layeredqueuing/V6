@@ -10,7 +10,7 @@
  * November, 1994
  * December, 2020
  *
- * $Id: pragma.h 15711 2022-06-24 01:28:02Z greg $
+ * $Id: pragma.h 15827 2022-08-14 15:20:00Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -200,6 +200,11 @@ public:
 	}
 #endif
 
+    static bool saveMarginalProbabilities()
+	{
+	    return __cache->_save_marginal_probabilities;
+	}
+    
     static LQIO::error_severity severityLevel()
 	{
 	    assert( __cache != nullptr );
@@ -315,6 +320,7 @@ private:
 #if RESCHEDULE
     void setRescheduleOnAsyncSend(const std::string&);
 #endif
+    void setSaveMarginalProbabilities(const std::string&);
     void setSeverityLevel(const std::string&);
     void setSpexComment(const std::string&);
     void setSpexHeader(const std::string&);
@@ -357,6 +363,7 @@ private:
 #if RESCHEDULE
     bool _reschedule_on_async_send;
 #endif
+    bool _save_marginal_probabilities;
     LQIO::error_severity _severity_level;
     bool _spex_comment;
     bool _spex_header;

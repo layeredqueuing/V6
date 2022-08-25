@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: expat_document.cc 14882 2021-07-07 11:09:54Z greg $
+ * $Id: expat_document.cc 15827 2022-08-14 15:20:00Z greg $
  *
  * Read in XML input files.
  *
@@ -84,6 +84,7 @@ namespace LQIO {
         const XML_Char * Expat_Document::Xloss_probability =                    "loss-probability";
         const XML_Char * Expat_Document::Xlqn_model =                           "lqn-model";
         const XML_Char * Expat_Document::Xlqx =                                 "lqx";
+        const XML_Char * Expat_Document::Xmarginal_queue_probabilities =	"marginal-queue-probabilities";
         const XML_Char * Expat_Document::Xmax =                                 "max";
         const XML_Char * Expat_Document::Xmax_service_time =                    "max-service-time";
         const XML_Char * Expat_Document::Xmin =                                 "min";
@@ -307,21 +308,18 @@ namespace LQIO {
 			std::cerr << lq_toolname << ": Read error on " << input_file_name << " - " << strerror( errno ) << std::endl;
 			rc = false;
 			break;
-		    } else if (!XML_Parse(_parser, buffer, len, len != BUFFSIZE)) {
+		    } else if (!XML_Parse(_parser, buffer, len, len == 0)) {
 			input_error( XML_ErrorString(XML_GetErrorCode(_parser)) );
 			rc = false;
 			break;
 		    }
-		} while ( len == BUFFSIZE );
+		} while ( len > 0 );
 	    }
 	    catch ( LQIO::element_error& e ) {
 		input_error( "Unexpected element <%s> ", e.what() );
 		rc = false;
 	    }
-	    catch ( LQIO::missing_attribute& e ) {
-		rc = false;
-	    }
-	    catch ( std::invalid_argument& e ) {
+	    catch ( const std::runtime_error& e ) {
 		rc = false;
 	    }
 
@@ -944,6 +942,8 @@ namespace LQIO {
 	    } else if ( strcasecmp( element, Xresult_conf_99 ) == 0 ) {
 		_stack.push( parse_stack_t(element,&Expat_Document::startNOP) );
 		
+	    } else if ( strcasecmp( element, Xmarginal_queue_probabilities ) == 0 ) {
+		_stack.push( parse_stack_t(element,&Expat_Document::startNOP) );
 
 	    } else {
 		throw element_error( element );
@@ -977,6 +977,13 @@ namespace LQIO {
 	}
 
 
+	void
+	Expat_Document::startMarginalQueueProbabilities( DocumentObject * entity, const XML_Char * element, const XML_Char ** attributes )
+	{
+	    throw element_error( element );
+	}
+
+	
 	void
 	Expat_Document::startLQX( const DocumentObject * object, const XML_Char * element, const XML_Char ** attributes )
 	{

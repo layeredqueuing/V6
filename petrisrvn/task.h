@@ -53,14 +53,14 @@ public:
 
 
 protected:
-    Task( LQIO::DOM::Task* dom, Type type, Processor * );
+    Task( const LQIO::DOM::Task* dom, Type type, Processor * );
 
 private:
     Task( const Task& );
     Task& operator=( const Task& );
 
 public:
-    static Task * create( LQIO::DOM::Task * dom );
+    static Task * create( const LQIO::DOM::Task * dom );
     void clear();
 
     Type type() const { return _type; }
@@ -110,7 +110,7 @@ public:
     virtual void insert_DOM_results() const;
 
 private:
-    double create_instance( double base_x_pos, double base_y_pos, unsigned m, short enabling );
+    double create_instance( double base_x_pos, double base_y_pos, unsigned m, short enabling, struct place_object * tx_place=nullptr );
     double create_activity( const double x_pos, const double y_pos, const unsigned m,
 			    Activity * curr_act, const Entry * e, const unsigned p_pos, const short enabling,
 			    struct place_object * end_place, bool can_reply );
@@ -192,6 +192,6 @@ private:
     const Entry * _dst;
 };
 
-extern std::vector<Task *> task;
+extern std::vector<Task *> __task;
 
 #endif

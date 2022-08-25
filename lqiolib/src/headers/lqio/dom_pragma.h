@@ -8,7 +8,7 @@
 /************************************************************************/
 
 /*
- * $Id: dom_pragma.h 15699 2022-06-23 11:56:35Z greg $
+ * $Id: dom_pragma.h 15827 2022-08-14 15:20:00Z greg $
  */
 
 #ifndef __LQIO_DOM_PRAGMA_H__
@@ -151,6 +151,7 @@ namespace LQIO {
 	    static const char * _rolia_;		// multiserver
 	    static const char * _rolia_ps_;		// multiserver
 	    static const char * _run_time_;
+	    static const char * _save_marginal_probabilities_;
 	    static const char * _scheduling_model_;
 	    static const char * _schmidt_;		// multiserver
 	    static const char * _schweitzer_;

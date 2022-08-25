@@ -1,7 +1,7 @@
 /* -*- C++ -*-
  * help.h	-- Greg Franks
  *
- * $Id: help.h 15684 2022-06-21 19:11:28Z greg $
+ * $Id: help.h 15827 2022-08-14 15:20:00Z greg $
  */
 
 #ifndef _HELP_H
@@ -251,6 +251,7 @@ public:
     std::ostream& pragmaRescheduleTrue( std::ostream& output, bool verbose ) const;
     std::ostream& pragmaRescheduleFalse( std::ostream& output, bool verbose ) const;
 #endif
+    std::ostream& pragmaSaveMarginalProbabilities( std::ostream& output, bool verbose ) const;
     std::ostream& pragmaSeverityLevel( std::ostream& output, bool verbose ) const;
     std::ostream& pragmaSpexComment( std::ostream& output, bool verbose ) const;
     std::ostream& pragmaSpexHeader( std::ostream& output, bool verbose ) const;

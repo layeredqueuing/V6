@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- *  $Id: dom_entry.h 15222 2021-12-15 15:41:14Z greg $
+ *  $Id: dom_entry.h 15846 2022-08-17 21:08:01Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -47,8 +47,8 @@ namespace LQIO {
 	    };
 
 	private:
-	    Entry(const Entry& );
-	    Entry& operator=( const Entry& );
+	    Entry& operator=( const Entry& ) = delete;
+	    Entry(const Entry& );		/* For clone */
 
 	public:
 
@@ -232,6 +232,8 @@ namespace LQIO {
 	    bool hasResultsForPhase(unsigned phase) const;
 	    bool hasResultsForOpenWait() const;
 	    bool hasResultsForThroughputBound() const;
+	    bool hasResultsForSquaredCoeffVariation() const;
+
 
 	private:
 	    /* Actually store the results in the XML */
@@ -276,7 +278,7 @@ namespace LQIO {
 	    double _resultThroughputBound;
 	    double _resultUtilization;
 	    double _resultUtilizationVariance;
-	    bool _hasResultsForPhase[Phase::MAX_PHASE], _hasOpenWait, _hasThroughputBound;
+	    bool _hasResultsForPhase[Phase::MAX_PHASE], _hasOpenWait, _hasThroughputBound, _hasResultSquaredCoeffVariation;
 
 	public:
 	    static const char * __typeName;

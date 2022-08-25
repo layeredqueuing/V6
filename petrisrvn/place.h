@@ -29,17 +29,21 @@ namespace LQIO {
 
 class Place {
 public:
-    Place( LQIO::DOM::Entity * dom ) : _dom(dom), _x_pos(0.0), _y_pos(0.0) {}
+    Place( const LQIO::DOM::Entity * dom ) : _dom(dom), _scheduling(SCHEDULE_FIFO), _x_pos(0.0), _y_pos(0.0) {}
     virtual ~Place() {}
 
     unsigned id;
 
     virtual const char * name() const;
-    LQIO::DOM::Entity * get_dom() const { return _dom; }
+    const LQIO::DOM::Entity * get_dom() const { return _dom; }
 
-    virtual scheduling_type scheduling() const;
+    scheduling_type get_scheduling() const;
     bool scheduling_is_ok( const unsigned bits ) const;
 
+protected:
+    void set_scheduling( scheduling_type scheduling ) { _scheduling = scheduling; }
+
+public:
     virtual unsigned int multiplicity() const;
     virtual bool is_infinite() const;
     bool has_random_queueing() const;
@@ -55,7 +59,8 @@ public:
     static const double PLACE_Y_OFFSET;
 
 private:
-    LQIO::DOM::Entity* _dom;			/* The DOM Representation	*/
+    const LQIO::DOM::Entity* _dom;		/* The DOM Representation	*/
+    scheduling_type _scheduling;
     double _x_pos;
     double _y_pos;
 };

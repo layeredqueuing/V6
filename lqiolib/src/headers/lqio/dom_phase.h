@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- *  $Id: dom_phase.h 15222 2021-12-15 15:41:14Z greg $
+ *  $Id: dom_phase.h 15827 2022-08-14 15:20:00Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -63,7 +63,7 @@ namespace LQIO {
 	    bool hasStochasticCalls() const { return getCalls().size() > 0 && _phaseTypeFlag == Type::STOCHASTIC; }
 	    const Entry* getSourceEntry() const;
 	    void setSourceEntry(Entry* entry);
-	    double getThinkTimeValue() const;
+	    virtual double getThinkTimeValue() const;
 	    const ExternalVariable* getThinkTime() const;
 	    void setThinkTime(const ExternalVariable* thinkTime);
 	    void setThinkTimeValue( double value );

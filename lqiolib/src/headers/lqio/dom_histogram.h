@@ -1,5 +1,5 @@
-/*
- *  $Id: dom_histogram.h 15222 2021-12-15 15:41:14Z greg $
+/* -*- c++ -*-
+ *  $Id: dom_histogram.h 15827 2022-08-14 15:20:00Z greg $
  *
  *  Created by Martin Mroz on 07/07/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -17,8 +17,8 @@ namespace LQIO {
     namespace DOM {
 	class Histogram : public DocumentObject {
 	private:
-	    Histogram( const Histogram& );
-	    Histogram& operator=( const Histogram& );
+	    Histogram( const Histogram& ) = delete;
+	    Histogram& operator=( const Histogram& ) = delete;
 	    
 	public:
 	    enum class Type { CONTINUOUS, DISCRETE };

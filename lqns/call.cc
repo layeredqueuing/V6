@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: call.cc 15762 2022-07-25 16:16:52Z greg $
+ * $Id: call.cc 15827 2022-08-14 15:20:00Z greg $
  *
  * Everything you wanted to know about a call to an entry, but were afraid to ask.
  *
@@ -503,11 +503,11 @@ Call::followInterlock( Interlock::CollectTable& path ) const
 void
 Call::setVisits( const unsigned k, const unsigned p, const double rate )
 {
-    const Entity * aServer = dstTask();
-    if ( aServer->hasServerChain( k ) && hasRendezvous() && !srcTask()->hasInfinitePopulation() ) {
-	Server * aStation = aServer->serverStation();
+    const Entity * server = dstTask();
+    if ( server->hasServerChain( k ) && hasRendezvous() && !srcTask()->hasInfinitePopulation() ) {
+	Server * station = server->serverStation();
 	const unsigned e = dstEntry()->index();
-	aStation->addVisits( e, k, p, rendezvous() * rate );
+	station->addVisits( e, k, p, rendezvous() * rate );
     }
 }
 
@@ -521,12 +521,12 @@ Call::setVisits( const unsigned k, const unsigned p, const double rate )
 void
 Call::setLambda( const unsigned, const unsigned p, const double rate )
 {
-    Server * aStation = dstTask()->serverStation();
+    Server * station = dstTask()->serverStation();
     const unsigned e = dstEntry()->index();
     if ( hasSendNoReply() ) {
-	aStation->addVisits( e, 0, p, getSource()->throughput() * sendNoReply() );
+	station->addVisits( e, 0, p, getSource()->throughput() * sendNoReply() );
     } else if ( hasRendezvous() && srcTask()->isOpenModelServer() && srcTask()->isInfinite() ) {
-	aStation->addVisits( e, 0, p, getSource()->throughput() * rendezvous() );
+	station->addVisits( e, 0, p, getSource()->throughput() * rendezvous() );
     }
 }
 
@@ -536,8 +536,8 @@ Call::setLambda( const unsigned, const unsigned p, const double rate )
 void
 Call::setChain( const unsigned k, const unsigned p, const double rate )
 {
-    const Entity * aServer = dstTask();
-    if ( aServer->hasServerChain( k )  ){
+    const Entity * server = dstTask();
+    if ( server->hasServerChain( k )  ){
 
 	_chainNumber = k;
 
@@ -582,10 +582,10 @@ void
 Call::saveOpen( const unsigned, const unsigned p, const double )
 {
     const unsigned e = dstEntry()->index();
-    const Server * aStation = dstTask()->serverStation();
+    const Server * station = dstTask()->serverStation();
 
-    if ( aStation->V( e, 0, p ) > 0.0 ) {
-	_wait = aStation->W[e][0][p];
+    if ( station->V( e, 0, p ) > 0.0 ) {
+	setWait( station->W[e][0][p] );
     }
 }
 
@@ -601,12 +601,12 @@ Call::saveOpen( const unsigned, const unsigned p, const double )
 void
 Call::saveWait( const unsigned k, const unsigned p, const double )
 {
-    const Entity * aServer = dstTask();
+    const Entity * server = dstTask();
     const unsigned e = dstEntry()->index();
-    const Server * aStation = aServer->serverStation();
+    const Server * station = server->serverStation();
 
-    if ( aStation->V( e, k, p ) > 0.0 ) {
-	_wait = aStation->W[e][k][p];
+    if ( station->V( e, k, p ) > 0.0 ) {
+	setWait( station->W[e][k][p] );
     }
 }
 
@@ -868,11 +868,6 @@ Call::add_wait_to::operator()( double sum, const Call * call ) const
     }
     return sum;
 }
-
-
-/*----------------------------------------------------------------------*/
-/*                              Phase Calls                             */
-/*----------------------------------------------------------------------*/
 
 
 /*----------------------------------------------------------------------*/

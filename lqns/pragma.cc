@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: pragma.cc 15762 2022-07-25 16:16:52Z greg $ *
+ * $Id: pragma.cc 15827 2022-08-14 15:20:00Z greg $ *
  * Pragma processing and definitions.
  *
  * Copyright the Real-Time and Distributed Systems Group,
@@ -43,6 +43,7 @@ const std::map<const std::string,const Pragma::fptr> Pragma::__set_pragma =
 #if RESCHEDULE
     { LQIO::DOM::Pragma::_reschedule_on_async_send_,	&Pragma::setRescheduleOnAsyncSend },
 #endif
+    { LQIO::DOM::Pragma::_save_marginal_probabilities_, &Pragma::setSaveMarginalProbabilities },
     { LQIO::DOM::Pragma::_severity_level_,		&Pragma::setSeverityLevel },
     { LQIO::DOM::Pragma::_spex_comment_,		&Pragma::setSpexComment },
     { LQIO::DOM::Pragma::_spex_header_,			&Pragma::setSpexHeader },
@@ -81,6 +82,7 @@ Pragma::Pragma() :
 #if RESCHEDULE
     _reschedule_on_async_send(false),
 #endif
+    _save_marginal_probabilities(false),
     _severity_level(LQIO::error_severity::ALL),
     _spex_comment(false),
     _spex_header(true),
@@ -420,6 +422,12 @@ void Pragma::setRescheduleOnAsyncSend(const std::string& value)
     _reschedule_on_async_send = LQIO::DOM::Pragma::isTrue(value);
 }
 #endif
+
+
+void Pragma::setSaveMarginalProbabilities(const std::string& value)
+{
+    _save_marginal_probabilities = LQIO::DOM::Pragma::isTrue( value );
+}
 
 
 void Pragma::setSpexComment(const std::string& value)

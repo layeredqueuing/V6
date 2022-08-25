@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: call.cc 15760 2022-07-25 14:36:17Z greg $
+ * $Id: call.cc 15827 2022-08-14 15:20:00Z greg $
  *
  * Everything you wanted to know about a call to an entry, but were afraid to ask.
  *
@@ -1202,9 +1202,6 @@ EntryCall::check() const
 
     for ( unsigned p = 1; p <= maxPhase(); ++p ) {
 	double value = 0.;
-	char p_str[2];
-	p_str[0] = "0123"[p];
-	p_str[1] = '\0';
 	if ( (hasRendezvousForPhase(p) && rendezvous(p).wasSet() && rendezvous(p).getValue( value ))
 	     || (hasSendNoReplyForPhase(p) && sendNoReply(p).wasSet() && sendNoReply(p).getValue( value )) ) {
 	    try {

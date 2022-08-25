@@ -1,7 +1,7 @@
 /* pragma.cc	-- Greg Franks Tue Sep  1 2009
  *
  * ------------------------------------------------------------------------
- * $Id: pragma.cc 15763 2022-07-25 16:51:57Z greg $
+ * $Id: pragma.cc 15854 2022-08-18 22:32:33Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -26,11 +26,12 @@ const std::map<const std::string,Pragma::fptr> Pragma::__set_pragma = {
     { LQIO::DOM::Pragma::_processor_scheduling_,	&Pragma::set_processor_scheduling },
     { LQIO::DOM::Pragma::_queue_size_,			&Pragma::set_queue_size },
     { LQIO::DOM::Pragma::_reschedule_on_async_send_, 	&Pragma::set_reschedule_on_async_send },
+    { LQIO::DOM::Pragma::_save_marginal_probabilities_, &Pragma::set_save_marginal_probabilities },
     { LQIO::DOM::Pragma::_severity_level_, 		&Pragma::set_severity_level },
-    { LQIO::DOM::Pragma::_stop_on_message_loss_,	&Pragma::set_stop_on_message_loss },
-    { LQIO::DOM::Pragma::_task_scheduling_,		&Pragma::set_task_scheduling },
     { LQIO::DOM::Pragma::_spex_comment_, 		&Pragma::set_spex_comment },
-    { LQIO::DOM::Pragma::_spex_header_, 		&Pragma::set_spex_header }
+    { LQIO::DOM::Pragma::_spex_header_, 		&Pragma::set_spex_header },
+    { LQIO::DOM::Pragma::_stop_on_message_loss_,	&Pragma::set_stop_on_message_loss },
+    { LQIO::DOM::Pragma::_task_scheduling_,		&Pragma::set_task_scheduling }
 };
 
 Pragma::Pragma() :
@@ -104,6 +105,13 @@ Pragma::set_reschedule_on_async_send( const std::string& value )
 {
     _reschedule_on_async_send = LQIO::DOM::Pragma::isTrue( value );
 }
+
+void
+Pragma::set_save_marginal_probabilities( const std::string& value )
+{
+    _save_marginal_probabilities = LQIO::DOM::Pragma::isTrue( value );
+}
+
 
 void
 Pragma::set_severity_level(const std::string& value)

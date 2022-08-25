@@ -2,7 +2,7 @@
 # Copyright (C) 2005 Greg Franks <greg@sce.carleton.ca>
 #
 # ------------------------------------------------------------------------
-# $Id: Makefile.am 15689 2022-06-22 14:42:22Z greg $
+# $Id: Makefile.am 15852 2022-08-18 21:14:33Z greg $
 # ------------------------------------------------------------------------
 
 SRVN=	../lqns
@@ -89,17 +89,16 @@ EXTRA_DIST = $(SRCS) $(SRCS2)
 SUFFIXES = .diff .d .svg .lqxo .lqnx 
 
 .lqnx.lqxo:
-	-@$(SRVN) $(OPTS) $<
-	-@srvndiff $(DIFFOPTS) $@ ../../models/regression/lqns-results/$*.p > /dev/null; j=$$?; if test $$? -ge 128; then echo $< faulted; elif test $$j -ne 0; then echo $< failed; fi
-
+	$(SRVN) $(OPTS) $<
+	@srvndiff $(DIFFOPTS) $@ ../../models/regression/lqns-results/$@ > /dev/null; j=$$?; if test $$? -ge 128; then echo $< faulted; elif test $$j -ne 0; then echo $< failed; fi
 
 .lqnx.d:
 	$(SRVN) $(OPTS) $<
 
 .lqxo.diff:
-	-if test -f ../../models/regression/petri-results/$*.p; \
-	then srvndiff -IC ../../models/regression/{petri,sim,lqns}-results/$*.p $< > $@; \
-	else srvndiff -IC ../../models/regression/{sim,lqns}-results/$*.p $< > $@; \
+	-if test -f ../../models/regression/petri-results/$<; \
+	then srvndiff --print-comment -IC ../../models/regression/{petri,sim,lqns}-results/$< $< > $@; \
+	else srvndiff --print-comment -IC ../../models/regression/{sim,lqns}-results/$< $< > $@; \
 	fi
 
 .lqxo.svg:
@@ -155,19 +154,19 @@ distclean:	clean
 
 # 48-activities.lqxo: 48-activities.lqnx
 # 	$(SRVN) $(OPTS) -a $<
-# 	@srvndiff $(DIFFOPTS) $@ ../../models/regression/lqns-results/$*.p
+# 	@srvndiff $(DIFFOPTS) $@ ../../models/regression/lqns-results/$@
 
 90-A01-novar.lqxo: 90-A01.lqnx
 	$(SRVN) -Pvariance=none -a -xo$@ $<
-	@srvndiff $(DIFFOPTS) $@ ../../models/regression/lqns-results/90-A01-novar.p 
+	@srvndiff $(DIFFOPTS) $@ ../../models/regression/lqns-results/$@
 
 90-A01-stoch.lqxo: 90-A01.lqnx
 	$(SRVN) -Pvariance=stochastic -a -xo$@ $<
-	@srvndiff $(DIFFOPTS) $@ ../../models/regression/lqns-results/90-A01-stoch.p
+	@srvndiff $(DIFFOPTS) $@ ../../models/regression/lqns-results/$@
 
 94-5101-a2-q2b1.lqxo: 94-5101-a2-q2b1.lqnx
 	$(SRVN) $(OPTS) -a $<
-	@srvndiff $(DIFFOPTS) $@ ../../models/regression/lqns-results/$*.p
+	@srvndiff $(DIFFOPTS) $@ ../../models/regression/lqns-results/$@
 
 # 71-fair.lqxo: 71-fair.lqnx
 # 	$(SRVN) $(OPTS) --iteration-limit=100 -a $<

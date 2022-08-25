@@ -9,7 +9,7 @@
  *
  * October, 2021
  *
- * $Id: model.h 15678 2022-06-21 15:01:56Z greg $
+ * $Id: model.h 15827 2022-08-14 15:20:00Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -36,7 +36,7 @@ namespace LQIO {
 
 namespace Model {
 
-    enum class Mode { FILENAME, DIRECTORY };
+    enum class Mode { PATHNAME, FILENAME_STRIP, DIRECTORY_STRIP, DIRECTORY };
 
     class Object {
     public:
@@ -44,7 +44,9 @@ namespace Model {
 	{
 	    ACTIVITY,
 	    ACTIVITY_CALL,
+	    DOCUMENT,
 	    ENTRY,
+	    ENTITY,
 	    JOIN,
 	    PHASE,
 	    PHASE_CALL,
@@ -75,6 +77,8 @@ namespace Model {
 	    ENTRY_UTILIZATION, 
 	    HOLD_TIMES, 
 	    JOIN_DELAYS, 
+	    MARGINAL_PROBABILITIES,
+	    MVA_STEPS, 
 	    OPEN_WAIT, 
 	    PHASE_DEMAND,
 	    PHASE_PROCESSOR_WAITING,
@@ -90,6 +94,7 @@ namespace Model {
 	    TASK_MULTIPLICITY,
 	    TASK_THROUGHPUT,
 	    TASK_UTILIZATION,
+	    TASK_THINK_TIME,
 	    THROUGHPUT_BOUND
 	};
 
@@ -153,6 +158,7 @@ namespace Model {
 	size_t x_index() const { return _x_index.first; }
 	size_t x_value() const { return _x_index.second; }
 	void set_x_value( double value ) { _x_index.second = value; }
+	void print_filename( const std::string& ) const;
 
     private:
 	std::ostream& _output;

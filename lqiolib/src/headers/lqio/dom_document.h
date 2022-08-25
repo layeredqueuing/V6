@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- *  $Id: dom_document.h 15760 2022-07-25 14:36:17Z greg $
+ *  $Id: dom_document.h 15827 2022-08-14 15:20:00Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -42,8 +42,8 @@ namespace LQIO {
 	    enum class cached { SET_FALSE, SET_TRUE, NOT_SET };
 
 	private:
-	    Document& operator=( const Document& );
-	    Document( const Document& );
+	    Document& operator=( const Document& ) = delete;
+	    Document( const Document& ) = delete;
 
 	    /* Constructors and Destructors */
 

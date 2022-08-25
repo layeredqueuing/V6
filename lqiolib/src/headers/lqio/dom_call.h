@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- *  $Id: dom_call.h 15760 2022-07-25 14:36:17Z greg $
+ *  $Id: dom_call.h 15827 2022-08-14 15:20:00Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -46,11 +46,10 @@ namespace LQIO {
 	    typedef bool (DOM::Call::*boolCallFunc)() const;
 
 	private:
-	    Call& operator=( const Call& );		// Copying is verbotten
-	    Call( const Call& );
+	    Call& operator=( const Call& ) = delete;
+	    Call( const Call& );		/* For clone */
 
 	public:
-
 	    /* Designated initializer for the call information */
 	    Call(const Document * document, const Type type, Phase* source, Entry* destination, const ExternalVariable* callMean=nullptr );
 	    Call(const Document * document, Entry *source, Entry* destination, const ExternalVariable* callMean=nullptr );

@@ -1,5 +1,5 @@
-/*
- *  $Id: dom_entity.h 15222 2021-12-15 15:41:14Z greg $
+/* -*- c++ -*-
+ *  $Id: dom_entity.h 15827 2022-08-14 15:20:00Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -12,6 +12,9 @@
 #include "input.h"
 #include "dom_object.h"
 #include <utility>
+#include <vector>
+
+#define BUG_393 1
 
 namespace LQIO {
     namespace DOM {
@@ -40,6 +43,9 @@ namespace LQIO {
 
 	protected:
 	    Entity(const Entity&);
+
+	private:
+	    Entity& operator=( const Entity& ) = delete;
 
 	public:
 
@@ -70,14 +76,25 @@ namespace LQIO {
 	    const bool isMultiserver() const;
 	    const bool isInfinite() const;
 
+#if defined(BUG_393)
+	    const std::vector<double>& getResultMarginalQueueProbabilities() const { return _resultMarginalQueueProbabilities; }
+	    std::vector<double>& getResultMarginalQueueProbabilities() { return _resultMarginalQueueProbabilities; }
+	    void setResultMarginalQueueProbabilitiesSize( size_t i ) { _resultMarginalQueueProbabilities.resize( i ); }
+	    size_t getResultMarginalQueueProbabilitiesSize() const { return _resultMarginalQueueProbabilities.size(); }
+	    void setResultMarginalQueueProbability( size_t i, double value ) { _resultMarginalQueueProbabilities.at(i) = value; }
+	    double getResultMarginalQueueProbability( size_t i ) const { return _resultMarginalQueueProbabilities.at(i); }
+#endif
+	    
 	private:
-	    Entity& operator=( const Entity& );
-
 	    /* Instance variables for Entities */
 	    unsigned int _entityId;
 	    scheduling_type _entitySchedulingType;
 	    const ExternalVariable* _copies;
 	    const ExternalVariable* _replicas;
+
+#if defined(BUG_393)
+	    std::vector<double> _resultMarginalQueueProbabilities;
+#endif
 	};
     }
 }

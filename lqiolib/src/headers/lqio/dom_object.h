@@ -1,5 +1,5 @@
 /*  -*- C++ -*-
- *  $Id: dom_object.h 15760 2022-07-25 14:36:17Z greg $
+ *  $Id: dom_object.h 15827 2022-08-14 15:20:00Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -80,6 +80,7 @@ namespace LQIO {
 	    /* Input values -- overriden by subclasses */
 	    
 	    virtual double getServiceTimeValue() const { subclass(); return 0.; }
+	    virtual double getThinkTimeValue() const { subclass(); return 0.; }
 	    virtual double getCallMeanValue() const { subclass(); return 0.; }
 	    virtual double getCopiesValueAsDouble() const { subclass(); return 0.; }
 

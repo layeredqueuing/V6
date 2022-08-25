@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: lqn2ps.cc 15760 2022-07-25 14:36:17Z greg $
+ * $Id: lqn2ps.cc 15827 2022-08-14 15:20:00Z greg $
  *
  * Command line processing.
  *
@@ -184,20 +184,24 @@ main(int argc, char *argv[])
 
     /* If we are invoked as lqn2xxx or rep2flat, then enable other options. */
 
-    const char * p = strrchr( LQIO::io_vars.toolname(), '2' );
-    if ( p != nullptr ) {
-	p += 1;
+    const size_t pos = LQIO::io_vars.lq_toolname.find_last_of( '2' );
+    if ( pos != std::string::npos ) {
+#if !defined(__WINNT__)
+	const std::string format = LQIO::io_vars.lq_toolname.substr( pos + 1 );
+#else
+	std::string format = LQIO::io_vars.lq_toolname.substr( pos + 1 );
+	format.erase( format.find_first_of( '.' ) );
+#endif
 	try {
-	    setOutputFormat( Options::get_file_format( p ) );		// Throws if ext not found
+	    setOutputFormat( Options::get_file_format( format ) );		// Throws if ext not found
 	}
 	catch ( std::invalid_argument& e ) {
 #if REP2FLAT
-	    if ( strcmp( p, "flat" ) == 0 ) {
+	    if ( format == "flat" ) {
 		Flags::set_replication( Replication::EXPAND );
 	    } else {
 #endif
-		std::cerr << LQIO::io_vars.lq_toolname << ": command not found." << std::endl;
-		exit( 1 );
+		std::cerr << LQIO::io_vars.lq_toolname << ": output format " << format << " not supported, using ps." << std::endl;
 #if REP2FLAT
 	    }
 #endif
@@ -209,7 +213,7 @@ main(int argc, char *argv[])
     char * options;
     std::string output_file_name = "";
 
-    sscanf( "$Date: 2022-07-25 10:36:17 -0400 (Mon, 25 Jul 2022) $", "%*s %s %*s", copyrightDate );
+    sscanf( "$Date: 2022-08-14 11:20:00 -0400 (Sun, 14 Aug 2022) $", "%*s %s %*s", copyrightDate );
 
     static std::string opts = "";
 #if HAVE_GETOPT_H

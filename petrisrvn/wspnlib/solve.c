@@ -1,5 +1,5 @@
 /*
- *  $Id: solve.c 14930 2021-07-20 12:00:33Z greg $
+ *  $Id: solve.c 15827 2022-08-14 15:20:00Z greg $
  *
  * Solve the petri net "net_name".  The actual work is performed by a subprocess.
  */
@@ -30,8 +30,9 @@ static char pathname[MAXPATHLEN];
 void
 solve( const char *net_name )
 {
-	(void) solve2( net_name, 2, SOLVE_STEADY_STATE );
-	collect_res( TRUE, toolname );
+	if ( solve2( net_name, 2, SOLVE_STEADY_STATE ) ) {
+		collect_res( TRUE, toolname );
+	}
 }
 
 

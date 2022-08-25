@@ -10,7 +10,7 @@
  * November, 1994
  *
  * ------------------------------------------------------------------------
- * $Id: task.cc 15762 2022-07-25 16:16:52Z greg $
+ * $Id: task.cc 15846 2022-08-17 21:08:01Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -1720,6 +1720,8 @@ Task::insertDOMResults(void) const
 {
     if ( getReplicaNumber() != 1 ) return *this;		/* NOP */
 
+    Entity::insertDOMResults();
+    
     double totalTaskUtil   = 0.0;
     double totalThroughput = 0.0;
     double totalProcUtil   = 0.0;
@@ -2152,7 +2154,7 @@ ServerTask::makeServer( const unsigned nChains )
 	    default:
 	    case Pragma::Multiserver::DEFAULT:
 		if ( (copies() < 128 && nChains <= 5) || isOpenModelServer() ) {
-		    if ( dynamic_cast<Conway_Multi_Server *>(_station) && _station->marginalProbabilitiesSize() == copies() ) return nullptr;
+		    if ( dynamic_cast<Conway_Multi_Server *>(_station) && _station->getMarginalProbabilitiesSize() == copies() ) return nullptr;
 		    _station = new Conway_Multi_Server( copies(), nEntries(), nChains, maxPhase());
 		} else {
 		    if ( dynamic_cast<Rolia_Multi_Server *>(_station) && _station->mu() == copies() ) return nullptr;
@@ -2161,22 +2163,22 @@ ServerTask::makeServer( const unsigned nChains )
 		break;
 
 	    case Pragma::Multiserver::BRUELL:
-		if ( dynamic_cast<Bruell_Multi_Server *>(_station) && _station->marginalProbabilitiesSize() == copies()) return nullptr;
+		if ( dynamic_cast<Bruell_Multi_Server *>(_station) && _station->getMarginalProbabilitiesSize() == copies()) return nullptr;
 		_station = new Bruell_Multi_Server(    copies(), nEntries(), nChains, maxPhase());
 		break;
 
 	    case Pragma::Multiserver::CONWAY:
-		if ( dynamic_cast<Conway_Multi_Server *>(_station) && _station->marginalProbabilitiesSize() == copies() ) return nullptr;
+		if ( dynamic_cast<Conway_Multi_Server *>(_station) && _station->getMarginalProbabilitiesSize() == copies() ) return nullptr;
 		_station = new Conway_Multi_Server(    copies(), nEntries(), nChains, maxPhase());
 		break;
 
 	    case Pragma::Multiserver::REISER:
-		if ( dynamic_cast<Reiser_Multi_Server *>(_station) && _station->marginalProbabilitiesSize() == copies() ) return nullptr;
+		if ( dynamic_cast<Reiser_Multi_Server *>(_station) && _station->getMarginalProbabilitiesSize() == copies() ) return nullptr;
 		_station = new Reiser_Multi_Server(    copies(), nEntries(), nChains, maxPhase());
 		break;
 
 	    case Pragma::Multiserver::REISER_PS:
-		if ( dynamic_cast<Reiser_PS_Multi_Server *>(_station) && _station->marginalProbabilitiesSize() == copies() ) return nullptr;
+		if ( dynamic_cast<Reiser_PS_Multi_Server *>(_station) && _station->getMarginalProbabilitiesSize() == copies() ) return nullptr;
 		_station = new Reiser_PS_Multi_Server( copies(), nEntries(), nChains, maxPhase());
 		break;
 
@@ -2191,7 +2193,7 @@ ServerTask::makeServer( const unsigned nChains )
 		break;
 
 	    case Pragma::Multiserver::SCHMIDT:
-		if ( dynamic_cast<Schmidt_Multi_Server *>(_station) && _station->marginalProbabilitiesSize() == copies()) return nullptr;
+		if ( dynamic_cast<Schmidt_Multi_Server *>(_station) && _station->getMarginalProbabilitiesSize() == copies()) return nullptr;
 		_station = new Schmidt_Multi_Server(   copies(), nEntries(), nChains, maxPhase());
 		break;
 
@@ -2213,17 +2215,17 @@ ServerTask::makeServer( const unsigned nChains )
 	    case Pragma::Multiserver::DEFAULT:
 	    case Pragma::Multiserver::CONWAY:
 	    case Pragma::Multiserver::SCHMIDT:
-		if ( dynamic_cast<Markov_Phased_Conway_Multi_Server *>(_station) && _station->marginalProbabilitiesSize() == copies()) return nullptr;
+		if ( dynamic_cast<Markov_Phased_Conway_Multi_Server *>(_station) && _station->getMarginalProbabilitiesSize() == copies()) return nullptr;
 		_station = new Markov_Phased_Conway_Multi_Server(    copies(), nEntries(), nChains, maxPhase());
 		break;
 
 	    case Pragma::Multiserver::REISER:
-		if ( dynamic_cast<Markov_Phased_Reiser_Multi_Server *>(_station) && _station->marginalProbabilitiesSize() == copies()) return nullptr;
+		if ( dynamic_cast<Markov_Phased_Reiser_Multi_Server *>(_station) && _station->getMarginalProbabilitiesSize() == copies()) return nullptr;
 		_station = new Markov_Phased_Reiser_Multi_Server(    copies(), nEntries(), nChains, maxPhase());
 		break;
 
 	    case Pragma::Multiserver::ROLIA:
-		if ( dynamic_cast<Markov_Phased_Rolia_Multi_Server *>(_station) && _station->marginalProbabilitiesSize() == copies()) return nullptr;
+		if ( dynamic_cast<Markov_Phased_Rolia_Multi_Server *>(_station) && _station->getMarginalProbabilitiesSize() == copies()) return nullptr;
 		_station = new Markov_Phased_Rolia_Multi_Server(     copies(), nEntries(), nChains, maxPhase());
 		break;
 
@@ -2252,13 +2254,13 @@ ServerTask::makeServer( const unsigned nChains )
 	    case Pragma::Multiserver::DEFAULT:
 	    case Pragma::Multiserver::CONWAY:
 	    case Pragma::Multiserver::SCHMIDT:
-		if ( dynamic_cast<Phased_Conway_Multi_Server *>(_station) && _station->marginalProbabilitiesSize() == copies() ) return nullptr;
+		if ( dynamic_cast<Phased_Conway_Multi_Server *>(_station) && _station->getMarginalProbabilitiesSize() == copies() ) return nullptr;
 		_station = new Phased_Conway_Multi_Server(    copies(), nEntries(), nChains, maxPhase());
 		break;
 
 	    case Pragma::Multiserver::REISER:
 	    case Pragma::Multiserver::REISER_PS:
-		if ( dynamic_cast<Phased_Reiser_Multi_Server *>(_station) && _station->marginalProbabilitiesSize() == copies() ) return nullptr;
+		if ( dynamic_cast<Phased_Reiser_Multi_Server *>(_station) && _station->getMarginalProbabilitiesSize() == copies() ) return nullptr;
 		_station = new Phased_Reiser_Multi_Server(    copies(), nEntries(), nChains, maxPhase());
 		break;
 

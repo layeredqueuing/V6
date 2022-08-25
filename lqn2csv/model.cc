@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: model.cc 15678 2022-06-21 15:01:56Z greg $
+ * $Id: model.cc 15827 2022-08-14 15:20:00Z greg $
  *
  * Command line processing.
  *
@@ -54,6 +54,8 @@ const std::map<Model::Result::Type,Model::Result::result_fields> Model::Result::
     { Model::Result::Type::ENTRY_UTILIZATION,          { Model::Object::Type::ENTRY,         "Utilization", "util", &LQIO::DOM::DocumentObject::getResultUtilization         } },
     { Model::Result::Type::HOLD_TIMES,                 { Model::Object::Type::JOIN,          "Hold Time",   "hold", &LQIO::DOM::DocumentObject::getResultHoldingTime         } },
     { Model::Result::Type::JOIN_DELAYS,                { Model::Object::Type::JOIN,          "Join Delay",  "join", &LQIO::DOM::DocumentObject::getResultJoinDelay           } },
+    { Model::Result::Type::MARGINAL_PROBABILITIES,     { Model::Object::Type::ENTITY,        "Probability", "prob", nullptr } },
+    { Model::Result::Type::MVA_STEPS,                  { Model::Object::Type::DOCUMENT,      "step()",      "step", nullptr } },
     { Model::Result::Type::OPEN_WAIT,                  { Model::Object::Type::ENTRY,         "Waiting",     "wait", &LQIO::DOM::DocumentObject::getResultWaitingTime         } },
     { Model::Result::Type::PHASE_DEMAND,               { Model::Object::Type::PHASE,         "Demand",      "demd", &LQIO::DOM::DocumentObject::getServiceTimeValue          } },
     { Model::Result::Type::PHASE_PROCESSOR_WAITING,    { Model::Object::Type::PHASE,         "Waiting",     "wait", &LQIO::DOM::DocumentObject::getResultProcessorWaiting    } },
@@ -66,6 +68,7 @@ const std::map<Model::Result::Type,Model::Result::result_fields> Model::Result::
     { Model::Result::Type::PROCESSOR_MULTIPLICITY,     { Model::Object::Type::PROCESSOR,     "Copies",      "mult", &LQIO::DOM::DocumentObject::getCopiesValueAsDouble       } },
     { Model::Result::Type::PROCESSOR_UTILIZATION,      { Model::Object::Type::PROCESSOR,     "Utilization", "util", &LQIO::DOM::DocumentObject::getResultUtilization         } },
     { Model::Result::Type::TASK_MULTIPLICITY,          { Model::Object::Type::TASK,          "Copies",      "mult", &LQIO::DOM::DocumentObject::getCopiesValueAsDouble       } },
+    { Model::Result::Type::TASK_THINK_TIME,            { Model::Object::Type::TASK,          "Think Time",  "thnk", &LQIO::DOM::DocumentObject::getThinkTimeValue            } },
     { Model::Result::Type::TASK_THROUGHPUT,            { Model::Object::Type::TASK,          "Throughput",  "tput", &LQIO::DOM::DocumentObject::getResultThroughput          } },
     { Model::Result::Type::TASK_UTILIZATION,           { Model::Object::Type::TASK,          "Utilization", "util", &LQIO::DOM::DocumentObject::getResultUtilization         } },
     { Model::Result::Type::THROUGHPUT_BOUND,           { Model::Object::Type::ENTRY,         "Bound",       "bond", &LQIO::DOM::DocumentObject::getResultThroughputBound     } }
@@ -73,6 +76,8 @@ const std::map<Model::Result::Type,Model::Result::result_fields> Model::Result::
 
 const std::map<const Model::Object::Type,const std::pair<const std::string,const std::string>> Model::Object::__object_type = {
     { Model::Object::Type::ACTIVITY,  { "Activity",  "Act"   } },
+    { Model::Object::Type::DOCUMENT,  { "Document",  "Doc"   } },
+    { Model::Object::Type::ENTITY,    { "Entity",    "Ta/Pr" } },
     { Model::Object::Type::ENTRY,     { "Entry",     "Entry" } },
     { Model::Object::Type::JOIN,      { "Join",      "Join"  } },
     { Model::Object::Type::PHASE,     { "Phase",     "Phase" } },
@@ -88,6 +93,7 @@ bool Model::Result::isIndependentVariable( Model::Result::Type type )
 	Type::ACTIVITY_DEMAND,
 	Type::ACTIVITY_REQUEST_RATE,
 	Type::TASK_MULTIPLICITY,
+	Type::TASK_THINK_TIME,
 	Type::PROCESSOR_MULTIPLICITY };
 
     return independent.find( type ) != independent.end();
@@ -126,13 +132,13 @@ Model::PrintHeader::operator()( const std::pair<std::string,Model::Result::Type>
  * Load a file then extract results using Model::Result::operator().
  */
 
-void Model::Process::operator()( const std::string& filename )
+void Model::Process::operator()( const std::string& pathname )
 {
     if ( _limit > 0 && _i >= _limit ) return;
     
     /* Load results */
     unsigned int error_code = 0;
-    LQIO::DOM::Document * dom = LQIO::DOM::Document::load( filename, LQIO::DOM::Document::InputFormat::AUTOMATIC, error_code, true );
+    LQIO::DOM::Document * dom = LQIO::DOM::Document::load( pathname, LQIO::DOM::Document::InputFormat::AUTOMATIC, error_code, true );
     if ( !dom ) {
 	throw std::runtime_error( "Input model was not loaded successfully." );
     }
@@ -153,21 +159,35 @@ void Model::Process::operator()( const std::string& filename )
 	}
     }
 
-    if ( _mode == Mode::FILENAME ) {
-	const std::ios_base::fmtflags flags = _output.setf( std::ios::left, std::ios::adjustfield );
-	if ( width != 0 ) {
-	    _output << std::setw(_header_column_width) << filename;
-	} else {
-	    _output << "\"" << filename << "\"";
-	}
-	_output.flags(flags);
-    } else {
+
+    if ( _mode == Mode::DIRECTORY ) {
 	_output << _i;				// File (record) number
+    } else if ( _mode == Mode::FILENAME_STRIP ) {
+	const std::string dirname = pathname.substr( 0, pathname.find_last_of( "/" ) );
+	print_filename( dirname );		// Directory name
+    } else if ( _mode == Mode::DIRECTORY_STRIP ) {
+	const std::string filename = pathname.substr(pathname.find_last_of( "/" ) + 1);
+	print_filename( filename );		// File name
+    } else {
+	print_filename( pathname );
     }
 
     std::for_each( data.begin(), data.end(), Model::PrintLine( _output ) );
 
     _output << std::endl;
+}
+
+
+void
+Model::Process::print_filename( const std::string& filename ) const
+{
+    const std::ios_base::fmtflags flags = _output.setf( std::ios::left, std::ios::adjustfield );
+    if ( width != 0 ) {
+	_output << std::setw(_header_column_width) << filename;
+    } else {
+	_output << "\"" << filename << "\"";
+    }
+    _output.flags(flags);
 }
 
 /*
@@ -178,13 +198,22 @@ std::vector<double>
 Model::Result::operator()( const std::vector<double>& in, const std::pair<std::string,Model::Result::Type>& arg ) const
 {
     const Model::Result::result_fields& result = __results.at( arg.second );
-    const LQIO::DOM::DocumentObject * object = findObject( arg.first, result.type );
     std::vector<double> out = in;
 
-    if ( object != nullptr ) {
-	out.push_back( (object->*(result.f))() );		/* Invoke function to find value	*/
+    if ( arg.second == Result::Type::MVA_STEPS ) {
+	out.push_back( dom().getResultMVAStep() );
+
     } else {
-	out.push_back( std::numeric_limits<double>::quiet_NaN() );
+	const LQIO::DOM::DocumentObject * object = findObject( arg.first, result.type );
+
+	if ( object == nullptr ) {
+	    out.push_back( std::numeric_limits<double>::quiet_NaN() );
+	} else if ( result.f != nullptr ) {
+	    out.push_back( (object->*(result.f))() );		/* Invoke function to find value	*/
+	} else if ( arg.second == Result::Type::MARGINAL_PROBABILITIES && dynamic_cast<const LQIO::DOM::Entity *>(object) != nullptr ) {
+	    const std::vector<double>& marginals = dynamic_cast<const LQIO::DOM::Entity *>(object)->getResultMarginalQueueProbabilities();
+	    copy(marginals.begin(), marginals.end(), back_inserter(out));
+	}
     }
 
     return out;
@@ -240,6 +269,13 @@ Model::Result::findObject( const std::string& arg, Model::Object::Type type ) co
 
     case Object::Type::PROCESSOR:	/* processor */
 	object = dom().getProcessorByName( name );
+	break;
+
+    case Object::Type::ENTITY:		/* Try for the task first, then try the processor */
+	object = dom().getTaskByName( name );
+	if ( object == nullptr ) {
+	    object = dom().getProcessorByName( name );
+	}
 	break;
 
 //    case result::Type::HOLD_TIMES:

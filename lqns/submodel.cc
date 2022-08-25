@@ -1,6 +1,6 @@
 /* -*- c++ -*-
  * submodel.C	-- Greg Franks Wed Dec 11 1996
- * $Id: submodel.cc 15762 2022-07-25 16:16:52Z greg $
+ * $Id: submodel.cc 15827 2022-08-14 15:20:00Z greg $
  *
  * MVA submodel creation and solution.  This class is the interface
  * between the input model consisting of processors, tasks, and entries,
@@ -956,6 +956,14 @@ MVASubmodel::openModelUtilization( const Server& station ) const
 {
     return _openModel != nullptr ? _openModel->utilization( station ) : 0.0;
 }
+
+#if defined(BUG_393)
+double
+MVASubmodel::closedModelMarginalQueueProbability( const Server& station, unsigned int i ) const
+{
+    return _closedModel != nullptr ? static_cast<double>(_closedModel->marginalQueueProbability( station, i ) ) : 0.0;
+}
+#endif
 
 /*----------------------------------------------------------------------*/
 /* Printing functions.							*/

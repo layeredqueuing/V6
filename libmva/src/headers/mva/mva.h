@@ -9,7 +9,7 @@
  * November, 1994
  * August, 2005
  *
- * $Id: mva.h 15518 2022-04-05 13:36:29Z greg $
+ * $Id: mva.h 15827 2022-08-14 15:20:00Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -111,7 +111,7 @@ public:
     double sumOf_U2_m( const Server& station, const unsigned k, const Population &N, const unsigned j ) const;
     double sumOf_U2_m( const Server& station, const Population &N, const unsigned j ) const;
     double sumOf_P( const Server& station, const Population &N, const unsigned j ) const;
-    double sumOf_SP2( const Server& station, const Population &N, const unsigned j ) const;
+    double sumOf_SP( const Server& station, const Population &N, const unsigned j ) const;
     double sumOf_alphaP( const Server& station, const Population &N ) const;
     double PB(  const Server& station, const Population &N, const unsigned j ) const;
     virtual Probability priorityInflation( const Server& station, const Population &N, const unsigned k ) const = 0;
@@ -127,6 +127,7 @@ public:
     double utilization( const Server&, const Population& N ) const;
     double utilization( const Server&, const unsigned k ) const;
     double utilization( const Server&, const unsigned k, const Population& N, const unsigned j ) const;
+    Probability marginalQueueProbability( const Server&, const unsigned i ) const;
     double queueLength( const Server& station ) const { return queueLength( station, NCust ); }
     double queueLength( const Server&, const Population& N ) const;
     double queueLength( const Server&, const unsigned k ) const;
@@ -166,8 +167,8 @@ public:
 protected:
     void step( const Population& );
     void step( const Population&, const unsigned );
-    virtual void marginalProbabilities( const unsigned m, const Population& N ) = 0;
-    virtual void marginalProbabilities2( const unsigned m, const Population& N ) = 0;
+    virtual void marginalQueueProbabilities( const unsigned m, const Population& N ) = 0;
+    virtual void marginalStateProbabilities( const unsigned m, const Population& N ) = 0;
     void setNonILRate( ) const;
     void setNonILRate(const Population &N ) const;
 #if BUG_267
@@ -181,7 +182,7 @@ protected:
     std::ostream& printP( std::ostream&, const Population & N ) const;
     std::ostream& printR( std::ostream& ) const;
 #endif
-    std::ostream& printVectorP( std::ostream& output, const unsigned m, const Population& N ) const;
+    std::ostream& printStateP( std::ostream& output, const unsigned m, const Population& N ) const;
 
     double tau_overlap( const Server&, const unsigned j, const unsigned k, const Population& N ) const;
 private:
@@ -237,7 +238,6 @@ private:
     unsigned nPrio;			/* Number of unique priorities	*/
     unsigned long stepCount;		/* Number of iterations of step	*/
     Vector<unsigned> _isThread;
-    unsigned maxOffset;			/* For L, U, X and P dimensions	*/
 };
 
 /* -------------------------------------------------------------------- */
@@ -254,8 +254,8 @@ public:
     virtual bool isExactMVA() const {return true;}
 
 protected:
-    virtual void marginalProbabilities( const unsigned m, const Population& N );
-    virtual void marginalProbabilities2( const unsigned m, const Population& N );
+    virtual void marginalQueueProbabilities( const unsigned m, const Population& N );
+    virtual void marginalStateProbabilities( const unsigned m, const Population& N );
 
     virtual const PopulationMap& getMap() const { return map; }
 
@@ -288,8 +288,8 @@ protected:
     void copy_L( const unsigned n ) const;
     double max_delta_L( const unsigned n, const Population &N ) const;
 
-    virtual void marginalProbabilities( const unsigned m, const Population& N );
-    virtual void marginalProbabilities2( const unsigned m, const Population& N );
+    virtual void marginalQueueProbabilities( const unsigned m, const Population& N );
+    virtual void marginalStateProbabilities( const unsigned m, const Population& N );
 
     virtual double D_mekj( const unsigned, const unsigned, const unsigned, const unsigned ) const { return 0.0; }
 

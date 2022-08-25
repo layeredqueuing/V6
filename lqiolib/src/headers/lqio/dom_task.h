@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- *  $Id: dom_task.h 15222 2021-12-15 15:41:14Z greg $
+ *  $Id: dom_task.h 15827 2022-08-14 15:20:00Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -46,6 +46,9 @@ namespace LQIO {
 	    static bool isRWLockTask( const std::pair<std::string,LQIO::DOM::Task *>& task ) { return task.second->getSchedulingType() == SCHEDULE_RWLOCK; }
 	    static bool isDecisionTask( const std::pair<std::string,LQIO::DOM::Task *>& task ) { return task.second->getSchedulingType() == SCHEDULE_ABORT || task.second->getSchedulingType() == SCHEDULE_TIMEOUT || task.second->getSchedulingType() == SCHEDULE_RETRY; }
 
+	private:
+	    Task& operator=( const Task& ) = delete;
+
 	public:
 	    /* Designated initializer for the Task entity */
 	    Task(const Document * document, const std::string& name, const scheduling_type scheduling,
@@ -75,7 +78,7 @@ namespace LQIO {
 	    void setPriority(const ExternalVariable *);
 	    void setPriorityValue( int );
 	    bool hasPriority() const;
-	    double getThinkTimeValue() const;
+	    virtual double getThinkTimeValue() const;
 	    const ExternalVariable * getThinkTime() const;
 	    void setThinkTime(const ExternalVariable * thinkTime);
 	    void setThinkTimeValue( double value );
@@ -150,9 +153,6 @@ namespace LQIO {
 	    virtual Task& setResultProcessorUtilizationVariance(const double resultProcessorUtilizationVariance);
 	    double getResultBottleneckStrength() const;
 	    virtual Task& setResultBottleneckStrength( const double resultBottleneckStrength );
-
-	private:
-	    Task& operator=( const Task& );
 
 	private:
 

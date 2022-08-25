@@ -1,5 +1,5 @@
 /*
- *  $Id: srvn_output.cpp 15760 2022-07-25 14:36:17Z greg $
+ *  $Id: srvn_output.cpp 15827 2022-08-14 15:20:00Z greg $
  *
  * Copyright the Real-Time and Distributed Systems Group,
  * Department of Systems and Computer Engineering,
@@ -414,6 +414,12 @@ namespace LQIO {
 
         std::for_each( _entities.begin(), _entities.end(), ProcessorOutput( output, &ProcessorOutput::printUtilizationAndWaiting ) );
 
+#if defined(BUG_393)
+	/* If marginals available... */
+
+	std::for_each( _entities.begin(), _entities.end(), EntityOutput( output, &EntityOutput::printMarginalQueueProbabilities ) );
+#endif
+	
         output.flags(oldFlags);
         return output;
     }
@@ -1382,6 +1388,14 @@ namespace LQIO {
     /* -------------------------------------------------------------------- */
 
     void
+    SRVN::EntityOutput::operator()( const std::pair<unsigned,DOM::Entity *>& ep ) const
+    {
+        std::ios_base::fmtflags oldFlags = _output.setf( std::ios::left, std::ios::adjustfield );
+        (this->*_func)( *ep.second );
+        _output.flags(oldFlags);
+    }
+    
+    void
     SRVN::EntityOutput::printCommonParameters( const DOM::Entity& entity ) const
     {
         bool print_task_name = true;
@@ -1402,6 +1416,22 @@ namespace LQIO {
         }
         _output << std::setw(9) << myType.str() << " " << std::setw(5) << entity.getReplicasValue() << " ";
     }
+
+#if defined(BUG_393)
+    void
+    SRVN::EntityOutput::printMarginalQueueProbabilities( const DOM::Entity& entity ) const
+    {
+	const std::vector<double>& marginals = entity.getResultMarginalQueueProbabilities();
+	if ( marginals.empty() || __parseable ) return;
+
+	_output << newline << newline << "Marginal Queue Probabilities for processor: " << entity.getName() << newline;
+	for ( unsigned int i = 0; i < marginals.size(); ++i ) {
+	    if ( i != 0 ) _output << ", ";
+	    _output << "P_" << i << "=" << marginals.at(i);
+	}
+	_output << newline;
+    }
+#endif
 
     std::ostream&
     SRVN::EntityInput::print( std::ostream& output, const DOM::Entity * entity )
