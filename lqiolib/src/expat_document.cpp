@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- * $Id: expat_document.cpp 15869 2022-09-20 09:05:46Z greg $
+ * $Id: expat_document.cpp 15884 2022-09-21 14:04:35Z greg $
  *
  * Read in XML input files.
  *
@@ -64,7 +64,7 @@
 
 extern "C" {
 #include "srvn_gram.h"
-    int LQIO_parse_string( int start_token, const char * s );
+    int srvnparse_string( int start_token, const char * s );
 }
 
 namespace LQIO {
@@ -251,9 +251,9 @@ namespace LQIO {
         Expat_Document::start( void *data, const XML_Char *el, const XML_Char **attr )
         {
             Expat_Document * document = static_cast<Expat_Document *>(data);
-	    LQIO_lineno = XML_GetCurrentLineNumber(document->_parser);
+	    srvnlineno = XML_GetCurrentLineNumber(document->_parser);
             if ( Document::__debugXML ) {
-		std::cerr << std::setw(4) << LQIO_lineno << ": ";
+		std::cerr << std::setw(4) << srvnlineno << ": ";
                 for ( unsigned i = 0; i < document->_stack.size(); ++i ) {
                     std::cerr << "  ";
                 }
@@ -305,7 +305,7 @@ namespace LQIO {
 		    extra_object = top.extra_object;		/* Propogate any extra object up */
 		}
                 if ( Document::__debugXML ) {
-		    std::cerr << std::setw(4) << LQIO_lineno << ": ";
+		    std::cerr << std::setw(4) << srvnlineno << ": ";
                     for ( unsigned i = 1; i < document->_stack.size(); ++i ) {
                         std::cerr << "  ";
                     }
@@ -1318,7 +1318,7 @@ namespace LQIO {
 
 	void Expat_Document::endSPEXParameters( DocumentObject * object, const XML_Char * element )
         {
-	    LQIO_parse_string( SPEX_PARAMETER, _text.c_str() );
+	    srvnparse_string( SPEX_PARAMETER, _text.c_str() );
         }
 
 	void Expat_Document::startSPEXResults( DocumentObject * object, const XML_Char * element, const XML_Char ** attributes )
@@ -1328,7 +1328,7 @@ namespace LQIO {
 
 	void Expat_Document::endSPEXResults( DocumentObject * object, const XML_Char * element )
         {
-	    LQIO_parse_string( SPEX_RESULT, _text.c_str() );
+	    srvnparse_string( SPEX_RESULT, _text.c_str() );
         }
 
 	void Expat_Document::startSPEXConvergence( DocumentObject * object, const XML_Char * element, const XML_Char ** attributes )
@@ -1338,7 +1338,7 @@ namespace LQIO {
 
 	void Expat_Document::endSPEXConvergence( DocumentObject * object, const XML_Char * element )
         {
-	    LQIO_parse_string( SPEX_CONVERGENCE, _text.c_str() );
+	    srvnparse_string( SPEX_CONVERGENCE, _text.c_str() );
         }
 
         void

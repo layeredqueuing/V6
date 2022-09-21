@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: lqn2ps.cc 15827 2022-08-14 15:20:00Z greg $
+ * $Id: lqn2ps.cc 15884 2022-09-21 14:04:35Z greg $
  *
  * Command line processing.
  *
@@ -36,7 +36,7 @@
 #include "model.h"
 #include "help.h"
 
-extern "C" int LQIO_debug;
+extern "C" int srvndebug;
 extern "C" int resultdebug;
 
 bool SolverInterface::Solve::solveCallViaLQX = false;/* Flag when a solve() call was made */
@@ -213,7 +213,7 @@ main(int argc, char *argv[])
     char * options;
     std::string output_file_name = "";
 
-    sscanf( "$Date: 2022-08-14 11:20:00 -0400 (Sun, 14 Aug 2022) $", "%*s %s %*s", copyrightDate );
+    sscanf( "$Date: 2022-09-21 10:04:35 -0400 (Wed, 21 Sep 2022) $", "%*s %s %*s", copyrightDate );
 
     static std::string opts = "";
 #if HAVE_GETOPT_H
@@ -626,7 +626,7 @@ main(int argc, char *argv[])
 		break;
 
 	    case 0x200+'Y':
-		LQIO_debug = true;
+		srvndebug = true;
 		break;
 
 	    case 'Z':	/* Always set... :-) */

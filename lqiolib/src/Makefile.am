@@ -1,4 +1,4 @@
-# $Id: Makefile.am 15869 2022-09-20 09:05:46Z greg $
+# $Id: Makefile.am 15884 2022-09-21 14:04:35Z greg $
 # -------------------------------------------------------------------- [Libtool libsrvnio2]
 
 # This project uses Libtool to generate a product
@@ -61,11 +61,11 @@ liblqio_la_LDFLAGS =  -no-undefined -version-info 0:1:0
 
 # Force rename of variables.  For FLEX -- should check. :-)
 srvn_scan.c: srvn_scan.l srvn_gram.h headers/lqio/srvn_input.h
-	$(LEX) -t $(LFLAGS) -PLQIO_ srvn_scan.l > srvn_scan.c
+	$(LEX) -t $(LFLAGS) -Psrvn srvn_scan.l > srvn_scan.c
 
 # Force rename of variables.  For BISON -- should check. :-)
 srvn_gram.c srvn_gram.h: srvn_gram.y headers/lqio/srvn_input.h
-	$(YACC) -dtv -p LQIO_ -o srvn_gram.c srvn_gram.y
+	$(YACC) -dtv -p srvn -o srvn_gram.c srvn_gram.y
 
 # Force rename of variables.  For FLEX -- should check. :-)
 srvn_result_scan.c: srvn_result_scan.l srvn_result_gram.h

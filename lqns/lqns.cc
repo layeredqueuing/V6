@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: lqns.cc 15762 2022-07-25 16:16:52Z greg $
+ * $Id: lqns.cc 15884 2022-09-21 14:04:35Z greg $
  *
  * Command line processing.
  *
@@ -44,7 +44,7 @@
 #include "option.h"
 #include "pragma.h"
 
-extern "C" int LQIO_debug;
+extern "C" int srvndebug;
 
 static char copyrightDate[20];
 
@@ -142,7 +142,7 @@ int main (int argc, char *argv[])
     
     command_line = LQIO::io_vars.lq_toolname;
 
-    sscanf( "$Date: 2022-07-25 12:16:52 -0400 (Mon, 25 Jul 2022) $", "%*s %s %*s", copyrightDate );
+    sscanf( "$Date: 2022-09-21 10:04:35 -0400 (Wed, 21 Sep 2022) $", "%*s %s %*s", copyrightDate );
 
     matherr_disposition = FP_IMMEDIATE_ABORT;
 
@@ -405,7 +405,7 @@ int main (int argc, char *argv[])
 		break;
 
 	    case 512+'y':
-		LQIO_debug = true;
+		srvndebug = true;
 		break;
 
 	    case 'z':

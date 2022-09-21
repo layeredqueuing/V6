@@ -8,7 +8,7 @@
 /************************************************************************/
 
 /*
- * $Id: input.h 15760 2022-07-25 14:36:17Z greg $
+ * $Id: input.h 15884 2022-09-21 14:04:35Z greg $
  */
 
 #if	!defined(LQIO_INPUT_H)
@@ -100,7 +100,7 @@ namespace LQIO {
     extern lqio_params_stats io_vars;
 }
 
-extern int LQIO_lineno;				/* Input line number -- can't use namespace because it's used with C */
+extern int srvnlineno;				/* Input line number -- can't use namespace because it's used with C */
 
 extern struct scheduling_label_t {
     const char * str;
