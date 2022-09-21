@@ -1,5 +1,5 @@
 /*
- * $Id: qnsolver.cc 15678 2022-06-21 15:01:56Z greg $
+ * $Id: qnsolver.cc 15879 2022-09-21 10:59:48Z greg $
  */
 
 #include "config.h"
@@ -266,6 +266,9 @@ static void exec( const std::string& input_file_name, const std::string& output_
     };
 
     if ( verbose_flag ) std::cerr << input_file_name << ": load... ";
+    if ( LQIO::DOM::Document::getInputFormatFromFilename( input_file_name, LQIO::DOM::Document::InputFormat::JMVA ) == LQIO::DOM::Document::InputFormat::QNAP2 ) {
+	BCMP::QNAP2_Document input( input_file_name );
+    }
 #if HAVE_EXPAT_H
     BCMP::JMVA_Document input( input_file_name );
     if ( input.load() ) {

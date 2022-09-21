@@ -8,7 +8,7 @@
 /************************************************************************/
 
 /*
- * $Id: model.cc 15854 2022-08-18 22:32:33Z greg $
+ * $Id: model.cc 15869 2022-09-20 09:05:46Z greg $
  *
  * Load the SRVN model.
  */
@@ -644,11 +644,11 @@ Model::compute()
 	    (void) fprintf( stderr, "%s: Cannot read results for %s\n", LQIO::io_vars.toolname(), netname().c_str() );
 	    rc = false;
 	} else {
-	    if ( stats.precision >= 0.01 || __open_class_error ) {
-		rc = false;
-	    }
 	    for ( std::vector<Task *>::const_iterator t = ::__task.begin(); t != ::__task.end(); ++t ) {
 		(*t)->get_results();		/* Read net to get tokens. */
+	    }
+	    if ( stats.precision >= 0.01 || __open_class_error || LQIO::io_vars.anError() ) {
+		rc = false;
 	    }
 	    insert_DOM_results( rc == true, stats );	/* Save results */
 

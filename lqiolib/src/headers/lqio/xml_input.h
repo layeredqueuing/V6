@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- *  $Id: xml_input.h 15689 2022-06-22 14:42:22Z greg $
+ *  $Id: xml_input.h 15869 2022-09-20 09:05:46Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  */
@@ -15,6 +15,7 @@
 namespace XML {
     void invalid_argument( const std::string& attr, const std::string& arg );
     double get_double( const char *, const char * );
+    long get_long( const char *, const char * );
 
     class element_error : public std::runtime_error
     {

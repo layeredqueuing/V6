@@ -12,7 +12,7 @@
  * July 2007.
  *
  * ------------------------------------------------------------------------
- * $Id: entry.cc 15854 2022-08-18 22:32:33Z greg $
+ * $Id: entry.cc 15869 2022-09-20 09:05:46Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -2168,7 +2168,7 @@ Entry::setForwardingInformation( Entry* toEntry, LQIO::DOM::Call * call )
 {
     /* Do some checks for sanity */
     if ( owner()->isReferenceTask() ) {
-	getDOM()->runtime_error( LQIO::ERR_REFERENCE_TASK_FORWARDING, name().c_str() );
+	owner()->getDOM()->runtime_error( LQIO::ERR_REFERENCE_TASK_FORWARDING, name().c_str() );
     } else if ( forward( toEntry ) > 0.0 ) {
 	LQIO::input_error2( LQIO::WRN_MULTIPLE_SPECIFICATION );
     } else {

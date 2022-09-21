@@ -1,5 +1,5 @@
 #----------------------------------------------------------------------
-# $Id: Makefile.am 15663 2022-06-09 23:46:11Z greg $
+# $Id: Makefile.am 15869 2022-09-20 09:05:46Z greg $
 #----------------------------------------------------------------------
 
 SUBDIRS		= regression 
@@ -29,6 +29,8 @@ distclean-local:
 		rm -f config.cache
 
 if HAVE_PS2PDF
+all-local:	lqns.pdf
+
 install-data-local:	lqns.pdf
 
 lqns.pdf:	$(man1_MANS)

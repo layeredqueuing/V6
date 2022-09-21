@@ -12,7 +12,7 @@
  * November, 1994
  *
  * ----------------------------------------------------------------------
- * $Id: errmsg.cc 15762 2022-07-25 16:16:52Z greg $
+ * $Id: errmsg.cc 15869 2022-09-20 09:05:46Z greg $
  * ----------------------------------------------------------------------
  */
 
@@ -27,7 +27,6 @@
 
 std::vector< std::pair<unsigned, LQIO::error_message_type> > local_error_messages =
 {
-    {  ERR_ARRIVAL_RATE,			{ LQIO::error_severity::ERROR,    "Arrival rate of %g to entry \"%s\" exceeds service rate of %g." } },
     {  ERR_BOGUS_COPIES,			{ LQIO::error_severity::ERROR,    "Derived population of %g for task \"%s\" is not valid." } },
     {  WRN_COEFFICIENT_OF_VARIATION,		{ LQIO::error_severity::WARNING,  "Coefficient of variation is incompatible with phase type at %s \"%s\" %s \"%s\"." } },
     {  WRN_MULTI_PHASE_INFINITE_SERVER,		{ LQIO::error_severity::WARNING,  "Entry \"%s\" on infinite server \"%s\" has %d phases." } },
