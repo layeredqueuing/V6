@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- * $Id: expat_document.cpp 15884 2022-09-21 14:04:35Z greg $
+ * $Id: expat_document.cpp 15900 2022-09-24 12:54:03Z greg $
  *
  * Read in XML input files.
  *
@@ -1419,15 +1419,13 @@ namespace LQIO {
                          || scheduling_flag == SCHEDULE_HOL
                          || scheduling_flag == SCHEDULE_PPR
                          || scheduling_flag == SCHEDULE_RAND ) {
-                        processor->input_error( LQIO::WRN_QUANTUM_SCHEDULING, scheduling_label[scheduling_flag].str );
+                        processor->input_error( LQIO::WRN_QUANTUM_SCHEDULING, scheduling_label.at(scheduling_flag).str.c_str() );
                     } else {
                         processor->setQuantum( quantum );
                     }
                 } else if ( scheduling_flag == SCHEDULE_CFS 
-			    || scheduling_flag == SCHEDULE_PS
-			    || scheduling_flag == SCHEDULE_PS_HOL
-			    || scheduling_flag == SCHEDULE_PS_PPR) {
-                    processor->input_error( LQIO::ERR_NO_QUANTUM_SCHEDULING, scheduling_label[scheduling_flag].str );
+			    || scheduling_flag == SCHEDULE_PS ) {
+                    processor->input_error( LQIO::ERR_NO_QUANTUM_SCHEDULING, scheduling_label.at(scheduling_flag).str.c_str() );
                 }
 
 
@@ -2395,7 +2393,7 @@ namespace LQIO {
 	{
 	    for ( ; *attributes; attributes += 2 ) {
 		if ( strcasecmp( *attributes, Xscheduling ) == 0 ) {
-		    std::map<const char *,const scheduling_type>::const_iterator i = scheduling_table.find( *(attributes+1) );
+		    std::map<const std::string,const scheduling_type>::const_iterator i = scheduling_table.find( *(attributes+1) );
 		    if ( i == scheduling_table.end() ) {
 			XML::invalid_argument( *attributes, *(attributes+1) );
 		    } else {
@@ -2634,10 +2632,10 @@ namespace LQIO {
             output << XML::start_element( Xprocessor )
                    << XML::attribute( Xname, processor.getName() );
 	    if ( processor.isInfinite() ) {
-		output << XML::attribute( Xscheduling, scheduling_label[SCHEDULE_DELAY].XML );        // see labels.cpp
+		output << XML::attribute( Xscheduling, scheduling_label.at(SCHEDULE_DELAY).XML );        // see labels.cpp
 		/* All other attributes don't matter for a delay server */
 	    } else {
-		output << XML::attribute( Xscheduling, scheduling_label[scheduling].XML );            // see labels.cpp
+		output << XML::attribute( Xscheduling, scheduling_label.at(scheduling).XML );            // see labels.cpp
 		if ( processor.isMultiserver() ) {
 		    output << XML::attribute( Xmultiplicity, *processor.getCopies() );
 		}
@@ -2741,9 +2739,9 @@ namespace LQIO {
         {
             output << XML::start_element( Xtask ) << XML::attribute( Xname, task.getName() );
 	    if ( task.isInfinite() ) {
-		output << XML::attribute( Xscheduling, scheduling_label[SCHEDULE_DELAY].XML );            // see lqio/labels.c
+		output << XML::attribute( Xscheduling, scheduling_label.at(SCHEDULE_DELAY).XML );            // see lqio/labels.c
 	    } else { 
-		output << XML::attribute( Xscheduling, scheduling_label[task.getSchedulingType()].XML );            // see lqio/labels.c
+		output << XML::attribute( Xscheduling, scheduling_label.at(task.getSchedulingType()).XML );            // see lqio/labels.c
 		if ( task.isMultiserver() ) {
 		    output << XML::attribute( Xmultiplicity, *task.getCopies() );
 		}

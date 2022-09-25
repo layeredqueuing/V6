@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- *  $Id: common_io.h 15363 2022-01-05 14:09:57Z greg $
+ *  $Id: common_io.h 15900 2022-09-24 12:54:03Z greg $
  *
  *  Greg Franks
  */
@@ -113,7 +113,6 @@ namespace LQIO {
 
 	public:
 	    Common_IO();
-
 	    class Compare {
 	    public:
 		Compare() {}
@@ -132,7 +131,7 @@ namespace LQIO {
 	    const ConfidenceIntervals _conf_95;
 	    const ConfidenceIntervals _conf_99;
 
-	    static std::map<const char *,const scheduling_type,Common_IO::Compare> scheduling_table;
+	    static std::map<const std::string,const scheduling_type> scheduling_table;
 
 	private:
 	    static std::ostream& printSVNId( std::ostream& output ) { output << "$" << "Id" << "$"; return output; }

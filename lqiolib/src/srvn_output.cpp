@@ -1,5 +1,5 @@
 /*
- *  $Id: srvn_output.cpp 15827 2022-08-14 15:20:00Z greg $
+ *  $Id: srvn_output.cpp 15900 2022-09-24 12:54:03Z greg $
  *
  * Copyright the Real-Time and Distributed Systems Group,
  * Department of Systems and Computer Engineering,
@@ -1466,9 +1466,9 @@ namespace LQIO {
         const std::ios_base::fmtflags oldFlags = _output.setf( std::ios::left, std::ios::adjustfield );
         SRVN::EntityOutput::printCommonParameters( processor );
 	if ( processor.isInfinite() ) {
-	    _output << scheduling_label[SCHEDULE_DELAY].str;
+	    _output << scheduling_label.at(SCHEDULE_DELAY).str;
 	} else {
-	    _output << scheduling_label[processor.getSchedulingType()].str;
+	    _output << scheduling_label.at(processor.getSchedulingType()).str;
 	    if ( processor.hasRate() ) {
 		_output << " " << Input::print_double_parameter( processor.getRate() );
 	    }
@@ -1720,9 +1720,9 @@ namespace LQIO {
     {
 	output << " ";
 	if ( processor.isInfinite() ) {
-	    output << scheduling_label[SCHEDULE_DELAY].flag;
+	    output << scheduling_label.at(SCHEDULE_DELAY).flag;
 	} else {
-	    output << scheduling_label[static_cast<unsigned int>(processor.getSchedulingType())].flag;
+	    output << scheduling_label.at(processor.getSchedulingType()).flag;
 	    if ( processor.hasQuantumScheduling() ) {
 		output << ' ' << Input::print_double_parameter( processor.getQuantum() );
 	    }
@@ -2145,9 +2145,9 @@ namespace LQIO {
     {
 	output << " ";
         if ( task.isInfinite() ) {
-            output << scheduling_label[SCHEDULE_DELAY].flag;
+            output << scheduling_label.at(SCHEDULE_DELAY).flag;
         } else {
-	    output << scheduling_label[task.getSchedulingType()].flag;
+	    output << scheduling_label.at(task.getSchedulingType()).flag;
 	}
         return output;
     }

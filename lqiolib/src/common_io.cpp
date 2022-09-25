@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: common_io.cpp 15330 2022-01-02 20:49:03Z greg $
+ * $Id: common_io.cpp 15900 2022-09-24 12:54:03Z greg $
  *
  * Read in XML input files.
  *
@@ -44,29 +44,27 @@
 namespace LQIO {
     namespace DOM {
 
-	bool Common_IO::Compare::operator()( const char * s1, const char * s2 ) const { return strcasecmp( s1, s2 ) < 0; }
-
-	std::map<const char *, const scheduling_type,Common_IO::Compare> Common_IO::scheduling_table =
+	std::map<const std::string, const scheduling_type> Common_IO::scheduling_table =
 	{
-	    { scheduling_label[SCHEDULE_CUSTOMER].XML, 	SCHEDULE_CUSTOMER },
-	    { scheduling_label[SCHEDULE_DELAY].XML,	SCHEDULE_DELAY },
-	    { scheduling_label[SCHEDULE_FIFO].XML, 	SCHEDULE_FIFO },
-	    { scheduling_label[SCHEDULE_HOL].XML,  	SCHEDULE_HOL },
-	    { scheduling_label[SCHEDULE_PPR].XML,  	SCHEDULE_PPR },
-	    { scheduling_label[SCHEDULE_RAND].XML, 	SCHEDULE_RAND },
-	    { scheduling_label[SCHEDULE_PS].XML,   	SCHEDULE_PS },
-	    { scheduling_label[SCHEDULE_PS_HOL].XML,    SCHEDULE_PS_HOL },
-	    { scheduling_label[SCHEDULE_PS_PPR].XML,    SCHEDULE_PS_PPR },
-	    { scheduling_label[SCHEDULE_POLL].XML, 	SCHEDULE_POLL },
-	    { scheduling_label[SCHEDULE_BURST].XML,	SCHEDULE_BURST },
-	    { scheduling_label[SCHEDULE_UNIFORM].XML,   SCHEDULE_UNIFORM },
-	    { scheduling_label[SCHEDULE_SEMAPHORE].XML, SCHEDULE_SEMAPHORE },
-	    { scheduling_label[SCHEDULE_CFS].XML,	SCHEDULE_CFS },
-	    { scheduling_label[SCHEDULE_RWLOCK].XML,    SCHEDULE_RWLOCK },
-	    { scheduling_label[SCHEDULE_TIMEOUT].XML,   SCHEDULE_TIMEOUT },
-	    { scheduling_label[SCHEDULE_ABORT].XML,     SCHEDULE_ABORT },
-	    { scheduling_label[SCHEDULE_RETRY].XML,     SCHEDULE_RETRY },
-	    { scheduling_label[SCHEDULE_INF_RETRY].XML, SCHEDULE_INF_RETRY }
+	    { SCHEDULE::ABORT,		    SCHEDULE_ABORT },
+	    { SCHEDULE::BURST,		    SCHEDULE_BURST },
+	    { SCHEDULE::CFS,		    SCHEDULE_CFS },
+	    { SCHEDULE::CUSTOMER,	    SCHEDULE_CUSTOMER },
+	    { SCHEDULE::DELAY,		    SCHEDULE_DELAY },
+	    { SCHEDULE::FIFO,		    SCHEDULE_FIFO },
+	    { SCHEDULE::HOL,		    SCHEDULE_HOL },
+	    { SCHEDULE::INF_RETRY,	    SCHEDULE_INF_RETRY },
+	    { SCHEDULE::LIFO,		    SCHEDULE_LIFO },
+	    { SCHEDULE::POLL,		    SCHEDULE_POLL },
+	    { SCHEDULE::PPR,		    SCHEDULE_PPR },
+	    { SCHEDULE::PS,		    SCHEDULE_PS },
+	    { SCHEDULE::RAND,		    SCHEDULE_RAND },
+	    { SCHEDULE::RETRY,		    SCHEDULE_RETRY },
+	    { SCHEDULE::RWLOCK,		    SCHEDULE_RWLOCK },
+	    { SCHEDULE::RWLOCK,		    SCHEDULE_RWLOCK },
+	    { SCHEDULE::SEMAPHORE,	    SCHEDULE_SEMAPHORE },
+	    { SCHEDULE::TIMEOUT,	    SCHEDULE_TIMEOUT },
+	    { SCHEDULE::UNIFORM,	    SCHEDULE_UNIFORM }
 	};
 
 	Common_IO::Common_IO()

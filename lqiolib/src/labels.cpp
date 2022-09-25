@@ -7,7 +7,7 @@
 /************************************************************************/
 
 /*
- * $Id: labels.cpp 14882 2021-07-07 11:09:54Z greg $
+ * $Id: labels.cpp 15900 2022-09-24 12:54:03Z greg $
  */
 
 #include "input.h"
@@ -71,28 +71,44 @@ namespace LQIO {
  * Scheduling types.
  */
 
-const struct scheduling_label_t scheduling_label[N_SCHEDULING_TYPES] =
+const char * LQIO::SCHEDULE::ABORT      = "abort";
+const char * LQIO::SCHEDULE::BURST	= "burst";
+const char * LQIO::SCHEDULE::CFS	= "cfs";
+const char * LQIO::SCHEDULE::CUSTOMER	= "ref";
+const char * LQIO::SCHEDULE::DELAY	= "inf";
+const char * LQIO::SCHEDULE::FIFO	= "fcfs";
+const char * LQIO::SCHEDULE::HOL	= "hol";
+const char * LQIO::SCHEDULE::INF_RETRY  = "inf-retry";
+const char * LQIO::SCHEDULE::LIFO	= "lcfs";
+const char * LQIO::SCHEDULE::POLL	= "poll";
+const char * LQIO::SCHEDULE::PPR	= "pri";
+const char * LQIO::SCHEDULE::PS	    	= "ps";
+const char * LQIO::SCHEDULE::RAND	= "rand";
+const char * LQIO::SCHEDULE::RETRY      = "retry";
+const char * LQIO::SCHEDULE::RWLOCK	= "rwlock";
+const char * LQIO::SCHEDULE::SEMAPHORE  = "semaphore";
+const char * LQIO::SCHEDULE::TIMEOUT    = "timeout";
+const char * LQIO::SCHEDULE::UNIFORM	= "uniform";
+
+const std::map<const scheduling_type,const LQIO::SCHEDULE::label_t> scheduling_label = 
 {
-
-    { "CUST",         "ref",	   'r' },
-    { "DELAY",        "inf",	   'i' },
-    { "FCFS",         "fcfs",	   'f' },
-    { "HOL",          "hol",	   'h' },
-    { "PPR",          "pri",	   'p' },
-    { "RAND",         "rand",	   'r' },
-    { "PS",           "ps",	   's' },
-    { "PS-HOL",       "ps-hol",    'H' },
-    { "PS-PPR",       "ps-pri",    'P' },	/* Proc */
-    { "POLL",         "poll",	   'P' },	/* Task */
-    { "BURST",        "burst",     'b' },
-    { "UNIFORM",      "uniform",   'u' },
-    { "SEMAPHORE",    "semaphore", 'S' },
-    { "CFS",          "cfs",	   'c' },
-    { "RWLOCK",       "rwlock",    'w' },
-    { "TIMEOUT",      "timeout",   'T' },
-    { "ABORT",        "abort",     'T' },
-    { "RETRY",        "retry",     'R' },
-    { "INF-RETRY",    "inf-retry", 'R' }
-
+    { SCHEDULE_ABORT,       { "ABORT",        LQIO::SCHEDULE::ABORT,       'T' } },
+    { SCHEDULE_BURST,       { "BURST",	      LQIO::SCHEDULE::BURST,       'b' } },
+    { SCHEDULE_CFS,         { "CFS",	      LQIO::SCHEDULE::CFS,         'c' } },
+    { SCHEDULE_CUSTOMER,    { "CUST",	      LQIO::SCHEDULE::CUSTOMER,    'r' } },
+    { SCHEDULE_DELAY,       { "DELAY",	      LQIO::SCHEDULE::DELAY,       'i' } },
+    { SCHEDULE_FIFO,        { "FCFS",	      LQIO::SCHEDULE::FIFO,        'f' } },
+    { SCHEDULE_HOL,         { "HOL",	      LQIO::SCHEDULE::HOL,         'h' } },
+    { SCHEDULE_INF_RETRY,   { "INF_RETRY",    LQIO::SCHEDULE::INF_RETRY,   'R' } },
+    { SCHEDULE_LIFO,        { "LCFS",	      LQIO::SCHEDULE::LIFO,        'l' } },
+    { SCHEDULE_POLL,        { "POLL",	      LQIO::SCHEDULE::POLL,        'P' } },	/* Task */
+    { SCHEDULE_PPR,         { "PPR",	      LQIO::SCHEDULE::PPR,         'p' } },
+    { SCHEDULE_PS,          { "PS",	      LQIO::SCHEDULE::PS,          's' } },
+    { SCHEDULE_RAND,        { "RAND",	      LQIO::SCHEDULE::RAND,        'r' } },
+    { SCHEDULE_RETRY,       { "RETRY",        LQIO::SCHEDULE::RETRY,       'R' } },
+    { SCHEDULE_RWLOCK,      { "RWLOCK",	      LQIO::SCHEDULE::RWLOCK,      'w' } },
+    { SCHEDULE_SEMAPHORE,   { "SEMAPHORE",    LQIO::SCHEDULE::SEMAPHORE,   'S' } },
+    { SCHEDULE_TIMEOUT,     { "TIMEOUT",      LQIO::SCHEDULE::TIMEOUT,     'T' } },
+    { SCHEDULE_UNIFORM,     { "UNIFORM",      LQIO::SCHEDULE::UNIFORM,     'u' } },
 };
 

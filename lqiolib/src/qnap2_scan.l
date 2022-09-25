@@ -104,20 +104,20 @@ with			return QNAP_WITH;
 
 {S}			return *qnap2text;
 {D}+			{
-    				qnap2lval.anInt = strtoul( (const char *)&qnap2text[0], 0, 10 );
+    				qnap2lval.aLong = strtoul( (const char *)&qnap2text[0], 0, 10 );
 				if ( errno == ERANGE ) {
 				    errno = 0; /* Reset for next conversion */
 				    qnap2lval.aString = dup_qnap2text( &qnap2text[0], qnap2leng-1 );
 				    return RANGE_ERR;
 				} else {
-				    return QNAP_INTEGER;
+				    return LONG;
 				}
     
 			}
 
 {D}+"."{D}*({E})?	|
 {D}*"."{D}+({E})?	|
-{D}+{E}			{ return QNAP_REAL; }
+{D}+{E}			{ return DOUBLE; }
 
 ({C}|{U})({C}|{D}|{U})*	{ qnap2lval.aString = dup_qnap2text( &qnap2text[0], qnap2leng ); return QNAP_IDENTIFIER; }
 %%
