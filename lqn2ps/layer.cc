@@ -952,10 +952,10 @@ std::ostream& Layer::printBCMPQueueingNetwork( std::ostream& output ) const
 
     switch ( Flags::output_format() ) {
 #if JMVA_OUTPUT && HAVE_EXPAT_H
-    case File_Format::JMVA:	output << BCMP::JMVA_Document("",_bcmp_model);	break;
+    case File_Format::JMVA:	output << QNIO::JMVA_Document("",_bcmp_model);	break;
 #endif
 #if QNAP2_OUTPUT
-    case File_Format::QNAP2:	output << BCMP::QNAP2_Document("",_bcmp_model);	break;
+    case File_Format::QNAP2:	QNIO::QNAP2_Document("",_bcmp_model).printInput( output );	break;
 #endif
     default:
 	break;

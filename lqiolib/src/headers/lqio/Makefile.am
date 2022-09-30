@@ -36,6 +36,7 @@ noinst_HEADERS = bcmp_bindings.h \
 	qnap2_document.h \
 	rapidxml.h \
 	rapidxml_print.h \
+	qnio_document.h \
 	srvn_input.h \
 	srvn_output.h \
 	srvn_results.h \

@@ -836,7 +836,7 @@ namespace LQIO {
 		break;
 
 	    case InputFormat::JMVA:
-		rc = BCMP::JMVA_Document::load( *document, input_filename );
+		rc = QNIO::JMVA_Document::load( *document, input_filename );
 		break;
 #else
 	    case InputFormat::XML:

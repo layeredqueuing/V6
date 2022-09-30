@@ -116,8 +116,9 @@ Processor::configure( const unsigned nSubmodels )
 	minS = std::min( minS, (*entry)->serviceTime() );
 	maxS = std::max( maxS, (*entry)->serviceTime() );
     }
-    if ( maxS > 0. && minS / maxS < 0.1
-	 && !schedulingIsOk( SCHED_PS_BIT|SCHED_PS_HOL_BIT|SCHED_PS_PPR_BIT|SCHED_DELAY_BIT ) ) {
+
+    /* Warn on wide service time range for FIFO scheduling. */
+    if ( maxS > 0. && minS / maxS < 0.1 && !isMultiServer() && scheduling() != SCHEDULE_DELAY && scheduling() != SCHEDULE_PS ) {
 	LQIO::runtime_error( ADV_SERVICE_TIME_RANGE, getDOM()->getTypeName(), name().c_str(), minS, maxS );
     }
     Entity::configure( nSubmodels );

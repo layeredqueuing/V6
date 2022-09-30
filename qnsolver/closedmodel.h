@@ -45,7 +45,7 @@ public:
     };
 
 public:
-    ClosedModel( Model& parent, BCMP::JMVA_Document& input, Model::Solver mva );
+    ClosedModel( Model& parent, QNIO::Document& input, Model::Solver mva );
     virtual ~ClosedModel();
 
     bool construct();

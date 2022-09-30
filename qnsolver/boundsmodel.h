@@ -33,7 +33,7 @@ class BoundsModel : public Model {
 public:
     friend class Model;
     
-    BoundsModel( Model& parent, BCMP::JMVA_Document& input );
+    BoundsModel( Model& parent, QNIO::Document& input );
     virtual ~BoundsModel();
 
     explicit operator bool() const { return _result == true; }

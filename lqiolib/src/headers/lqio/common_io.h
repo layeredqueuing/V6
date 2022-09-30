@@ -7,6 +7,7 @@
 #ifndef __LQIO_COMMON_IO
 #define __LQIO_COMMON_IO
 
+#if defined(__cplusplus)
 #include <string>
 #include <ostream>
 #include <map>
@@ -213,5 +214,15 @@ namespace LQIO {
     std::string ltrim(const std::string& s);
     std::string rtrim(const std::string& s);
 }
+#endif
 
+/* flex scanner */
+#if defined(__cplusplus)
+extern "C" {
+#endif
+    extern char * lqio_duplicate_string( char * str, int len );
+    extern char * lqio_duplicate_comment( char * str, int len );
+#if defined(__cplusplus)
+}
+#endif
 #endif

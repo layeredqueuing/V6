@@ -29,7 +29,7 @@
 #include <mva/multserv.h>
 #include <mva/open.h>
 
-OpenModel::OpenModel( Model& parent, BCMP::JMVA_Document& input ) : Model(input,Model::Solver::OPEN), _parent(parent), _solver(nullptr)
+OpenModel::OpenModel( Model& parent, QNIO::Document& input ) : Model(input,Model::Solver::OPEN), _parent(parent), _solver(nullptr)
 {
     const size_t K = _model.n_chains(type());
     const size_t M = _model.n_stations(type());

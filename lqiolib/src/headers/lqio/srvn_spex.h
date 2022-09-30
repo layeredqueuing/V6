@@ -42,7 +42,7 @@ namespace LQIO {
 	class BCMP_to_LQN;
     }
 }
-namespace BCMP {
+namespace QNIO {
     class JMVA_Document;
 }
 
@@ -106,7 +106,7 @@ namespace LQIO {
     typedef void (*setSpexFunc)( const LQIO::DOM::ExternalVariable* );
 
     class Spex {
-	friend class BCMP::JMVA_Document;
+	friend class QNIO::JMVA_Document;
 	friend class DOM::JSON_Document;
 	friend class DOM::Expat_Document;
 	friend class DOM::BCMP_to_LQN;

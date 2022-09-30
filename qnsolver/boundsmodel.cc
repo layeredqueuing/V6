@@ -22,7 +22,7 @@
 #include <lqio/dom_extvar.h>
 #include "boundsmodel.h"
 
-BoundsModel::BoundsModel( Model& parent, BCMP::JMVA_Document& input ) : Model(input,Model::Solver::BOUNDS), _parent(parent), _bounds()
+BoundsModel::BoundsModel( Model& parent, QNIO::Document& input ) : Model(input,Model::Solver::BOUNDS), _parent(parent), _bounds()
 {
     const size_t K = _model.n_chains(type());
     const size_t M = _model.n_stations(type());

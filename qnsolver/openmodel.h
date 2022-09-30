@@ -33,7 +33,7 @@ class OpenModel : public Model {
 public:
     friend class Model;
     
-    OpenModel( Model& parent, BCMP::JMVA_Document& input );
+    OpenModel( Model& parent, QNIO::Document& input );
     virtual ~OpenModel();
 
     explicit operator bool() const { return _result == true; }

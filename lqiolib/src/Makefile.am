@@ -32,6 +32,7 @@ liblqio_la_SOURCES = bcmp_bindings.cpp \
 	json_document.cpp \
 	labels.cpp \
 	pmif_document.cpp \
+	qnio_document.cpp \
 	qnap2_document.cpp \
 	qnap2_gram.y \
 	qnap2_scan.l \
@@ -78,7 +79,7 @@ srvn_result_gram.c srvn_result_gram.h: srvn_result_gram.y
 qnap2_scan.c: qnap2_scan.l qnap2_gram.h
 	$(LEX) -t $(LFLAGS) -Pqnap2 qnap2_scan.l > qnap2_scan.c
 
-qnap2_gram.c: qnap2_gram.y 
+qnap2_gram.c qnap2_gram.h: qnap2_gram.y 
 	$(YACC) -dtv -p qnap2 -o qnap2_gram.c qnap2_gram.y
 
 

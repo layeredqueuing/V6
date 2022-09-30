@@ -46,7 +46,6 @@ namespace LQIO {
 
 	std::map<const std::string, const scheduling_type> Common_IO::scheduling_table =
 	{
-	    { SCHEDULE::ABORT,		    SCHEDULE_ABORT },
 	    { SCHEDULE::BURST,		    SCHEDULE_BURST },
 	    { SCHEDULE::CFS,		    SCHEDULE_CFS },
 	    { SCHEDULE::CUSTOMER,	    SCHEDULE_CUSTOMER },
@@ -60,7 +59,6 @@ namespace LQIO {
 	    { SCHEDULE::PS,		    SCHEDULE_PS },
 	    { SCHEDULE::RAND,		    SCHEDULE_RAND },
 	    { SCHEDULE::RETRY,		    SCHEDULE_RETRY },
-	    { SCHEDULE::RWLOCK,		    SCHEDULE_RWLOCK },
 	    { SCHEDULE::RWLOCK,		    SCHEDULE_RWLOCK },
 	    { SCHEDULE::SEMAPHORE,	    SCHEDULE_SEMAPHORE },
 	    { SCHEDULE::TIMEOUT,	    SCHEDULE_TIMEOUT },
@@ -242,4 +240,47 @@ static inline double tv_to_double( struct timeval& tv ) { return (static_cast<do
 	size_t end = s.find_last_not_of(WHITESPACE);
 	return (end == std::string::npos) ? "" : s.substr(0, end + 1);
     }    
+}
+
+/*
+ * Copy str to mallocated storage.
+ */
+
+char *
+lqio_duplicate_string( char * str, int len )
+{
+    char * p = (char *)malloc( (unsigned)len+1 );
+
+    if ( p ) {
+	(void) strncpy( p, (char *)str, len );
+	/* strip trailing whitespace */
+	for ( ; len > 0 && isspace( p[len-1] ); len-- );
+	p[len] = '\0';
+    }
+    return p;
+}
+
+
+/*
+ * Copy str to mallocated storage.
+ * Strip out '\' sequences.
+ */
+
+char *
+lqio_duplicate_comment( char * str, int len )
+{
+    char * p = (char *)malloc( (unsigned)len+1 );
+    char * q = p;
+
+    if ( p ) {
+	while ( *str && len ) {
+	    if ( *str != '\\' ) {
+		*p++ = *str;
+	    }
+	    ++str;
+	    --len;
+	}
+	*p = '\0';
+    }
+    return q;
 }
