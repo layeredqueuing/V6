@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: entity.cc 15869 2022-09-20 09:05:46Z greg $
+ * $Id: entity.cc 15943 2022-10-04 22:24:49Z greg $
  *
  * Everything you wanted to know about a task or processor, but were
  * afraid to ask.
@@ -159,7 +159,7 @@ bool
 Entity::check() const
 {
     if ( !schedulingIsOk( validScheduling() ) ) {
-	getDOM()->runtime_error( LQIO::WRN_SCHEDULING_NOT_SUPPORTED, scheduling_label[(unsigned)scheduling()].str );
+	getDOM()->runtime_error( LQIO::WRN_SCHEDULING_NOT_SUPPORTED, scheduling_label.at(scheduling()).str.c_str() );
 	getDOM()->setSchedulingType(defaultScheduling());
     }
     return true;

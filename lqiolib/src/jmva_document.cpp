@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: jmva_document.cpp 15892 2022-09-22 21:59:59Z greg $
+ * $Id: jmva_document.cpp 15943 2022-10-04 22:24:49Z greg $
  *
  * Read in XML input files.
  *

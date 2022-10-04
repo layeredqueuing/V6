@@ -1,4 +1,4 @@
-# $Id: Makefile.am 14975 2021-09-13 16:01:08Z greg $
+# $Id: Makefile.am 15943 2022-10-04 22:24:49Z greg $
 # ------------------------------------------------------------------------
 noinst_HEADERS = bcmp_bindings.h \
 	bcmp_document.h \

@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: bcmp_document.cpp 15437 2022-02-12 17:03:35Z greg $
+ * $Id: bcmp_document.cpp 15943 2022-10-04 22:24:49Z greg $
  *
  * Read in XML input files.
  *

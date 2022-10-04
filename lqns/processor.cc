@@ -10,7 +10,7 @@
  * November, 1994
  *
  * ------------------------------------------------------------------------
- * $Id: processor.cc 15846 2022-08-17 21:08:01Z greg $
+ * $Id: processor.cc 15943 2022-10-04 22:24:49Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -251,9 +251,7 @@ bool
 Processor::hasPriorities() const
 {
     return scheduling() == SCHEDULE_HOL
-	|| scheduling() == SCHEDULE_PPR
-	|| scheduling() == SCHEDULE_PS_HOL
-	|| scheduling() == SCHEDULE_PS_PPR;
+	|| scheduling() == SCHEDULE_PPR;
 }
 
 /*
