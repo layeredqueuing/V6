@@ -1,4 +1,4 @@
-/* $Id: para_library.c 15459 2022-03-09 21:53:20Z greg $ */
+/* $Id: para_library.c 15944 2022-10-05 01:21:14Z greg $ */
 
 /************************************************************************/
 /*	para_library.c - PARASOL library source file			*/
@@ -310,7 +310,7 @@ SYSCALL ps_awaken(
 	tp->tep = NULL_EVENT_PTR;
 
 	/* if for CFS task,update sleep task 	 */
-	if((node_ptr(tp->node))->discipline==CFS){
+	if((node_ptr(tp->node))->discipline==PS_CFS){
 		update_sleep_task(tp);
 	}
 	find_host(tp);
@@ -390,7 +390,7 @@ SYSCALL	ps_compute(
 	if(delta < 0.0)
 		return(BAD_PARAM("delta"));
 	np=node_ptr(ps_htp->node);
-	if(np->discipline==CFS)
+	if(np->discipline==PS_CFS)
 		ps_htp->si->q=get_quantum(np,hid(np,ps_htp->hp),delta);
 	ps_htp->tep = add_event(ps_now + delta / np->speed, 
 		END_COMPUTE, (long *) ps_myself);
@@ -622,7 +622,7 @@ SYSCALL	ps_create2(
 
 	/*for cfs scheduler */
 	np = node_ptr(tp->node);
-	if (np->discipline==CFS) {
+	if (np->discipline==PS_CFS) {
 		if( group < 0) {
 			ps_kill(task);
 			return(OTHER_ERR("creating task with no group"));	/* Can't run non group task on cfs node. */
@@ -1193,15 +1193,15 @@ SYSCALL	ps_sleep(
 
 	if(duration <= 0.0) {
 		if((np->rtrq == NULL_TASK ) ||
-		   ((np->discipline == PR) && (ps_htp->priority != 
+		   ((np->discipline == PS_PR) && (ps_htp->priority != 
 		      ps_task_ptr(np->rtrq)->priority)) ||
-		   ((np->discipline == HOL) && (ps_htp->priority >
+		   ((np->discipline == PS_HOL) && (ps_htp->priority >
 		      ps_task_ptr(np->rtrq)->priority)))		
 			return(OK);
 		duration = 0.0;
 	}
 	hp = ps_htp->hp;
-	if(np->discipline==CFS){
+	if(np->discipline == PS_CFS){
 		update_run_task(ps_htp);
 		dq_cfs_task(ps_htp);
 		/* cooling the cfs task */
@@ -1288,7 +1288,7 @@ SYSCALL	ps_suspend(
 		
 		case TASK_HOT:
 
-			if(np->discipline==CFS){
+			if(np->discipline == PS_CFS){
 				update_run_task(tp);
 				dq_cfs_task(tp);
 				/* cooling the cfs task */
@@ -1539,7 +1539,7 @@ SYSCALL ps_bus_send(
 		return(BAD_PARAM("size"));
 
 	mp = get_mess();
-	if(bp->discipline == RAND) {
+	if(bp->discipline == PS_RAND) {
 		if(bp->nqueued) {
 			nskip = (long) (drand48()*bp->nqueued) + 1;
 			cmp = bp->head;
@@ -1763,7 +1763,7 @@ SYSCALL	ps_leave_port_set(
 
 	istop = psp->nmess;
 	for(i = 0; i < istop; i++) {
-		port_receive(FIFO,port_set,NEVER,&type,&ts,&tp,&rp,&oport,&mid,
+		port_receive(PS_FIFO,port_set,NEVER,&type,&ts,&tp,&rp,&oport,&mid,
 		    &did);
 		if(oport == port) 
 			port_send(port, type, ts, tp, rp, oport, mid, did);
@@ -2067,7 +2067,7 @@ SYSCALL ps_receive(
 	long	mid;				/* unique message id 	*/
 	long	did;				/* dye id		*/
 
-	retval = port_receive(FIFO, port, time_out, typep, tsp, texth, app, 
+	retval = port_receive(PS_FIFO, port, time_out, typep, tsp, texth, app, 
 	    &op, &mid, &did);
 	if (retval != SYSERR && angio_flag) {
 		end_trace (ps_htp);
@@ -2102,7 +2102,7 @@ SYSCALL ps_receive_last(
 	long	mid;				/* unique message id 	*/
 	long	did;				/* dye id		*/
 
-	retval = port_receive(LIFO, port, time_out, typep, tsp, texth, app, 
+	retval = port_receive(PS_LIFO, port, time_out, typep, tsp, texth, app, 
 	    &op, &mid, &did);
 	if (retval != SYSERR && angio_flag) {
 		end_trace (ps_htp);
@@ -2137,7 +2137,7 @@ SYSCALL ps_receive_random(
 	long	mid;				/* unique message id 	*/
 	long	did;				/* dye id		*/
 
-	retval = port_receive(RAND, port, time_out, typep, tsp, texth, app, 
+	retval = port_receive(PS_RAND, port, time_out, typep, tsp, texth, app, 
 	    &op, &mid, &did);
 	if (retval != SYSERR && angio_flag) {
 		end_trace (ps_htp);
@@ -2173,7 +2173,7 @@ SYSCALL ps_receive_priority(
 	long	mid;				/* unique message id 	*/
 	long	did;				/* dye id		*/
 
-	retval = port_receive(HOL, port, time_out, typep, tsp, texth, app, 
+	retval = port_receive(PS_HOL, port, time_out, typep, tsp, texth, app, 
 	    &op, &mid, &did);
 	if (retval != SYSERR && angio_flag) {
 		end_trace (ps_htp);
@@ -3285,7 +3285,7 @@ SYSCALL ps_build_bus(
 
 /* Constructs a named bus connecting two or more specified nodes with a */
 /* given transmission rate "trans_rate", and queueing discipline 	*/
-/* "discipline".  Queueing may be FCFS or random. Utilization statistics*/
+/* "discipline".  Queueing may be PS_FIFO or random. Utilization statistics*/
 /* are collected if "sf" is set.					*/
 
 	const	char	*name,			/* bus name		*/
@@ -3311,7 +3311,7 @@ SYSCALL ps_build_bus(
 			return(BAD_PARAM("node_array"));
 	if(trans_rate <= 0.0)
 		return(BAD_PARAM("trans_rate"));
-	if((discipline != FCFS) && (discipline != RAND))
+	if((discipline != PS_FIFO) && (discipline != PS_RAND))
 		return(BAD_PARAM("discipline"));
 	if((bus = get_table_entry(&ps_bus_tab)) == SYSERR)
 		return(OTHER_ERR("growing bus table"));
@@ -3354,7 +3354,7 @@ SYSCALL ps_build_link(
 
 /* Constructs a one-way link between "source" and "destination" nodes 	*/
 /* with a specified transmission rate "trans_rate".  Queueing is 	*/
-/* strictly FCFS.  Utilization statistics are collected if "sf" is set.	*/
+/* strictly PS_FIFO.  Utilization statistics are collected if "sf" is set.	*/
 
 	const	char	*name,			/* link name		*/
 	long	source,				/* source node id 	*/
@@ -3506,7 +3506,7 @@ SYSCALL ps_build_node(
 	np->ngroup=0;
 	
 	/* if the discipline is CFS, construct a cfs-rq for the node 	*/
-	if (discipline==CFS)
+	if (discipline == PS_CFS)
 		ps_build_node_cfs(node);
 	else 
 		np->host_rq=NULL_CFSRQ_PTR;
@@ -3535,7 +3535,7 @@ SYSCALL ps_build_node2(
 	char		string[TEMP_STR_SIZE];		/* task name buffer	*/
 	long		i;			/* loop index		*/
 
-	if ((nid = ps_build_node(name, ncpu, speed, 0.0, PR, sf))
+	if ((nid = ps_build_node(name, ncpu, speed, 0.0, PS_PR, sf))
 	    == SYSERR)
 		return(SYSERR);
 
@@ -3623,7 +3623,7 @@ SYSCALL ps_build_group(
 	gp->cap=cap;
 	gp->ntask=0;	
 	gp->group_id2=ngroup;
-	if (np->discipline==CFS){
+	if (np->discipline == PS_CFS){
 
 		/* construct the group cfs-rq for each host */
 		for(i=0;i<np->ncpu;i++){
@@ -3798,7 +3798,7 @@ SYSCALL	ps_run_parasol(
 /*	Build node 0 & launch reaper (& genesis)			*/
 
 	ps_htp = DRIVER_PTR;
-	ps_build_node("PARASOL Node", 1, 1.0, 0.0, PR, FALSE);
+	ps_build_node("PARASOL Node", 1, 1.0, 0.0, PS_PR, FALSE);
 	rid = ps_create("Reaper", 0, 0, reaper, MAX_PRIORITY);
 	reaper_port = ps_std_port(rid);
 	ps_resume(rid);
@@ -4347,7 +4347,7 @@ LOCAL  	void	port_set_surrogate(void)
 
 	ps_receive(ps_my_std_port, NEVER, &r_port, &ts, &tp, &f_port);
 	while(TRUE) { 
-		if(port_receive(FIFO,r_port, NEVER, &type, &ts, &tp, &rp, &op, 
+		if(port_receive(PS_FIFO,r_port, NEVER, &type, &ts, &tp, &rp, &op, 
 		    &mid, &did) == SYSERR)
 			ps_kill(ps_myself);
 		port_send(f_port, type, ts, tp, rp, r_port, mid, did);
@@ -4407,7 +4407,7 @@ LOCAL 	void 	shared_port_dispatcher()
 		ps_kill(ps_myself);
 	state = 0;
 	while(TRUE) {
-		port_receive(FIFO, ps_my_std_port, NEVER, &type, &ts, &tp, &rp,
+		port_receive(PS_FIFO, ps_my_std_port, NEVER, &type, &ts, &tp, &rp,
 		    &op, &mid, &did);
 
 		switch(type) {
@@ -4417,7 +4417,7 @@ LOCAL 	void 	shared_port_dispatcher()
 				ps_send(queue_port, 0, "", rp);
 			}
 			else {
-				port_receive(FIFO, queue_port, NEVER, &t1, &t2,
+				port_receive(PS_FIFO, queue_port, NEVER, &t1, &t2,
 				    &t3, &t4, &op, &mid, &did);
 				if(port_send(rp, t1, t2, t3, t4, op, mid, did) 
 				    == SYSERR) { 
@@ -4532,7 +4532,7 @@ LOCAL	void	end_block_handler(
   	ps_htp = tp;
 
 	/* if for CFS task,update block task  */
-	if((node_ptr(ps_htp->node))->discipline==CFS){
+	if((node_ptr(ps_htp->node))->discipline == PS_CFS){
 		update_run_task(ps_htp);
 		/*cooling task...; */
 	}
@@ -4558,7 +4558,7 @@ LOCAL	void	end_compute_handler(
 	ps_htp = ctp;
 
 	/* if for CFS task,update the computing task  */
-	if((node_ptr(ps_htp->node))->discipline==CFS){
+	if((node_ptr(ps_htp->node))->discipline == PS_CFS){
 		update_run_task(ps_htp);
 	}
 
@@ -4592,7 +4592,7 @@ LOCAL 	void	end_quantum_handler(
  
 	case TASK_SPINNING:
 	case TASK_COMPUTING:
-		if(np->discipline == FCFS) 
+		if(np->discipline == PS_FIFO) 
 			find_priority(np, hp, MIN_PRIORITY - 1);
 		else{
 			qxflag = TRUE;
@@ -4648,7 +4648,7 @@ LOCAL	void	end_sleep_handler(
 	np=node_ptr(tp->node);
 
 	/* if for CFS task,update fair value of the sleep task */
-	if(np->discipline==CFS)
+	if(np->discipline == PS_CFS)
 		update_sleep_task(tp);
 
 	find_host(tp);
@@ -4671,7 +4671,7 @@ LOCAL	void	end_sync_handler(
 	np = node_ptr(tp->node);
 	tp->tep = NULL_EVENT_PTR;
 /* update run task and cooling hot task */
-	if(np->discipline==CFS){
+	if(np->discipline == PS_CFS){
 		update_run_task(tp);
 		/*cooling task...; */
 	}
@@ -4700,7 +4700,7 @@ LOCAL	void	end_sync_handler(
 			qxflag = TRUE;
 			find_priority(np, hp, tp->priority - 1);
 		}
-		else if(np->discipline == PR) {
+		else if(np->discipline == PS_PR) {
 			find_priority(np, hp, tp->priority);
 		}
 		else {
@@ -4878,7 +4878,7 @@ LOCAL	void	dq_ready(
 	ps_task_t	*btp = 0;
 	ps_task_t	 *ctp = 0;		/* task pointers	*/
 	
-	if(np->discipline==CFS){
+	if(np->discipline == PS_CFS){
 		task=tid(tp);
 		
 		dq_cfs_task(tp);
@@ -4923,7 +4923,7 @@ LOCAL	void	find_host(
 	long	task;				/* task index		*/
 
 	tp->sched_time = ps_now;		/* Ready to run now!	*/
-	if(np->discipline==CFS ){
+	if(np->discipline == PS_CFS ){
 		find_host_cfs(tp);
 		return;
 	}
@@ -4954,7 +4954,7 @@ LOCAL	void	find_host(
 /* 	If necessary look for host with preemptable task		*/
 
 	phost = NULL_HOST;
-	if(host == NULL_HOST && np->discipline == PR
+	if(host == NULL_HOST && np->discipline == PS_PR
 	    && (np->cpu[0].scheduler == NULL_TASK 
 	    || tp->priority > MAX_PRIORITY)) {
 		if(tp->host == ANY_HOST) {
@@ -5099,7 +5099,7 @@ LOCAL 	void	find_priority(
 	long	host;				/* host cpu id index	*/
 	double	q;				/* cpu quantum		*/
 	
-	if (np->discipline==CFS){
+	if (np->discipline == PS_CFS){
 		find_priority_cfs(np,hp);
 		return;
 	}
@@ -5427,7 +5427,7 @@ LOCAL	void	find_ready(
 	long	host;				/* host cpu id index	*/
 	double	q;				/* cpu quantum		*/
 
-	if(np->discipline==CFS ){
+	if(np->discipline == PS_CFS ){
 		find_ready_cfs(np,hp);		
 		return;
 	}
@@ -5674,19 +5674,19 @@ LOCAL	void	ready(
 	if(ts_flag)
 		ts_report(tp, "ready");
 	np = node_ptr(tp->node);
-	if(np->discipline == CFS){
+	if(np->discipline == PS_CFS){
 		task=tid(tp);
 		enqueue_cfs_task(tp);
 	}
        else{
 	task = np->rtrq;
-	if(np->discipline == FCFS) 
+	if(np->discipline == PS_FIFO) 
 		while(task != NULL_TASK) {
 			btp = ps_task_ptr(task);
 			task = btp->next;
 		}
 	else {
-		if(np->discipline == HOL || qxflag)
+		if(np->discipline == PS_HOL || qxflag)
 			while(task != NULL_TASK && 
 		            (ctp = ps_task_ptr(task))->priority >= 
 			    tp->priority) {
@@ -6784,7 +6784,7 @@ LOCAL	void	adjust_priority(
 
 	case TASK_READY:
 
-		if(np->discipline != FCFS) {
+		if(np->discipline != PS_FIFO) {
 			dq_ready(np, tp);
 			find_host(tp);
 		}
@@ -6795,7 +6795,7 @@ LOCAL	void	adjust_priority(
 	case TASK_COMPUTING:
 	case TASK_SPINNING:
 		
-		if(np->discipline == PR) 
+		if(np->discipline == PS_PR) 
 			find_priority(np, tp->hp, priority);
 		break;
 	}								
@@ -7092,7 +7092,7 @@ LOCAL	long	other_err_helper(
 LOCAL	long	port_receive(
 
 /* Receives a message according to port queueing discipline - i.e., 	*/
-/* FIFO, LIFO, or RAND.							*/
+/* FCFS, PS_LIFO, or RAND.							*/
 
 	long	discipline,			/* queueing discipline	*/
 	long	port,				/* port id index	*/
@@ -7149,7 +7149,7 @@ LOCAL	long	port_receive(
 			ps_htp->qep = NULL_EVENT_PTR;
 			ps_htp->wport = port;
 
-			if (np->discipline==CFS){
+			if (np->discipline == PS_CFS){
 				dq_cfs_task(ps_htp);
 				cooling_cfs_task(ps_htp);
 			}
@@ -7165,13 +7165,13 @@ LOCAL	long	port_receive(
 	}
 
 	switch(discipline) {
-	    case RAND:
+	    case PS_RAND:
 		skip = ps_choice(pp->nmess);
 		break;
-	    case LIFO:
+	    case PS_LIFO:
 		skip = pp->nmess -1;
 		break;
-	    case HOL:
+	    case PS_HOL:
 		max_pri = 0;	/* Search for highest priority message */
 		skip = 0;
 		for ( mp = pp->first, pri_skip = 0; mp; mp = mp->next, pri_skip++ ) {
@@ -7182,7 +7182,7 @@ LOCAL	long	port_receive(
 		}
 	        break;
 		    
-	    case FIFO:
+	    case PS_FIFO:
 	    default:
 		skip = 0;
 		break;

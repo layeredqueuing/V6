@@ -10,7 +10,7 @@
  * November, 1994
  *
  * ------------------------------------------------------------------------
- * $Id: processor.cc 15943 2022-10-04 22:24:49Z greg $
+ * $Id: processor.cc 15944 2022-10-05 01:21:14Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -254,21 +254,23 @@ Processor::hasPriorities() const
 	|| scheduling() == SCHEDULE_PPR;
 }
 
+
+
 /*
  * Return the scheduling type allowed for this object.  Overridden by
  * subclasses if the scheduling type can be something other than FIFO.
  */
 
-unsigned
-Processor::validScheduling() const
+bool
+Processor::schedulingIsOK() const
 {
-    if ( isInfinite() ) {
-	return (unsigned)-1;
-    } else if ( isMultiServer() ) {
-	return SCHED_PS_BIT|SCHED_FIFO_BIT;
-    } else {
-	return SCHED_FIFO_BIT|SCHED_PPR_BIT|SCHED_HOL_BIT|SCHED_PS_BIT|SCHED_PS_PPR_BIT|SCHED_PS_HOL_BIT;
-    }
+    return isInfinite() && scheduling() == SCHEDULE_DELAY
+	|| !isMultiServer() && ( scheduling() == SCHEDULE_HOL
+				 || scheduling() == SCHEDULE_PPR )
+	|| scheduling() == SCHEDULE_FIFO
+	|| scheduling() == SCHEDULE_LIFO
+	|| scheduling() == SCHEDULE_PS
+	|| scheduling() == SCHEDULE_RAND;
 }
 
 
@@ -430,16 +432,6 @@ Processor::makeServer( const unsigned nChains )
 	case SCHEDULE_PS:
 	    if ( dynamic_cast<PS_Server *>(_station) ) return nullptr;
 	    _station = new PS_Server( nEntries(), nChains, maxPhase() );
-	    break;
-
-	case SCHEDULE_PS_HOL:
-	    if ( dynamic_cast<HOL_PS_Server *>(_station) ) return nullptr;
-	    _station = new HOL_PS_Server( nEntries(), nChains, maxPhase() );
-	    break;
-
-	case SCHEDULE_PS_PPR:
-	    if ( dynamic_cast<PR_PS_Server *>(_station) ) return nullptr;
-	    _station = new PR_PS_Server( nEntries(), nChains, maxPhase() );
 	    break;
 
 	case SCHEDULE_CFS:

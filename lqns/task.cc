@@ -10,7 +10,7 @@
  * November, 1994
  *
  * ------------------------------------------------------------------------
- * $Id: task.cc 15846 2022-08-17 21:08:01Z greg $
+ * $Id: task.cc 15944 2022-10-05 01:21:14Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -322,6 +322,9 @@ Task::linkForkToJoin()
 	if ( !(*activity)->isStartActivity() ) continue;
 	try {
 	    (*activity)->findChildren( path );
+	}
+	catch ( const bad_external_join& error ) {
+	    error.getDOM()->runtime_error( LQIO::ERR_BAD_PATH_TO_JOIN, (*activity)->name().c_str() );
 	}
 	catch ( const activity_cycle& error ) {
 	    getDOM()->runtime_error( LQIO::ERR_CYCLE_IN_ACTIVITY_GRAPH, error.what() );
@@ -926,7 +929,6 @@ Task::initClientStation( Submodel& submodel )
 
 	    /* Set idle times for stations. */
 	    static_cast<MVASubmodel&>(submodel).setThinkTime( *k, thinkTime( n, *k ) );
-
 	}
 
 	if ( hasThreads() && !Pragma::threads(Pragma::Threads::NONE) ) {
@@ -2112,16 +2114,14 @@ ServerTask::defaultScheduling() const
  * subclasses if the scheduling type can be something other than FIFO.
  */
 
-unsigned
-ServerTask::validScheduling() const
+bool
+ServerTask::schedulingIsOK() const
 {
-    if ( isInfinite() ) {
-	return (unsigned)-1;		/* All types allowed */
-    } else if ( isMultiServer() ) {
-	return SCHED_PS_BIT|SCHED_FIFO_BIT;
-    } else {
-	return SCHED_FIFO_BIT|SCHED_HOL_BIT|SCHED_PPR_BIT;
-    }
+    return isInfinite() && scheduling() == SCHEDULE_DELAY
+	|| !isMultiServer() && scheduling() == SCHEDULE_HOL
+	|| scheduling() == SCHEDULE_FIFO
+	|| scheduling() == SCHEDULE_LIFO
+	|| scheduling() == SCHEDULE_RAND;
 }
 
 
@@ -2506,7 +2506,7 @@ Task::create( LQIO::DOM::Task* dom, const std::vector<Entry *>& entries )
 	/* ---------- Client tasks ---------- */
     case SCHEDULE_BURST:
     case SCHEDULE_UNIFORM:
-	dom->runtime_error( LQIO::WRN_SCHEDULING_NOT_SUPPORTED, scheduling_label[static_cast<unsigned>(sched_type)].str );
+	dom->runtime_error( LQIO::WRN_SCHEDULING_NOT_SUPPORTED, scheduling_label.at(sched_type).str.c_str() );
 	/* Fall through */
     case SCHEDULE_CUSTOMER:
 	task = new ReferenceTask( dom, processor, group, entries );
@@ -2533,7 +2533,7 @@ Task::create( LQIO::DOM::Task* dom, const std::vector<Entry *>& entries )
 	/*- BUG_164 */
 
     default:
-	dom->runtime_error( LQIO::WRN_SCHEDULING_NOT_SUPPORTED, scheduling_label[static_cast<unsigned>(sched_type)].str );
+	dom->runtime_error( LQIO::WRN_SCHEDULING_NOT_SUPPORTED, scheduling_label.at(sched_type).str.c_str() );
 	dom->setSchedulingType(SCHEDULE_FIFO);
 	task = new ServerTask( dom, processor, group, entries );
 	break;

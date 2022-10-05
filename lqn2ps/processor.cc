@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: processor.cc 15760 2022-07-25 14:36:17Z greg $
+ * $Id: processor.cc 15944 2022-10-05 01:21:14Z greg $
  *
  * Everything you wanted to know about a task, but were afraid to ask.
  *
@@ -193,9 +193,7 @@ bool
 Processor::hasPriorities() const
 {
     return scheduling() == SCHEDULE_HOL 	       
-	|| scheduling() == SCHEDULE_PPR
-	|| scheduling() == SCHEDULE_PS_HOL
-	|| scheduling() == SCHEDULE_PS_PPR;
+	|| scheduling() == SCHEDULE_PPR;
 }
 
 
@@ -664,7 +662,7 @@ Processor::create( const std::pair<std::string,LQIO::DOM::Processor *>& p )
 static std::ostream&
 proc_scheduling_of_str( std::ostream& output, const Processor & processor )
 {
-    output << ' ' << scheduling_label[static_cast<unsigned int>(processor.scheduling())].str;
+    output << ' ' << scheduling_label.at(processor.scheduling()).str;
     if ( processor.hasQuantum() ) {
 	output << ' ' << processor.quantum();
     }

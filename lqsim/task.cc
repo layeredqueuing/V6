@@ -10,7 +10,7 @@
 /*
  * Input output processing.
  *
- * $Id: task.cc 15760 2022-07-25 14:36:17Z greg $
+ * $Id: task.cc 15944 2022-10-05 01:21:14Z greg $
  */
 
 #include <iostream>
@@ -155,7 +155,7 @@ Task::create()
      * tasks compute by "sleeping".
      */
 
-    _compute_func = (!_processor || _processor->is_infinite()) ? ps_sleep : ps_compute;
+    _compute_func = (!processor() || processor()->is_infinite()) ? ps_sleep : ps_compute;
 
     /* JOIN Stuff -- All entries are free. */
 
@@ -643,7 +643,7 @@ Task::add( LQIO::DOM::Task* dom )
 
     default:
 	cp = new Server_Task( Task::Type::SERVER, dom, processor, group );		/* Punt... */
-	dom->runtime_error( LQIO::WRN_SCHEDULING_NOT_SUPPORTED, scheduling_label[sched_type].str );
+	dom->runtime_error( LQIO::WRN_SCHEDULING_NOT_SUPPORTED, scheduling_label.at(sched_type).str.c_str() );
 	break;
     }
 

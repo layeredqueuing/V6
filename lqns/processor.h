@@ -11,7 +11,7 @@
  * May, 2009
  *
  * ------------------------------------------------------------------------
- * $Id: processor.h 15605 2022-05-27 19:55:44Z greg $
+ * $Id: processor.h 15944 2022-10-05 01:21:14Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -28,7 +28,7 @@ class Server;
 class Group;
 
 class Processor : public Entity {
-private:
+
     class SRVNManip {
     public:
 	SRVNManip( std::ostream& (*ff)(std::ostream&, const Processor & ), const Processor & theProcessor ) : f(ff), aProcessor(theProcessor) {}
@@ -74,7 +74,6 @@ public:
     virtual const unsigned nGroups() const { return 0; }
     virtual bool hasVariance() const;
     bool hasPriorities() const;
-    virtual unsigned validScheduling() const;
 
     virtual const Entity& sanityCheck() const;
 
@@ -90,6 +89,9 @@ public:
     virtual const Processor& insertDOMResults() const;
     virtual std::ostream& print( std::ostream& ) const;
     std::ostream& printTasks( std::ostream& output, unsigned int submodel ) const;
+
+protected:
+    virtual bool schedulingIsOK() const;
 
 public:
     static Processor * find( const std::string&, unsigned int=1 );

@@ -8,12 +8,13 @@
 /************************************************************************/
 
 /*
- * $Id: errmsg.cc 15760 2022-07-25 14:36:17Z greg $
+ * $Id: errmsg.cc 15944 2022-10-05 01:21:14Z greg $
  */
 
 #include <cstdio>
 #include <stdlib.h>
 #include <stdexcept>
+#include <vector>
 #include <lqio/input.h>
 #include <lqio/error.h>
 #include "errmsg.h"

@@ -9,7 +9,7 @@
 /*
  * Lqsim-parasol Processor interface.
  *
- * $Id: processor.cc 15760 2022-07-25 14:36:17Z greg $
+ * $Id: processor.cc 15944 2022-10-05 01:21:14Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -37,15 +37,13 @@ Processor *Processor::processor_table[MAX_NODES+1];			/* NodeId to processor		*/
 
 const std::map<const scheduling_type,const int> Processor::scheduling_types =
 {
-    { SCHEDULE_CUSTOMER,    FIFO },
-    { SCHEDULE_DELAY,	    FIFO },
-    { SCHEDULE_FIFO,	    FIFO },
-    { SCHEDULE_HOL,	    HOL },
-    { SCHEDULE_PPR,	    PR },
-    { SCHEDULE_PS,	    FIFO },
-    { SCHEDULE_PS_HOL,	    HOL },
-    { SCHEDULE_PS_PPR,	    PR },
-    { SCHEDULE_CFS,	    CFS }
+    { SCHEDULE_CUSTOMER,    PS_FIFO },
+    { SCHEDULE_DELAY,	    PS_FIFO },
+    { SCHEDULE_FIFO,	    PS_FIFO },
+    { SCHEDULE_HOL,	    PS_HOL },
+    { SCHEDULE_PPR,	    PS_PR },
+    { SCHEDULE_PS,	    PS_FIFO },
+    { SCHEDULE_CFS,	    PS_CFS }
 };
 
 
@@ -531,21 +529,19 @@ Processor::add( const std::pair<std::string,LQIO::DOM::Processor*>& p )
     case SCHEDULE_HOL:
     case SCHEDULE_PPR:
 	if ( dom->hasQuantum() ) {
-	    dom->runtime_error( LQIO::WRN_QUANTUM_SCHEDULING, scheduling_label[(unsigned)scheduling_flag].str );
+	    dom->runtime_error( LQIO::WRN_QUANTUM_SCHEDULING, scheduling_label.at(scheduling_flag).str.c_str() );
 	}
 	break;
 
     case SCHEDULE_PS:
-    case SCHEDULE_PS_HOL:
-    case SCHEDULE_PS_PPR:
     case SCHEDULE_CFS:
 	if ( !dom->hasQuantum() ) {
-	    dom->runtime_error( LQIO::ERR_NO_QUANTUM_SCHEDULING, scheduling_label[(unsigned)scheduling_flag].str );
+	    dom->runtime_error( LQIO::ERR_NO_QUANTUM_SCHEDULING, scheduling_label.at(scheduling_flag).str.c_str() );
 	}
 	break;
 
     default:
-	dom->runtime_error( LQIO::WRN_SCHEDULING_NOT_SUPPORTED, scheduling_label[(unsigned)scheduling_flag].str );
+	dom->runtime_error( LQIO::WRN_SCHEDULING_NOT_SUPPORTED, scheduling_label.at(scheduling_flag).str.c_str() );
 	dom->setSchedulingType( SCHEDULE_FIFO );
 	break;
     }

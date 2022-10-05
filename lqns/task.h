@@ -10,7 +10,7 @@
  * November, 1994
  * May 2009.
  *
- * $Id: task.h 15583 2022-05-21 00:18:56Z greg $
+ * $Id: task.h 15944 2022-10-05 01:21:14Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -354,6 +354,7 @@ public:
     
 protected:
     virtual scheduling_type defaultScheduling() const { return SCHEDULE_CUSTOMER; }
+    virtual bool schedulingIsOK() const { return scheduling() == SCHEDULE_CUSTOMER; }
 };
 
 
@@ -379,7 +380,7 @@ public:
     virtual Server * makeServer( const unsigned );
 
 protected:
-    virtual unsigned validScheduling() const;
+    virtual bool schedulingIsOK() const;
     virtual scheduling_type defaultScheduling() const;
 };
 
@@ -394,6 +395,8 @@ class SemaphoreTask : public Task {
 protected:
     SemaphoreTask( const SemaphoreTask& task, unsigned int replica ) : Task( task, replica ) {}
     virtual Task * clone( unsigned int );
+
+    virtual bool schedulingIsOK() const { return scheduling() == SCHEDULE_SEMAPHORE; }
 
 public:
     virtual bool check() const;

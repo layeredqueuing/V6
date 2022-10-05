@@ -8,7 +8,7 @@
 /************************************************************************/
 
 /*
- * $Id: petrisrvn.cc 15879 2022-09-21 10:59:48Z greg $
+ * $Id: petrisrvn.cc 15944 2022-10-05 01:21:14Z greg $
  *
  * Generate a Petri-net from an SRVN description.
  *
@@ -302,7 +302,7 @@ main(int argc, char *argv[])
 	    break;
 
 	case 256+'p':
-	    pragmas.insert(LQIO::DOM::Pragma::_processor_scheduling_,scheduling_label[SCHEDULE_RAND].XML);
+	    pragmas.insert(LQIO::DOM::Pragma::_processor_scheduling_,LQIO::SCHEDULE::RAND);
 	    break;
 
 	case 256+'q':
