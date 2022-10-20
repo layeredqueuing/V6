@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: processor.cc 15944 2022-10-05 01:21:14Z greg $
+ * $Id: processor.cc 15969 2022-10-13 19:49:43Z greg $
  *
  * Everything you wanted to know about a task, but were afraid to ask.
  *
@@ -20,7 +20,6 @@
 #include <lqio/dom_processor.h>
 #include <lqio/dom_task.h>
 #include <lqio/error.h>
-#include <lqio/input.h>
 #include <lqio/labels.h>
 #include <lqio/../../srvn_gram.h>
 #include <lqio/srvn_spex.h>

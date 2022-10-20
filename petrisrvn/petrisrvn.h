@@ -13,7 +13,7 @@
 #define _PETRISRVN_H
 
 /*
- * $Id: petrisrvn.h 15711 2022-06-24 01:28:02Z greg $
+ * $Id: petrisrvn.h 15969 2022-10-13 19:49:43Z greg $
  *
  * Solve LQN using petrinets.
  */
@@ -30,7 +30,6 @@
 #endif
 #include <stdexcept>
 #include <cstdio>
-#include <lqio/input.h>
 #include <regex>
 
 /*  #define OLD_JOIN */

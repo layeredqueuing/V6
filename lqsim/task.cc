@@ -10,7 +10,7 @@
 /*
  * Input output processing.
  *
- * $Id: task.cc 15944 2022-10-05 01:21:14Z greg $
+ * $Id: task.cc 15969 2022-10-13 19:49:43Z greg $
  */
 
 #include <iostream>
@@ -747,7 +747,9 @@ void
 Reference_Task::create_instance()
 {
     if ( n_entries() != 1 ) {
-	getDOM()->setSeverity( LQIO::ERR_TASK_ENTRY_COUNT, LQIO::error_severity::WARNING ).runtime_error( LQIO::ERR_TASK_ENTRY_COUNT, n_entries(), 1 );
+	LQIO::error_severity old = LQIO::DOM::DocumentObject::setSeverity( LQIO::ERR_TASK_ENTRY_COUNT, LQIO::error_severity::WARNING );
+	getDOM()->runtime_error( LQIO::ERR_TASK_ENTRY_COUNT, n_entries(), 1 );
+	LQIO::DOM::DocumentObject::setSeverity( LQIO::ERR_TASK_ENTRY_COUNT, old );
     }
     if ( getDOM()->hasThinkTime() ) {
 	_think_time = getDOM()->getThinkTimeValue();

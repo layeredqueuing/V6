@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: pragma.cc 15943 2022-10-04 22:24:49Z greg $ *
+ * $Id: pragma.cc 15945 2022-10-05 10:06:42Z greg $ *
  * Pragma processing and definitions.
  *
  * Copyright the Real-Time and Distributed Systems Group,

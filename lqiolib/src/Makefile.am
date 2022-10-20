@@ -1,4 +1,4 @@
-# $Id: Makefile.am 15943 2022-10-04 22:24:49Z greg $
+# $Id: Makefile.am 16004 2022-10-19 17:26:51Z greg $
 # -------------------------------------------------------------------- [Libtool libsrvnio2]
 
 # This project uses Libtool to generate a product
@@ -29,6 +29,7 @@ liblqio_la_SOURCES = bcmp_bindings.cpp \
 	error.cpp \
 	filename.cpp \
 	getsubopt.cpp \
+	gnuplot.cpp \
 	json_document.cpp \
 	labels.cpp \
 	pmif_document.cpp \

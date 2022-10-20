@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: qnio_document.cpp 15943 2022-10-04 22:24:49Z greg $
+ * $Id: qnio_document.cpp 15969 2022-10-13 19:49:43Z greg $
  *
  * Superclass for Queueing Network models.
  *
@@ -14,7 +14,6 @@
 
 #include "qnio_document.h"
 #include "dom_document.h"
-#include "srvn_spex.h"
 
 QNIO::Document::Document( const std::string& input_file_name, const BCMP::Model& model )
     : _input_file_name(input_file_name), _pragmas(), _model(model), _lqx_program(nullptr)
@@ -24,6 +23,5 @@ QNIO::Document::Document( const std::string& input_file_name, const BCMP::Model&
 
 QNIO::Document::~Document()
 {
-    LQIO::Spex::clear();
     LQIO::DOM::Document::__input_file_name.clear();
 }

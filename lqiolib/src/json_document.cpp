@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: json_document.cpp 15900 2022-09-24 12:54:03Z greg $
+ * $Id: json_document.cpp 15969 2022-10-13 19:49:43Z greg $
  *
  * Read in JSON input files.
  *
@@ -40,6 +40,7 @@
 #include <strings.h>
 #endif
 #include <lqx/SyntaxTree.h>
+#include <lqx/Program.h>
 #include "dom_actlist.h"
 #include "dom_entry.h"
 #include "dom_extvar.h"

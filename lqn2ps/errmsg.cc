@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: errmsg.cc 15760 2022-07-25 14:36:17Z greg $
+ * $Id: errmsg.cc 15969 2022-10-13 19:49:43Z greg $
  *
  * Error messages.
  *
@@ -15,7 +15,6 @@
  */
 
 #include "lqn2ps.h"
-#include <lqio/input.h>
 #include <lqio/error.h>
 #include "errmsg.h"
 

@@ -9,10 +9,11 @@
 /************************************************************************/
 
 /*
- * $Id: errmsg.h 15760 2022-07-25 14:36:17Z greg $
+ * $Id: errmsg.h 15945 2022-10-05 10:06:42Z greg $
  */
 
 #include <lqio/glblerr.h>
+#include <vector>
 
 enum {
     FTL_ACTIVITY_STACK_FULL=LQIO::LSTGBLERRMSG+1,

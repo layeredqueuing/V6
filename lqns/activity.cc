@@ -11,7 +11,7 @@
  * July 2007
  *
  * ------------------------------------------------------------------------
- * $Id: activity.cc 15854 2022-08-18 22:32:33Z greg $
+ * $Id: activity.cc 15969 2022-10-13 19:49:43Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -19,7 +19,6 @@
 #include "lqns.h"
 #include <numeric>
 #include <cmath>
-#include <lqio/input.h>
 #include <lqio/error.h>
 #include <lqio/dom_actlist.h>
 #include "activity.h"

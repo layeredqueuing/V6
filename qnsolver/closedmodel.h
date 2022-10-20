@@ -9,7 +9,7 @@
  *
  * December 2020
  *
- * $Id: closedmodel.h 15943 2022-10-04 22:24:49Z greg $
+ * $Id: closedmodel.h 15969 2022-10-13 19:49:43Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -39,6 +39,8 @@ public:
 	unsigned& N(size_t k) { return _model.N[k]; }
 	double& Z(size_t k) { return _model.Z[k]; }
 	unsigned& priority(size_t k) { return _model.priority[k]; }
+	double getDoubleValue( LQX::SyntaxTreeNode * variable ) const { return _model.getDoubleValue( variable ); }
+	unsigned getUnsignedValue( LQX::SyntaxTreeNode * variable, unsigned int default_value=0 ) const { return _model.getUnsignedValue( variable, default_value ); }
 	
     private:
 	ClosedModel& _model;

@@ -8,14 +8,14 @@
 /************************************************************************/
 
 /*
- * $Id: errmsg.cc 15944 2022-10-05 01:21:14Z greg $
+ * $Id: errmsg.cc 15969 2022-10-13 19:49:43Z greg $
  */
 
 #include <cstdio>
 #include <stdlib.h>
 #include <stdexcept>
 #include <vector>
-#include <lqio/input.h>
+#include <lqio/dom_document.h>
 #include <lqio/error.h>
 #include "errmsg.h"
 #include "lqsim.h"

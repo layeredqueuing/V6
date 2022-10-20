@@ -12,12 +12,12 @@
  * November, 1994
  *
  * ----------------------------------------------------------------------
- * $Id: errmsg.cc 15869 2022-09-20 09:05:46Z greg $
+ * $Id: errmsg.cc 15969 2022-10-13 19:49:43Z greg $
  * ----------------------------------------------------------------------
  */
 
 #include "lqns.h"
-#include <lqio/input.h>
+#include <lqio/dom_document.h>
 #include <lqio/error.h>
 #include "errmsg.h"
 

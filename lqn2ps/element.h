@@ -2,7 +2,7 @@
  * element.h	-- Greg Franks
  *
  * ------------------------------------------------------------------------
- * $Id: element.h 15615 2022-06-01 12:27:08Z greg $
+ * $Id: element.h 15969 2022-10-13 19:49:43Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -122,10 +122,6 @@ protected:
     std::set<unsigned> myClientOpenChains;	/* Chains when I am a client 	*/
     std::set<unsigned> myClientClosedChains;	/* Chains when I am a client 	*/
     std::set<unsigned> myServerChains;	/* Chains when I am a server	*/
-
-public:
-    static const LQIO::DOM::ConstantExternalVariable ZERO;
-    static const LQIO::DOM::ConstantExternalVariable ONE;
 };
 
 typedef bool (* compare_func_ptr)( const Element *, const Element * );

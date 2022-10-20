@@ -8,7 +8,7 @@
  *
  * November, 1994
  *
- * $Id: phase.h 14882 2021-07-07 11:09:54Z greg $
+ * $Id: phase.h 15969 2022-10-13 19:49:43Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -16,7 +16,6 @@
 #if	!defined(PHASE_H)
 #define PHASE_H
 
-#include <lqio/input.h>
 #include <lqio/dom_phase.h>
 #include <lqio/bcmp_document.h>
 #include <lqio/dom_phase.h>
@@ -118,8 +117,8 @@ public:
     double serviceExceeded() const;
     double queueingTime() const;
     double utilization() const;
-    static const LQIO::DOM::ExternalVariable * accumulate_service_time( const LQIO::DOM::ExternalVariable *, const std::pair<unsigned int, Phase>& );
-    static const LQIO::DOM::ExternalVariable * accumulate_think_time( const LQIO::DOM::ExternalVariable *, const std::pair<unsigned int, Phase>& );
+    static LQX::SyntaxTreeNode * accumulate_service_time( LQX::SyntaxTreeNode *, const std::pair<unsigned int, Phase>& );
+    static LQX::SyntaxTreeNode * accumulate_think_time( LQX::SyntaxTreeNode *, const std::pair<unsigned int, Phase>& );
     static BCMP::Model::Station::Class accumulate_demand( const BCMP::Model::Station::Class& augend, const std::pair<unsigned,Phase>& );
     static double accumulate_execution( double, const std::pair<unsigned int, Phase>& );
 

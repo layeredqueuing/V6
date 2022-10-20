@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: entry.h 15762 2022-07-25 16:16:52Z greg $
+ * $Id: entry.h 15969 2022-10-13 19:49:43Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -17,7 +17,6 @@
 #if	!defined(ENTRY_H)
 #define ENTRY_H
 
-#include <lqio/input.h>
 #include <lqio/dom_entry.h>
 #include <set>
 #include <vector>

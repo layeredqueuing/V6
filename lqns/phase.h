@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: phase.h 15601 2022-05-27 16:12:58Z greg $
+ * $Id: phase.h 15969 2022-10-13 19:49:43Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -18,7 +18,6 @@
 #define PHASE_H
 
 #include <set>
-#include <lqio/input.h>
 #include <mva/vector.h>
 #include <mva/prob.h>
 #include "call.h"

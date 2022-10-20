@@ -10,7 +10,7 @@
  * November, 1994
  * March, 2004
  *
- * $Id: call.h 15827 2022-08-14 15:20:00Z greg $
+ * $Id: call.h 15969 2022-10-13 19:49:43Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -20,7 +20,6 @@
 
 #include <cmath>
 #include <deque>
-#include <lqio/input.h>
 #include <lqio/dom_call.h>
 #include <mva/bug_267.h>		/* BUG_267 */
 #include "interlock.h"

@@ -1,6 +1,6 @@
 /* label.cc	-- Greg Franks Wed Jan 29 2003
  *
- * $Id: label.cc 15615 2022-06-01 12:27:08Z greg $
+ * $Id: label.cc 15969 2022-10-13 19:49:43Z greg $
  */
 
 #include "lqn2ps.h"
@@ -19,6 +19,7 @@
 #include <gdfontg.h>
 #endif
 #include <lqio/dom_extvar.h>
+#include <lqx/SyntaxTree.h>
 #include "label.h"
 #include "entry.h"
 #include "call.h"
@@ -245,6 +246,20 @@ Label::appendV( const LQIO::DOM::ExternalVariable& v )
     } else {
 	std::stringstream s;		/* For Unicode - We need to expand the string */
 	s << v;
+	appendS( s.str() );
+    }
+    return *this;
+}
+
+
+Label&
+Label::appendN( const LQX::SyntaxTreeNode& n )
+{
+    if ( Flags::instantiate ) {
+	appendD( const_cast<LQX::SyntaxTreeNode&>(n).invoke(nullptr)->getDoubleValue() );
+    } else {
+	std::stringstream s;		/* For Unicode - We need to expand the string */
+	s << n;
 	appendS( s.str() );
     }
     return *this;

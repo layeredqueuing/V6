@@ -1,6 +1,6 @@
 /* graphic.cc	-- Greg Franks Wed Feb 12 2003
  *
- * $Id: graphic.cc 15615 2022-06-01 12:27:08Z greg $
+ * $Id: graphic.cc 15969 2022-10-13 19:49:43Z greg $
  */
 
 #include <cassert>
@@ -9,7 +9,6 @@
 #include <set>
 #include <sstream>
 #include <limits>
-#include <lqio/input.h>
 #include "graphic.h"
 #include "point.h"
 #if HAVE_GD_H

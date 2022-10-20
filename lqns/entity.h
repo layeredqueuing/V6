@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: entity.h 15827 2022-08-14 15:20:00Z greg $
+ * $Id: entity.h 15969 2022-10-13 19:49:43Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -21,7 +21,6 @@
 #include <set>
 #include <map>
 #include <lqio/dom_entity.h>
-#include <lqio/input.h>
 #include <mva/prob.h>
 #include <mva/vector.h>
 #include "call.h"
@@ -241,8 +240,6 @@ public:
     bool isReplicated() const		{ return replicas() > 1; }
     bool isPruned() const		{ return _pruned; }
 
-    bool schedulingIsOk( const unsigned bits ) const;
-
     const std::vector<Entry *>& entries() const { return _entries; }
     Entity& addEntry( Entry * );
     Entry * entryAt( const unsigned index ) const { return _entries.at(index); }
@@ -326,7 +323,7 @@ public:
 	
 protected:
     Entity& setUtilization( double );
-    virtual unsigned validScheduling() const;
+    virtual bool schedulingIsOK() const = 0;
     virtual scheduling_type defaultScheduling() const { return SCHEDULE_FIFO; }
     virtual double computeUtilization( const MVASubmodel& );
 	

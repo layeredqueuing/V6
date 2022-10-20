@@ -10,14 +10,13 @@
  * November, 2008
  *
  * ------------------------------------------------------------------------
- * $Id: group.cc 15762 2022-07-25 16:16:52Z greg $
+ * $Id: group.cc 15969 2022-10-13 19:49:43Z greg $
  * ------------------------------------------------------------------------
  */
 
 #include "lqns.h"
 #include <cmath>
 #include <numeric>
-#include <lqio/input.h>
 #include <lqio/error.h>
 #include <lqio/dom_group.h>
 #include "errmsg.h"

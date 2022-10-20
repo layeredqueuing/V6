@@ -9,7 +9,7 @@
  *
  * December 2020
  *
- * $Id: openmodel.h 15943 2022-10-04 22:24:49Z greg $
+ * $Id: openmodel.h 15969 2022-10-13 19:49:43Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -43,7 +43,7 @@ public:
     bool solve( const ClosedModel* );
     virtual void saveResults();
     
-    std::ostream& debug( std::ostream& output ) const;
+    virtual std::ostream& debug( std::ostream& output ) const;
 
 private:
     virtual BCMP::Model::Chain::Type type() const { return BCMP::Model::Chain::Type::OPEN; }
