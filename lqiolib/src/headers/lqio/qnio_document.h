@@ -9,7 +9,7 @@
  *
  * November 2022
  *
- * $Id: qnio_document.h 16004 2022-10-19 17:26:51Z greg $
+ * $Id: qnio_document.h 16050 2022-10-31 11:19:26Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -20,11 +20,13 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <deque>
 #include "bcmp_document.h"
 #include "dom_pragma.h"
 
 namespace LQX {
     class Program;
+    class VariableExpression;
 }
 namespace BCMP {
     class Model;
@@ -32,6 +34,45 @@ namespace BCMP {
 
 namespace QNIO {
     class Document {
+
+    protected:
+	class Comprehension
+	{
+	    /* Variable = begin(); variable < end(); variable += step() */
+	public:
+	    friend std::ostream& operator<<( std::ostream& output, const QNIO::Document::Comprehension& comprehension ) { return comprehension.print( output ); }
+	    
+	    Comprehension( const std::string name, const std::string& s, bool integer ) : _name(name), _begin(0.), _step(0.), _size(0) { convert(s,integer); }
+	    Comprehension& operator=( const Comprehension& );
+
+	    LQX::VariableExpression * getVariable() const;
+	    const std::string& name() const { return _name; }
+	    size_t size() const { return _size; }
+	    double begin() const { return _begin; }				// Like an iterator
+	    double end() const { return begin() + size() * step(); }		// Like an iterator
+	    double step() const { return _step; }
+	    double max() const { return begin() + step() * (size() - 1); }	// Largest possible value
+
+	    LQX::SyntaxTreeNode * collect( std::vector<LQX::SyntaxTreeNode *>* ) const;
+
+	    std::ostream& print( std::ostream& ) const;
+
+	    struct find {
+		find( const std::string& name ) : _name(name) {}
+		bool operator()( const Comprehension& comprehension ) const { return comprehension._name == _name; }
+	    private:
+		const std::string _name;
+	    };
+	    
+	private:
+	    void convert( const std::string&, bool );
+
+	    std::string _name;
+	    double _begin;
+	    double _step;
+	    size_t _size;
+	};
+
     public:
 	Document( const std::string& input_file_name, const BCMP::Model& model );
 	virtual ~Document();
@@ -41,9 +82,12 @@ namespace QNIO {
 	const BCMP::Model& model() const { return _model; }
 	BCMP::Model& model() { return _model; }
 	const std::string& getInputFileName() const { return _input_file_name; }
+	const std::deque<Comprehension>& comprehensions() const { return _comprehensions; }		/* For loops from WhatIf */
 	
+	void setEnvironment( LQX::Environment * environment ) { _model.setEnvironment( environment ); }
 	virtual LQX::Program * getLQXProgram() const { return _lqx_program; }
     protected:
+	void insertComprehension( const Comprehension& comprehension ) { _comprehensions.emplace_front( comprehension); }
 	void setLQXProgram( LQX::Program * program ) { _lqx_program = program; }
     public:
 	virtual void registerExternalSymbolsWithProgram( LQX::Program * ) {}	/* Might hoist */
@@ -55,6 +99,7 @@ namespace QNIO {
 	void insertPragma( const std::string param, const std::string value ) { _pragmas.insert( param, value ); }
 	void mergePragmas( const std::map<std::string,std::string>& list ) { _pragmas.merge( list ); }
 
+	virtual bool disableDefaultOutputWithLQX() const { return false; }
 	virtual void plot( BCMP::Model::Result::Type, const std::string& ) {}
 
 	virtual std::ostream& print( std::ostream& output ) const = 0;
@@ -63,6 +108,7 @@ namespace QNIO {
 	const std::string _input_file_name;
 	LQIO::DOM::Pragma _pragmas;
 	BCMP::Model _model;
+	std::deque<Comprehension> _comprehensions; 			/* For loops from WhatIf */
 	LQX::Program * _lqx_program;
     };
 }

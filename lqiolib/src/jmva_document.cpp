@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: jmva_document.cpp 16013 2022-10-20 14:02:00Z greg $
+ * $Id: jmva_document.cpp 16050 2022-10-31 11:19:26Z greg $
  *
  * Read in XML input files.
  *
@@ -82,7 +82,7 @@ namespace QNIO {
 	Document( input_file_name, BCMP::Model() ),
 	_parser(nullptr), _stack(),
 	_lqx_program_text(), _lqx_program_line_number(0),
-	_main_program(), _input_variables(), _whatif_statements(), _whatif_body(), _independent_variables(), _result_variables(), _station_index(),
+	_main_program(), _input_variables(), _whatif_body(), _independent_variables(), _result_variables(), _station_index(),
 	_think_time_vars(), _population_vars(), _arrival_rate_vars(), _multiplicity_vars(), _service_time_vars(), _visit_vars(),
 	_plot_population_mix(false), _plot_customers(false)
     {
@@ -919,7 +919,7 @@ namespace QNIO {
      * If only a className XOR a station name is present, then apply
      * proportinately to all classes or stations, otherwise assign
      * values.  We can be a bit more flexible.  The values are a list
-     * which can be converted to a generator.  The latter is better
+     * which can be converted to a comprehension.  The latter is better
      * for QNAP2 output.
      *
      * type can be "Customer Numbers" or "Service Demands" (or
@@ -946,12 +946,12 @@ namespace QNIO {
 
 	const std::string x_var = (this->*(f->second))( stationName, className );
 	const bool is_unsigned = (f->second == &JMVA_Document::setMultiplicity || f->second == &JMVA_Document::setCustomers);
-	const Generator generator( x_var, XML::getStringAttribute( attributes, Xvalues ), is_unsigned );
+	const Comprehension comprehension( x_var, XML::getStringAttribute( attributes, Xvalues ), is_unsigned );
 	_independent_variables.emplace_back( x_var );
-	if ( generator.begin() == generator.end() ) {
+	if ( comprehension.begin() == comprehension.end() ) {
 	    /* One item = scalar */
 	} else {
-	    _whatif_statements.emplace_front( generator );
+	    insertComprehension( comprehension );
 	}
     }
 
@@ -1399,10 +1399,10 @@ namespace QNIO {
 	}
 	_gnuplot.push_back( LQIO::GnuPlot::print_node( "set key box" ) );
 
-	std::deque<Generator>::const_iterator whatif = std::find_if( _whatif_statements.begin(), _whatif_statements.end(), Generator::find(_independent_variables.at(0)) );
-	if ( whatif == _whatif_statements.end() || whatif->size() <= 1 ) throw std::invalid_argument( _independent_variables.at(0) + " is not a whatif" );
+	std::deque<Comprehension>::const_iterator whatif = std::find_if( this->whatif_statements().begin(), this->whatif_statements().end(), Comprehension::find(_independent_variables.at(0)) );
+	if ( whatif == whatif_statements().end() || whatif->size() <= 1 ) throw std::invalid_argument( _independent_variables.at(0) + " is not a whatif" );
 
-	LQX::ConstantValueExpression * x_max = new LQX::ConstantValueExpression( whatif->begin() + whatif->step() * (whatif->size() - 1) );
+	LQX::ConstantValueExpression * x_max = new LQX::ConstantValueExpression( whatif->max() );
 
 	size_t n_labels = 0;
 	LQX::SyntaxTreeNode * y_max = nullptr;
@@ -1435,7 +1435,7 @@ namespace QNIO {
 	    }
 	    switch ( type ) {
 	    case BCMP::Model::Result::Type::THROUGHPUT:
-		bound1 = BCMP::Model::Bound::reciprocal( bounds.D_max() );
+		bound1 = BCMP::Model::reciprocal( bounds.D_max() );
 		title1 += "1/Dmax";
 		title2 += "1/(Dsum+Z)";
 		break;
@@ -1459,12 +1459,12 @@ namespace QNIO {
 	    plot << ", " << *bound1 << " with lines title \"" << title1 << "\"";
 	    switch ( type ) {
 	    case BCMP::Model::Result::Type::THROUGHPUT:
-		plot << ", x/" << *BCMP::Model::Bound::add( bounds.D_sum(), bounds.Z_sum() ) << " with lines title \"" << title2 << "\"";
-		y_max = BCMP::Model::Bound::max( y_max, BCMP::Model::Bound::reciprocal( bounds.D_max() ) );
+		plot << ", x/" << *BCMP::Model::add( bounds.D_sum(), bounds.Z_sum() ) << " with lines title \"" << title2 << "\"";
+		y_max = BCMP::Model::max( y_max, BCMP::Model::reciprocal( bounds.D_max() ) );
 		break;
 	    case BCMP::Model::Result::Type::RESPONSE_TIME:
 		plot << ", x*" << *bounds.D_max() <<  "-" << *bounds.Z_sum() << " with lines title \"" << title2 << "\"";
-		y_max = BCMP::Model::Bound::max( y_max, BCMP::Model::Bound::subtract( BCMP::Model::Bound::multiply( x_max, bounds.D_max() ), bounds.Z_sum() ) );
+		y_max = BCMP::Model::max( y_max, BCMP::Model::subtract( BCMP::Model::multiply( x_max, bounds.D_max() ), bounds.Z_sum() ) );
 		break;
 	    default:
 		break;
@@ -1514,8 +1514,8 @@ namespace QNIO {
 	    LQX::SyntaxTreeNode * D_y = BCMP::Model::Bound::D( m->second, *y );
 	    if ( D_x == nullptr && D_y == nullptr ) continue;
 
-	    x_max = BCMP::Model::Bound::max( x_max, D_x );
-	    y_max = BCMP::Model::Bound::max( y_max, D_y );
+	    x_max = BCMP::Model::max( x_max, D_x );
+	    y_max = BCMP::Model::max( y_max, D_y );
 	    if ( BCMP::Model::isDefault( D_y, 0. ) ) {
 		plot << ", 1/" << *D_x << ",t";
 	    } else {
@@ -1542,19 +1542,19 @@ namespace QNIO {
 	
 	/* Set range (if possible), otherwise punt */
 	if ( !BCMP::Model::isDefault( x_max ) && !BCMP::Model::isDefault( y_max ) ) {
-	    LQX::SyntaxTreeNode * x_pos = BCMP::Model::Bound::reciprocal( x_max );
-	    LQX::SyntaxTreeNode * y_pos = BCMP::Model::Bound::reciprocal( y_max );
+	    LQX::SyntaxTreeNode * x_pos = BCMP::Model::reciprocal( x_max );
+	    LQX::SyntaxTreeNode * y_pos = BCMP::Model::reciprocal( y_max );
 	    _gnuplot.push_back( LQIO::GnuPlot::print_node( "set parametric" ) );
 	    _gnuplot.push_back( LQIO::GnuPlot::print_node( new LQX::ConstantValueExpression( "set xrange [0:" ),
-							   BCMP::Model::Bound::multiply( x_pos, new LQX::ConstantValueExpression(1.05) ),
+							   BCMP::Model::multiply( x_pos, new LQX::ConstantValueExpression(1.05) ),
 							   new LQX::ConstantValueExpression( "]" ),
 							   nullptr ) );
 	    _gnuplot.push_back( LQIO::GnuPlot::print_node( new LQX::ConstantValueExpression( "set trange [0:" ),
-							   BCMP::Model::Bound::multiply( x_pos, new LQX::ConstantValueExpression(1.05) ),
+							   BCMP::Model::multiply( x_pos, new LQX::ConstantValueExpression(1.05) ),
 							   new LQX::ConstantValueExpression( "]" ),
 							   nullptr ) );
 	    _gnuplot.push_back( LQIO::GnuPlot::print_node( new LQX::ConstantValueExpression( "set yrange [0:" ),
-							   BCMP::Model::Bound::multiply( y_pos, new LQX::ConstantValueExpression(1.05) ),
+							   BCMP::Model::multiply( y_pos, new LQX::ConstantValueExpression(1.05) ),
 							   new LQX::ConstantValueExpression( "]" ),
 							   nullptr ) );
 
@@ -1609,57 +1609,6 @@ namespace QNIO {
     JMVA_Document::get_gnuplot_index( const std::string& name ) const
     {
 	return _independent_variables.size() + _result_index.at( name );
-    }
-
-    JMVA_Document::Generator& JMVA_Document::Generator::operator=( const JMVA_Document::Generator& src )
-    {
-	_name = src._name;
-	_begin = src._begin; 
-	_step = src._step;
-	_size = src._size;
-	return *this;
-    }
-
-    /*
-     * Convert a string of the form "v_1;v_2;...;v_n" to v_1, v_n, n.
-     * The assumption is that all of the values "v" are monotonically
-     * increasing and evenly distributed.
-     */
-    
-    void
-    JMVA_Document::Generator::convert( const std::string& s, bool integer )
-    {
-	/* tokenize the string on ';' */
-	const char delim = ';';
-	std::vector<double> values;
-	size_t start;
-	size_t finish = 0;
-	while ((start = s.find_first_not_of(delim, finish)) != std::string::npos) {
-	    finish = s.find(delim, start);
-	    const std::string token = s.substr(start, finish - start);
-	    char * endptr = nullptr;
-	    values.push_back(::strtod( token.c_str(), &endptr ));
-	    if ( *endptr != '\0') throw std::domain_error( "invalid double" );
-	}
-	if ( values.size() == 0 ) return;
-
-	/* Now compute the parameters for the generator */
-	_size = values.size();
-	_begin = values.front();
-	if ( _size > 1 ) {
-	    _step = (values.at(1) - _begin);
-	} else {
-	    _step = 0;
-	}
-	if ( integer ) {
-	    _step = ::rint( _step );
-	}
-    }
-
-    LQX::VariableExpression *
-    JMVA_Document::Generator::getVariable() const
-    {
-	return new LQX::VariableExpression( _name, false );
     }
 }
 
@@ -1942,13 +1891,10 @@ namespace QNIO {
 	/* Print it out */
 	
 	std::ostringstream values;
-	std::deque<Generator>::const_iterator whatif = std::find_if( whatif_statements().begin(), whatif_statements().end(), Generator::find(var) );
+	std::deque<Comprehension>::const_iterator whatif = std::find_if( whatif_statements().begin(), whatif_statements().end(), Comprehension::find(var) );
 	if ( whatif != whatif_statements().end() ) {
 	    /* Simple, run the comprehension directly */
-	    for ( double value = whatif->begin(); value < whatif->end(); value += whatif->step() ) {
-		if ( value != whatif->begin() ) values << ";";
-		values << value;
-	    }
+	    values << *whatif;
 	}
 	_output << XML::attribute( Xvalues, values.str() );
 	_output << "/>  <!--" << var << "-->" << std::endl;
@@ -2040,7 +1986,7 @@ namespace QNIO
 	    program->push_back( print_csv_header() );
 	}
 	program->push_back( new LQX::AssignmentStatementNode( new LQX::VariableExpression( "_0", false ), new LQX::ConstantValueExpression( 0. ) ) );
-	program->push_back( foreach_loop( _whatif_statements.begin(), _whatif_statements.end() ) );
+	program->push_back( foreach_loop( whatif_statements().begin(), whatif_statements().end() ) );
 
 	/*+ gnuplo t-> append the gnuplot program. */
 	if ( !_gnuplot.empty() ) {
@@ -2056,18 +2002,13 @@ namespace QNIO
     /* Creat a for-loop for each whatif */
     
     LQX::SyntaxTreeNode *
-    JMVA_Document::foreach_loop( std::deque<Generator>::const_iterator generator, std::deque<Generator>::const_iterator end ) const
+    JMVA_Document::foreach_loop( std::deque<Comprehension>::const_iterator comprehension, std::deque<Comprehension>::const_iterator end ) const
     {
-	if ( generator != end ) {
-	    LQX::SyntaxTreeNode * expr = foreach_loop( std::next( generator ), end );
+	if ( comprehension != end ) {
+	    LQX::SyntaxTreeNode * expr = foreach_loop( std::next( comprehension ), end );
 	    std::vector<LQX::SyntaxTreeNode *>* loop_body = new std::vector<LQX::SyntaxTreeNode *>();
 	    loop_body->push_back( expr );
-//	    loop_body->push_back( new LQX::FilePrintStatementNode( new std::vector<LQX::SyntaxTreeNode *>(), true, false ) );	/* Insert a blank line */
-	    /* for ( variable = begin, variable < end, variable += stride ) { loop_body } */
-	    return new LQX::LoopStatementNode( new LQX::AssignmentStatementNode( generator->getVariable(), new LQX::ConstantValueExpression( generator->begin() ) ),
-					       new LQX::ComparisonExpression(LQX::ComparisonExpression::LESS_THAN, generator->getVariable(), new LQX::ConstantValueExpression( generator->end() ) ),
-					       new LQX::AssignmentStatementNode( generator->getVariable(), new LQX::MathExpression( LQX::MathExpression::ADD, generator->getVariable(), new LQX::ConstantValueExpression( generator->step() ) ) ),
-					       new LQX::CompoundStatementNode( loop_body ) );
+	    return comprehension->collect( loop_body );
 	} else {
 	    return new LQX::CompoundStatementNode( this->loop_body() );
 	}
@@ -2115,9 +2056,9 @@ namespace QNIO
 	    /* No WhatIf and default output */
 	    std::map<const std::string,const std::string>::const_iterator current_station = _station_index.begin();
 	    for ( std::vector<var_name_and_expr>::const_iterator result = _result_variables.begin(); result != _result_variables.end(); ++result ) {
-		if ( current_station->first == result->first ) {
+		if ( current_station != _station_index.end() && current_station->first == result->first ) {
 		    /* First item in the vector. */
-		    print_arguments.push_back( new std::vector<LQX::SyntaxTreeNode *> );								/* New row. */
+		    print_arguments.push_back( new std::vector<LQX::SyntaxTreeNode *> );				/* New row. */
 		    print_arguments.back()->push_back( new LQX::ConstantValueExpression( ", " ) );			/* CSV. */
 		    print_arguments.back()->push_back( new LQX::ConstantValueExpression( current_station->second ) );	/* Station name */
 		    current_station++;
@@ -2127,13 +2068,13 @@ namespace QNIO
 
 	} else {
 	    print_arguments.push_back( new std::vector<LQX::SyntaxTreeNode *> );
-	    print_arguments.back()->push_back( new LQX::ConstantValueExpression( ", " ) );	/* CSV. */
+	    print_arguments.back()->push_back( new LQX::ConstantValueExpression( ", " ) );				/* CSV. */
 	
 	    for ( std::vector<std::string>::const_iterator input = _independent_variables.begin(); input != _independent_variables.end(); ++input ) {
-		print_arguments.back()->push_back( new LQX::VariableExpression( *input, false ) );	/* Print out input variables */
+		print_arguments.back()->push_back( new LQX::VariableExpression( *input, false ) );			/* Print out input variables */
 	    }
 	    for ( std::vector<var_name_and_expr>::const_iterator result = _result_variables.begin(); result != _result_variables.end(); ++result ) {
-		print_arguments.back()->push_back( new LQX::VariableExpression( result->first, false ) );	/* Print out results */
+		print_arguments.back()->push_back( new LQX::VariableExpression( result->first, false ) );		/* Print out results */
 	    }
 	}
 

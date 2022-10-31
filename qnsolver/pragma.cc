@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: pragma.cc 15760 2022-07-25 14:36:17Z greg $ *
+ * $Id: pragma.cc 16038 2022-10-26 12:28:51Z greg $ *
  * Pragma processing and definitions.
  *
  * Copyright the Real-Time and Distributed Systems Group,
@@ -19,6 +19,7 @@
 Pragma * Pragma::__cache = nullptr;
 const std::map<const std::string,const Pragma::fptr> Pragma::__set_pragma =
 {
+    { LQIO::DOM::Pragma::_default_output_,	&Pragma::setDefaultOutput },
     { LQIO::DOM::Pragma::_force_multiserver_,	&Pragma::setForceMultiserver },
     { LQIO::DOM::Pragma::_multiserver_,		&Pragma::setMultiserver },
     { LQIO::DOM::Pragma::_mva_,			&Pragma::setSolver }
@@ -29,6 +30,7 @@ const std::map<const std::string,const Pragma::fptr> Pragma::__set_pragma =
  */
 
 Pragma::Pragma() :
+    _default_output(true),
     _force_multiserver(false),
     _multiserver(Model::Multiserver::DEFAULT),
     _solver(Model::Solver::EXACT_MVA)
@@ -57,6 +59,11 @@ Pragma::set( const std::map<std::string,std::string>& list )
     }
 }
 
+
+void Pragma::setDefaultOutput(const std::string& value)
+{
+    _default_output = LQIO::DOM::Pragma::isTrue( value );
+}
 
 void Pragma::setForceMultiserver(const std::string& value)
 {

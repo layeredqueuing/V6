@@ -9,7 +9,7 @@
  *
  * December 2020
  *
- * $Id: closedmodel.cc 15987 2022-10-17 10:37:37Z greg $
+ * $Id: closedmodel.cc 16038 2022-10-26 12:28:51Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -28,7 +28,6 @@
 ClosedModel::ClosedModel( Model& parent, QNIO::Document& input, Model::Solver mva )
     : Model(input,mva), _parent(parent), _solver(nullptr), _mva(mva), N(), Z(), priority()
 {
-    setEnvironment(parent.getEnvironment());
     const size_t K = _model.n_chains(BCMP::Model::Chain::Type::CLOSED);
     const size_t M = _model.n_stations(BCMP::Model::Chain::Type::CLOSED);
     _result = K > 0 && M > 0;
@@ -145,4 +144,11 @@ ClosedModel::debug( std::ostream& output ) const
 	output << "Class " << ki->first << ": customers=" << customers << std::endl;
     }
     return Model::debug( output );
+}
+
+std::ostream&
+ClosedModel::print( std::ostream& output ) const
+{
+    output << *_solver << std::endl;
+    return output;
 }

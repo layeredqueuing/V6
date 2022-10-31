@@ -1,4 +1,4 @@
-# $Id: Makefile.am 16004 2022-10-19 17:26:51Z greg $
+# $Id: Makefile.am 16038 2022-10-26 12:28:51Z greg $
 # -------------------------------------------------------------------- [Libtool libsrvnio2]
 
 # This project uses Libtool to generate a product
@@ -88,6 +88,7 @@ json_document.cpp: srvn_gram.h
 srvn_spex.cpp: srvn_gram.h
 json_document.cpp: srvn_gram.h
 srvn_input.cpp: srvn_gram.h
+qnap2_document.cpp: qnap2_gram.h
 
 # Files to remove during cleanup
 MOSTLYCLEANFILES = srvn_gram.h srvn_gram.c srvn_scan.c srvn_result_gram.h srvn_result_gram.c srvn_result_scan.c qnap2_scan.c

@@ -9,7 +9,7 @@
  *
  * December 2020
  *
- * $Id: closedmodel.h 15969 2022-10-13 19:49:43Z greg $
+ * $Id: closedmodel.h 16038 2022-10-26 12:28:51Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -55,9 +55,11 @@ public:
     bool solve();
     void saveResults();
 
-    std::ostream& debug( std::ostream& output ) const;
     const Population& customers() const { return N; }
     const MVA* solver() const { return _solver; }
+
+    std::ostream& debug( std::ostream& output ) const;
+    std::ostream& print( std::ostream& output ) const;
 	
 private:
     virtual BCMP::Model::Chain::Type type() const { return BCMP::Model::Chain::Type::CLOSED; }
