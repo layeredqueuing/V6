@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: lqns.cc 15979 2022-10-14 16:57:35Z greg $
+ * $Id: lqns.cc 16087 2022-11-09 02:51:10Z greg $
  *
  * Command line processing.
  *
@@ -30,6 +30,7 @@
 #include <unistd.h>
 #include <lqio/commandline.h>
 #include <lqio/filename.h>
+#include <lqio/input.h>
 #include <lqio/srvn_spex.h>
 #include <lqio/dom_pragma.h>
 #if !HAVE_GETSUBOPT
@@ -142,7 +143,7 @@ int main (int argc, char *argv[])
     
     command_line = LQIO::io_vars.lq_toolname;
 
-    sscanf( "$Date: 2022-10-14 12:57:35 -0400 (Fri, 14 Oct 2022) $", "%*s %s %*s", copyrightDate );
+    sscanf( "$Date: 2022-11-08 21:51:10 -0500 (Tue, 08 Nov 2022) $", "%*s %s %*s", copyrightDate );
 
     matherr_disposition = FP_IMMEDIATE_ABORT;
 

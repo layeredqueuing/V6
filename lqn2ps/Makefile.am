@@ -1,5 +1,5 @@
 # ----------------------------------------------------------------------
-# $Id: Makefile.am 15869 2022-09-20 09:05:46Z greg $
+# $Id: Makefile.am 16124 2022-11-18 11:26:13Z greg $
 # ----------------------------------------------------------------------
 
 SUBDIRS		= 
@@ -53,9 +53,8 @@ all-local: lqn2ps.pdf
 install-data-local: lqn2ps.pdf 
 
 lqn2ps.pdf: $(man1_MANS)
-	groff -man $(man1_MANS) | ps2pdf - $@
+	groff -man $(man1_MANS)  > $<.ps
+		ps2pdf $<.ps $@
+		rm $<.ps
 endif
-
-lqn2ps.txt: $(man1_MANS)
-	nroff -man $(man1_MANS) | col -b > lqn2ps.txt
 

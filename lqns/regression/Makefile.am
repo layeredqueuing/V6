@@ -2,7 +2,7 @@
 # Copyright (C) 2005 Greg Franks <greg@sce.carleton.ca>
 #
 # ------------------------------------------------------------------------
-# $Id: Makefile.am 15852 2022-08-18 21:14:33Z greg $
+# $Id: Makefile.am 16146 2022-11-30 08:55:17Z greg $
 # ------------------------------------------------------------------------
 
 SRVN=	../lqns
@@ -97,8 +97,8 @@ SUFFIXES = .diff .d .svg .lqxo .lqnx
 
 .lqxo.diff:
 	-if test -f ../../models/regression/petri-results/$<; \
-	then srvndiff --print-comment -IC ../../models/regression/{petri,sim,lqns}-results/$< $< > $@; \
-	else srvndiff --print-comment -IC ../../models/regression/{sim,lqns}-results/$< $< > $@; \
+	then srvndiff --print-comment -IC -o $@ ../../models/regression/{petri,sim,lqns}-results/$< $<; \
+	else srvndiff --print-comment -IC -o $@ ../../models/regression/{sim,lqns}-results/$< $<; \
 	fi
 
 .lqxo.svg:
@@ -121,7 +121,7 @@ recheck:
 	$(MAKE) -k check
 
 summary:	$(OBJS)
-	for i in $(OBJS); do srvndiff -Q --ignore-errors -S0.001 ../../models/regression-xml/lqns-results/$$i $$i > /dev/null; \
+	for i in $(OBJS); do srvndiff -Q --ignore-errors -S0.001 -o /dev/null ../../models/regression-xml/lqns-results/$$i $$i; \
 	if test $$? == 0; then result="pass"; else result="fail"; fi; \
 	echo \"$$i\",$$result; done
 

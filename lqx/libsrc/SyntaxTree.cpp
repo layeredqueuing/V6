@@ -771,6 +771,9 @@ namespace LQX {
       case Symbol::SYM_STRING:
 	output << "\"" << _current->getStringValue() << "\"";
         break;
+      case Symbol::SYM_NULL:
+	output << "@null";
+        break;
       default:
 	output << "<<invalid>>";
         break;
@@ -1090,9 +1093,14 @@ namespace LQX {
     }
     output  << _valueName << " in ";
     _arrayNode->print(output,indent);
-    output << " ) { " << std::endl;
-    _actionNode->print(output,indent+1);
-    output << left_fill( indent ) << "}";
+    output << " )";
+    if ( dynamic_cast<CompoundStatementNode*>(_actionNode) != nullptr ) {
+      output << " ) { " << std::endl;
+      _actionNode->print(output,indent+1);
+      output << left_fill( indent ) << "}";
+    } else if ( _actionNode != nullptr ) {
+      _actionNode->print(output);
+    }
     return output;
   }
 

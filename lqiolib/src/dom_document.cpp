@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_document.cpp 16038 2022-10-26 12:28:51Z greg $
+ *  $Id: dom_document.cpp 16124 2022-11-18 11:26:13Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -559,6 +559,11 @@ namespace LQIO {
 	    return _pragmas.get( param );
 	}
 
+	bool Document::hasPragma( const std::string& param ) const
+	{
+	    return _pragmas.have( param );
+	}
+
 	/* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- [Result Values] -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= */
 
 	Document&
@@ -755,22 +760,22 @@ namespace LQIO {
 	/* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- [Dom builder ] -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= */
 
 	ExternalVariable*
-	Document::db_build_parameter_variable(const char* input, bool* isSymbol)
+	Document::db_build_parameter_variable(const std::string& input, bool* isSymbol)
 	{
 	    if (isSymbol) { *isSymbol = false; }
-	    if ( input == nullptr ) {
+	    if ( input.empty() ) {
 		/* nullptr input means a zero */
 		return new ConstantExternalVariable(0.0);
 	    } else if ( input[0] == '$' ) {
 		if (isSymbol) { *isSymbol = true; }
 		return getSymbolExternalVariable(input);
-	    } else if ( strcmp( input, "@infinity" ) == 0 ) {
+	    } else if ( input == "@infinity" ) {
 		return new ConstantExternalVariable( std::numeric_limits<double>::infinity() );
 	    } else {
 		double result = 0.0;
 		char* endPtr = nullptr;
-		const char* realEndPtr = input + strlen(input);
-		result = strtod(input, &endPtr);
+		const char* realEndPtr = input.c_str() + input.size();
+		result = strtod(input.c_str(), &endPtr);
 
 		/* Check if we finished parsing okay */
 		if (endPtr != realEndPtr) {
@@ -965,7 +970,7 @@ namespace LQIO {
 
 		/* Regular output */
 
-		if ( LQIO::DOM::Pragma::isTrue(LQIO::DOM::__document->getPragma( LQIO::DOM::Pragma::_default_output_ )) ) {
+		if ( !LQIO::DOM::__document->hasPragma( LQIO::DOM::Pragma::_default_output_ ) || LQIO::DOM::Pragma::isTrue(LQIO::DOM::__document->getPragma( LQIO::DOM::Pragma::_default_output_ )) ) {
 		    LQIO::Filename filename( __input_file_name, rtf_output ? "rtf" : "out", directory_name, suffix );
 
 		    output.open( filename(), std::ios::out );

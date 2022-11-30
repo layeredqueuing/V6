@@ -8,7 +8,7 @@
 /************************************************************************/
 
 /*
- * $Id: dom_pragma.h 16038 2022-10-26 12:28:51Z greg $
+ * $Id: dom_pragma.h 16124 2022-11-18 11:26:13Z greg $
  */
 
 #ifndef __LQIO_DOM_PRAGMA_H__
@@ -39,6 +39,7 @@ namespace LQIO {
 	    void clear();
 	    const std::map<std::string,std::string>& getList() const;
 	    bool empty() const { return getList().empty(); }
+	    bool have( const std::string& ) const;		/* Return true if pragma was set */
 	    size_t size() const { return getList().size(); }
 	    const std::string& get( const std::string& ) const;
 	    static const std::set<std::string>* getValues( const std::string& );

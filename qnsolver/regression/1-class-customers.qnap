@@ -1,4 +1,4 @@
-& $Id$
+& $Id: 1-class-customers.qnap 16067 2022-11-04 12:27:26Z greg $
 /declare/
    integer N1;                                                 & SPEX customers vars.
    real Q_CPU,R_CPU,U_CPU,X_CPU;

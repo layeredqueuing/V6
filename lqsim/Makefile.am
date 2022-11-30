@@ -1,5 +1,5 @@
 #----------------------------------------------------------------------
-# $Id: Makefile.am 15869 2022-09-20 09:05:46Z greg $
+# $Id: Makefile.am 16124 2022-11-18 11:26:13Z greg $
 #----------------------------------------------------------------------
 SUBDIRS		= regression
 
@@ -29,7 +29,9 @@ all-local:	lqsim.pdf
 install-data-hook: lqsim.pdf
 
 lqsim.pdf: $(man1_MANS)
-	groff -t -man $(man1_MANS) | ps2pdf - $@
+	groff -t -man $(man1_MANS) > $<.ps
+	ps2pdf $<.ps $@
+	rm $<.ps
 
 endif
 

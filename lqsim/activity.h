@@ -10,7 +10,7 @@
 /*
  * Activities (and phases).
  *
- * $Id: activity.h 15760 2022-07-25 14:36:17Z greg $
+ * $Id: activity.h 16124 2022-11-18 11:26:13Z greg $
  */
 
 #ifndef ACTIVITY_H
@@ -41,7 +41,7 @@ public:
     Activity( Task * cp=nullptr, LQIO::DOM::Phase * dom=nullptr );
     virtual ~Activity();
 
-    const char * name() const { return _name.c_str(); }
+    const std::string& name() const { return _name; }
     Task * task() const { return _task; }			/* pointer to task.	        */
     unsigned int index() const { return _index; }
     
@@ -158,10 +158,10 @@ void act_print_raw_stat( FILE * output, Activity * ap );
 
 struct eqActivityStr 
 {
-    eqActivityStr( const char * s ) : _s(s) {}
-    bool operator()(const Activity * p1 ) const { return strcmp( p1->name(), _s ) == 0; }
+    eqActivityStr( const std::string& s ) : _s(s) {}
+    bool operator()(const Activity * p1 ) const { return p1->name() == _s; }
 
 private:
-    const char * _s;
+    const std::string& _s;
 };
 #endif

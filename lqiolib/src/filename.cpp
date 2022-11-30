@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: filename.cpp 15760 2022-07-25 14:36:17Z greg $
+ * $Id: filename.cpp 16124 2022-11-18 11:26:13Z greg $
  *
  * File name generation.
  *
@@ -127,8 +127,9 @@ namespace LQIO {
     Filename&
     Filename::operator<<( const unsigned n )
     {
-	char buf[8];
-	sprintf( buf, "%03d", n );
+	const size_t size = 8;
+	char buf[size];
+	snprintf( buf, size, "%03d", n );
 
 	_filename += buf;
 	return *this;

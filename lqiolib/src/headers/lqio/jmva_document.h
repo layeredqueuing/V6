@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- *  $Id: jmva_document.h 16050 2022-10-31 11:19:26Z greg $
+ *  $Id: jmva_document.h 16099 2022-11-13 00:34:49Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  */
@@ -137,7 +137,7 @@ namespace QNIO {
 	virtual bool disableDefaultOutputWithLQX() const { return true; }
 
 	std::ostream& print( std::ostream& ) const;
-	std::ostream& printInput( std::ostream& ) const;
+	std::ostream& exportModel( std::ostream& ) const;
 	void plot( BCMP::Model::Result::Type, const std::string& );
 	bool plotPopulationMix() const { return _plot_population_mix; }
 	void setPlotPopulationMix( bool plot_population_mix ) { _plot_population_mix = plot_population_mix; }
@@ -203,7 +203,7 @@ namespace QNIO {
 	void appendResultVariable( const std::string&, LQX::SyntaxTreeNode * );
 
 	/* LQX */
-	virtual LQX::Program * getLQXProgram() const;
+	virtual LQX::Program * getLQXProgram();
 	LQX::SyntaxTreeNode * foreach_loop( std::deque<Comprehension>::const_iterator, std::deque<Comprehension>::const_iterator ) const;
 	std::vector<LQX::SyntaxTreeNode *>* loop_body() const;
 	std::vector<LQX::SyntaxTreeNode *>* solve_failure() const;
@@ -278,7 +278,7 @@ namespace QNIO {
 
 	class create_result {
 	public:
-	    create_result( JMVA_Document& self ) : _self(self), _station_index_set(false) {}
+	    create_result( JMVA_Document& self ) : _self(self) {}
 	    void operator()( const std::pair<const std::string,const BCMP::Model::Station>& m ) const;
 	    void operator()( const std::pair<const std::string,const BCMP::Model::Chain>& k ) const;
 	    const BCMP::Model::Station::map_t& stations() const { return _self.model().stations(); }
@@ -286,17 +286,17 @@ namespace QNIO {
 	    
 	private:
 	    JMVA_Document& _self;
-	    mutable bool _station_index_set;
 	};
 
 	class csv_heading {
 	public:
-	    csv_heading( std::vector<LQX::SyntaxTreeNode *>* arguments, const std::string& suffix ) : _arguments(arguments), _suffix(suffix) {}
+	    csv_heading( std::vector<LQX::SyntaxTreeNode *>* arguments, const BCMP::Model::Chain::map_t& chains ) : _arguments(arguments), _chains(chains) {}
 	    void operator()( const std::pair<const std::string,const BCMP::Model::Result::Type>& );
+	    const BCMP::Model::Chain::map_t& chains() const { return _chains; }
 
 	private:
 	    std::vector<LQX::SyntaxTreeNode *>* _arguments;
-	    const std::string& _suffix;
+	    const BCMP::Model::Chain::map_t& _chains;
 	};
 	
 	struct notSet {
@@ -379,9 +379,10 @@ namespace QNIO {
 	std::stack<parse_stack_t> _stack;
 	std::string _lqx_program_text;
 	unsigned int _lqx_program_line_number;
+	LQX::Program * _lqx;
 	
 	/* SPEX */
-	std::vector<LQX::SyntaxTreeNode*> _main_program;
+	std::vector<LQX::SyntaxTreeNode*> _program;
 	std::set<std::string> _input_variables;						/* Spex vars -- may move to QNAP/QNIO */
 	std::vector<LQX::SyntaxTreeNode*> _whatif_body;
 	std::vector<std::string> _independent_variables;				/* x variables */
