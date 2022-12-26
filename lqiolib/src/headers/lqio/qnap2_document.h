@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- *  $Id: qnap2_document.h 16171 2022-12-11 02:36:33Z greg $
+ *  $Id: qnap2_document.h 16201 2022-12-26 22:07:01Z greg $
  *
  *  Created by Greg Franks 2020/12/28
  */
@@ -42,7 +42,7 @@ extern "C" {
     void qnap2_set_option( const void * );
     void qnap2_set_station_init( const void *, void * );
     void qnap2_set_station_name( const char * );
-    void qnap2_set_station_prio( const void *, const void * );
+    void qnap2_set_station_prio( const void *, void * );
     void qnap2_set_entry( void * );
     void qnap2_set_main( void * );
     void qnap2_set_exit( void * );
@@ -54,7 +54,7 @@ extern "C" {
     void qnap2_set_station_type( const void * );
     /* LQX */
     void * qnap2_get_array( void * );
-    void * qnap2_get_attribute( void *, const char * );
+    void * qnap2_get_attribute( void *, const char *, void * );
     void * qnap2_get_function( const char * , void * );			/* Returns LQX */
     void * qnap2_get_integer( long );					/* Returns LQX */
     void * qnap2_get_procedure( const char *, void * );			/* Returns LQX */
@@ -113,7 +113,7 @@ namespace QNIO {
 	friend void ::qnap2_set_exit( void * );
 	friend void ::qnap2_set_station_init( const void *, void * );
 	friend void ::qnap2_set_station_name( const char * );
-	friend void ::qnap2_set_station_prio( const void *, const void * );
+	friend void ::qnap2_set_station_prio( const void *, void * );
 	friend void ::qnap2_set_station_quantum( const void *, const void * );
 	friend void ::qnap2_set_station_sched( const char * );
 	friend void ::qnap2_set_station_service( const void *, const void * );
@@ -122,7 +122,7 @@ namespace QNIO {
 	friend void ::qnap2error( const char * fmt, ... );
 	friend void * ::qnap2_get_all_objects( int code );
 	friend void * ::qnap2_get_array( void * );
-	friend void * ::qnap2_get_attribute( void *, const char * );
+	friend void * ::qnap2_get_attribute( void *, const char *, void * );
 	friend void * ::qnap2_get_function( const char * , void * );
 	friend void * ::qnap2_get_procedure( const char * symbol, void * );
 	friend void * ::qnap2_get_service_distribution( int code, void *, void * );
@@ -198,6 +198,7 @@ namespace QNIO {
 	virtual bool disableDefaultOutputWithLQX() const { return !_result; }
 	virtual LQX::Program * getLQXProgram() { return _lqx; }
 	LQX::Environment * getLQXEnvironment() const { return _env; }
+	LQX::SymbolAutoRef getLQXSymbol( const std::string& ) const;
 	virtual bool preSolve();
 	virtual bool postSolve();
 
@@ -216,7 +217,6 @@ namespace QNIO {
 	LQX::ArrayObject* getArrayObject( LQX::SyntaxTreeNode * variable ) const;
 	LQX::SyntaxTreeNode * getFunction( const std::string& name, std::vector<LQX::SyntaxTreeNode *>* args );
 	LQX::VariableExpression * getVariable( const std::string& name );
-	LQX::SyntaxTreeNode * getAssignmentStatement( LQX::SyntaxTreeNode * dst, LQX::SyntaxTreeNode * src );
 
 	const std::set<Symbol>::const_iterator findAttribute( LQX::VariableExpression * ) const;
 	double getDouble( LQX::SyntaxTreeNode * ) const;
@@ -282,6 +282,15 @@ namespace QNIO {
 	    LQX::SyntaxTreeNode * _customers;
 	};
 
+	class SetStationPriority : public SetParameter {
+	public:
+	    SetStationPriority( const QNAP2_Document& document, LQX::SyntaxTreeNode* priority ) : SetParameter(document), _priority(priority) {}
+	    void operator()( const std::string& ) const;
+	    void operator()( BCMP::Model::Chain::pair_t& ) const;
+	private:
+	    LQX::SyntaxTreeNode * _priority;
+	};
+	
 	class SetStationService : public SetParameter {
 	public:
 	    SetStationService( const QNAP2_Document& document, const QNIO::QNAP2_Document::ServiceDistribution& service ) : SetParameter(document), _service(service) {}
@@ -306,13 +315,27 @@ namespace QNIO {
 	class SetStationTransit {
 	public:
 	    SetStationTransit( const QNAP2_Document& document, const std::vector<std::pair<const std::string,LQX::SyntaxTreeNode *>*>& transit ) : _document(document), _transit(transit) {}
-	    void operator()( const std::string& ) const;
-	    void operator()( const BCMP::Model::Chain::pair_t& ) const;
+	    void operator()( const std::string& class_name ) const { set( class_name ); }
+	    void operator()( const BCMP::Model::Chain::pair_t& chain ) const { set( chain.first ); }
 	private:
 	    void set( const std::string& class_name ) const;
+	    const std::set<Symbol>::const_iterator findSymbol( const std::string& name ) const { return _document._symbolTable.find( name ); }
+	    const std::set<Symbol>::const_iterator symbolTableEnd() const { return _document._symbolTable.end(); }
+	    LQX::SymbolAutoRef getLQXSymbol( const std::string& name ) const { return _document.getLQXSymbol( name ); }
 
 	    const QNAP2_Document& _document;
 	    const std::vector<std::pair<const std::string,LQX::SyntaxTreeNode *>*>& _transit;
+
+	    struct insert {
+		insert( const std::string& base_name, const std::string& class_name, LQX::SyntaxTreeNode * src ) : _base_name(base_name), _class_name(class_name), _src(src) {}
+
+		void operator()() const;
+		void operator()( std::pair<LQX::SymbolAutoRef,LQX::SymbolAutoRef> dst ) const;
+
+		const std::string& _base_name;
+		const std::string& _class_name;
+		LQX::SyntaxTreeNode * _src;
+	    };
 	};
 
 	class ConstructStation {
@@ -335,6 +358,28 @@ namespace QNIO {
 	    BCMP::Model::Station& _station;
 	};
 
+	class DeepCopy : public LQX::Method {
+	public:
+	    DeepCopy() {}
+	    virtual ~DeepCopy() {}
+	    
+	    /* All of the glue code to make sure LQX can call print() */
+	    virtual std::string getName() const { return "deep_copy"; }
+	    virtual const char* getParameterInfo() const { return "aa"; }
+	    virtual std::string getHelp() const { return "Copy the contents of the second argument to the first."; }
+	    virtual LQX::SymbolAutoRef invoke(LQX::Environment* env, std::vector<LQX::SymbolAutoRef >& args);
+
+	private:
+	    bool isArray( const LQX::SymbolAutoRef& ) const;
+
+	    struct copy_item {
+		copy_item( LQX::ArrayObject * src ) : _src(src) {}
+		void operator()( std::pair<LQX::SymbolAutoRef,LQX::SymbolAutoRef> dst ) const;
+
+		LQX::ArrayObject * _src;
+	    };
+	};
+	
 	class Print : public LQX::Method {
 	public:
 	    /* maps print() to LQX::println(); */
@@ -372,9 +417,9 @@ namespace QNIO {
 	    static std::string blankline();
 
 	private:
-	    static std::streamsize __width;
-	    static std::streamsize __precision;
-	    static std::string __separator;
+	    static const std::streamsize __width;
+	    static const std::streamsize __precision;
+	    static const std::string __separator;
 
 	    const BCMP::Model& _model;
 	};

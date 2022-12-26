@@ -9,18 +9,17 @@
  *
  * November, 1994
  *
- * $Id: fpgoop.h 15401 2022-01-27 22:17:31Z greg $
+ * $Id: fpgoop.h 16201 2022-12-26 22:07:01Z greg $
  *
  * ------------------------------------------------------------------------
  */
 
+#pragma once
 #ifndef	LIBMVA_FPGOOP_H
 #define	LIBMVA_FPGOOP_H
 
-#include <config.h>
-#if HAVE_IEEEFP_H && !defined(__WINNT__) &&!defined(MSDOS)
-#include <ieeefp.h>
-#endif
+#pragma STDC FENV_ACCESS ON
+
 #include <string>
 #include <stdexcept>
 
@@ -63,7 +62,6 @@ private:
     std::string construct( const std::string& f, const unsigned l );
 };
 
-typedef enum { FP_IGNORE, FP_REPORT, FP_DEFERRED_ABORT, FP_IMMEDIATE_ABORT } fp_exeception_reporting;
-extern fp_exeception_reporting matherr_disposition;	/* What to do about math probs.	*/
+enum class fp_exception_reporting { IGNORE, REPORT, DEFERRED_ABORT, IMMEDIATE_ABORT };
+extern fp_exception_reporting matherr_disposition;	/* What to do about math probs.	*/
 #endif
-

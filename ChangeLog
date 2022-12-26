@@ -1,3 +1,11 @@
+2022-12-21  Gregory Franks  <greg@Gregs-Retina-iMac.local>
+
+	* lqiolib, qnsolver
+	- Added qnap2input.
+
+	* lqns, lqsim, srvndiff
+	- Mac M1 fixes.
+
 2022-08-16  Greg Franks  <greg@merlin.sce.carleton.ca>
 
 	* lqiolib, lqns, petrisrvn:
@@ -556,4 +564,4 @@
 	* parasrvn:
 	- Peter Maly added service time distributions.  See '-H' option.
 
-$Id: ChangeLog 15854 2022-08-18 22:32:33Z greg $
+$Id: ChangeLog 16201 2022-12-26 22:07:01Z greg $

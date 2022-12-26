@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: model.cc 15762 2022-07-25 16:16:52Z greg $
+ * $Id: model.cc 16201 2022-12-26 22:07:01Z greg $
  *
  * Layer-ization of model.  The basic concept is from the reference
  * below.  However, model partioning is more complex than task vs device.
@@ -48,8 +48,10 @@
 #include <lqio/json_document.h>
 #include <lqio/srvn_output.h>
 #include <lqio/srvn_spex.h>
+#include <mva/fpgoop.h>
 #include <mva/mva.h>
 #include <mva/open.h>
+#include <mva/server.h>
 #include "activity.h"
 #include "actlist.h"
 #include "call.h"
@@ -229,7 +231,7 @@ Model::load( const std::string& input_filename, const std::string& output_filena
      */
 
     set_fp_ok( false );			// Reset floating point. -- stop on overflow?
-    if ( matherr_disposition == FP_IMMEDIATE_ABORT ) {
+    if ( matherr_disposition == fp_exception_reporting::IMMEDIATE_ABORT ) {
 	set_fp_abort();
     }
 

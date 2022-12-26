@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- *  $Id: bcmp_bindings.h 16099 2022-11-13 00:34:49Z greg $
+ *  $Id: bcmp_bindings.h 16190 2022-12-21 02:34:54Z greg $
  *
  *  Created by Martin Mroz on 16/04/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -16,6 +16,7 @@
 /* Forward reference to LQX Environment */
 namespace LQX {
     class Environment;
+    class ArrayObject;
 };
 
 
@@ -31,6 +32,15 @@ namespace BCMP {
 	
     protected:
 	bool add_attribute( const std::string&, LQX::SymbolAutoRef );
+
+    private:
+	struct initialize {
+	    initialize( LQX::ArrayObject * dst ) : _dst(dst) {}
+	    void operator()( std::pair<LQX::SymbolAutoRef,LQX::SymbolAutoRef> item );
+	    LQX::ArrayObject * dst() { return _dst; }
+	private:
+	    LQX::ArrayObject * _dst;
+	};
 
     private:
 	std::map<const std::string,LQX::SymbolAutoRef> _attributes;		/* Not used internally but for lqx interface. */

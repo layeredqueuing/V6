@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- * $Id: multserv.cc 15987 2022-10-17 10:37:37Z greg $
+ * $Id: multserv.cc 16201 2022-12-26 22:07:01Z greg $
  *
  * Server definitions for Multiserver MVA.
  * From
@@ -50,6 +50,7 @@
 #include <cassert>
 #include <cstdlib>
 #include <limits>
+#include "fpgoop.h"
 #include "mva.h"
 #include "multserv.h"
 #include "mvaexception.h"

@@ -1,11 +1,12 @@
 /*
- *  $Id: bcmp_bindings.cpp 16171 2022-12-11 02:36:33Z greg $
+ *  $Id: bcmp_bindings.cpp 16190 2022-12-21 02:34:54Z greg $
  *
  *  Created by Martin Mroz on 16/04/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
  *
  */
 
+#include <algorithm>
 #include <cstdio>
 #include <sstream>
 #include <cstring>
@@ -52,9 +53,16 @@ namespace BCMP {
 	if ( defined == __attributes.end() ) return LQX::Symbol::encodeNull();	/* Not defined */
 
 	/* Duplicate the template value and make it writable */
-	LQX::SymbolAutoRef value = LQX::Symbol::duplicate( defined->second->invoke( env ) );
-	value->setIsConstant( false );
-	return _attributes.emplace( name, value ).first->second;
+	LQX::SymbolAutoRef src = defined->second->invoke( env );
+	LQX::SymbolAutoRef dst;
+	if ( src->getType() == LQX::Symbol::SYM_OBJECT && dynamic_cast<LQX::ArrayObject *>(src->getObjectValue()) ) {
+	    LQX::ArrayObject * array = dynamic_cast<LQX::ArrayObject *>(src->getObjectValue());
+	    dst = LQX::Symbol::encodeObject( std::for_each( array->begin(), array->end(), BCMP::Attributes::initialize( new LQX::ArrayObject() ) ).dst(), false );
+	} else {
+	    dst = LQX::Symbol::duplicate( src );
+	}
+	dst->setIsConstant( false );
+	return _attributes.emplace( name, dst ).first->second;
     }
     
     /* static */ bool Attributes::addAttribute( const std::string& name, LQX::SyntaxTreeNode * value )
@@ -62,6 +70,14 @@ namespace BCMP {
 	return __attributes.emplace( name, value ).second;
     }
 
+    /* Copy over the array keys, but create a new array value */
+    /* static */ void Attributes::initialize::operator()( std::pair<LQX::SymbolAutoRef,LQX::SymbolAutoRef> item )
+    {
+	LQX::SymbolAutoRef value = LQX::Symbol::encodeNull();
+	value->setIsConstant( false );
+	value->copyValue( *item.second );
+	_dst->put( item.first, value );
+    }
 
 /* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */
 /* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- [Object] */
@@ -140,15 +156,12 @@ namespace BCMP {
 
 	    /* Decode the name of the class and look it up in cache */
 	    const std::string stationName = decodeString(args, 0);
-	    if (_symbolCache.find(stationName) != _symbolCache.end()) {
-		return _symbolCache[stationName];
-	    }
 
-	    /* Obtain the station reference  */
+	    /* Return an encapsulated reference to the station */
 	    try {
-		/* Return an encapsulated reference to the station */
-		LQXStation* stationObject = new LQXStation(&_model->stationAt(stationName));
-		_symbolCache[stationName] = LQX::Symbol::encodeObject(stationObject, false);
+		if (_symbolCache.find(stationName) == _symbolCache.end()) {
+		    _symbolCache[stationName] = LQX::Symbol::encodeObject( new LQXStation(&_model->stationAt(stationName)), false );
+		}
 		return _symbolCache[stationName];
 	    }
 	    catch ( const std::out_of_range& e ) {
@@ -295,15 +308,12 @@ namespace BCMP {
 
 	    /* Decode the name of the class and look it up in cache */
 	    const std::string chainName = decodeString(args, 0);
-	    if (_symbolCache.find(chainName) != _symbolCache.end()) {
-		return _symbolCache[chainName];
-	    }
 
-	    /* Obtain the chain reference  */
+	    /* Return an encapsulated reference to the chain */
 	    try {
-		/* Return an encapsulated reference to the chain */
-		LQXChain* chainObject = new LQXChain(*_model,chainName);
-		_symbolCache[chainName] = LQX::Symbol::encodeObject(chainObject, false);
+		if (_symbolCache.find(chainName) == _symbolCache.end()) {
+		    _symbolCache[chainName] = LQX::Symbol::encodeObject( new LQXChain(*_model,chainName), false );
+		}
 		return _symbolCache[chainName];
 	    }
 	    catch ( const std::out_of_range& e ) {
@@ -366,7 +376,7 @@ namespace BCMP
 	    if ( args.size() == 1 ) {
 		return LQX::Symbol::encodeDouble( (station->*getResult.at(type)._getStationResult)() );
 	    } else if ( args.size() == 2 ) {
-		return LQX::Symbol::encodeDouble( (getClass( station, dynamic_cast<BCMP::LQXChain *>( decodeObject(args, 0) ) ).*getResult.at(type)._getClassResult)() );
+		return LQX::Symbol::encodeDouble( (getClass( station, dynamic_cast<BCMP::LQXChain *>( decodeObject(args, 1) ) ).*getResult.at(type)._getClassResult)() );
 	    } else {
 		throw std::logic_error( "arg count" );
 	    }

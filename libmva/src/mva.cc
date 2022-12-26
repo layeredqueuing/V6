@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: mva.cc 15827 2022-08-14 15:20:00Z greg $
+ * $Id: mva.cc 16201 2022-12-26 22:07:01Z greg $
  *
  * MVA solvers: Exact, Bard-Schweitzer, Linearizer and Linearizer2.
  * Abstract superclass does no operation by itself.
@@ -138,6 +138,7 @@
 #include <cstdlib>
 #include <cassert>
 #include <limits>
+#include "fpgoop.h"
 #include "mva.h"
 #include "mvaexception.h"
 #include "prob.h"

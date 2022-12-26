@@ -10,7 +10,7 @@
 /*
  * Input output processing.
  *
- * $Id: task.cc 16124 2022-11-18 11:26:13Z greg $
+ * $Id: task.cc 16202 2022-12-26 22:26:49Z greg $
  */
 
 #include <iostream>
@@ -1248,13 +1248,13 @@ Timeout_Task::create()
     _timeout = domtask->getTimeoutValue();
     _cleanup = domtask->getAbortValue();
 
-    r_timeout.init( SAMPLE,         "%s %-11.11s - Timeout              ", type_name().c_str(), name() );
-    r_timeout_sqr.init( SAMPLE,     "%s %-11.11s - Timeout sq           ", type_name().c_str(), name() );
-    r_timeout_cycle.init( SAMPLE,   "%s %-11.11s - Timeout cycle        ", type_name().c_str(), name() );
-    r_timeout_util.init( VARIABLE,  "%s %-11.11s - Timeout Utilization  ", type_name().c_str(), name() );
-    r_timeout_prob.init( SAMPLE,    "%s %-11.11s - Timeout Probability  ", type_name().c_str(), name() );
-    r_forward.init( SAMPLE,         "%s %-11.11s - Timeout stamp        ", type_name().c_str(), name() );
-    r_calldelay.init( SAMPLE,       "%s %-11.11s - Timeout call delay   ", type_name().c_str(), name() );
+    r_timeout.init( SAMPLE,         "%s %-11.11s - Timeout              ", type_name().c_str(), name().c_str() );
+    r_timeout_sqr.init( SAMPLE,     "%s %-11.11s - Timeout sq           ", type_name().c_str(), name().c_str() );
+    r_timeout_cycle.init( SAMPLE,   "%s %-11.11s - Timeout cycle        ", type_name().c_str(), name().c_str() );
+    r_timeout_util.init( VARIABLE,  "%s %-11.11s - Timeout Utilization  ", type_name().c_str(), name().c_str() );
+    r_timeout_prob.init( SAMPLE,    "%s %-11.11s - Timeout Probability  ", type_name().c_str(), name().c_str() );
+    r_forward.init( SAMPLE,         "%s %-11.11s - Timeout stamp        ", type_name().c_str(), name().c_str() );
+    r_calldelay.init( SAMPLE,       "%s %-11.11s - Timeout call delay   ", type_name().c_str(), name().c_str() );
 
     return *this;
 }
@@ -1352,7 +1352,7 @@ Timeout_Task::insertDOMResults()
 {
     Task::insertDOMResults();
 
-    printf("%s task (%s) results:\n", type_name().c_str(), name());
+    printf("%s task (%s) results:\n", type_name().c_str(), name().c_str());
     printf("- Timeout  %-11.11f  \n", r_timeout.mean());
 
     printf("- Timeout cycle  %-11.11f  \n", r_timeout_cycle.mean());
@@ -1381,11 +1381,11 @@ Timeout_Task::print( FILE * output ) const
 {
     Task::print( output );
 
-    r_timeout.print_raw( output,      "%-6.6s %-11.11s - Timeout             ", type_name().c_str(), name() );
-    r_timeout_sqr.print_raw( output,  "%-6.6s %-11.11s - Timeout sq          ", type_name().c_str(), name() );
-    r_timeout_cycle.print_raw( output,"%-6.6s %-11.11s - Timeout Cycle       ", type_name().c_str(), name() );
-    r_timeout_util.print_raw( output, "%-6.6s %-11.11s - Timeout Utilization ", type_name().c_str(), name() );
-    r_timeout_prob.print_raw( output, "%-6.6s %-11.11s - Timeout probability ", type_name().c_str(), name() );
+    r_timeout.print_raw( output,      "%-6.6s %-11.11s - Timeout             ", type_name().c_str(), name().c_str() );
+    r_timeout_sqr.print_raw( output,  "%-6.6s %-11.11s - Timeout sq          ", type_name().c_str(), name().c_str() );
+    r_timeout_cycle.print_raw( output,"%-6.6s %-11.11s - Timeout Cycle       ", type_name().c_str(), name().c_str() );
+    r_timeout_util.print_raw( output, "%-6.6s %-11.11s - Timeout Utilization ", type_name().c_str(), name().c_str() );
+    r_timeout_prob.print_raw( output, "%-6.6s %-11.11s - Timeout probability ", type_name().c_str(), name().c_str() );
     return output;
 }
 
@@ -1410,10 +1410,10 @@ Retry_Task::create()
     _maxRetries = domtask->getMaxRetriesValue();
     
 
-    r_nretry.init( SAMPLE,     "%s %-11.11s - Retry                    ", type_name().c_str(), name() );
-    r_tretry.init( SAMPLE,     "%s %-11.11s - total requests to Retry  ", type_name().c_str(), name() );
-    r_Yretry.init( SAMPLE,     "%s %-11.11s - Retry                    ", type_name().c_str(), name() );
-    r_abort_prob.init( SAMPLE, "%s %-11.11s - Retry Probability        ", type_name().c_str(), name() );
+    r_nretry.init( SAMPLE,     "%s %-11.11s - Retry                    ", type_name().c_str(), name().c_str() );
+    r_tretry.init( SAMPLE,     "%s %-11.11s - total requests to Retry  ", type_name().c_str(), name().c_str() );
+    r_Yretry.init( SAMPLE,     "%s %-11.11s - Retry                    ", type_name().c_str(), name().c_str() );
+    r_abort_prob.init( SAMPLE, "%s %-11.11s - Retry Probability        ", type_name().c_str(), name().c_str() );
 
     return *this;
 }
@@ -1503,7 +1503,7 @@ Retry_Task&
 Retry_Task::insertDOMResults()
 {
     Task::insertDOMResults();
-    printf("%s task (%s) results:\n", type_name().c_str(), name());
+    printf("%s task (%s) results:\n", type_name().c_str(), name().c_str());
     printf("- nRetries  %-11.11f  \n", r_nretry.mean());
     printf("- nRetries  mean count %-11.11f  \n", r_nretry.mean_count());
     printf("- totalRequest  %-11.11f  \n", r_tretry.mean());
@@ -1542,10 +1542,10 @@ Retry_Task::print( FILE * output ) const
 {
     Task::print( output );
 
-    r_nretry.print_raw( output,     "%-6.6s %-11.11s - nRetries          ", type_name().c_str(), name() );
-    r_tretry.print_raw( output,     "%-6.6s %-11.11s - totalRequests     ", type_name().c_str(), name() );
-    r_Yretry.print_raw( output,     "%-6.6s %-11.11s - Y_Retry           ", type_name().c_str(), name() );
-    r_abort_prob.print_raw( output, "%-6.6s %-11.11s - Abort probability ", type_name().c_str(), name() );
+    r_nretry.print_raw( output,     "%-6.6s %-11.11s - nRetries          ", type_name().c_str(), name().c_str() );
+    r_tretry.print_raw( output,     "%-6.6s %-11.11s - totalRequests     ", type_name().c_str(), name().c_str() );
+    r_Yretry.print_raw( output,     "%-6.6s %-11.11s - Y_Retry           ", type_name().c_str(), name().c_str() );
+    r_abort_prob.print_raw( output, "%-6.6s %-11.11s - Abort probability ", type_name().c_str(), name().c_str() );
     return output;
 }
 

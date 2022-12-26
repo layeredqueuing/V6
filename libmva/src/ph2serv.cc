@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: ph2serv.cc 15662 2022-06-09 23:45:43Z greg $
+ * $Id: ph2serv.cc 16201 2022-12-26 22:07:01Z greg $
  *
  * Server definitions for MVA.  More complicated that those in server.C
  *
@@ -32,6 +32,7 @@
 
 #include <cmath>
 #include <limits>
+#include "fpgoop.h"
 #include "mva.h"
 #include "ph2serv.h"
 #include "prob.h"

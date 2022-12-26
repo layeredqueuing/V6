@@ -2,7 +2,7 @@
  * 
  * Logic executed for task behaviour in simulation.
  *
- * $Id: instance.h 16124 2022-11-18 11:26:13Z greg $
+ * $Id: instance.h 16202 2022-12-26 22:26:49Z greg $
  */
 
 /************************************************************************/
@@ -325,7 +325,7 @@ class srn_timeout_worker : public Virtual_Instance
 {
     /* WORKER 		*/
 public:
-    srn_timeout_worker( Task * cp, const char * task_name )
+    srn_timeout_worker( Task * cp, const std::string& task_name )
 	: Virtual_Instance( cp, task_name ) {}
 
     virtual const std::string& type_name() const { return Task::type_strings.at(Task::Type::TIMEOUT_WORKER); }
@@ -359,7 +359,7 @@ class srn_retry_worker : public Virtual_Instance
 {
     /* RETRY_WORKER 		*/
 public:
-    srn_retry_worker( Task * cp, const char * task_name )
+    srn_retry_worker( Task * cp, const std::string& task_name )
 	: Virtual_Instance( cp, task_name ) {}
 
     virtual const std::string& type_name() const { return Task::type_strings.at(Task::Type::RETRY_WORKER); }

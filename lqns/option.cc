@@ -1,6 +1,6 @@
 /* option.cc -- Greg Franks Wed Oct 12 2005
  *
- * $Id: option.cc 15684 2022-06-21 19:11:28Z greg $
+ * $Id: option.cc 16203 2022-12-26 22:27:01Z greg $
  */
 
 #include "lqns.h"
@@ -118,6 +118,14 @@ Options::Debug::submodels( const std::string& arg )
     }
 }
 
+
+bool
+Options::Debug::submodels( unsigned long submodel )
+{
+    return (submodel == 0 && __submodels != 0) || (((1 << (submodel - 1)) & __submodels) != 0);
+}
+
+
 void
 Options::Debug::exec( const int ix, const std::string& arg )
 {
@@ -199,6 +207,13 @@ Options::Trace::delta_wait( const std::string& arg )
     }
 }
 
+bool
+Options::Trace::delta_wait( unsigned long submodel )
+{
+    return (submodel == 0 && __delta_wait != 0) || (((1 << (submodel - 1)) & __delta_wait) != 0);
+}
+
+
 void
 Options::Trace::forks( const std::string& arg )
 {
@@ -224,6 +239,12 @@ Options::Trace::intermediate( const std::string& arg )
 }
 
 void
+Options::Trace::joins( const std::string& arg )
+{
+}
+
+
+void
 Options::Trace::mva( const std::string& arg )
 {
     if ( arg.empty() ) {
@@ -236,6 +257,13 @@ Options::Trace::mva( const std::string& arg )
 	}
     }
 }
+
+bool
+Options::Trace::mva( unsigned long submodel )
+{
+    return (submodel == 0 && __mva != 0) || (((1 << (submodel - 1)) & __mva) != 0);
+}
+
 
 void
 Options::Trace::quorum( const std::string& arg )

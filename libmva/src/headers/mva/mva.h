@@ -9,17 +9,17 @@
  * November, 1994
  * August, 2005
  *
- * $Id: mva.h 15827 2022-08-14 15:20:00Z greg $
+ * $Id: mva.h 16201 2022-12-26 22:07:01Z greg $
  *
  * ------------------------------------------------------------------------
  */
 
-#if	!defined(MVA_H)
-#define	MVA_H
+#pragma once
+#if	!defined(LIBMVA_MVA_H)
+#define	LIBMVA_MVA_H
 /* undef DEBUG_MVA 1 */
 
 #include <vector>
-#include "fpgoop.h"
 #include "pop.h"
 #include "prob.h"
 #include "vector.h"
