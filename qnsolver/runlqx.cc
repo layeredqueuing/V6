@@ -2,13 +2,14 @@
  *
  * $URL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/qnsolver/runlqx.cc $
  * ------------------------------------------------------------------------
- * $Id: runlqx.cc 16171 2022-12-11 02:36:33Z greg $
+ * $Id: runlqx.cc 16206 2022-12-29 00:45:48Z greg $
  * ------------------------------------------------------------------------
  */
 
+#include <config.h>
 #include <iomanip>
 #include <sstream>
-#include <lqio/jmva_document.h>
+#include <lqio/qnio_document.h>
 #include <lqx/Program.h>
 #include <lqx/MethodTable.h>
 #include <lqx/Environment.h>

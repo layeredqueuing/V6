@@ -9,7 +9,7 @@
  *
  * December 2020
  *
- * $Id: openmodel.cc 16038 2022-10-26 12:28:51Z greg $
+ * $Id: openmodel.cc 16206 2022-12-29 00:45:48Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -19,8 +19,7 @@
 #include <sstream>
 #include <algorithm>
 #include <numeric>
-#include <lqio/jmva_document.h>
-#include <lqio/dom_extvar.h>
+#include <lqio/qnio_document.h>
 #include <lqx/SyntaxTree.h>
 #include "openmodel.h"
 #include "closedmodel.h"

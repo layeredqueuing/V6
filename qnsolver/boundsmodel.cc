@@ -9,17 +9,17 @@
  *
  * December 2020
  *
- * $Id: boundsmodel.cc 15969 2022-10-13 19:49:43Z greg $
+ * $Id: boundsmodel.cc 16206 2022-12-29 00:45:48Z greg $
  *
  * ------------------------------------------------------------------------
  */
 
+#include "config.h"
 #include <string>
 #include <sstream>
 #include <algorithm>
 #include <numeric>
-#include <lqio/jmva_document.h>
-#include <lqio/dom_extvar.h>
+#include <lqio/qnio_document.h>
 #include <lqx/SyntaxTree.h>
 #include "boundsmodel.h"
 

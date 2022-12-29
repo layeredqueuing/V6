@@ -9,7 +9,7 @@
  *
  * December 2020
  *
- * $Id: closedmodel.cc 16038 2022-10-26 12:28:51Z greg $
+ * $Id: closedmodel.cc 16206 2022-12-29 00:45:48Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -17,8 +17,7 @@
 #include <config.h>
 #include <algorithm>
 #include <numeric>
-#include <lqio/jmva_document.h>
-#include <lqio/dom_extvar.h>
+#include <lqio/qnio_document.h>
 #include <lqx/SyntaxTree.h>
 #include <mva/fpgoop.h>
 #include <mva/prob.h>
