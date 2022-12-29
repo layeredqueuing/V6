@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- $Id: casale_3.lqnx 16207 2022-12-29 00:56:30Z greg $ -->
+<lqn-model xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="model\_C1\_L2\_T2\_P1\_c4\_z1\_s1\_t1\_p1\_y1\_5.lqnx" xsi:noNamespaceSchemaLocation="lqn.xsd">
+   <processor name="c0p" scheduling="inf" speed-factor="1">
+      <task multiplicity="1" name="c0t" scheduling="ref" think-time="0">
+         <entry name="c0e" type="NONE"/>
+         <task-activities>
+            <activity bound-to-entry="c0e" call-order="STOCHASTIC" host-demand-cvsq="1" host-demand-mean="0.41152" name="c0_1">
+               <synch-call calls-mean="0.7921" dest="e0"/>
+            </activity>
+         </task-activities>
+      </task>
+   </processor>
+   <processor multiplicity="1" name="p0" quantum="0.1" scheduling="ps" speed-factor="1">
+      <task multiplicity="1" name="t0" scheduling="fcfs">
+         <entry name="e0" type="NONE"/>
+         <task-activities>
+            <activity bound-to-entry="e0" call-order="STOCHASTIC" host-demand-cvsq="1" host-demand-mean="1.0728" name="e0_1">
+               <synch-call calls-mean="0.42959" dest="e1"/>
+            </activity>
+            <reply-entry name="e0">
+               <reply-activity name="e0_1"/>
+            </reply-entry>
+         </task-activities>
+      </task>
+      <task multiplicity="1" name="t1" scheduling="fcfs">
+         <entry name="e1" type="NONE"/>
+         <task-activities>
+            <activity bound-to-entry="e1" call-order="STOCHASTIC" host-demand-cvsq="1" host-demand-mean="1.3816" name="e1_1"/>
+            <reply-entry name="e1">
+               <reply-activity name="e1_1"/>
+            </reply-entry>
+         </task-activities>
+      </task>
+   </processor>
+</lqn-model>

@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: phase.cc 15969 2022-10-13 19:49:43Z greg $
+ * $Id: phase.cc 16208 2022-12-29 17:10:42Z greg $
  *
  * Everything you wanted to know about an phase, but were afraid to ask.
  *
@@ -212,7 +212,7 @@ NullPhase::addILWait( unsigned int submodel, double il_wait )
 double
 NullPhase::getILWait( unsigned int submodel ) const
 {
-    return std::accumulate( _interlockedWait.begin() + submodel + 1, _interlockedWait.end(), 0.0 );
+    return std::accumulate( _interlockedWait.begin() + submodel, _interlockedWait.end(), 0.0 );
 #if 0
     double sum=0.0;
 
