@@ -1,32 +1,55 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- $Id: casale_3.lqnx 16207 2022-12-29 00:56:30Z greg $ -->
-<lqn-model xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="model\_C1\_L2\_T2\_P1\_c4\_z1\_s1\_t1\_p1\_y1\_5.lqnx" xsi:noNamespaceSchemaLocation="lqn.xsd">
-   <processor name="c0p" scheduling="inf" speed-factor="1">
-      <task multiplicity="1" name="c0t" scheduling="ref" think-time="0">
-         <entry name="c0e" type="NONE"/>
+<?xml version="1.0"?>
+<!-- $Id: casale_3.lqnx 16211 2022-12-30 19:10:38Z greg $ -->
+<!-- petrisrvn -->
+<lqn-model name="casale_3" description="petrisrvn 5.27.4 solution for model from: casale_3.lqnx." xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="/usr/local/share/lqns/lqn.xsd">
+   <solver-params comment="0" conv_val="1e-05" it_limit="50" underrelax_coeff="0.9" print_int="10">
+      <result-general solver-info="5.27.4" valid="true" conv-val="1.38778e-16" iterations="0" platform-info="" user-cpu-time=" 0:00:00.055" system-cpu-time=" 0:00:00.034" elapsed-time=" 0:00:00.132" max-rss="11584"/>
+   </solver-params>
+   <processor name="c0p" scheduling="inf">
+      <result-processor utilization="0.237679"/>
+      <task name="c0t" scheduling="ref">
+         <result-task throughput="0.577563" utilization="1" phase1-utilization="1" proc-utilization="0.237679"/>
+         <entry name="c0e" type="NONE">
+            <result-entry utilization="1" throughput="0.577563" proc-utilization="0.237679" phase1-service-time="1.73141" phase1-utilization="1"/>
+         </entry>
          <task-activities>
-            <activity bound-to-entry="c0e" call-order="STOCHASTIC" host-demand-cvsq="1" host-demand-mean="0.41152" name="c0_1">
-               <synch-call calls-mean="0.7921" dest="e0"/>
+            <activity name="c0_1" bound-to-entry="c0e" host-demand-mean="0.41152">
+               <result-activity proc-waiting="0" service-time="1.73141" utilization="1" throughput="0.577563" proc-utilization="0.237679"/>
+               <synch-call dest="e0" calls-mean="0.7921">
+                  <result-call waiting="0"/>
+               </synch-call>
             </activity>
          </task-activities>
       </task>
    </processor>
-   <processor multiplicity="1" name="p0" quantum="0.1" scheduling="ps" speed-factor="1">
-      <task multiplicity="1" name="t0" scheduling="fcfs">
-         <entry name="e0" type="NONE"/>
+   <processor name="p0" scheduling="fcfs">
+      <result-processor utilization="0.762321"/>
+      <task name="t0" scheduling="fcfs">
+         <result-task throughput="0.457488" utilization="0.762321" phase1-utilization="0.762321" proc-utilization="0.490793"/>
+         <entry name="e0" type="NONE">
+            <result-entry utilization="0.762321" throughput="0.457488" proc-utilization="0.490793" phase1-service-time="1.66632" phase1-utilization="0.762321"/>
+         </entry>
          <task-activities>
-            <activity bound-to-entry="e0" call-order="STOCHASTIC" host-demand-cvsq="1" host-demand-mean="1.0728" name="e0_1">
-               <synch-call calls-mean="0.42959" dest="e1"/>
+            <activity name="e0_1" bound-to-entry="e0" host-demand-mean="1.0728">
+               <result-activity proc-waiting="0" service-time="1.66632" utilization="0.762321" throughput="0.457488" proc-utilization="0.490793"/>
+               <synch-call dest="e1" calls-mean="0.42959">
+                  <result-call waiting="0"/>
+               </synch-call>
             </activity>
             <reply-entry name="e0">
                <reply-activity name="e0_1"/>
             </reply-entry>
          </task-activities>
       </task>
-      <task multiplicity="1" name="t1" scheduling="fcfs">
-         <entry name="e1" type="NONE"/>
+      <task name="t1" scheduling="fcfs">
+         <result-task throughput="0.196532" utilization="0.271529" phase1-utilization="0.271529" proc-utilization="0.271529"/>
+         <entry name="e1" type="NONE">
+            <result-entry utilization="0.271529" throughput="0.196532" proc-utilization="0.271529" phase1-service-time="1.3816" phase1-utilization="0.271529"/>
+         </entry>
          <task-activities>
-            <activity bound-to-entry="e1" call-order="STOCHASTIC" host-demand-cvsq="1" host-demand-mean="1.3816" name="e1_1"/>
+            <activity name="e1_1" bound-to-entry="e1" host-demand-mean="1.3816">
+               <result-activity proc-waiting="0" service-time="1.3816" utilization="0.271529" throughput="0.196532" proc-utilization="0.271529"/>
+            </activity>
             <reply-entry name="e1">
                <reply-activity name="e1_1"/>
             </reply-entry>

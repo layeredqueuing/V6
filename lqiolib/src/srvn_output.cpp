@@ -1,5 +1,5 @@
 /*
- *  $Id: srvn_output.cpp 15900 2022-09-24 12:54:03Z greg $
+ *  $Id: srvn_output.cpp 16213 2022-12-30 20:40:29Z greg $
  *
  * Copyright the Real-Time and Distributed Systems Group,
  * Department of Systems and Computer Engineering,
@@ -7,7 +7,7 @@
  *
  */
 
-#if defined(HAVE_CONFIG_H)
+#if HAVE_CONFIG_H
 #include <config.h>
 #endif
 #include <iostream>
@@ -1320,7 +1320,7 @@ namespace LQIO {
             _output << "Invoked as: " << io_vars.lq_command_line << ' ' << DOM::Document::__input_file_name << newline;
         }
         _output << "Input:  " << DOM::Document::__input_file_name << newline;
-#if     defined(HAVE_CTIME)
+#if HAVE_CTIME
         time_t clock = time( (time_t *)0 );
         _output << ctime( &clock ) << newline;
 #endif

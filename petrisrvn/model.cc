@@ -8,7 +8,7 @@
 /************************************************************************/
 
 /*
- * $Id: model.cc 16124 2022-11-18 11:26:13Z greg $
+ * $Id: model.cc 16213 2022-12-30 20:40:29Z greg $
  *
  * Load the SRVN model.
  */
@@ -1551,7 +1551,8 @@ Model::insert_DOM_results( const bool valid, const solution_stats_t& stats ) con
 
     _document->setResultConvergenceValue(stats.precision)
 	.setResultValid(valid)
-	.setResultSolverInformation( VERSION );
+	.setResultSolverInformation()
+	.setResultPlatformInformation();
 
     std::stringstream buf;
     buf << "Tangible: " << stats.tangible << ", Vanishing: " << stats.vanishing;
