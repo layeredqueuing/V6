@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: fpgoop.cc 16203 2022-12-26 22:27:01Z greg $
+ * $Id: fpgoop.cc 16218 2022-12-31 12:56:54Z greg $
  *
  * Floating point exception handling.  It is all different on all machines.
  * See:
@@ -119,7 +119,7 @@ set_fp_abort()
     feenableexcept( fp_bits );
 #elif HAVE_IEEEFP_H && HAVE_FPSETMASK
     fpsetmask( fp_bits );
-#elif HAVE_XMMINTRIN_H
+#elif !defined(__WINNT__) && HAVE_XMMINTRIN_H
     if ((fp_bits & FE_INVALID) != 0)	{ _mm_setcsr(_MM_MASK_MASK & ~_MM_MASK_INVALID); }
     if ((fp_bits & FE_DIVBYZERO) != 0)	{ _mm_setcsr(_MM_MASK_MASK & ~_MM_MASK_DIV_ZERO); }
     if ((fp_bits & FE_OVERFLOW ) != 0) 	{ _mm_setcsr(_MM_MASK_MASK & ~_MM_MASK_OVERFLOW); }
