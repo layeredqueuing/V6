@@ -12,7 +12,7 @@
  * Comparison of srvn output results.
  * By Greg Franks.  August, 1991.
  *
- * $Id: srvndiff.cc 16233 2023-01-01 22:25:15Z greg $
+ * $Id: srvndiff.cc 16237 2023-01-01 23:51:32Z greg $
  */
 
 #define DIFFERENCE_MODE	1
@@ -25,6 +25,7 @@
 #include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
+#include <limits>
 #include <regex>
 #include <string>
 #include <unistd.h>
@@ -982,7 +983,7 @@ main (int argc, char * const argv[])
 
     if ( print_copyright ) {
 	char copyright_date[20];
-	sscanf( "$Date: 2023-01-01 17:25:15 -0500 (Sun, 01 Jan 2023) $", "%*s %s %*s", copyright_date );
+	sscanf( "$Date: 2023-01-01 18:51:32 -0500 (Sun, 01 Jan 2023) $", "%*s %s %*s", copyright_date );
 	(void) fprintf( stdout, "SRVN Difference, Version %s\n", VERSION );
 	(void) fprintf( stdout, "  Copyright %s the Real-Time and Distributed Systems Group,\n", copyright_date );
 	(void) fprintf( stdout, "  Department of Systems and Computer Engineering,\n" );
