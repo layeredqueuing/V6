@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- *  $Id: json_document.h 15045 2021-10-05 21:21:04Z greg $
+ *  $Id: json_document.h 16233 2023-01-01 22:25:15Z greg $
  *
  *  Created by Greg Franks.
  */
@@ -280,6 +280,7 @@ namespace LQIO {
             static const char * Xservice_type;
             static const char * Xshare;
             static const char * Xsignal;
+	    static const char * Xsolver_info;
             static const char * Xspeed_factor;
             static const char * Xsquared_coeff_variation;
             static const char * Xstart_activity;

@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: lqn2csv.cc 15827 2022-08-14 15:20:00Z greg $
+ * $Id: lqn2csv.cc 16233 2023-01-01 22:25:15Z greg $
  *
  * Command line processing.
  *
@@ -80,13 +80,14 @@ const std::vector<struct option> longopts = {
     { "think-time",	       required_argument, nullptr, 'z' },
     { "arguments",	       required_argument, nullptr, '@' },
     { "gnuplot",               no_argument,       &gnuplot_flag, 1 },
+    { "help",		       no_argument,	  nullptr, 0x100+'h' },
     { "limit",		       required_argument, nullptr, 0x100+'l' },
+    { "mva-steps",	       no_argument,	  nullptr, 0x100+'s' },
     { "no-header",             no_argument,       &no_header,    1 },
     { "precision",	       required_argument, nullptr, 0x100+'p' },
+    { "solver-version",	       no_argument,	  nullptr, 0x100+'i' },
     { "width",		       required_argument, nullptr, 0x100+'w' },
-    { "help",		       no_argument,	  nullptr, 0x100+'h' },
     { "version",	       no_argument,	  nullptr, 0x100+'v' },
-    { "mva-steps",	       no_argument,	  nullptr, 0x100+'s' },
     { nullptr,                 0,                 nullptr, 0 }
 };
 std::string opts;
@@ -126,6 +127,7 @@ const static std::map<int,const std::string> help_str
     { 'z', "print think time for <task> (independent variable)" },
     { '@', "Read the argument list from <arg>.  --output-file and --arguments are ignored." },
     { 0x100+'s', "print out the number of times the MVA step() function was called."  },
+    { 0x100+'i', "print out the solver version (major.minor only)." },
     { 0x100+'l', "Limit output to the first <arg> files read." },
     { 0x100+'w', "Set the width of the result columns to <arg>.  Suppress commas." },
     { 0x100+'p', "Set the precision for output to <arg>." },
@@ -163,6 +165,7 @@ const static std::map<int,Model::Result::Type> result_type
     { 'x', Model::Result::Type::PHASE_PR_SVC_EXCD      }, 
     { 'X', Model::Result::Type::ACTIVITY_PR_SVC_EXCD   }, 
     { 'z', Model::Result::Type::TASK_THINK_TIME	       },
+    { 0x100+'i', Model::Result::Type::SOLVER_VERSION   },
     { 0x100+'s', Model::Result::Type::MVA_STEPS	       },
 };
 
@@ -227,7 +230,7 @@ main( int argc, char *argv[] )
     extern int optind;
     static char copyrightDate[20];
 
-    sscanf( "$Date: 2022-08-14 11:20:00 -0400 (Sun, 14 Aug 2022) $", "%*s %s %*s", copyrightDate );
+    sscanf( "$Date: 2023-01-01 17:25:15 -0500 (Sun, 01 Jan 2023) $", "%*s %s %*s", copyrightDate );
 
     toolname = basename( argv[0] );
     opts = makeopts( longopts );	/* Convert to regular options */
