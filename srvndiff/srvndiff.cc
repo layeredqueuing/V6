@@ -2675,9 +2675,14 @@ static void
 print_version ( const result_str_t result, const char * file_name, const unsigned passes )
 {
     double value[MAX_PASS];
-
     int width = (compact_flag ? 8 : 16);
-    (void) fprintf( output, "%-*.*s %s\n", width-1, width-1, file_name, header );
+
+    if ( print_latex ) {
+	(void) fprintf( output, header, width-1, width-1, file_name );
+	(void) fprintf( output, "\\hline\n" );
+    } else {
+	(void) fprintf( output, "%-*.*s %s\n", width-1, width-1, file_name, header );
+    }
 
     (void) fprintf( output, *result_str[(int)result].format, "Version" );
     for ( unsigned int j = 0; j < passes; ++j ) {
@@ -2699,8 +2704,13 @@ print_version ( const result_str_t result, const char * file_name, const unsigne
 	    }
 	}
     }
-    (void) fputc( '\n', output );
-    (void) fputc( '\n', output );
+    if ( print_latex ) {
+	(void) fprintf( output, " \\\\\n\\hline\n" );
+	(void) fprintf( output, "\\end{tabular}\n" );
+    } else {
+	(void) fputc( '\n', output );
+	(void) fputc( '\n', output );
+    }
 }
 
 
