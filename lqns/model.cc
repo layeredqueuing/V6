@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: model.cc 16213 2022-12-30 20:40:29Z greg $
+ * $Id: model.cc 16256 2023-01-04 00:24:37Z greg $
  *
  * Layer-ization of model.  The basic concept is from the reference
  * below.  However, model partioning is more complex than task vs device.
@@ -141,7 +141,7 @@ Model::solve( solve_using solve_function, const std::string& inputFileName, cons
 	    try {
 		if ( model->check() && model->initialize() ) {
 		    if ( Pragma::spexComment() ) {	// Not spex/lqx, so output on stderr.
-			std::cerr << inputFileName << ": " << document->getModelCommentString() << std::endl;
+			std::cerr << inputFileName << ": " << document->getModelComment() << std::endl;
 		    }
 		    model->compute();
 		} else {

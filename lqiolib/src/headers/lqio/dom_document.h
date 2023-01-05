@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- *  $Id: dom_document.h 16233 2023-01-01 22:25:15Z greg $
+ *  $Id: dom_document.h 16256 2023-01-04 00:24:37Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -134,10 +134,8 @@ namespace LQIO {
 	    /* Model Parameters */
 	    const std::string& getExtraComment() const;
 	    Document& setExtraComment( const std::string& );
-	    const ExternalVariable * getModelComment() const { return get( XComment ); }
-	    std::string getModelCommentString() const;
-	    Document& setModelComment( const ExternalVariable * );
-	    Document& setModelCommentString( const std::string& );
+	    const std::string& getModelComment() const;
+	    Document& setModelComment( const std::string& );
 	    const ExternalVariable * getModelConvergence() const { return get( XConvergence );	}
 	    const double getModelConvergenceValue() const { return getValue( XConvergence ); }
 	    Document& setModelConvergence( const ExternalVariable * );
@@ -271,6 +269,7 @@ namespace LQIO {
 
 	private:
 	    /* Parameter Information */
+	    std::string _modelComment;
 	    std::string _extraComment;
 
 	    /* List of Objects */

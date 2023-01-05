@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_document.cpp 16237 2023-01-01 23:51:32Z greg $
+ *  $Id: dom_document.cpp 16256 2023-01-04 00:24:37Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -53,7 +53,6 @@ namespace LQIO {
 	bool Document::__debugJSON = false;
 	std::map<const char *, double> Document::__initialValues;
 	std::string Document::__input_file_name = "";
-	const char * Document::XComment = "comment";
 	const char * Document::XConvergence = "conv_val";			/* Matches schema. 	*/
 	const char * Document::XIterationLimit = "it_limit";			/* Matched schema.	*/
 	const char * Document::XPrintInterval = "print_int";			/* Matches schema.	*/
@@ -97,7 +96,7 @@ namespace LQIO {
 
 
 	Document::Document( InputFormat format )
-	    : _extraComment(),
+	    : _modelComment(), _extraComment(),
 	      _processors(), _groups(), _tasks(), _entries(),
 	      _entities(), _variables(), _controlVariables(), _nextEntityId(0),
 	      _format(format),
@@ -164,11 +163,8 @@ namespace LQIO {
 	{
 	    /* Set up initial model parameters, but only if they were not set using SPEX variables */
 
-	    const ExternalVariable * var = _controlVariables[XComment];
-	    if ( !var ) {
-		_controlVariables[XComment] = new ConstantExternalVariable( comment.c_str() );
-	    }
-	    var = _controlVariables[XConvergence];
+	    _modelComment = comment;
+	    const ExternalVariable * var = _controlVariables[XConvergence];
 	    if ( !var && conv_val ) {
 		_controlVariables[XConvergence] = conv_val;
 	    }
@@ -186,25 +182,14 @@ namespace LQIO {
 	    }
 	}
 
-	std::string Document::getModelCommentString() const
+	const std::string& Document::getModelComment() const
 	{
-	    const char * s;
-	    const std::map<const std::string, const ExternalVariable *>::const_iterator iter = _controlVariables.find(XComment);
-	    if ( iter != _controlVariables.end() && iter->second != nullptr && iter->second->wasSet() ) {
-		if ( iter->second->getString( s ) ) return std::string(s);
-	    }
-	    return std::string("");
+	    return _modelComment;
 	}
-
-	Document& Document::setModelComment( const ExternalVariable * comment )
+	
+	Document& Document::setModelComment( const std::string& comment )
 	{
-	    _controlVariables[XComment] = comment;
-	    return *this;
-	}
-
-	Document& Document::setModelCommentString( const std::string& comment )
-	{
-	    _controlVariables[XComment] = new ConstantExternalVariable( comment.c_str() );
+	    _modelComment = comment;
 	    return *this;
 	}
 
@@ -526,17 +511,6 @@ namespace LQIO {
 		current->registerInEnvironment(program);	// This assigns _externalSymbol
 		current->set( value );				// Now set it to the default value
 		_controlVariables[name] = current;
-	    }
-
-	    const ConstantExternalVariable* constant = dynamic_cast<const ConstantExternalVariable *>(_controlVariables[XComment]);
-	    const char * s = nullptr;
-	    if ( constant ) {
-		constant->getString( s );			// get set value.
-		current = new SymbolExternalVariable(XComment);
-		current->registerInEnvironment(program);		// This assigns _externalSymbol
-		current->setString( s );				// Set value.
-		_controlVariables[XComment] = current;
-		delete constant;
 	    }
 	}
 

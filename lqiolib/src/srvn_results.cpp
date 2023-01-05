@@ -1,5 +1,5 @@
 /*
- *  $Id: srvn_results.cpp 15760 2022-07-25 14:36:17Z greg $
+ *  $Id: srvn_results.cpp 16256 2023-01-04 00:24:37Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -74,7 +74,7 @@ void set_variable( const char * variable_name, double value )
 
 void add_comment( const char * comment )
 {
-    LQIO::DOM::__document->setModelComment( new LQIO::DOM::ConstantExternalVariable( comment ) );
+    LQIO::DOM::__document->setModelComment( comment );
 }
 
 void add_elapsed_time( double time )

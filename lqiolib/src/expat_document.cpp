@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- * $Id: expat_document.cpp 16124 2022-11-18 11:26:13Z greg $
+ * $Id: expat_document.cpp 16256 2023-01-04 00:24:37Z greg $
  *
  * Read in XML input files.
  *
@@ -2559,7 +2559,7 @@ namespace LQIO {
 		output << XML::comment( ss.str() );
 	    }
             output << XML::start_element( Xsolver_parameters, complex_element )
-                   << XML::attribute( Xcomment, *_document.getModelComment() )
+                   << XML::attribute( Xcomment, _document.getModelComment() )
                    << XML::attribute( Xconv_val, *_document.getModelConvergence() )
                    << XML::attribute( Xit_limit, *_document.getModelIterationLimit() )
                    << XML::attribute( Xunderrelax_coeff, *_document.getModelUnderrelaxationCoefficient() )
