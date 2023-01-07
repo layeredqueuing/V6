@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_document.cpp 16256 2023-01-04 00:24:37Z greg $
+ *  $Id: dom_document.cpp 16290 2023-01-06 18:46:01Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -69,7 +69,11 @@ namespace LQIO {
 	const std::map<const LQIO::DOM::Document::InputFormat,const LQIO::DOM::Document::OutputFormat> Document::__input_to_output_format = {
 	    { InputFormat::XML,		OutputFormat::XML },
 	    { InputFormat::JSON,	OutputFormat::JSON },
+#if HAVE_LIBEXPAT
 	    { InputFormat::LQN,		OutputFormat::XML },
+#else
+	    { InputFormat::LQN,		OutputFormat::PARSEABLE },
+#endif
 	    { InputFormat::JMVA,	OutputFormat::JMVA },
 	    { InputFormat::QNAP2,	OutputFormat::QNAP2 }
 	};
@@ -895,7 +899,8 @@ namespace LQIO {
 		return false;
 #endif
 	    case OutputFormat::JSON:
-		return JSON_Document::loadResults( *this, LQIO::Filename( file_name, "lqxo", directory_name, extension )() );
+		return JSON_Document::loadResults( *this, LQIO::Filename( file_name, "lqjo", directory_name, extension )() );
+		return false;
 
 	    default:
 		return false;
