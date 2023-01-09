@@ -2,7 +2,7 @@
 # Copyright (C) 2005 Greg Franks <rgfranks@alumni.uwaterloo.ca>
 #
 # ------------------------------------------------------------------------
-# $Id: Makefile.am 15450 2022-03-05 01:08:38Z greg $
+# $Id: Makefile.am 16302 2023-01-09 00:12:54Z greg $
 # ------------------------------------------------------------------------
 
 if HAVE_LATEX
@@ -14,7 +14,6 @@ LATEX = latex -shell-escape -interaction=nonstopmode -file-line-error
 FILTER= grep -i ".*:[0-9]*:.*\|warning"
 
 #SRCS=	
-#OBJS = $(SRCS:.fig=.eps) 
 OBJS = $(SRCS:.fig=.eps) 
 
 TEXS=	defects.tex \
@@ -38,7 +37,7 @@ pkgdata_DATA = $(DST).pdf
 
 SUFFIXES = .pdf .ps .dvi .ind .bbl .aux .tex .eps .fig 
 
-EXTRA_DIST = $(BIBS) $(SRCS) $(TEXS) $(CLSS) #$(OBJS)
+EXTRA_DIST = $(BIBS) $(SRCS) $(TEXS) $(CLSS)
 
 .ps.pdf:
 	ps2pdf $< $@

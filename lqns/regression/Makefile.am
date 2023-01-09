@@ -2,7 +2,7 @@
 # Copyright (C) 2005 Greg Franks <greg@sce.carleton.ca>
 #
 # ------------------------------------------------------------------------
-# $Id: Makefile.am 16242 2023-01-02 12:19:36Z greg $
+# $Id: Makefile.am 16302 2023-01-09 00:12:54Z greg $
 # ------------------------------------------------------------------------
 
 SRVN=	../lqns
@@ -97,8 +97,8 @@ SUFFIXES = .diff .d .svg .lqxo .lqnx
 
 .lqxo.diff:
 	-if test -f ../../models/regression/petri-results/$<; \
-	then srvndiff --solver-version +p --print-comment -IC -o $@ ../../models/regression/{petri,sim,lqns}-results/$< $<; \
-	else srvndiff --solver-version +p --print-comment -IC -o $@ ../../models/regression/{sim,lqns}-results/$< $<; \
+	then srvndiff --solver +p --print-comment -IC -o $@ ../../models/regression/{petri,sim,lqns}-results/$< $<; \
+	else srvndiff --solver +p --print-comment -IC -o $@ ../../models/regression/{sim,lqns}-results/$< $<; \
 	fi
 
 .lqxo.svg:

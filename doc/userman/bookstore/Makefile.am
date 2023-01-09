@@ -1,12 +1,12 @@
 # Makefile for bookstore
 # Copyright (C) 2005 Greg Franks <rgfranks@alumni.uwaterloo.ca>
-# $Id: Makefile.am 15450 2022-03-05 01:08:38Z greg $
+# $Id: Makefile.am 16302 2023-01-09 00:12:54Z greg $
 
 SRCS=	bookstore-result.fig     bookstore-service.fig 		bookstore.fig
 OBJS = $(SRCS:.fig=.eps) 
 
-EXTRA_DIST = $(SRCS) $(OBJS)
-pkgdata_DATA = $(OBJS)
+EXTRA_DIST = $(SRCS)
+noinst_DATA = $(OBJS)
 
 SUFFIXES = .pdf .ps .dvi .bbl .eps .pstex .eps .fig .tex
 

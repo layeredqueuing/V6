@@ -9,7 +9,7 @@
  *
  * November 2022
  *
- * $Id: qnio_document.h 16171 2022-12-11 02:36:33Z greg $
+ * $Id: qnio_document.h 16302 2023-01-09 00:12:54Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -104,6 +104,7 @@ namespace QNIO {
 	virtual void plot( BCMP::Model::Result::Type, const std::string& ) {}
 
 	virtual std::ostream& print( std::ostream& output ) const = 0;
+	virtual std::ostream& exportModel( std::ostream& output ) const = 0;
     
     private:
 	const std::string _input_file_name;
