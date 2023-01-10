@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: jmva_document.cpp 16302 2023-01-09 00:12:54Z greg $
+ * $Id: jmva_document.cpp 16308 2023-01-10 02:11:14Z greg $
  *
  * Read in XML input files.
  *
@@ -80,7 +80,7 @@ namespace QNIO {
 
     JMVA_Document::JMVA_Document( const std::string& input_file_name ) :
 	Document( input_file_name, BCMP::Model() ),
-	_parser(nullptr), _stack(),
+	_strict_jmva(true), _parser(nullptr), _stack(),
 	_lqx_program_text(), _lqx_program_line_number(0), _lqx(nullptr), _program(),
 	_input_variables(), _whatif_body(), _independent_variables(), _result_variables(), _station_index(),
 	_think_time_vars(), _population_vars(), _arrival_rate_vars(), _multiplicity_vars(), _service_time_vars(), _visit_vars(),
@@ -704,7 +704,6 @@ namespace QNIO {
 		if ( dynamic_cast<LQX::VariableExpression *>(service_time) ) _service_time_vars.emplace(k,dynamic_cast<LQX::VariableExpression *>(service_time)->getName());
 	    }
 	}
-	std::cerr << "Set LD Station servers to " << count << std::endl;
 	m->setCopies( BCMP::Model::max( m->copies(), new LQX::ConstantValueExpression( static_cast<double>(count) ) ) );
     }
 
@@ -1683,16 +1682,34 @@ namespace QNIO {
     std::ostream&
     JMVA_Document::print( std::ostream& output ) const
     {
+	XML::set_indent(0);
+	output << "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>" << std::endl
+	       << "<!-- " << LQIO::DOM::Common_IO::svn_id() << " -->" << std::endl;
+	if ( LQIO::io_vars.lq_command_line.size() > 0 ) {
+	    output << "<!-- " << LQIO::io_vars.lq_command_line << " -->" << std::endl;
+	}
+
 	printModel( output );
 	printResults( output );
+	output << XML::end_element( Xmodel ) << std::endl;
 	return output;
     }
 
     std::ostream&
     JMVA_Document::exportModel( std::ostream& output ) const
     {
+	XML::set_indent(0);
+	output << "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>" << std::endl
+	       << "<!-- " << LQIO::DOM::Common_IO::svn_id() << " -->" << std::endl;
+	if ( LQIO::io_vars.lq_command_line.size() > 0 ) {
+	    output << "<!-- " << LQIO::io_vars.lq_command_line << " -->" << std::endl;
+	}
+
 	printModel( output );
-	printSPEX( output );
+	if ( !strictJMVA() ) {
+	    printSPEX( output );
+	}
+	output << XML::end_element( Xmodel ) << std::endl;
 	return output;
     }
 
@@ -1700,13 +1717,6 @@ namespace QNIO {
     JMVA_Document::printModel( std::ostream& output ) const
     {
 	std::for_each( stations().begin(), stations().end(), BCMP::Model::pad_demand( chains() ) );	/* JMVA want's zeros */
-
-	XML::set_indent(0);
-	output << "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>" << std::endl
-	       << "<!-- " << LQIO::DOM::Common_IO::svn_id() << " -->" << std::endl;
-	if ( LQIO::io_vars.lq_command_line.size() > 0 ) {
-	    output << "<!-- " << LQIO::io_vars.lq_command_line << " -->" << std::endl;
-	}
 
 	if ( hasPragmas() ) {
 	    const std::map<std::string,std::string>& pragmas = getPragmaList();
@@ -1735,7 +1745,7 @@ namespace QNIO {
 	output << XML::end_element( Xclasses ) << std::endl;
 
 	output << XML::start_element( Xstations ) << XML::attribute( Xnumber, static_cast<unsigned int>(stations().size()) ) << ">" << std::endl;
-	std::for_each( stations().begin(), stations().end(), printStation( output, model() ) );
+	std::for_each( stations().begin(), stations().end(), printStation( output, model(), strictJMVA() ) );
 	output << XML::end_element( Xstations ) << std::endl;
 
 	output << XML::start_element( XReferenceStation ) << XML::attribute( Xnumber, static_cast<unsigned int>(chains().size()) ) << ">" << std::endl;
@@ -1798,7 +1808,6 @@ namespace QNIO {
 	    output << XML::end_element( Xalgorithm ) << std::endl;
 	    output << XML::end_element( Xsolutions ) << std::endl;
 	}
-	output << XML::end_element( Xmodel ) << std::endl;
 	return output;
     }
 
@@ -1841,12 +1850,12 @@ namespace QNIO {
 	const char * const element = type.at(station.type());
 
 	_output << XML::start_element( element ) << XML::attribute( Xname, m.first );
-	if ( station.copies() != nullptr ) _output << XML::attribute( Xservers, *station.copies() );
 	_output << ">" << std::endl;
 	_output << XML::start_element( Xservicetimes ) << ">" << std::endl;
-	if ( station.type() == BCMP::Model::Station::Type::MULTISERVER ) {		// strict jmva -- need total customers.  Won't work for mixed networks.
+	if ( station.type() == BCMP::Model::Station::Type::MULTISERVER ) {
+	    if ( !strictJMVA() && station.copies() != nullptr ) _output << XML::attribute( Xservers, *station.copies() );	// BUG_411 strict JMVA! copies==1.
 	    std::for_each( station.classes().begin(), station.classes().end(),
-			   printServiceTimeList( _output, station.copies(),
+			   printServiceTimeList( _output, station.copies(),		// strict jmva -- need total customers.  Won't work for mixed networks.
 						 std::accumulate( std::next(chains().begin()), chains().end(), chains().begin()->second.customers(), add_customers ) ) );
 	} else {
 	    std::for_each( station.classes().begin(), station.classes().end(), printServiceTime( _output ) );

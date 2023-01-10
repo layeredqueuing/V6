@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- *  $Id: jmva_document.h 16302 2023-01-09 00:12:54Z greg $
+ *  $Id: jmva_document.h 16308 2023-01-10 02:11:14Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  */
@@ -145,6 +145,8 @@ namespace QNIO {
 	void setPlotCustomers( bool plot_customers ) { _plot_customers = plot_customers; }
 
     private:
+	void setStrictJMVA( bool value ) { _strict_jmva = value; }
+	bool strictJMVA() const { return  _strict_jmva; }
 	bool checkAttributes( const XML_Char * element, const XML_Char ** attributes, const std::set<const XML_Char *,JMVA_Document::attribute_table_t>& table ) const;
 
 	static void start( void *data, const XML_Char *el, const XML_Char **attr );
@@ -338,14 +340,16 @@ namespace QNIO {
 	};
 
 	struct printStation {
-	    printStation( std::ostream& output, const BCMP::Model& model ) : _output(output), _model(model) {}
+	    printStation( std::ostream& output, const BCMP::Model& model, bool strict_jmva=true ) : _output(output), _model(model), _strict_jmva(strict_jmva) {}
 	    void operator()( const BCMP::Model::Station::pair_t& m ) const;
 	private:
 	    const BCMP::Model::Chain::map_t& chains() const { return _model.chains(); }
 	    static LQX::SyntaxTreeNode * add_customers( LQX::SyntaxTreeNode * addend, const BCMP::Model::Chain::pair_t& augend );
+	    bool strictJMVA() const { return _strict_jmva; }
 	private:
 	    std::ostream& _output;
 	    const BCMP::Model& _model;
+	    const bool _strict_jmva;
 	};
 
 	struct printReference {
@@ -389,6 +393,7 @@ namespace QNIO {
 	static std::string fold( const std::string& s1, const var_name_and_expr& v2 );
 
     private:
+	bool _strict_jmva;								/* True if outputting strict JMVA. */
 	XML_Parser _parser;
 	std::string _text;
 	std::stack<parse_stack_t> _stack;
@@ -511,4 +516,3 @@ namespace QNIO {
     inline std::ostream& operator<<( std::ostream& output, const JMVA_Document& doc ) { return doc.print(output); }
 }
 #endif
-
