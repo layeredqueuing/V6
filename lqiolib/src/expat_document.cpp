@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- * $Id: expat_document.cpp 16256 2023-01-04 00:24:37Z greg $
+ * $Id: expat_document.cpp 16325 2023-01-12 17:47:10Z greg $
  *
  * Read in XML input files.
  *
@@ -3502,7 +3502,7 @@ namespace LQIO {
 	    const std::string& program_text = _document.getLQXProgramText();
             if ( program_text.size() > 0 || program != nullptr ) {
 		const int precision = output.precision(10);
-                output << XML::start_element( Xlqx );
+                output << XML::start_element( Xlqx ) << ">";
 		if (  !program_text.empty() ) {
 		    output << XML::cdata( "\n" + program_text );
 		} else {

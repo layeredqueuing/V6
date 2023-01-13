@@ -3,7 +3,7 @@
  *
  * $URL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/qnsolver/runlqx.h $
  * ------------------------------------------------------------------------
- * $Id: runlqx.h 14882 2021-07-07 11:09:54Z greg $
+ * $Id: runlqx.h 16325 2023-01-12 17:47:10Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -37,7 +37,7 @@ namespace SolverInterface {
     private:
 	Model& _model;
 
-	static unsigned int invocationCount;
+	static size_t invocationCount;
     };
 	
 }
