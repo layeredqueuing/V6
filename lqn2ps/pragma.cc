@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: pragma.cc 15944 2022-10-05 01:21:14Z greg $ *
+ * $Id: pragma.cc 16338 2023-01-16 21:16:33Z greg $ *
  * Pragma processing and definitions.
  *
  * Copyright the Real-Time and Distributed Systems Group,
@@ -74,13 +74,6 @@ void Pragma::set_pragma( const std::pair<std::string,std::string>& p )
     }
 }
 
-Pragma::BCMP Pragma::getBCMP()
-{
-    if ( Flags::bcmp_model ) return BCMP::STANDARD;
-    return BCMP::LQN;
-}
-
-
 void Pragma::setBCMP( const std::string& value )
 {
     static const std::map<const std::string,const Pragma::BCMP> __bcmp_pragma = {
@@ -102,8 +95,6 @@ void Pragma::setBCMP( const std::string& value )
     if ( pragma != __bcmp_pragma.end() ) {
 	switch ( pragma->second ) {
 	case BCMP::STANDARD:
-	    Flags::set_queueing_model(1);
-	    Flags::set_aggregation( Aggregate::ENTRIES );
 	    Flags::bcmp_model = true;
 	    break;
 	default:

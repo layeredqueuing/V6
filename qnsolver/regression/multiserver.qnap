@@ -1,4 +1,4 @@
-& $Id: multiserver.qnap 16325 2023-01-12 17:47:10Z greg $
+& $Id: multiserver.qnap 16334 2023-01-16 01:14:52Z greg $
 /declare/
    queue Delay,Queue1,Queue2;                                  & Station identifiers
    class string name;                                          & Name (for output)
@@ -44,7 +44,8 @@
    Chain01.Queue2_t:=0.000001;                                 & QNAP does not like zero (0)
    Chain02.Queue2_t:=2.;
 &  -- Let 'er rip! --
-   for i:=1 step 1 until 4 do
+&   for i:=1 step 1 until 4 do
+     i:=3;
      solve;
    end;
 /end/

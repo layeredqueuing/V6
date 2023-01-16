@@ -1,6 +1,6 @@
 /* model.cc	-- Greg Franks Mon Feb  3 2003
  *
- * $Id: model.cc 16256 2023-01-04 00:24:37Z greg $
+ * $Id: model.cc 16338 2023-01-16 21:16:33Z greg $
  *
  * Load, slice, and dice the lqn model.
  */
@@ -431,6 +431,11 @@ Model::create( const std::string& input_file_name, const LQIO::DOM::Pragma& prag
 
     default:
 	;
+    }
+
+    if ( Flags::bcmp_model ) {
+	Flags::set_queueing_model(1);
+	Flags::set_aggregation( Aggregate::ENTRIES );
     }
 
 #if BUG_270
