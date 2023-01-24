@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: model.cc 16256 2023-01-04 00:24:37Z greg $
+ * $Id: model.cc 16350 2023-01-19 11:08:31Z greg $
  *
  * Layer-ization of model.  The basic concept is from the reference
  * below.  However, model partioning is more complex than task vs device.
@@ -105,10 +105,18 @@ Model::solve( solve_using solve_function, const std::string& inputFileName, cons
 
     /* Make sure we got a document */
 
-    if ( document == nullptr || LQIO::io_vars.anError() ) return INVALID_INPUT;
+    if ( LQIO::io_vars.anError() ) {
+	delete document;
+	return INVALID_INPUT;
+    } else if ( document == nullptr  ) {
+	return INVALID_INPUT;
+    }
 
     document->mergePragmas( pragmas.getList() );       /* Save pragmas -- prepare will process */
-    if ( Model::prepare(document) == false ) return INVALID_INPUT;
+    if ( Model::prepare(document) == false ) {
+	delete document;
+	return INVALID_INPUT;
+    }
 
     if ( LQIO::Spex::numberOfInputVariables() == 0 ) {
 	if ( LQIO::Spex::__no_header ) {
@@ -124,7 +132,6 @@ Model::solve( solve_using solve_function, const std::string& inputFileName, cons
     int status = 0;
 
     /* We can simply run if there's no control program */
-    FILE * output = nullptr;
     LQX::Program * program = document->getLQXProgram();
     if ( program == nullptr ) {
 
@@ -182,6 +189,7 @@ Model::solve( solve_using solve_function, const std::string& inputFileName, cons
 	environment->getMethodTable()->registerMethod(new SolverInterface::Solve(document, solve_function, model));
 	LQIO::RegisterBindings(environment, document);
 
+	FILE * output = nullptr;
 	if ( !outputFileName.empty() && outputFileName != "-" && LQIO::Filename::isRegularFile(outputFileName.c_str()) ) {
 	    output = fopen( outputFileName.c_str(), "w" );
 	    if ( !output ) {
@@ -204,13 +212,15 @@ Model::solve( solve_using solve_function, const std::string& inputFileName, cons
 		environment->invokeGlobalMethod("solve", &args);
 	    }
 	}
+
+	if ( output ) fclose( output );
+	delete program;
     }
 
     /* Clean things up */
     if ( model ) delete model;
-    if ( output ) fclose( output );
-    if ( program ) delete program;
     delete document;
+
     return status;
 }
 
@@ -525,7 +535,7 @@ Model::initialize()
 	if ( Options::Trace::verbose() ) std::cerr << "Generate... " << std::endl;
 	if ( generate( assignSubmodel() ) ) {
 	    _model_initialized = true;
-	    optimize();
+	    partition();
 	    configure();		/* Dimension arrays and threads	*/
 	    initStations();		/* Init MVA values (pop&waits). */		/* -- Step 2 -- */
 	}
@@ -1081,7 +1091,9 @@ MOL_Model::addToSubmodel()
 
     for ( std::set<Task *>::const_iterator task = __task.begin(); task != __task.end(); ++task ) {
 	if ( !(*task)->isReferenceTask() ) {
-	    _submodels[(*task)->submodel()]->addServer( *task );
+	    const unsigned int i = (*task)->submodel();
+	    if ( i == 0 ) continue;
+	    _submodels[i]->addServer( *task );
 	}
 	if ( (*task)->hasForks() ) {
 	    _submodels[__sync_submodel]->addClient( *task );
@@ -1094,6 +1106,7 @@ MOL_Model::addToSubmodel()
     /* Processors and other devices go in submodel n */
 
     for ( std::set<Processor *>::const_iterator processor = __processor.begin(); processor != __processor.end(); ++processor ) {
+	if ( (*processor)->submodel() == 0 ) continue;
 	(*processor)->setSubmodel( _HWSubmodel );		// Force all devices to this level
 	_submodels[_HWSubmodel]->addServer( *processor );
     }
@@ -1212,8 +1225,8 @@ void
 Batch_Model::addToSubmodel()
 {
     for ( std::set<Task *>::const_iterator task = __task.begin(); task != __task.end(); ++task ) {
-	const unsigned int i = (*task)->submodel();
 	if ( !(*task)->isReferenceTask() ) {
+	    const unsigned int i = (*task)->submodel();
 	    if ( i == 0 ) continue;
 	    _submodels[i]->addServer( *task );
 	}
@@ -1254,9 +1267,9 @@ Batch_Model::addToSubmodel()
  */
 
 void
-Batch_Model::optimize()
+Batch_Model::partition()
 {
-    std::for_each( _submodels.begin(), _submodels.end(), Exec<Submodel>( &Submodel::optimize ) );
+    std::for_each( _submodels.begin(), _submodels.end(), Exec<Submodel>( &Submodel::partition ) );
 }
 
 
@@ -1344,23 +1357,26 @@ SRVN_Model::assignSubmodel()
 
     /* Build the list of all servers for this model */
 
-    std::multiset<Entity *> servers;
+    std::set<Entity *> servers;
     for ( std::set<Task *>::const_iterator task = __task.begin(); task != __task.end(); ++task ) {
 	if ( (*task)->isReferenceTask() || (*task)->submodel() == 0 ) continue;
 	servers.insert( *task );
+	(*task)->setSubmodel( servers.size() );
     }
     for ( std::set<Processor *>::const_iterator processor = __processor.begin(); processor != __processor.end(); ++processor ) {
 	if ( (*processor)->submodel() == 0 ) continue;
 	servers.insert( *processor );
+	(*processor)->setSubmodel( servers.size() );
     }
     if ( __think_server && __think_server->submodel() != 0 ) {
         servers.insert( __think_server );
+	__think_server->setSubmodel( servers.size() );
     }
     if ( __cfs_server && __cfs_server->submodel() > 0 ) {
         servers.insert( __cfs_server );
     }
 
-    return std::for_each( servers.begin(), servers.end(), Entity::increment_submodel() ).count();
+    return servers.size();
 }
 
 /*----------------------------------------------------------------------*/
@@ -1368,10 +1384,9 @@ SRVN_Model::assignSubmodel()
 /*----------------------------------------------------------------------*/
 
 /*
- * The trick for srvn layers is to assign each server to its own
- * submodel.  The sorter here simple re-sorts the graph so that each
- * task and processor is assigned a unigue ``depth''.  Then, the batch
- * layerizer (which simply iterates among the submodels) takes over.
+ * The trick for squashed layers is to assign each server to the first
+ * submodel.  Then, the batch layerizer (which simply iterates among
+ * the submodels) takes over.
  */
 
 unsigned
@@ -1406,10 +1421,9 @@ Squashed_Model::assignSubmodel()
 /*----------------------------------------------------------------------*/
 
 /*
- * The trick for srvn layers is to assign each server to its own
- * submodel.  The sorter here simple re-sorts the graph so that each
- * task and processor is assigned a unigue ``depth''.  Then, the batch
- * layerizer (which simply iterates among the submodels) takes over.
+ * This one is similar to MOL except all the tasks are put in submodel
+ * 1 and all the processors are put in submodel 2. The batch layerizer
+ * (which simply iterates among the submodels) takes over.
  */
 
 unsigned

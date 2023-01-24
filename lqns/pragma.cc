@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: pragma.cc 15945 2022-10-05 10:06:42Z greg $ *
+ * $Id: pragma.cc 16359 2023-01-23 10:48:17Z greg $ *
  * Pragma processing and definitions.
  *
  * Copyright the Real-Time and Distributed Systems Group,
@@ -73,6 +73,9 @@ Pragma::Pragma() :
     _mva(MVA::LINEARIZER),
     _overtaking(Overtaking::MARKOV),
     _processor_scheduling(SCHEDULE_PS),
+#if BUG_270
+    _prune(false),
+#endif
 #if HAVE_LIBGSL && HAVE_LIBGSLCBLAS
     _quorum_distribution(QuorumDistribution::DEFAULT),
     _quorum_delayed_calls(QuorumDelayedCalls::DEFAULT),
@@ -133,6 +136,7 @@ void Pragma::setAllowCycles(const std::string& value)
 {
     _allow_cycles = LQIO::DOM::Pragma::isTrue(value);
 }
+
 
 void Pragma::setConvergenceValue(const std::string& value)
 {
@@ -326,7 +330,7 @@ void Pragma::setProcessorScheduling(const std::string& value)
 #if BUG_270
 void Pragma::setPrune(const std::string& value)
 {
-    _prune = LQIO::DOM::Pragma::isTrue(value);
+    _prune = LQIO::DOM::Pragma::isTrue( value );
 }
 #endif
 

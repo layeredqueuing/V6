@@ -7,7 +7,7 @@
  *
  * June 2007
  *
- * $Id: submodel.h 15969 2022-10-13 19:49:43Z greg $
+ * $Id: submodel.h 16350 2023-01-19 11:08:31Z greg $
  */
 
 #ifndef _SUBMODEL_H
@@ -80,7 +80,6 @@ public:
 
     virtual const char * const submodelType() const = 0;
     unsigned number() const { return _submodel_number; }
-    Submodel& setSubmodelNumber( const unsigned );
 
     virtual Vector<double> * getOverlapFactor() const { return nullptr; } 
     unsigned nChains() const { return _n_chains; }
@@ -91,7 +90,7 @@ public:
     virtual Submodel& initInterlock() { return *this; }
     virtual Submodel& build() { return *this; }
     virtual Submodel& rebuild() { return *this; }
-    virtual Submodel& optimize();
+    virtual Submodel& partition();
 
 
 #if PAN_REPLICATION

@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: bcmp_document.cpp 16334 2023-01-16 01:14:52Z greg $
+ * $Id: bcmp_document.cpp 16359 2023-01-23 10:48:17Z greg $
  *
  * Read in XML input files.
  *
@@ -131,16 +131,6 @@ namespace BCMP {
 	return output;
     }
 
-
-    /*
-     * Plotting will insert new variables, so erase all those currently set.
-     */
-
-    void
-    Model::clearAllResultVariables()
-    {
-	std::for_each( stations().begin(), stations().end(), &Station::clear_all_result_variables );
-    }
 
     std::ostream&
     Model::print( std::ostream& output ) const

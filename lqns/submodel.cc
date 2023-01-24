@@ -1,6 +1,6 @@
 /* -*- c++ -*-
  * submodel.C	-- Greg Franks Wed Dec 11 1996
- * $Id: submodel.cc 16201 2022-12-26 22:07:01Z greg $
+ * $Id: submodel.cc 16350 2023-01-19 11:08:31Z greg $
  *
  * MVA submodel creation and solution.  This class is the interface
  * between the input model consisting of processors, tasks, and entries,
@@ -80,17 +80,6 @@ Submodel::Submodel( const unsigned n ) :
 {
 }
 
-/*
- * Set my submodel number to n.  Reset submodel numbers of all servers.
- */
-
-Submodel&
-Submodel::setSubmodelNumber( const unsigned n )
-{
-    _submodel_number = n;
-    std::for_each( _servers.begin(), _servers.end(), Exec1<Entity,const unsigned>( &Entity::setSubmodel, n ) );
-    return *this;
-}
 
 #if 0
 // DEBUG
@@ -511,7 +500,7 @@ MVASubmodel::rebuild()
  */
 
 Submodel&
-Submodel::optimize()
+Submodel::partition()
 {
     if ( _clients.size() <= 1 ) return *this;	/* No operation */
     std::vector<submodel_group_t> groups;

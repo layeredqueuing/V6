@@ -10,7 +10,7 @@
  * November, 1994
  * December, 2020
  *
- * $Id: pragma.h 15827 2022-08-14 15:20:00Z greg $
+ * $Id: pragma.h 16359 2023-01-23 10:48:17Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -160,10 +160,9 @@ public:
 	{
 	    assert( __cache != nullptr );
 	    return __cache->_prune;
-	    return __cache->_processor_scheduling;
- 	}
+	    return __cache->_prune;
+	}
 #endif
-
 
 #if HAVE_LIBGSL && HAVE_LIBGSLCBLAS
     static QuorumDistribution getQuorumDistribution()
