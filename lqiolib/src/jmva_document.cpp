@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: jmva_document.cpp 16363 2023-01-24 00:04:04Z greg $
+ * $Id: jmva_document.cpp 16384 2023-02-01 12:49:35Z greg $
  *
  * Read in XML input files.
  *
@@ -90,7 +90,7 @@ namespace QNIO {
 
     JMVA_Document::JMVA_Document( const std::string& input_file_name, const BCMP::Model& model ) :
 	Document( input_file_name, model ),
-	_parser(nullptr), _stack(),
+	_strict_jmva(true), _parser(nullptr), _stack(),
 	_lqx_program_text(), _lqx_program_line_number(0), _lqx(nullptr), _program(),
 	_input_variables(), _whatif_body(), _independent_variables(), _result_variables(), _station_index(),
 	_think_time_vars(), _population_vars(), _arrival_rate_vars(), _multiplicity_vars(), _service_time_vars(), _visit_vars(),
@@ -1402,7 +1402,6 @@ namespace QNIO {
 	_gnuplot.push_back( LQIO::GnuPlot::print_node( "#set terminal svg" ) );
 
 	std::ostringstream plot;		// Plot command collected here.
-	plot << "plot ";
 
 	defineDefaultResultVariables();		// Create result variables for everything for plotting.
 	if ( type == BCMP::Model::Result::Type::THROUGHPUT && plotPopulationMix() ) {
@@ -1439,6 +1438,7 @@ namespace QNIO {
 
 	const size_t x = 1;		/* GNUPLOT starts from 1, not 0 */
 	size_t count = 0;
+	plot << "plot ";
 	for ( BCMP::Model::Station::map_t::const_iterator m = stations().begin(); m != stations().end(); ++m ) {
 	    if ( m->second.reference() || !m->second.hasClass(arg) ) continue;
 	    const BCMP::Model::Station::Class::map_t& classes = m->second.classes();
@@ -1476,6 +1476,7 @@ namespace QNIO {
 	const size_t x = 1;		/* GNUPLOT starts from 1, not 0 */
 
 	const BCMP::Model::Station& station = stations().at( name );
+	plot << "plot ";
 	if ( station.classes().size() == 1 ) {
 	    plot << "\"$DATA\" using " << x << ":" << get_gnuplot_index(station.resultVariables().at(type)) << " with linespoints";
 	} else {
@@ -1514,6 +1515,7 @@ namespace QNIO {
 
 	const size_t x = 1;		/* GNUPLOT starts from 1, not 0 */
 
+	plot << "plot ";
 	for ( BCMP::Model::Chain::map_t::const_iterator k = chains().begin(); k != chains().end(); ++k ) {
 	    BCMP::Model::Bound bounds( *k, stations() );
 	    if ( k != chains().begin() ) plot << ", ";
@@ -1598,7 +1600,7 @@ namespace QNIO {
 	_gnuplot.push_back( LQIO::GnuPlot::print_node( "set key bottom left box" ) );
 
 	const BCMP::Model::Result::Type type = BCMP::Model::Result::Type::THROUGHPUT;
-	plot << "\"$DATA\" using " << get_gnuplot_index(x->second.resultVariables().at(type)) << ":" << get_gnuplot_index(y->second.resultVariables().at(type)) <<  " with linespoints title \"MVA\"";
+	plot << "plot \"$DATA\" using " << get_gnuplot_index(x->second.resultVariables().at(type)) << ":" << get_gnuplot_index(y->second.resultVariables().at(type)) <<  " with linespoints title \"MVA\"";
 
 	/* Compute bound for each station */
 
@@ -1664,33 +1666,51 @@ namespace QNIO {
 	const BCMP::Model::Result::Type type = BCMP::Model::Result::Type::UTILIZATION;
 
 	/* Generate tics for x axes */
-	std::ostringstream x1tics;
-	std::ostringstream x2tics;
+	std::ostringstream xtics;
 	for ( size_t i = 0; i < _N1.size(); i += 2 ) {
 	    if ( i != 0 ) {
-		x1tics << ", ";
-		x2tics << ", ";
+		xtics << ", ";
 	    }
-	    x1tics << "\"" <<  _N1[i+1] << "\" " << _N1[i];
-	    x2tics << "\"" <<  _N2[i+1] << "\" " << _N2[i];
+	    xtics << "\"(" <<  _N1[i] << "," << _N1[i+1] << ")\" " << _N1[i];
 	}
-	_gnuplot.push_back( LQIO::GnuPlot::print_node( "set xtics (" + x1tics.str() + ")" ) );			// X1 axis
-	_gnuplot.push_back( LQIO::GnuPlot::print_node( "set xlabel \"" + _N1.name() + " Customers\"" ) );	// X1 axis
-	_gnuplot.push_back( LQIO::GnuPlot::print_node( "set x2tics (" + x2tics.str() + ")" ) );			// X2 axis
-	_gnuplot.push_back( LQIO::GnuPlot::print_node( "set x2label \"" + _N2.name() + " Customers\"" ) );	// X2 axis
+	_gnuplot.push_back( LQIO::GnuPlot::print_node( "set xtics (" + xtics.str() + ")" ) );
+	_gnuplot.push_back( LQIO::GnuPlot::print_node( "set xlabel \" Customers (" + _N1.name() + "," + _N2.name() + ")\"" ) );
 	_gnuplot.push_back( LQIO::GnuPlot::print_node( "set ylabel \""  + __y_label_table.at(type) + "\"" ) );	// Y1 axis
 	_gnuplot.push_back( LQIO::GnuPlot::print_node( "set key title \"Station\" box" ) );
 //	_gnuplot.push_back( LQIO::GnuPlot::print_node( "set key top left" ) );
 
-	/* Find utilization for all stations */
-
-	size_t count = 0;
+	size_t ls = 0;		/* Line style	*/
+#if UTILIZATION_BOUNDS
+	Intercepts intercepts( *this, _N1.name(), _N2.name() );
+	intercepts.compute();
 	for ( BCMP::Model::Station::map_t::const_iterator m = stations().begin(); m != stations().end(); ++m ) {
 	    if ( m->second.type() != BCMP::Model::Station::Type::LOAD_INDEPENDENT && m->second.type() != BCMP::Model::Station::Type::MULTISERVER ) continue;
-	    if ( count > 0 ) plot << ", \\" << std::endl << "     ";
-	    plot << "\"$DATA\" using 1:" << get_gnuplot_index(m->second.resultVariables().at(type)) <<  " with linespoints title \"" << m->first << "\"";
-	    ++count;
+	    Intercepts::point src( 0, 0 );
+	    ls += 1;
+	    for ( std::set<Intercepts::point>::const_iterator dst = intercepts.begin(); dst != intercepts.end() && dst->x() <= intercepts.bound().x(); ++dst ) {
+		if ( dst != intercepts.begin() ) {
+		    const BCMP::Model::Station& station = m->second;
+		    const Intercepts::point demand( getDoubleValue( station.demand( station.classAt( _N1.name() ) ) ), getDoubleValue( station.demand( station.classAt( _N2.name() ) ) ) );
+		    const std::pair<double,double> utilization( std::min( std::min( src.x(),  intercepts.bound().x() ) * demand.x() + std::min( src.y(),  intercepts.bound().y() ) * demand.y(), 1.0 ),
+								std::min( std::min( dst->x(), intercepts.bound().x() ) * demand.x() + std::min( dst->y(), intercepts.bound().y() ) * demand.y(), 1.0 ) );
+		    plot << "set arrow from first " << src.x() / intercepts.bound().x() << "," <<  utilization.first
+			 << " to first " << dst->x() / intercepts.bound().x() << "," << utilization.second << " nohead ls " << ls << std::endl;
+		}
+		src = *dst;
+	    }
 	}
+#endif
+	/* Find utilization for all stations */
+
+	ls = 0;
+	plot << "plot ";
+	for ( BCMP::Model::Station::map_t::const_iterator m = stations().begin(); m != stations().end(); ++m ) {
+	    if ( m->second.type() != BCMP::Model::Station::Type::LOAD_INDEPENDENT && m->second.type() != BCMP::Model::Station::Type::MULTISERVER ) continue;
+	    if ( ls > 0 ) plot << ", \\" << std::endl << "     ";
+	    ls += 1;
+	    plot << "\"$DATA\" using 1:" << get_gnuplot_index(m->second.resultVariables().at(type)) <<  " with linespoints ls " << ls << " title \"" << m->first << "\"";
+	}
+	plot << std::endl;
 
 	return plot;
     }
@@ -1708,18 +1728,25 @@ namespace QNIO {
     }
 
 
-    void
-    JMVA_Document::compute_itercepts() const
+#if UTILIZATION_BOUNDS
+
+    JMVA_Document::Intercepts::Intercepts( const JMVA_Document& self, const std::string& chain_1, const std::string& chain_2 )
+	: _self(self), _chain_1(chain_1), _chain_2(chain_2),
+	  _bound(std::numeric_limits<double>::infinity(),std::numeric_limits<double>::infinity()),
+	  _intercepts()
     {
-	typedef std::pair<double,double> point;
-	const BCMP::Model::Chain::map_t::const_iterator x = chains().find( _N1.name() );	// User may have picked class 2 first...
-	const BCMP::Model::Chain::map_t::const_iterator y = chains().find( _N2.name() );
+    }
+
+    
+    JMVA_Document::Intercepts&
+    JMVA_Document::Intercepts::compute()
+    {
+	const BCMP::Model::Chain::map_t::const_iterator x = chains().find( _chain_1 );	// User may have picked class 2 first...
+	const BCMP::Model::Chain::map_t::const_iterator y = chains().find( _chain_2 );
 
 	/* Compute intercepts */
 
 	std::vector<point> D_xy;
-	double Dmax_x = 0.0;
-	double Dmax_y = 0.0;
 	for ( BCMP::Model::Station::map_t::const_iterator m = stations().begin(); m != stations().end(); ++m ) {
 	    if ( m->second.type() != BCMP::Model::Station::Type::LOAD_INDEPENDENT && m->second.type() != BCMP::Model::Station::Type::MULTISERVER ) continue;
 
@@ -1728,15 +1755,109 @@ namespace QNIO {
 	    const double D_y = getDoubleValue( BCMP::Model::Bound::D( m->second, *y ) );
 	    if ( D_x == 0 && D_y == 0 ) continue;
 
-	    Dmax_x = std::max( D_x, Dmax_x );
-	    Dmax_y = std::max( D_y, Dmax_y );
-	    D_xy.emplace_back( point( D_x, D_y ) );
+	    point tput( 1./std::max(D_x,1e-20), 1./std::max(D_y,1e-20) );
+	    D_xy.emplace_back( tput );		/* truncate at 1e20.		*/
+	    _bound = _bound.min( tput );	/* Find smallest throughput	*/
 	}
+
+	_intercepts.emplace( 0.0, _bound.y() );
 	for ( std::vector<point>::const_iterator l1 = D_xy.begin(); l1 != D_xy.end(); ++l1 ) {
 	    for ( std::vector<point>::const_iterator l2 = std::next(l1); l2 != D_xy.end(); ++l2 ) {
+		_intercepts.insert( compute( point( 0, l1->y() ), point( l1->x(), 0 ), point( 0, l2->y() ), point( l2->x(), 0 ) ) );
 	    }
 	}
+	_intercepts.emplace( _bound.x(), 0.0 );
+	return *this;
     }
+
+#if 0
+    {
+	/* Compute utilization at all stations at all intercepts.  Reject all with utlization > 1.  Sort on x */
+
+	const double tput_x = 1 / Dmax_x;
+	const double tput_y = 1 / Dmax_y;
+	for ( BCMP::Model::Station::map_t::const_iterator m = stations().begin(); m != stations().end(); ++m ) {
+	    const BCMP::Model::Station& station = m->second;
+	    if ( station.type() != BCMP::Model::Station::Type::LOAD_INDEPENDENT && station.type() != BCMP::Model::Station::Type::MULTISERVER ) continue;
+
+	    std::cerr << m->first << "(0," << tput_y << ") = " << getDoubleValue( station.demand( station.classAt( y->first ) ) ) * tput_y << std::endl;
+	    for ( std::vector<point>::const_iterator i = intercepts.begin(); i != intercepts.end(); ++i ) {
+		if ( i->x() < 0 || tput_x < i->x() ) continue;
+		if ( i->y() < 0 || tput_x < i->y() ) continue;
+		const double U_x =  * i->x();
+		const double U_y = getDoubleValue( station.demand( station.classAt( y->first ) ) ) * i->y();
+		if ( U_x + U_y  > 1.0 ) continue;
+		std::cerr << m->first << *i << " = " << U_x + U_y << std::endl;
+	    }
+	    std::cerr << m->first << "(" << tput_x << ",0) = " << getDoubleValue( station.demand( station.classAt( x->first ) ) ) * tput_x << std::endl;
+	}
+    }
+	    void add_result( std::map<point,std::vector<double> >& results, const point& point, size_t index, double utilization ) const;
+
+<<<<<<< .working
+||||||| .merge-left.r16381
+    /*
+     * Compute the intercepts of the line defined by p1 and p2 with the line defined by p3 and p4.
+     */
+    
+=======
+    void
+    JMVA_Document::Intercepts::add_result( std::map<point,std::vector<double> >& results, const point& intercept, size_t index, double utilization ) const
+    {
+	const std::pair<std::map<point,std::vector<double> >::iterator,bool> result = results.emplace( intercept, std::vector<double>() );
+	std::vector<double>& value = result.first->second;
+	if ( result.second ) {
+	    value.resize(stations().size(),0.0);	// created a new item.  Allocate and clear storage.
+	}
+	value.at(index) = utilization;			// Plotting versus x.
+    }
+
+#endif
+
+    /*
+     * Compute the intercepts of the line defined by p1 and p2 with the line defined by p3 and p4.
+     */
+    
+>>>>>>> .merge-right.r16383
+    JMVA_Document::Intercepts::point
+    JMVA_Document::Intercepts::compute( const point& p1, const point& p2, const point& p3, const point& p4 ) const
+    {
+	std::cerr << "compute( " << p1 << "," << p2 << "," << p3 << "," << p4 << ")" << std::endl;
+	    
+	const double denominator = (p1.x() - p2.x()) * (p3.y() - p4.y()) - (p1.y() - p2.y()) * (p3.x() - p4.x());
+	if ( denominator != 0 ) {
+	    const double numerator1 = p1.x() * p2.y() - p1.y() * p2.x();
+	    const double numerator2 = p3.x() * p4.y() - p3.y() * p4.x();
+	    return point( ((numerator1 * (p3.x() - p4.x())) - ((p1.x() - p2.x()) * numerator2)) / denominator,
+		          ((numerator1 * (p3.y() - p4.y())) - ((p1.y() - p2.y()) * numerator2)) / denominator );
+	} else {
+	    return point( 0., 0. );
+	}
+    }
+
+<<<<<<< .working
+||||||| .merge-left.r16381
+
+    void
+    JMVA_Document::Intercepts::add_result( std::map<point,std::vector<double> >& results, const point& intercept, size_t index, double utilization ) const
+    {
+	const std::pair<std::map<point,std::vector<double> >::iterator,bool> result = results.emplace( intercept, std::vector<double>() );
+	std::vector<double>& value = result.first->second;
+	if ( result.second ) {
+	    value.resize(stations().size(),0.0);	// created a new item.  Allocate and clear storage.
+	}
+	value.at(index) = utilization;			// Plotting versus x.
+    }
+
+=======
+
+>>>>>>> .merge-right.r16383
+    std::ostream& JMVA_Document::Intercepts::point::print( std::ostream& output ) const 
+    {
+	output << "(" << x() << "," << y() << ")";
+	return output;
+    }
+#endif
 }
 
 namespace QNIO {
@@ -1762,7 +1883,7 @@ namespace QNIO {
     }
 
     std::ostream&
-    JMVA_Document::exportModel( std::ostream& output ) const
+    JMVA_Document::exportModel( std::ostream& output, bool bounds ) const
     {
 	XML::set_indent(0);
 	output << "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>" << std::endl
@@ -1771,10 +1892,10 @@ namespace QNIO {
 	    output << "<!-- " << LQIO::io_vars.lq_command_line << " -->" << std::endl;
 	}
 
-	printModel( output );
+	printModel( output, bounds );
 	if ( !strictJMVA() ) {
 	    printSPEX( output );
-	} else {
+	} else if ( !bounds ) {
 	    printResults( output );
 	}
 	output << XML::end_element( Xmodel ) << std::endl;
@@ -1782,7 +1903,7 @@ namespace QNIO {
     }
 
     std::ostream&
-    JMVA_Document::printModel( std::ostream& output ) const
+    JMVA_Document::printModel( std::ostream& output, bool bounds ) const
     {
 	std::for_each( stations().begin(), stations().end(), BCMP::Model::pad_demand( chains() ) );	/* JMVA want's zeros */
 
@@ -1795,8 +1916,11 @@ namespace QNIO {
 		       << XML::end_element( Xpragma, false ) << std::endl;
 	    }
 	}
-	output << XML::start_element( Xmodel )
-	       << XML::attribute( "xmlns:xsi", std::string("http://www.w3.org/2001/XMLSchema-instance") )
+	output << XML::start_element( Xmodel );
+	if ( bounds ) {
+	    output << XML::attribute( Xjaba, Xtrue );
+	}
+	output << XML::attribute( "xmlns:xsi", std::string("http://www.w3.org/2001/XMLSchema-instance") )
 	       << XML::attribute( "xsi:noNamespaceSchemaLocation", std::string("JMTmodel.xsd") )
 	       << ">" << std::endl;
 
@@ -1816,24 +1940,25 @@ namespace QNIO {
 	std::for_each( stations().begin(), stations().end(), printStation( output, model(), strictJMVA() ) );
 	output << XML::end_element( Xstations ) << std::endl;
 
-	output << XML::start_element( XReferenceStation ) << XML::attribute( Xnumber, static_cast<unsigned int>(chains().size()) ) << ">" << std::endl;
-	std::for_each( chains().begin(), chains().end(), printReference( output, stations() ) );
-	output << XML::end_element( XReferenceStation ) << std::endl;
+	if ( !bounds ) {
+	    output << XML::start_element( XReferenceStation ) << XML::attribute( Xnumber, static_cast<unsigned int>(chains().size()) ) << ">" << std::endl;
+	    std::for_each( chains().begin(), chains().end(), printReference( output, stations() ) );
+	    output << XML::end_element( XReferenceStation ) << std::endl;
 
-	output << XML::end_element( Xparameters ) << std::endl;
-	output << XML::start_element( XalgParams ) << ">" << std::endl
-	       << XML::simple_element( XalgType ) << XML::attribute( "maxSamples", 10000U ) << XML::attribute( Xname, std::string("MVA") ) << XML::attribute( "tolerance", 1.0E-7 ) << XML::end_element( XalgType, false ) << std::endl
-	       << XML::simple_element( XcompareAlgs ) << XML::attribute( Xvalue, false ) << XML::end_element( XcompareAlgs, false )  << std::endl
-	       << XML::end_element( XalgParams ) << std::endl;
+	    output << XML::start_element( XalgParams ) << ">" << std::endl
+		   << XML::simple_element( XalgType ) << XML::attribute( "maxSamples", 10000U ) << XML::attribute( Xname, std::string("MVA") ) << XML::attribute( "tolerance", 1.0E-7 ) << XML::end_element( XalgType, false ) << std::endl
+		   << XML::simple_element( XcompareAlgs ) << XML::attribute( Xvalue, false ) << XML::end_element( XcompareAlgs, false )  << std::endl
+		   << XML::end_element( XalgParams ) << std::endl;
 
-	/* SPEX */
-	/* Insert WhatIf for statements for arrays and completions. */
-	/* 	<whatIf className="c1" stationName="p2" type="Service Demands" values="1.0;1.1;1.2;1.3;1.4;1.5;1.6;1.7;1.8;1.9;2.0"/> */
+	    /* SPEX */
+	    /* Insert WhatIf for statements for arrays and completions. */
+	    /* 	<whatIf className="c1" stationName="p2" type="Service Demands" values="1.0;1.1;1.2;1.3;1.4;1.5;1.6;1.7;1.8;1.9;2.0"/> */
 
-	if ( !_input_variables.empty() ) {
-	    output << "   <!-- SPEX input variables -->" << std::endl;
-	    What_If what_if( output, *this );
-	    std::for_each( _input_variables.begin(),  _input_variables.end(),  what_if );		/* Do arrays in order	*/
+	    if ( !_input_variables.empty() ) {
+		output << "   <!-- SPEX input variables -->" << std::endl;
+		What_If what_if( output, *this );
+		std::for_each( _input_variables.begin(),  _input_variables.end(),  what_if );		/* Do arrays in order	*/
+	    }
 	}
 
 	return output;
@@ -1859,7 +1984,7 @@ namespace QNIO {
 	    output << XML::start_element( Xsolutions )
 		   << XML::attribute( Xiteration, count )
 		   << XML::attribute( XiterationValue, static_cast<unsigned int>(i.first) )
-		   << XML::attribute( Xok, "true" )
+		   << XML::attribute( Xok, Xtrue )
 		   << ">" << std::endl;
 	    output << XML::start_element( Xalgorithm )
 		   << XML::attribute( Xname, _mva_info.at(i.first).first )		/* Alg. name */
@@ -2515,12 +2640,13 @@ namespace QNIO {
     const XML_Char * JMVA_Document::Xvalues		= "values";
 
     const XML_Char * JMVA_Document::XalgCount 		= "algCount";
-    const XML_Char * JMVA_Document::Xiteration		= "iteration";
-    const XML_Char * JMVA_Document::Xiterations		= "iterations";
-    const XML_Char * JMVA_Document::XiterationValue	= "iterationValue";
-    const XML_Char * JMVA_Document::Xok			= "ok";
     const XML_Char * JMVA_Document::Xfalse		= "false";
+    const XML_Char * JMVA_Document::Xiteration		= "iteration";
+    const XML_Char * JMVA_Document::XiterationValue	= "iterationValue";
+    const XML_Char * JMVA_Document::Xiterations		= "iterations";
+    const XML_Char * JMVA_Document::Xok			= "ok";
     const XML_Char * JMVA_Document::XsolutionMethod   	= "solutionMethod";
+    const XML_Char * JMVA_Document::Xtrue		= "true";
 
     const XML_Char * JMVA_Document::XArrival_Rates	= "Arrival Rates";
     const XML_Char * JMVA_Document::XCustomer_Numbers 	= "Customer Numbers";

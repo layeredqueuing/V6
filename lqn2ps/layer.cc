@@ -1,6 +1,6 @@
 /* layer.cc	-- Greg Franks Tue Jan 28 2003
  *
- * $Id: layer.cc 16256 2023-01-04 00:24:37Z greg $
+ * $Id: layer.cc 16384 2023-02-01 12:49:35Z greg $
  *
  * A layer consists of a set of tasks with the same nesting depth from
  * reference tasks.  Reference tasks are in layer 1, the immediate
@@ -952,10 +952,10 @@ std::ostream& Layer::printBCMPQueueingNetwork( std::ostream& output ) const
 
     switch ( Flags::output_format() ) {
 #if JMVA_OUTPUT && HAVE_LIBEXPAT
-    case File_Format::JMVA:	QNIO::JMVA_Document("",_bcmp_model).exportModel( output ); break;
+    case File_Format::JMVA:	QNIO::JMVA_Document("",_bcmp_model).exportModel( output, false ); break;
 #endif
 #if QNAP2_OUTPUT
-    case File_Format::QNAP2:	QNIO::QNAP2_Document("",_bcmp_model).exportModel( output ); break;
+    case File_Format::QNAP2:	QNIO::QNAP2_Document("",_bcmp_model).exportModel( output, false ); break;
 #endif
     default:
 	break;

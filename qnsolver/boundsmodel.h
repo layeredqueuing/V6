@@ -49,6 +49,5 @@ private:
 private:
     Model& _parent;
     std::map<const std::string,BCMP::Model::Bound> _bounds;			/* Chain, Bounds */
-    result_map_t _results;	/* Station, classes */
 };
 #endif

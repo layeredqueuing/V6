@@ -205,7 +205,7 @@ namespace QNIO {
 	virtual std::vector<LQX::SyntaxTreeNode*> * gnuplot() { return nullptr; }
 
 	virtual std::ostream& print( std::ostream& ) const;
-	std::ostream& exportModel( std::ostream& ) const;
+	std::ostream& exportModel( std::ostream&, bool ) const;
 
 	const BCMP::Model::Station::map_t& stations() const { return model().stations(); }
 	const BCMP::Model::Chain::map_t& chains() const { return model().chains(); }
