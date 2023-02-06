@@ -1,5 +1,5 @@
 #----------------------------------------------------------------------
-# $Id: Makefile.am 16124 2022-11-18 11:26:13Z greg $
+# $Id: Makefile.am 16391 2023-02-03 17:35:34Z greg $
 #----------------------------------------------------------------------
 
 AM_CPPFLAGS	= -I..  -I../lqiolib/src/headers -I../lqx/libsrc/headers
@@ -16,6 +16,8 @@ EXTRA_DIST	= lqn2csv.1
 man1_MANS	= lqn2csv.1
 
 if HAVE_PS2PDF
+all-local:	lqn2csv.pdf
+
 install-data-local:	lqn2csv.pdf
 
 lqn2csv.pdf:	$(man1_MANS)
@@ -23,4 +25,3 @@ lqn2csv.pdf:	$(man1_MANS)
 		ps2pdf $<.ps $@
 		rm $<.ps
 endif
-

@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- *  $Id: qnap2_document.h 16325 2023-01-12 17:47:10Z greg $
+ *  $Id: qnap2_document.h 16391 2023-02-03 17:35:34Z greg $
  *
  *  Created by Greg Franks 2020/12/28
  */
@@ -194,6 +194,7 @@ namespace QNIO {
 	virtual ~QNAP2_Document();
 
 	virtual bool load();
+	virtual InputFormat getInputFormat() const { return InputFormat::QNAP; }
 
 	virtual bool disableDefaultOutputWithLQX() const { return !_result; }
 	virtual LQX::Program * getLQXProgram() { return _lqx; }
@@ -205,7 +206,7 @@ namespace QNIO {
 	virtual std::vector<LQX::SyntaxTreeNode*> * gnuplot() { return nullptr; }
 
 	virtual std::ostream& print( std::ostream& ) const;
-	std::ostream& exportModel( std::ostream&, bool ) const;
+	std::ostream& exportModel( std::ostream& ) const;
 
 	const BCMP::Model::Station::map_t& stations() const { return model().stations(); }
 	const BCMP::Model::Chain::map_t& chains() const { return model().chains(); }

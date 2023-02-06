@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: qnio_document.cpp 16359 2023-01-23 10:48:17Z greg $
+ * $Id: qnio_document.cpp 16391 2023-02-03 17:35:34Z greg $
  *
  * Superclass for Queueing Network models.
  *
@@ -103,9 +103,18 @@ QNIO::Document::Comprehension::print( std::ostream& output ) const
     }
     return output;
 }
+
+const std::map<QNIO::Document::Comprehension::Type,const std::string> QNIO::Document::Comprehension::__type_name = {
+    { QNIO::Document::Comprehension::Type::ARRIVAL_RATES, "Arrival Rate" },
+    { QNIO::Document::Comprehension::Type::CUSTOMERS,     "Customers" },
+    { QNIO::Document::Comprehension::Type::DEMANDS,	  "Service Demands" },
+    { QNIO::Document::Comprehension::Type::SERVERS,       "Servers" }
+};
+	    
+
 
 QNIO::Document::Document( const std::string& input_file_name, const BCMP::Model& model )
-    : _input_file_name(input_file_name), _pragmas(), _model(model), _comprehensions()
+    : _input_file_name(input_file_name), _pragmas(), _bounds_only(false), _model(model), _comprehensions()
 {
     LQIO::DOM::Document::__input_file_name = input_file_name;
 }
