@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- *  $Id: jmva_document.h 16391 2023-02-03 17:35:34Z greg $
+ *  $Id: jmva_document.h 16399 2023-02-06 00:51:26Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  */
@@ -318,7 +318,7 @@ namespace QNIO {
 
 	struct Population {
 	    Population() : _name(), _population(0), _N() {}
-	    double operator[]( size_t i ) const { return _N.at(i); }
+	    const std::pair<double,double>& operator[]( size_t i ) const { return _N.at(i); }
 	    bool empty() const { return _N.empty(); }
 	    size_t size() const { return _N.size(); }
 	    void setName( const std::string& name ) { _name = name; }
@@ -326,11 +326,11 @@ namespace QNIO {
 	    void setPopulation( size_t population ) { _population = population; }
 	    size_t population() const { return _population; }
 	    void reserve( size_t size ) { _N.reserve( size ); }
-	    void push_back( double item ) { _N.push_back( item ); }
+	    void emplace_back( const std::pair<double,double>& item ) { _N.emplace_back( item ); }
 	private:
 	    std::string _name;
 	    size_t _population;
-	    std::vector<double> _N;
+	    std::vector<std::pair<double,double>> _N;
 	};
 
 	bool convertToLQN( LQIO::DOM::Document& ) const;
@@ -357,6 +357,7 @@ namespace QNIO {
 		double x() const { return _x; }
 		double y() const { return _y; }
 		std::ostream& print( std::ostream& ) const;
+		bool operator<( const point& right ) const { return x() < right.x() || ( x() == right.x() && y() < right.y() ); }
 		point& min( const point& arg ) { _x = std::min( _x, arg.x() ); _y = std::min( _y, arg.y() ); return *this; }
 	    private:
 		double _x;
