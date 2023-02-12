@@ -1,5 +1,5 @@
 /*
- *  $Id: srvn_spex.cpp 16406 2023-02-08 01:54:34Z greg $
+ *  $Id: srvn_spex.cpp 16416 2023-02-11 23:52:40Z greg $
  *
  *  Created by Greg Franks on 2012/05/03.
  *  Copyright 2012 __MyCompanyName__. All rights reserved.
@@ -904,12 +904,21 @@ namespace LQIO {
 	return output;
     }
 
+    /*
+     * Print out the variables.
+     */
+    
     std::ostream&
     Spex::printResultVariable( std::ostream& output, const Spex::var_name_and_expr& var )
     {
-	output << var.first;
+	if ( !var.first.empty() ) {
+	    output << var.first;
+	    if ( var.second != nullptr ) {
+		output << " = ";
+	    }
+	}
 	if ( var.second != nullptr ) {
-	    output << " = " << *(var.second);
+	    output << *(var.second);
 	}
 	return output;
     }

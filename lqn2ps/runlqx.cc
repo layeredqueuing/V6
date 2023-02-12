@@ -2,7 +2,7 @@
  * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqn2ps/runlqx.cc $
  *
  * ------------------------------------------------------------------------
- * $Id: runlqx.cc 14882 2021-07-07 11:09:54Z greg $
+ * $Id: runlqx.cc 16416 2023-02-11 23:52:40Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -46,7 +46,7 @@ namespace SolverInterface
 	}
 			
 #if defined(DEBUG_MESSAGES)
-	env->cleanInvokeGlobalMethod("print_symbol_table", NULL);
+	env->cleanInvokeGlobalMethod("print_symbol_table", nullptr);
 #endif
 			
 	/* Make sure all external variables are accounted for */

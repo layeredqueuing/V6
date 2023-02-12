@@ -1,6 +1,6 @@
 /* model.cc	-- Greg Franks Mon Feb  3 2003
  *
- * $Id: model.cc 16338 2023-01-16 21:16:33Z greg $
+ * $Id: model.cc 16416 2023-02-11 23:52:40Z greg $
  *
  * Load, slice, and dice the lqn model.
  */
@@ -467,7 +467,7 @@ Model::create( const std::string& input_file_name, const LQIO::DOM::Pragma& prag
 	    if ( program != nullptr && Flags::run_lqx() ) {
 		Flags::instantiate  = true;
 
-		if (program == NULL) {
+		if (program == nullptr) {
 		    LQIO::runtime_error( LQIO::ERR_LQX_COMPILATION, input_file_name.c_str() );
 		} else { 
 		    /* Attempt to run the program */
@@ -1985,8 +1985,9 @@ Model::Remap::operator()( const Layer& layer )
 void
 Model::Remap::operator()( const Entity * entity )
 {
-    const unsigned int i = _entities.size() + 1;
-    _entities[i] = const_cast<LQIO::DOM::Entity *>(dynamic_cast<const LQIO::DOM::Entity *>(entity->getDOM()));	/* Our order, not the dom's */
+    if ( entity->isSelectedIndirectly() ) {
+	_entities[_entities.size() + 1] = const_cast<LQIO::DOM::Entity *>(dynamic_cast<const LQIO::DOM::Entity *>(entity->getDOM()));	/* Our order, not the dom's */
+    }
 }
 
 
