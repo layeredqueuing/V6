@@ -1,5 +1,5 @@
 /*
- *  $Id: srvn_output.cpp 16256 2023-01-04 00:24:37Z greg $
+ *  $Id: srvn_output.cpp 16444 2023-02-25 12:39:03Z greg $
  *
  * Copyright the Real-Time and Distributed Systems Group,
  * Department of Systems and Computer Engineering,
@@ -1020,7 +1020,7 @@ namespace LQIO {
     {
         printHeader( output );
 
-        if ( Spex::numberOfInputVariables() > 0 && !_document.instantiated() ) {
+        if ( !Spex::input_variables().empty() && !_document.instantiated() ) {
             output << std::endl;
 	    if ( _annotate ) {
  		output << "# SPEX Variable definition and initialization." << std::endl
@@ -1105,18 +1105,9 @@ namespace LQIO {
 
         std::for_each( _entities.begin(), _entities.end(), TaskInput( output, &TaskInput::printActivityInput ) );
 
-        const unsigned int n_R = Spex::numberOfResultVariables();
-        if ( n_R > 0 && !_document.instantiated() ) {
-            output << std::endl << "R " << n_R << std::endl;
-	    if ( _annotate ) {
-		output << "# SYNTAX: spex-expr" << std::endl
-		       << "#   Any variable defined earlier can be used." << std::endl;
-	    }
-	    const std::vector<Spex::var_name_and_expr>& results = Spex::result_variables();
-	    LQX::SyntaxTreeNode::setVariablePrefix( "$" );
-	    std::for_each( results.begin(), results.end(), Spex::PrintResultVariable( output, 2 ) );
-            output << "-1" << std::endl;
-        }
+	printResultConvergenceVariables( output, LQIO::Spex::result_variables(), "R" );
+	printResultConvergenceVariables( output, LQIO::Spex::convergence_variables(), "C" );
+
         return output;
     }
 
@@ -1185,6 +1176,26 @@ namespace LQIO {
         }
         output << std::endl;
         return output;
+    }
+
+    /*
+     * Common code for R and C sections
+     */
+	
+    std::ostream& SRVN::Input::printResultConvergenceVariables( std::ostream& output, const std::vector<std::pair<const std::string,LQX::SyntaxTreeNode *>>& variables, const std::string& keyword ) const
+    {
+        const unsigned int n = variables.size();
+        if ( n > 0 && !_document.instantiated() ) {
+            output << std::endl << keyword << " " << n << std::endl;
+	    if ( _annotate ) {
+		output << "# SYNTAX: spex-expr" << std::endl
+		       << "#   Any variable defined earlier can be used." << std::endl;
+	    }
+	    LQX::SyntaxTreeNode::setVariablePrefix( "$" );
+	    std::for_each( variables.begin(), variables.end(), Spex::PrintVarNameAndExpr( output, 2 ) );
+            output << "-1" << std::endl;
+        }
+	return output;
     }
 
     bool

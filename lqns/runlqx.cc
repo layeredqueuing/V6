@@ -2,7 +2,7 @@
  *
  * $URL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/runlqx.cc $
  * ------------------------------------------------------------------------
- * $Id: runlqx.cc 15632 2022-06-03 09:59:14Z greg $
+ * $Id: runlqx.cc 16444 2023-02-25 12:39:03Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -73,7 +73,7 @@ namespace SolverInterface
 	    }
 
 	    /* Recalculate dynamic values */
-	    Model::recalculateDynamicValues( _document );
+	    _model->recalculateDynamicValues();
 
 	    /* Run the solver and return its success as a boolean value */
 	    assert( _model );

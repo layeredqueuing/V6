@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- *  $Id: dom_document.h 16359 2023-01-23 10:48:17Z greg $
+ *  $Id: dom_document.h 16444 2023-02-25 12:39:03Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -148,12 +148,15 @@ namespace LQIO {
 	    const ExternalVariable * getModelUnderrelaxationCoefficient() const { return get( XUnderrelaxationCoefficient); }
 	    const double getModelUnderrelaxationCoefficientValue() const { return getValue( XUnderrelaxationCoefficient); }
 	    Document& setModelUnderrelaxationCoefficient( const ExternalVariable * );
-	    const ExternalVariable * getSpexConvergenceIterationLimit() const { return get( XSpexIterationLimit ); }
-	    const double getSpexConvergenceIterationLimitValue() const { return getValue( XSpexIterationLimit ); }
-	    Document& setSpexConvergenceIterationLimit( const ExternalVariable * );
-	    const ExternalVariable * getSpexConvergenceUnderrelaxation() const { return get( XSpexUnderrelaxation ); }
-	    const double getSpexConvergenceUnderrelaxationValue() const { return getValue( XSpexUnderrelaxation ); }
-	    Document& setSpexConvergenceUnderrelaxation( const ExternalVariable * );
+	    const ExternalVariable * getSpexIterationLimit() const { return get( XSpexIterationLimit ); }
+	    const double getSpexIterationLimitValue() const { return getValue( XSpexIterationLimit ); }
+	    Document& setSpexIterationLimit( const ExternalVariable * );
+	    const ExternalVariable * getSpexUnderrelaxation() const { return get( XSpexUnderrelaxation ); }
+	    const double getSpexUnderrelaxationValue() const { return getValue( XSpexUnderrelaxation ); }
+	    Document& setSpexUnderrelaxation( const ExternalVariable * );
+	    const ExternalVariable * getSpexConvergence() const { return get( XSpexConvergence ); }
+	    const double getSpexConvergenceValue() const { return getValue( XSpexConvergence ); }
+	    Document& setSpexConvergence( const ExternalVariable * );
 
 	    /* Cached values for formatting */
 	    const unsigned getNumberOfProcessors() const { return _processors.size(); }
@@ -243,8 +246,8 @@ namespace LQIO {
 	    static bool __debugJSON;
 
 	private:
-	    const double getValue( const char * ) const;
-	    const ExternalVariable * get( const char * ) const;
+	    const double getValue( const std::string& ) const;
+	    const ExternalVariable * get( const std::string& ) const;
 	    static inline bool wasSet(const std::pair<std::string,SymbolExternalVariable*>& var ) { return var.second->wasSet(); }
 	    struct notSet {
 		notSet(std::vector<std::string>& list) : _list(list) {}
@@ -259,9 +262,10 @@ namespace LQIO {
 	    static const char * XConvergence;
 	    static const char * XIterationLimit;
 	    static const char * XPrintInterval;
-	    static const char * XUnderrelaxationCoefficient;
+	    static const char * XSpexConvergence;
 	    static const char * XSpexIterationLimit;
 	    static const char * XSpexUnderrelaxation;
+	    static const char * XUnderrelaxationCoefficient;
 
 	    /* Input/Output extensions */
 	    static const std::map<const LQIO::DOM::Document::OutputFormat,const std::string> __output_extensions;
@@ -285,7 +289,7 @@ namespace LQIO {
 	    /* We need to make sure all variables named the same point the same */
 	    std::map<const std::string, SymbolExternalVariable*> _variables;
 	    std::map<const std::string, const ExternalVariable*> _controlVariables;
-	    static std::map<const char *, double> __initialValues;
+	    static std::map<const std::string, double> __initialValues;
 
 	    unsigned _nextEntityId;                           	/* for sorting, see _entities 	*/
 	    const InputFormat _format;				/* input format 		*/

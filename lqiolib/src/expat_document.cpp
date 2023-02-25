@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- * $Id: expat_document.cpp 16325 2023-01-12 17:47:10Z greg $
+ * $Id: expat_document.cpp 16444 2023-02-25 12:39:03Z greg $
  *
  * Read in XML input files.
  *
@@ -464,10 +464,10 @@ namespace LQIO {
 		_text.clear();
                 _stack.push( parse_stack_t(element,&Expat_Document::startSPEXResults,&Expat_Document::endSPEXResults,object) );
 
-            // } else if ( strcasecmp( element, Xspex_convergence ) == 0 ) {
-            //     _document.setLQXProgramLineNumber(XML_GetCurrentLineNumber(_parser));
-	    // 	_text.clear();
-            //     _stack.push( parse_stack_t(element,&Expat_Document::startSPEXConvergence,&Expat_Document::endSPEXConvergence,object) );
+            } else if ( strcasecmp( element, Xspex_convergence ) == 0 ) {
+                _document.setLQXProgramLineNumber(XML_GetCurrentLineNumber(_parser));
+		_text.clear();
+                _stack.push( parse_stack_t(element,&Expat_Document::startSPEXConvergence,&Expat_Document::endSPEXConvergence,object) );
 
             } else {
                 XML::throw_element_error( element, attributes );
@@ -2461,7 +2461,7 @@ namespace LQIO {
                 const_cast<ConfidenceIntervals *>(&_conf_99)->set_blocks( _document.getResultNumberOfBlocks() );
             }
 	    /* Output SPEX if present, otherwise output LQX (also if present) */
-	    const_cast<Expat_Document *>(this)->_has_spex = Spex::numberOfInputVariables() > 0;
+	    const_cast<Expat_Document *>(this)->_has_spex = !Spex::input_variables().empty();
 	    
             exportHeader( output );
 	    if ( hasSPEX() && !_document.instantiated() ) {
@@ -3519,12 +3519,12 @@ namespace LQIO {
 	void
 	Expat_Document::exportSPEXResults( std::ostream& output ) const
 	{
-	    const std::vector<Spex::var_name_and_expr>& results = Spex::result_variables();
-	    if ( results.size() > 0 ) {
+	    const std::vector<Spex::var_name_and_expr>& variables = Spex::result_variables();
+	    if ( variables.size() > 0 ) {
 		const int precision = output.precision(10);
 		output << XML::start_element( Xspex_results ) << ">" /* <![CDATA[" */ << std::endl;
 		LQX::SyntaxTreeNode::setVariablePrefix( "$" );
-		std::for_each( results.begin(), results.end(), Spex::PrintResultVariable( output ) );
+		std::for_each( variables.begin(), variables.end(), Spex::PrintVarNameAndExpr( output ) );
 		output /* << "]]>" << std::endl */ << XML::end_element( Xspex_results ) << std::endl;
 		output.precision(precision);
 	    }
@@ -3533,6 +3533,12 @@ namespace LQIO {
 	void
 	Expat_Document::exportSPEXConvergence( std::ostream& output ) const
 	{
+	    const std::vector<Spex::var_name_and_expr>& variables = Spex::convergence_variables();
+	    if ( variables.size() > 0 ) {
+		output << XML::start_element( Xspex_convergence ) << ">" /* <![CDATA[" */ << std::endl;
+		std::for_each( variables.begin(), variables.end(), Spex::PrintVarNameAndExpr( output ) );
+		output /* << "]]>" << std::endl */ << XML::end_element( Xspex_convergence ) << std::endl;
+	    }
 	}
     
         void
@@ -3720,6 +3726,7 @@ namespace LQIO {
         const XML_Char * Expat_Document::Xsolver_parameters =                   "solver-params";
         const XML_Char * Expat_Document::Xsource =                              "source";
         const XML_Char * Expat_Document::Xspeed_factor =                        "speed-factor";
+	const XML_Char * Expat_Document::Xspex_convergence = 			"convergence-collection";
 	const XML_Char * Expat_Document::Xspex_parameters =			"parameters";
 	const XML_Char * Expat_Document::Xspex_results =			"results-collection";
         const XML_Char * Expat_Document::Xsquared_coeff_variation =             "squared-coeff-variation";

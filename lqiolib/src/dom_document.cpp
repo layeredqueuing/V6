@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_document.cpp 16359 2023-01-23 10:48:17Z greg $
+ *  $Id: dom_document.cpp 16444 2023-02-25 12:39:03Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -51,13 +51,14 @@ namespace LQIO {
 	Document* __document = nullptr;
 	bool Document::__debugXML = false;
 	bool Document::__debugJSON = false;
-	std::map<const char *, double> Document::__initialValues;
+	std::map<const std::string, double> Document::__initialValues;
 	std::string Document::__input_file_name = "";
 	const char * Document::XConvergence = "conv_val";			/* Matches schema. 	*/
 	const char * Document::XIterationLimit = "it_limit";			/* Matched schema.	*/
 	const char * Document::XPrintInterval = "print_int";			/* Matches schema.	*/
 	const char * Document::XUnderrelaxationCoefficient = "underrelax_coeff";/* Matches schema.	*/
 	const char * Document::XSpexIterationLimit = "spex_it_limit";
+	const char * Document::XSpexConvergence = "spex_convergence";
 	const char * Document::XSpexUnderrelaxation = "spex_underrelax_coeff";
 
 	const std::map<const LQIO::DOM::Document::OutputFormat,const std::string> Document::__output_extensions = {
@@ -126,6 +127,7 @@ namespace LQIO {
 	    __initialValues[XUnderrelaxationCoefficient] =  0.9;
 	    __initialValues[XSpexIterationLimit] =          50.;
 	    __initialValues[XSpexUnderrelaxation] =         0.9;
+	    __initialValues[XSpexConvergence] =             0.001;
 	}
 
 
@@ -151,7 +153,7 @@ namespace LQIO {
 	    /* BUG_277 Delete External Variables */
 
 	    for ( std::map<const std::string, SymbolExternalVariable*>::const_iterator var = _variables.begin(); var != _variables.end(); ++var ) {
-		delete var->second;
+		if ( _controlVariables.find( var->first ) != _controlVariables.end() ) delete var->second;	// Only if not a control variable too!
 	    }
 
 	    /* Now delete the control variables */
@@ -165,27 +167,15 @@ namespace LQIO {
 	    __input_file_name = "";
 	}
 
-	void Document::setModelParameters(const std::string& comment, LQIO::DOM::ExternalVariable* conv_val, LQIO::DOM::ExternalVariable* it_limit, LQIO::DOM::ExternalVariable* print_int, LQIO::DOM::ExternalVariable* underrelax_coeff, const void * element )
+	void Document::setModelParameters(const std::string& comment, LQIO::DOM::ExternalVariable* convergence_value, LQIO::DOM::ExternalVariable* iteration_limit, LQIO::DOM::ExternalVariable* print_interval, LQIO::DOM::ExternalVariable* underrelax_coeff, const void * element )
 	{
 	    /* Set up initial model parameters, but only if they were not set using SPEX variables */
 
 	    _modelComment = comment;
-	    const ExternalVariable * var = _controlVariables[XConvergence];
-	    if ( !var && conv_val ) {
-		_controlVariables[XConvergence] = conv_val;
-	    }
-	    var = _controlVariables[XIterationLimit];
-	    if ( !var && it_limit ) {
-		_controlVariables[XIterationLimit] = it_limit;
-	    }
-	    var = _controlVariables[XPrintInterval];
-	    if ( !var && print_int ) {
-		_controlVariables[XPrintInterval] = print_int;
-	    }
-	    var = _controlVariables[XUnderrelaxationCoefficient];
-	    if ( !var && underrelax_coeff ) {
-		_controlVariables[XUnderrelaxationCoefficient] = underrelax_coeff;
-	    }
+	    if ( convergence_value != nullptr ) _controlVariables.emplace( std::pair<const std::string,LQIO::DOM::ExternalVariable*>(XConvergence,convergence_value) );
+	    if ( iteration_limit != nullptr )   _controlVariables.emplace( std::pair<const std::string,LQIO::DOM::ExternalVariable*>(XIterationLimit,iteration_limit) );
+	    if ( print_interval != nullptr )    _controlVariables.emplace( std::pair<const std::string,LQIO::DOM::ExternalVariable*>(XPrintInterval,print_interval) );
+	    if ( underrelax_coeff != nullptr )  _controlVariables.emplace( std::pair<const std::string,LQIO::DOM::ExternalVariable*>(XUnderrelaxationCoefficient,underrelax_coeff) );
 	}
 
 	const std::string& Document::getModelComment() const
@@ -234,19 +224,25 @@ namespace LQIO {
 	    return *this;
 	}
 
-	Document& Document::setSpexConvergenceIterationLimit( const ExternalVariable * spexIterationLimit )
+	Document& Document::setSpexIterationLimit( const ExternalVariable * spexIterationLimit )
 	{
 	    _controlVariables[XSpexIterationLimit] = spexIterationLimit;
 	    return *this;
 	}
 
-	Document& Document::setSpexConvergenceUnderrelaxation( const ExternalVariable * spexUnderrelaxation )
+	Document& Document::setSpexUnderrelaxation( const ExternalVariable * spexUnderrelaxation )
 	{
 	    _controlVariables[XSpexUnderrelaxation] = spexUnderrelaxation;
 	    return *this;
 	}
 
-	const double Document::getValue( const char * index ) const
+	Document& Document::setSpexConvergence( const ExternalVariable * spexConvergence )
+	{
+	    _controlVariables[XSpexConvergence] = spexConvergence;
+	    return *this;
+	}
+
+	const double Document::getValue( const std::string& index ) const
 	{
 	    /* Set to default value if NOT set elsewhere (usually the control program) */
 	    double value = __initialValues[index];
@@ -260,7 +256,7 @@ namespace LQIO {
 	    return value;
 	}
 
-	const ExternalVariable * Document::get( const char * index ) const
+	const ExternalVariable * Document::get( const std::string& index ) const
 	{
 	    const std::map<const std::string, const ExternalVariable *>::const_iterator iter = _controlVariables.find(index);
 	    if ( iter != _controlVariables.end() ) {
@@ -491,7 +487,7 @@ namespace LQIO {
 	{
 	    if ( _instantiated ) return;			// Done already.
 	    _instantiated = true;
-	    if ( _variables.size() == 0 && !program ) return;	// NOP.
+	    if ( _variables.empty() && !program ) return;	// NOP.
 
 	    /* Make sure all of the variables are registered in the program */
 	    std::map<const std::string, SymbolExternalVariable*>::iterator sym_iter;
@@ -500,13 +496,13 @@ namespace LQIO {
 	    }
 
 	    /* Instantiate and initialize all control variables.  Program must exist before we can initialize */
-	    SymbolExternalVariable * current = 0;
+	    SymbolExternalVariable * current = nullptr;
 	    std::map<const char *,double>::const_iterator init_iter;
-	    for (init_iter = __initialValues.begin(); init_iter != __initialValues.end(); ++init_iter) {
-		const char * name = init_iter->first;		// Create var if necessary
+	    for ( const auto& initial_value : __initialValues ) {
+		const std::string& name = initial_value.first;	// Create var if necessary
 
 		/* Get value if set */
-		double value = init_iter->second;
+		double value = initial_value.second;
 		const ConstantExternalVariable* constant = dynamic_cast<const ConstantExternalVariable *>(_controlVariables[name]);
 		if ( constant ) {
 		    constant->getValue( value );

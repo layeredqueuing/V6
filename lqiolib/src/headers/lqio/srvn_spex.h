@@ -8,7 +8,7 @@
 /************************************************************************/
 
 /*
- * $Id: srvn_spex.h 16004 2022-10-19 17:26:51Z greg $
+ * $Id: srvn_spex.h 16444 2023-02-25 12:39:03Z greg $
  */
 
 #ifndef __LQIO_SRVN_SPEX_H__
@@ -155,9 +155,9 @@ namespace LQIO {
 	};
 	
 
-	class PrintResultVariable {
+	class PrintVarNameAndExpr {
 	public:
-	    PrintResultVariable( std::ostream& output, unsigned int indent=0 ) : _output( output ), _indent(indent) {};
+	    PrintVarNameAndExpr( std::ostream& output, unsigned int indent=0 ) : _output( output ), _indent(indent) {};
 	    void operator()( const var_name_and_expr& var ) const;
 	private:
 	    std::ostream& _output;
@@ -264,8 +264,6 @@ namespace LQIO {
 	static bool has_array_var( const std::string& );
 	static LQX::SyntaxTreeNode * get_input_var_expr( const std::string& );
 	static void clear_input_variables() { __input_variables.clear(); }
-	static unsigned int numberOfInputVariables() { return __input_variables.size(); }
-	static unsigned int numberOfResultVariables() { return __result_variables.size(); }
 
 	/* Used by srvn_output and qnap_document... */
 	static const std::vector<std::string>& scalar_variables() { return  __scalar_variables; }			/* Saves $<scalar_name> for output */
@@ -276,12 +274,13 @@ namespace LQIO {
 	static const std::map<std::string,LQX::SyntaxTreeNode *>& input_variables() { return __input_variables; }
 	static const obs_var_tab_t& observations() { return __observations; }
 	static const std::vector<var_name_and_expr>& result_variables() { return __result_variables; }
+	static const std::vector<var_name_and_expr>& convergence_variables() { return __convergence_variables; }
 
 	
-	static std::ostream& printResultVariables( std::ostream& output );
+	static std::ostream& printVarNameAndExprs( std::ostream& output );
 	static VariableManip print_input_variable( const var_name_and_expr& var ) { return VariableManip( printInputVariable, var ); }
 	static VariableManip print_input_array_variable( const var_name_and_expr& var ) { return VariableManip( printInputArrayVariable, var ); }
-	static VariableManip print_result_variable( const var_name_and_expr& var ) { return VariableManip( printResultVariable, var ); }
+	static VariableManip print_var_name_and_expr( const var_name_and_expr& var ) { return VariableManip( printVarNameAndExpr, var ); }
 
 
 	LQX::VariableExpression * get_observation_variable( const std::string& ) const;
@@ -320,7 +319,7 @@ namespace LQIO {
 	static ObservationInfo * findObservation( const std::string& );		/* Find the observation matching string */
 	static std::ostream& printInputVariable( std::ostream& output, const var_name_and_expr& var );
 	static std::ostream& printInputArrayVariable( std::ostream& output, const var_name_and_expr& var );
-	static std::ostream& printResultVariable( std::ostream& output, const var_name_and_expr& var );
+	static std::ostream& printVarNameAndExpr( std::ostream& output, const var_name_and_expr& var );
 
 	static std::vector<var_name_and_expr>::const_iterator find( std::vector<var_name_and_expr>::const_iterator, std::vector<var_name_and_expr>::const_iterator, const std::string& );
 
@@ -332,7 +331,7 @@ namespace LQIO {
 	static std::vector<std::string> __array_variables;			/* Saves $<array_name> for generating nest for loops */
 	static std::set<std::string> __array_references;			/* Saves $<array_name> when used as an lvalue */
 	static std::vector<var_name_and_expr> __result_variables;		/* Saves $<name> for printing the header of variable names and the expression attached */
-	static std::vector<std::string> __convergence_variables;		/* Saves $<name> for all variables used in convergence section */
+	static std::vector<var_name_and_expr> __convergence_variables;		/* Saves $<name> for all variables used in convergence section */
 	static std::map<std::string,LQX::SyntaxTreeNode *> __observation_variables;	/* Saves all observations (name, and funky assignment) */
 	static std::map<std::string,ComprehensionInfo> __comprehensions;	/* Saves all comprehensions for $<name> */
 	static expr_list __deferred_assignment;					/* Saves all parameters that depend on a variable for latter assignment */
@@ -348,8 +347,6 @@ namespace LQIO {
 	static const std::map<const std::string,const attribute_table_t> __control_parameters;
 	static const std::map<const int,const std::pair<const std::string,const std::string> > __key_code_map;	/* Maps srvn_gram.h KEY_XXX to name */
 	static const std::map<const int,const std::string> __key_lqx_function_map;	/* Maps srvn_gram.h KEY_XXX to lqx function name */
-
-	static const char * __convergence_limit_str;
 
 	static void * __parameter_list;						/* JSON */
 	static void * __result_list;						/* JSON */

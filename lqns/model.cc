@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: model.cc 16350 2023-01-19 11:08:31Z greg $
+ * $Id: model.cc 16444 2023-02-25 12:39:03Z greg $
  *
  * Layer-ization of model.  The basic concept is from the reference
  * below.  However, model partioning is more complex than task vs device.
@@ -74,10 +74,7 @@
 #include "task.h"
 #include "variance.h"
 
-double Model::__convergence_value = 0.;
-unsigned Model::__iteration_limit = 0;
-double Model::__underrelaxation = 0;
-unsigned Model::__print_interval = 0;
+unsigned int Model::__print_interval = 0;
 Processor * Model::__think_server = nullptr;
 Processor * Model::__cfs_server = nullptr;
 unsigned Model::__sync_submodel = 0;
@@ -118,7 +115,7 @@ Model::solve( solve_using solve_function, const std::string& inputFileName, cons
 	return INVALID_INPUT;
     }
 
-    if ( LQIO::Spex::numberOfInputVariables() == 0 ) {
+    if ( LQIO::Spex::input_variables().empty() ) {
 	if ( LQIO::Spex::__no_header ) {
 	    std::cerr << LQIO::io_vars.lq_toolname << ": --no-header is ignored for " << inputFileName << "." << std::endl;
 	}
@@ -141,7 +138,7 @@ Model::solve( solve_using solve_function, const std::string& inputFileName, cons
 	    status = INVALID_INPUT;
 	} else {
 	    /* Make sure values are up to date */
-	    Model::recalculateDynamicValues( document );
+	    model->recalculateDynamicValues();
 
 	    /* Simply invoke the solver for the current DOM state */
 
@@ -387,9 +384,9 @@ Model::prepare(const LQIO::DOM::Document* document)
  */
 
 void
-Model::recalculateDynamicValues( const LQIO::DOM::Document* document )
+Model::recalculateDynamicValues()
 {
-    setModelParameters(document);
+    setModelParameters();
     std::for_each( __processor.begin(), __processor.end(), Exec<Processor>( &Processor::recalculateDynamicValues ) );
     std::for_each( __group.begin(), __group.end(), Exec<Group>( &Group::recalculateDynamicValues ) );
     std::for_each( __task.begin(), __task.end(), Exec<Task>( &Task::recalculateDynamicValues ) );
@@ -436,35 +433,59 @@ Model::create( const LQIO::DOM::Document * document, const std::string& inputFil
 
 
 /*
- * Called from the parser to set important modelling parameters.  It
- * can also check validity of same if so desired.
+ * Called when the model is about to be solved to set model parameters.
  */
 
 void
-Model::setModelParameters( const LQIO::DOM::Document* doc )
+Model::setModelParameters()
 {
+    /* The print interval can be set by option.cc */
     if ( __print_interval == 0 ) {
-	__print_interval = doc->getModelPrintIntervalValue();
+	__print_interval = getDOM()->getModelPrintIntervalValue();
+    }
+    if ( __print_interval != getDOM()->getModelPrintIntervalValue() ) {
+	const_cast<LQIO::DOM::Document *>(getDOM())->setModelPrintInterval( new LQIO::DOM::ConstantExternalVariable( __print_interval ) );
     }
 
-    __iteration_limit = Pragma::iterationLimit() > 0 ? Pragma::iterationLimit() : doc->getModelIterationLimitValue();
-    if ( __iteration_limit < 1 ) {
-	LQIO::input_error2( ADV_ITERATION_LIMIT, __iteration_limit, 50 );
-	__iteration_limit =  50;
+    if ( _iteration_limit == 0 ) {
+	_iteration_limit = Pragma::iterationLimit() > 0 ? Pragma::iterationLimit() : getDOM()->getModelIterationLimitValue();
+    }
+    if ( _iteration_limit < 1 ) {
+	LQIO::input_error2( ADV_ITERATION_LIMIT, _iteration_limit, 50 );
+	_iteration_limit =  50;
+    }
+    if ( _iteration_limit != getDOM()->getModelIterationLimitValue() ) {
+	const_cast<LQIO::DOM::Document *>(getDOM())->setModelIterationLimit( new LQIO::DOM::ConstantExternalVariable( _iteration_limit ) );
     }
 
-    __convergence_value = Pragma::convergenceValue() > 0. ? Pragma::convergenceValue() : doc->getModelConvergenceValue();
-    if ( __convergence_value <= 0. ) {
-	LQIO::input_error2( ADV_CONVERGENCE_VALUE, __convergence_value, 0.00001 );
-	__convergence_value = 0.00001;
-    } else if ( __convergence_value > 0.01 ) {
-	LQIO::input_error2( ADV_LARGE_CONVERGENCE_VALUE, __convergence_value );
+    _convergence_value = Pragma::convergenceValue() > 0. ? Pragma::convergenceValue() : getDOM()->getModelConvergenceValue();
+    if ( _convergence_value <= 0. ) {
+	LQIO::input_error2( ADV_CONVERGENCE_VALUE, _convergence_value, 0.00001 );
+	_convergence_value = 0.00001;
+    } else if ( _convergence_value > 0.01 ) {
+	LQIO::input_error2( ADV_LARGE_CONVERGENCE_VALUE, _convergence_value );
+    }
+    if ( _convergence_value != getDOM()->getModelConvergenceValue() ) {
+	const_cast<LQIO::DOM::Document *>(getDOM())->setModelConvergence( new LQIO::DOM::ConstantExternalVariable( _convergence_value ) );
     }
     
-    __underrelaxation = Pragma::underrelaxation() > 0. ? Pragma::underrelaxation() : doc->getModelUnderrelaxationCoefficientValue();
-    if ( __underrelaxation <= 0.0 || 2.0 < __underrelaxation ) {
-	LQIO::input_error2( ADV_UNDERRELAXATION, __underrelaxation );
-	__underrelaxation = 0.9;
+    _underrelaxation = Pragma::underrelaxation() > 0. ? Pragma::underrelaxation() : getDOM()->getModelUnderrelaxationCoefficientValue();
+    if ( _underrelaxation <= 0.0 || 2.0 < _underrelaxation ) {
+	LQIO::input_error2( ADV_UNDERRELAXATION, _underrelaxation );
+	_underrelaxation = 0.9;
+    }
+    if ( _underrelaxation != getDOM()->getModelUnderrelaxationCoefficientValue() ) {
+	const_cast<LQIO::DOM::Document *>(getDOM())->setModelUnderrelaxationCoefficient( new LQIO::DOM::ConstantExternalVariable( _underrelaxation ) );
+    }
+
+    if ( Pragma::spexConvergence() > 0 ) {
+	const_cast<LQIO::DOM::Document *>(getDOM())->setSpexConvergence( new LQIO::DOM::ConstantExternalVariable( Pragma::spexConvergence() ) );
+    }
+    if ( Pragma::spexIterationLimit() > 0 ) {
+	const_cast<LQIO::DOM::Document *>(getDOM())->setSpexIterationLimit( new LQIO::DOM::ConstantExternalVariable( Pragma::spexIterationLimit() ) );
+    }
+    if ( Pragma::spexUnderrelaxation() > 0 ) {
+	const_cast<LQIO::DOM::Document *>(getDOM())->setSpexUnderrelaxation( new LQIO::DOM::ConstantExternalVariable( Pragma::spexUnderrelaxation() ) );
     }
 }
 
@@ -477,7 +498,10 @@ Model::setModelParameters( const LQIO::DOM::Document* doc )
  */
 
 Model::Model( const LQIO::DOM::Document * document, const std::string& inputFileName, const std::string& outputFileName, LQIO::DOM::Document::OutputFormat outputFormat )
-    : _converged(false), _iterations(0), _step_count(0), _model_initialized(false), _document(document), _input_file_name(inputFileName), _output_file_name(outputFileName), _output_format(outputFormat)
+    : _submodels(), _converged(false), _iterations(0), _MVAStats(),
+      _convergence_value(0), _iteration_limit(0), _underrelaxation(0),
+      _step_count(0), _model_initialized(false), _document(document),
+      _input_file_name(inputFileName), _output_file_name(outputFileName), _output_format(outputFormat)
 {
     __sync_submodel = 0;
 }
@@ -810,8 +834,8 @@ bool
 Model::compute()
 {
 
-    SolverReport report( const_cast<LQIO::DOM::Document *>(_document), _MVAStats );
-    setModelParameters( _document );
+    SolverReport report( const_cast<LQIO::DOM::Document *>(getDOM()), _MVAStats );
+    setModelParameters();
 
     if ( flags.no_execute || flags.bounds_only ) {
 	return true;
@@ -826,7 +850,7 @@ Model::compute()
     report.finish( _converged, delta, _iterations );
     sanityCheck();
     if ( !_converged ) {
-	LQIO::runtime_error( ADV_SOLVER_ITERATION_LIMIT, _iterations, delta, __convergence_value );
+	LQIO::runtime_error( ADV_SOLVER_ITERATION_LIMIT, _iterations, delta, convergenceValue() );
     }
     if ( report.faultCount() ) {
 	LQIO::runtime_error( ADV_MVA_FAULTS, report.faultCount() );
@@ -839,7 +863,7 @@ Model::compute()
 
     report.insertDOMResults();
     insertDOMResults();
-    _document->print( _output_file_name, _document->getResultInvocationNumber() > 0 ? SolverInterface::Solve::customSuffix : std::string(""), _output_format, flags.rtf_output );
+    getDOM()->print( _output_file_name, getDOM()->getResultInvocationNumber() > 0 ? SolverInterface::Solve::customSuffix : std::string(""), _output_format, flags.rtf_output );
 
     if ( flags.print_overtaking ) {
 	printOvertaking( std::cout );
@@ -874,11 +898,11 @@ Model::reload()
     }
 
     unsigned int errorCode;
-    if ( !const_cast<LQIO::DOM::Document *>(_document)->loadResults( directory_name(), _input_file_name,
+    if ( !const_cast<LQIO::DOM::Document *>(getDOM())->loadResults( directory_name(), _input_file_name,
 								     SolverInterface::Solve::customSuffix, _output_format, errorCode ) ) {
 	throw LQX::RuntimeException( "--reload-lqx can't load results." );
     } else {
-	return _document->getResultValid();
+	return getDOM()->getResultValid();
     }
 }
 
@@ -913,12 +937,12 @@ Model::sanityCheck()
  */
 
 double
-Model::relaxation() const
+Model::underrelaxation() const
 {
     if ( _iterations <= 1 ) {
 	return 1.0;
     } else {
-	return __underrelaxation;
+	return _underrelaxation;
     }
 }
 
@@ -957,13 +981,13 @@ Model::insertDOMResults() const
 void
 Model::printIntermediate( const double convergence ) const
 {
-    SolverReport report( const_cast<LQIO::DOM::Document *>(_document), _MVAStats );
+    SolverReport report( const_cast<LQIO::DOM::Document *>(getDOM()), _MVAStats );
     report.insertDOMResults();
     report.finish( _converged, convergence, _iterations );	/* Save results */
 
     insertDOMResults();
 
-    _document->print( _output_file_name, SolverInterface::Solve::customSuffix, _output_format, flags.rtf_output, _iterations );
+    getDOM()->print( _output_file_name, SolverInterface::Solve::customSuffix, _output_format, flags.rtf_output, _iterations );
 }
 
 
@@ -998,7 +1022,7 @@ Model::printOvertaking( std::ostream& output ) const
 	output << "Entry " << "abcd"[i] << std::setw(LQIO::SRVN::ObjectOutput::__maxStrLen-7) << " ";
     }
     output << "p_d ";
-    const unsigned int n_phases = _document->getMaximumPhase();
+    const unsigned int n_phases = getDOM()->getMaximumPhase();
     for ( unsigned int p = 1; p <= n_phases; ++p ) {
 	output << "Phase " << p << std::setw(LQIO::SRVN::ObjectOutput::__maxDblLen-7) << " ";
     }
@@ -1145,10 +1169,10 @@ MOL_Model::run()
 	    delta = std::for_each( __task.begin(), __task.end(), ExecSumSquare<Task,double>( &Task::deltaUtilization ) ).sum();
 	    delta = sqrt( delta / __task.size() );		/* RMS */
 
-	    if ( delta > __convergence_value ) {
+	    if ( delta > convergenceValue() ) {
 		backPropogate();
 	    }
-	} while ( delta > __convergence_value &&  _iterations < __iteration_limit );		/* -- Step 4 -- */
+	} while ( delta > convergenceValue() &&  _iterations < iterationLimit() );		/* -- Step 4 -- */
 
 	/* Print intermediate results if necessary */
 
@@ -1175,9 +1199,9 @@ MOL_Model::run()
 
 	if ( verbose ) std::cerr << " [" << delta << "]" << std::endl;
 
-    } while ( ( _iterations < flags.min_steps || delta > __convergence_value ) && _iterations < __iteration_limit );
+    } while ( ( _iterations < flags.min_steps || delta > convergenceValue() ) && _iterations < iterationLimit() );
 
-    _converged = (delta <= __convergence_value || _iterations == 1);	/* The model will never be converged with one step, so ignore */
+    _converged = (delta <= convergenceValue() || _iterations == 1);	/* The model will never be converged with one step, so ignore */
     return delta;
 }
 
@@ -1298,13 +1322,13 @@ Batch_Model::run()
 	delta += std::for_each( __processor.begin(), __processor.end(), ExecSumSquare<Processor,double>( &Processor::deltaUtilization ) ).sum();
 	delta =  sqrt( delta / count );		/* RMS */
 
-	if ( delta > __convergence_value ) {
+	if ( delta > convergenceValue() ) {
 	    backPropogate();
 	}
 	
 	setRunDPS( delta );	/* Let the model converge preliminarily then run DPS. */
 
-	if ( flags.trace_intermediate && _iterations % __print_interval == 0 ) {
+	if ( flags.trace_intermediate && _iterations % printInterval() == 0 ) {
 	    printIntermediate( delta );
 	}
 
@@ -1317,8 +1341,8 @@ Batch_Model::run()
 	} else if ( Options::Trace::verbose() || flags.trace_convergence ) {
 	    std::cerr << " [" << delta << "]" << std::endl;
 	}
-    } while ( ( _iterations < flags.min_steps || delta > __convergence_value ) && _iterations < __iteration_limit );
-    _converged = (delta <= __convergence_value || _iterations == 1);	/* The model will never be converged with one step, so ignore */
+    } while ( ( _iterations < flags.min_steps || delta > convergenceValue() ) && _iterations < iterationLimit() );
+    _converged = (delta <= convergenceValue() || _iterations == 1);	/* The model will never be converged with one step, so ignore */
     return delta;
 }
 
@@ -1463,5 +1487,5 @@ Model::SolveSubmodel::operator()( Submodel * submodel  )
     const unsigned depth = submodel->number();
     _model._step_count += 1;
     if ( _verbose ) std::cerr << ".";
-    submodel->solve( _model._iterations, _model._MVAStats[depth], _model.relaxation() );  //REP N-R
+    submodel->solve( _model._iterations, _model._MVAStats[depth], _model.underrelaxation() );  //REP N-R
 }

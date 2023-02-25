@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_pragma.cpp 16124 2022-11-18 11:26:13Z greg $
+ *  $Id: dom_pragma.cpp 16444 2023-02-25 12:39:03Z greg $
  *
  *  Created by Martin Mroz on 16/04/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -263,12 +263,15 @@ namespace LQIO {
 	const char * Pragma::_seed_value_ =			"seed-value";
 	const char * Pragma::_severity_level_ =			"severity-level";
 	const char * Pragma::_share_ =				"share";
-	const char * Pragma::_simple_ =				"simple";
-	const char * Pragma::_special_ =			"special";
-	const char * Pragma::_spex_comment_ =			"spex-comment";
-	const char * Pragma::_spex_header_ =			"spex-header";
-	const char * Pragma::_squashed_ =			"squashed";
 	const char * Pragma::_srvn_ =				"srvn";
+        const char * Pragma::_simple_ =                         "simple";
+        const char * Pragma::_special_ =                        "special";
+        const char * Pragma::_spex_comment_ =                   "spex-comment";
+        const char * Pragma::_spex_convergence_ =               "spex-convergence";
+        const char * Pragma::_spex_header_ =                    "spex-header";
+        const char * Pragma::_spex_iteration_limit_ =           "spex-iteration-limit";
+        const char * Pragma::_spex_underrelaxation_ =           "spex-underrelaxation";
+        const char * Pragma::_squashed_ =                       "squashed";
 	const char * Pragma::_stochastic_ =			"stochastic";
 	const char * Pragma::_stop_on_bogus_utilization_ =	"stop-on-bogus-utilization";
 	const char * Pragma::_stop_on_message_loss_ =		"stop-on-message-loss";
@@ -344,7 +347,10 @@ namespace LQIO {
 	    { _seed_value_,  	    	    nullptr },			    /* lqsim */
 	    { _severity_level_,  	    &__warning_args },
 	    { _spex_comment_,		    &__true_false_arg },
+	    { _spex_convergence_,	    nullptr },			    /* BUG 422 */
 	    { _spex_header_,  		    &__true_false_arg },
+	    { _spex_iteration_limit_,	    nullptr },			    /* BUG 422 */
+	    { _spex_underrelaxation_,	    nullptr },			    /* BUG 422 */
 	    { _stop_on_bogus_utilization_,  nullptr },			    /* lqns */
 	    { _stop_on_message_loss_,  	    &__true_false_arg },
 	    { _task_scheduling_,  	    &__task_args },

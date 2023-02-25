@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: json_document.cpp 16256 2023-01-04 00:24:37Z greg $
+ * $Id: json_document.cpp 16444 2023-02-25 12:39:03Z greg $
  *
  * Read in JSON input files.
  *
@@ -347,6 +347,7 @@ namespace LQIO {
 	const std::map<const char*,const JSON_Document::ImportGeneral,JSON_Document::ImportGeneral>  JSON_Document::general_table =
 	{
 	    { Xconv_val,	    ImportGeneral( &Document::setModelConvergence ) },
+	    { Xcomment,		    ImportGeneral( &Document::setModelComment ) },
 	    { Xit_limit,	    ImportGeneral( &Document::setModelIterationLimit ) },
 	    { Xunderrelax_coeff,    ImportGeneral( &Document::setModelUnderrelaxationCoefficient ) },
 	    { Xprint_int,	    ImportGeneral( &Document::setModelPrintInterval ) },
@@ -2722,7 +2723,7 @@ namespace LQIO {
 	    _output << indent() << "\"" << Common_IO::svn_id() << "\"";
 	    _output << end_array() << ",";
 
-	    if ( !document.instantiated() && Spex::numberOfInputVariables() > 0 ) {
+	    if ( !document.instantiated() && !Spex::input_variables().empty() ) {
 		_output << begin_array( Xparameters );
 		const std::map<std::string,LQX::SyntaxTreeNode *>& vars = Spex::input_variables();
 		std::for_each( vars.begin(), vars.end(), ExportParameters( _output, _conf_95 ) );
@@ -2736,17 +2737,23 @@ namespace LQIO {
 	    std::for_each( processors.begin(), processors.end(), ExportProcessor( _output, _conf_95 ) );
 	    _output << end_array();
 
-	    const std::vector<Spex::var_name_and_expr>& results = Spex::result_variables();
-	    if ( !document.instantiated() && results.size() > 0 ) {
-		const std::map<std::string,LQX::SyntaxTreeNode *>& input_variables = Spex::input_variables();
-		LQX::SyntaxTreeNode::setVariablePrefix( "$" );
-		_output << next_begin_array( Xresults );
-		std::for_each( input_variables.begin(), input_variables.end(), ExportInputVariables( _output, _conf_95 ) );
-		std::for_each( results.begin(), results.end(), ExportResults( _output, _conf_95, input_variables.size() ) );
-		_output << end_array();
+	    if ( !document.instantiated() ) {
+		printResultOrConvergenceVariables( Spex::result_variables(), Xresults );
+		printResultOrConvergenceVariables( Spex::convergence_variables(), Xconvergence );
 	    }
-
+	    
 	    _output << end_object();
+	}
+
+	
+	void
+	JSON_Document::Model::printResultOrConvergenceVariables( const std::vector<std::pair<const std::string,LQX::SyntaxTreeNode *>>& variables, const std::string& name ) const
+	{
+	    if ( variables.empty() ) return;
+	    LQX::SyntaxTreeNode::setVariablePrefix( "$" );
+	    _output << next_begin_array( name );
+	    std::for_each( variables.begin(), variables.end(), ExportResultOrConvergenceVariable( _output, _conf_95 ) );
+	    _output << end_array();
 	}
 
 	void
@@ -3537,9 +3544,9 @@ namespace LQIO {
 	}
 
 	void
-	JSON_Document::ExportResults::operator()( const Spex::var_name_and_expr& var ) const
+	JSON_Document::ExportResultOrConvergenceVariable::operator()( const Spex::var_name_and_expr& var ) const
 	{
-	    _output << separator() << indent() << "\"" << Spex::print_result_variable( var ) << "\"";
+	    _output << separator() << indent() << "\"" << Spex::print_var_name_and_expr( var ) << "\"";
 	}
 
 
