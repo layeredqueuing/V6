@@ -2,7 +2,7 @@
 # Copyright (C) 2005 Greg Franks <greg@sce.carleton.ca>
 #
 # ------------------------------------------------------------------------
-# $Id: Makefile.am 16444 2023-02-25 12:39:03Z greg $
+# $Id: Makefile.am 16488 2023-03-07 02:14:11Z greg $
 # ------------------------------------------------------------------------
 
 SRVN=	../lqns
@@ -35,7 +35,8 @@ MULTI=	20-multiserver.lqxo \
 	24-multiserver.lqxo
 OVER=	31-overtaking.lqxo \
 	32-async-inf.lqxo \
-	33-spex-convergence.lqxo
+	33-spex-convergence.lqxo \
+	34-priority.lqxo 
 ACT=	40-activities.lqxo \
 	41-activities.lqxo \
 	42-activities.lqxo \
@@ -71,6 +72,10 @@ OTHER=	90-A01.lqxo \
 	93-simple-ucm.lqxo \
 	94-5101-a2-q2b1.lqxo
 
+LQX=	01-sanity-l.csv
+
+SPEX=	01-sanity-s.csv
+
 VAR=	90-A01-novar.lqxo \
 	90-A01-stoch.lqxo
 
@@ -83,23 +88,35 @@ if QUORUM
 #OBJS +=	$(QUORUM)
 endif
 
-SRCS=	$(OBJS:.lqxo=.lqnx)
+SRCS1=	$(OBJS:.lqxo=.lqnx)
+SRCS2=	$(OBJS:.csv=.lqx)
+SRCS3=	$(OBJS:.csv=.xlqn)
 
-EXTRA_DIST = $(SRCS) $(SRCS2)
+EXTRA_DIST = $(SRCS1) $(SRCS2)
 
-SUFFIXES = .diff .d .svg .lqxo .lqnx 
+SUFFIXES = .diff .csv .d .lqxo .lqnx .xlqn
 
 .lqnx.lqxo:
 	$(SRVN) $(OPTS) $<
 	@srvndiff $(DIFFOPTS) $@ ../../models/regression/lqns-results/$@ > /dev/null; j=$$?; if test $$? -ge 128; then echo $< faulted; elif test $$j -ne 0; then echo $< failed; fi
+
+.lqx.csv:
+	$(SRVN) $(OPTS) -o$@ $<
+	@j=`echo $@ | sed -e 's/-l\.csv/.csv/'`; diff $@ ../../models/lqx/lqns-results/$$j
+	@rm -rf $*.d
+
+.xlqn.csv:
+	$(SRVN) $(OPTS) -o$@ $<
+	@j=`echo $@ | sed -e 's/-s\.csv/.csv/'`; diff $@ ../../models/spex/lqns-results/$$j
+	@rm -rf $*.d
 
 .lqnx.d:
 	$(SRVN) $(OPTS) $<
 
 .lqxo.diff:
 	-if test -f ../../models/regression/petri-results/$<; \
-	then srvndiff --solver +p --print-comment -IC -o $@ ../../models/regression/{petri,sim,lqns}-results/$< $<; \
-	else srvndiff --solver +p --print-comment -IC -o $@ ../../models/regression/{sim,lqns}-results/$< $<; \
+	then srvndiff --comment -IC -o $@ ../../models/regression/{petri,sim,lqns}-results/$< $<; \
+	else srvndiff --comment -IC -o $@ ../../models/regression/{sim,lqns}-results/$< $<; \
 	fi
 
 .lqxo.svg:
@@ -114,7 +131,7 @@ quick:
 diff:	.files
 	-@for i in `cat .files | sed -e 's/\\.lqxo//'`; do make $$i.diff; done
 
-check:	$(OBJS) $(VAR)
+check:	$(OBJS) $(VAR) $(LQX) $(SPEX)
 	echo $(OBJS) $(VAR) | tr -s " " "\n" | srvndiff $(DIFFOPTS) -@- . ../../models/regression/lqns-results
 
 recheck:
@@ -148,7 +165,7 @@ disttest.o:	disttest.cc
 	$(CXX) -I.. -I../../libmva/src/headers -c -o disttest.o disttest.cc
 
 clean:
-	@-rm -f $(OBJS) $(FAIR) *.out *.diff
+	@-rm -rf *.lqxo *.csv *.out *.diff .files *.d
 
 distclean:	clean 
 	@-rm -f Makefile

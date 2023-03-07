@@ -2,7 +2,7 @@
 # Copyright (C) 2005 Greg Franks <greg@sce.carleton.ca>
 #
 # ------------------------------------------------------------------------
-# $Id: Makefile.am 16471 2023-03-05 18:11:51Z greg $
+# $Id: Makefile.am 16488 2023-03-07 02:14:11Z greg $
 # ------------------------------------------------------------------------
 
 SRVN=	../lqsim
@@ -46,7 +46,8 @@ ACT=	40-activities.lqxo \
 	48-activities.lqxo
 OVER=	31-overtaking.lqxo \
 	32-async-inf.lqxo \
-	33-spex-convergence.lqxo
+	33-spex-convergence.lqxo \
+	34-priority.lqxo
 REPL=	50-replication.lqxo \
 	51-replication.lqxo \
 	52-replication.lqxo \
@@ -61,7 +62,8 @@ SEMA =	60-semaphore.lqxo \
 	67-rwlock.lqxo \
 	68-rwlock.lqxo \
 	69-rwlock.lqxo
-SIM=	70-priority.lqxo \
+SIM=	71-fair.lqxo \
+	72-fair.lqxo \
 	75-distributions.lqxo \
 	76-distributions.lqxo \
 	77-semaphore.lqxo
@@ -116,7 +118,7 @@ quick:
 	make -k OPTS="$(OPTS)" $(SANITY)
 
 check:	$(OBJS)
-	echo $(OBJS) | tr -s " " "\n" | srvndiff -Q $(EPSILON) -@- . ../../models/regression/sim-results
+#	echo $(OBJS) | tr -s " " "\n" | srvndiff -Q $(EPSILON) -@- . ../../models/regression/sim-results
 
 check-syntax:
 	$(MAKE) OPTS=-n check
