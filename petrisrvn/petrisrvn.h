@@ -13,7 +13,7 @@
 #define _PETRISRVN_H
 
 /*
- * $Id: petrisrvn.h 16256 2023-01-04 00:24:37Z greg $
+ * $Id: petrisrvn.h 16458 2023-03-02 11:51:54Z greg $
  *
  * Solve LQN using petrinets.
  */
@@ -33,9 +33,9 @@
 #include <regex>
 
 /*  #define OLD_JOIN */
-#define BUG_622			/* Measure service times for activities */
-#define BUG_163			/* Measure sync delay.			*/
-#define BUG_263			/* Quroum delay				*/
+#define BUG_163	1		/* Measure sync delay.			*/
+#define BUG_263	1		/* Quroum delay				*/
+#define BUG_423	1		/* Trace count_replies.			*/
 
 extern struct lqio_params_stats io_vars;
 

@@ -8,7 +8,7 @@
 /************************************************************************/
 
 /*
- * $Id: petrisrvn.cc 16334 2023-01-16 01:14:52Z greg $
+ * $Id: petrisrvn.cc 16468 2023-03-05 13:42:56Z greg $
  *
  * Generate a Petri-net from an SRVN description.
  *
@@ -73,7 +73,6 @@ bool distinguish_join_customers = true;	 /* unique cust at join for mult*/
 bool simplify_network		= false; /* Delete single place procs.  */
 
 double	x_scaling		= 1.0;	 /* Auto-squish if val == 0.	*/
-unsigned open_model_tokens	= OPEN_MODEL_TOKENS;	/* Default val.	*/
 
 static const char * net_dir_name	= "nets";
 static void my_handler (int);

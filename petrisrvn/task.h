@@ -81,7 +81,7 @@ public:
     Task& set_max_k( unsigned int k ) { _max_k = k; return *this; }
     Task& set_proc_queue_count( unsigned int k ) { _proc_queue_count = k; return *this; }
     unsigned int get_proc_queue_count() const { return _proc_queue_count; }
-    
+
     virtual bool is_client() const;
     virtual bool is_server() const;
     virtual bool is_infinite() const { return type() == Type::OPEN_SRC || Place::is_infinite(); }
@@ -129,7 +129,7 @@ public:
     std::vector<Activity *> activities;		/* Activity list.		*/
     std::vector<ActivityList *> act_lists;	/* Forks-Join lists.		*/
     struct place_object * TX[MAX_MULT];		/* Task place.			*/
-#if defined(BUG_163)
+#if BUG_163
     struct place_object * SyX[MAX_MULT];	/* Sync wait place.		*/
 #endif
     struct place_object * GdX[MAX_MULT];	/* Guard Place			*/
@@ -165,6 +165,7 @@ private:
     double _utilization[MAX_MULT];		/* Result for finding util.	*/
 
 public:
+    static unsigned int __open_model_tokens;	/* Default global open queue max size	*/
     static double __server_x_offset;		/* Starting offset for next server.	*/
     static double __client_x_offset;		/* Starting offset for next client.	*/
     static double __server_y_offset;
@@ -196,5 +197,4 @@ private:
 };
 
 extern std::vector<Task *> __task;
-
 #endif

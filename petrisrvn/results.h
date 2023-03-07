@@ -21,16 +21,16 @@
 #include <iostream>
 
 /* Results from solution. */
-struct solution_stats_t 
+struct solution_stats_t
 {
-    solution_stats_t() : tangible(0), vanishing(0), precision(0) {}	
+    solution_stats_t() : tangible(0), vanishing(0), precision(0) {}
     int tangible;			/* Tangible markings in net	*/
     int vanishing;			/* Vanishing markings in net.	*/
     double precision;			/* Precision of result.		*/
 
     std::ostream& print( std::ostream& ) const;
 };
-    
+
 inline std::ostream& operator<<( std::ostream& output, const solution_stats_t& self ) { return self.print( output ); }
 
 void get_results(void);

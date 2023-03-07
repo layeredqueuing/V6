@@ -150,4 +150,3 @@ std::ostream& solution_stats_t::print( std::ostream& output ) const
     return output;
 }
 
-

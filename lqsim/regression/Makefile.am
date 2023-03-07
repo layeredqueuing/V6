@@ -2,7 +2,7 @@
 # Copyright (C) 2005 Greg Franks <greg@sce.carleton.ca>
 #
 # ------------------------------------------------------------------------
-# $Id: Makefile.am 16444 2023-02-25 12:39:03Z greg $
+# $Id: Makefile.am 16471 2023-03-05 18:11:51Z greg $
 # ------------------------------------------------------------------------
 
 SRVN=	../lqsim
@@ -55,7 +55,7 @@ REPL=	50-replication.lqxo \
 SEMA =	60-semaphore.lqxo \
 	61-semaphore.lqxo \
 	62-semaphore.lqxo \
-	63-sync.lqxo \
+	63-semaphore.lqxo \
 	65-buffer.lqxo \
 	66-rwlock.lqxo \
 	67-rwlock.lqxo \
@@ -70,7 +70,8 @@ FAIR=	71-fair.lqxo \
 SYNC=	80-sync.lqxo \
 	81-sync.lqxo \
 	82-sync.lqxo \
-	83-sync.lqxo 
+	83-sync.lqxo \
+	84-sync.lqxo
 FORK=	85-fork.lqxo \
 	86-fork.lqxo \
 	87-fork.lqxo \
@@ -205,4 +206,3 @@ other:	$(OTHER)
 	$(SRVN) $(OPTS) $*-flat.lqnx
 	@lqn2ps -Oxml -o$*.lqxo --merge-replicas $*-flat.lqxo
 	@rm $*-flat.*
-
