@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: pragma.cc 16338 2023-01-16 21:16:33Z greg $ *
+ * $Id: pragma.cc 16627 2023-04-03 22:04:21Z greg $ *
  * Pragma processing and definitions.
  *
  * Copyright the Real-Time and Distributed Systems Group,
@@ -117,10 +117,11 @@ void Pragma::setBCMP( const std::string& value )
 void Pragma::setForceInfinite( const std::string& value )
 {
     static const std::map<const std::string,const ForceInfinite> __force_infinite_pragma = {
-	{ LQIO::DOM::Pragma::_none_,		ForceInfinite::NONE },
+	{ "",					ForceInfinite::ALL },
+	{ LQIO::DOM::Pragma::_all_,		ForceInfinite::ALL },
 	{ LQIO::DOM::Pragma::_fixed_rate_,	ForceInfinite::FIXED_RATE },
 	{ LQIO::DOM::Pragma::_multiservers_,	ForceInfinite::MULTISERVERS },
-	{ LQIO::DOM::Pragma::_all_,		ForceInfinite::ALL }
+	{ LQIO::DOM::Pragma::_none_,		ForceInfinite::NONE }
     };
 
     const std::map<const std::string,const ForceInfinite>::const_iterator pragma = __force_infinite_pragma.find( value );

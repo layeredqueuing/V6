@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: entity.cc 16444 2023-02-25 12:39:03Z greg $
+ * $Id: entity.cc 16627 2023-04-03 22:04:21Z greg $
  *
  * Everything you wanted to know about a task or processor, but were
  * afraid to ask.
@@ -16,6 +16,7 @@
 #include <cstring>
 #include <cassert>
 #include <cmath>
+#include <functional>
 #include <sstream>
 #include <cstdlib>
 #if HAVE_IEEEFP_H
@@ -306,7 +307,7 @@ Entity::test( const taskPredicate predicate ) const
 unsigned
 Entity::countCallers() const
 {
-    return std::count_if( _callers.begin(), _callers.end(), Predicate<GenericCall>( &GenericCall::isSelected ) );
+    return std::count_if( _callers.begin(), _callers.end(), std::mem_fn( &GenericCall::isSelected ) );
 }
 
 

@@ -8,7 +8,7 @@
  *
  * November, 1994
  *
- * $Id: phase.h 15969 2022-10-13 19:49:43Z greg $
+ * $Id: phase.h 16627 2023-04-03 22:04:21Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -167,27 +167,5 @@ template <> struct Predicate<Phase>
     bool operator()( const std::pair<unsigned,Phase>& phase ) const { return (phase.second.*_p)(); }
 private:
     const predicate _p;
-};
-
-template <class Type2> struct Sum<Phase,Type2>
-{
-    typedef Type2 (Phase::*funcPtr)() const;
-    Sum<Phase,Type2>( funcPtr f ) : _f(f), _sum(0) {}
-    void operator()( const std::pair<unsigned,Phase>& phase ) { _sum += (phase.second.*_f)(); }
-    Type2 sum() const { return _sum; }
-private:
-    funcPtr _f;
-    Type2 _sum;
-};
-
-template <> struct Sum<Phase,LQIO::DOM::ExternalVariable>
-{
-    typedef const LQIO::DOM::ExternalVariable& (Phase::*funcPtr)() const;
-    Sum<Phase,LQIO::DOM::ExternalVariable>( funcPtr f ) : _f(f), _sum(0) {}
-    void operator()( const std::pair<unsigned,Phase>& phase ) { _sum += LQIO::DOM::to_double((phase.second.*_f)()); }
-    double sum() const { return _sum; }
-private:
-    funcPtr _f;
-    double _sum;
 };
 #endif

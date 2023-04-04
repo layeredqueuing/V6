@@ -8,10 +8,10 @@
 /************************************************************************/
 
 /*
- * $Id: input.h 15969 2022-10-13 19:49:43Z greg $
+ * $Id: input.h 16627 2023-04-03 22:04:21Z greg $
  */
 
-#if	!defined(LQIO_INPUT_H)
+#ifndef LQIO_INPUT_H
 #define	LQIO_INPUT_H
 
 /* Don't forget to fix labels.c */

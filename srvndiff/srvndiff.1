@@ -1,5 +1,5 @@
 .TH SRVNDIFF 1 "4 January 2023"
-.\" $Id: srvndiff.1 16468 2023-03-05 13:42:56Z greg $
+.\" $Id: srvndiff.1 16627 2023-04-03 22:04:21Z greg $
 .SH NAME
 srvndiff \- compare SRVN results.
 .SH SYNOPSIS
@@ -138,8 +138,8 @@ Print (don't print) join delays.  The default is to print join delays.
 Print (don't print) join delay variance.  The default is to not print
 join delay variance.
 .TP
-\fB\-L\fP, \fB--file-label=\fI<label>\fR
-Use \fIlabel\fR as file label.
+\fB\-L\fP, \fB--file-label=\fI<col>\fI=\fI<string>\fP
+Set the file label heading for \fIcol\fP to \fIstring\fP.
 .TP
 \fB(+|\-)l\fR, \fB\-\-[no-]loss-probability\fR
 Print (don't print) message loss probabilities.  The default is to not print
@@ -245,9 +245,6 @@ Print the model comment field.
 .TP
 \fB\-\-latex\fP
 Format output for LaTeX.
-.TP
-\fB\-\-heading=\fI<col>\fI=\fI<string>\fP
-Set the column heading fpr \fIcol\fP to \fIstring\fP.
 .TP
 \fB\-\-debug-xml\fP
 Output debugging information while parsing XML input.

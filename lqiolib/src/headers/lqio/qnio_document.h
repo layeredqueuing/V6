@@ -9,13 +9,13 @@
  *
  * November 2022
  *
- * $Id: qnio_document.h 16416 2023-02-11 23:52:40Z greg $
+ * $Id: qnio_document.h 16627 2023-04-03 22:04:21Z greg $
  *
  * ------------------------------------------------------------------------
  */
 
-#if !defined(QN_DOCUMENT_H)
-#define QN_DOCUMENT_H
+#ifndef QNIO_DOCUMENT_H
+#define QNIO_DOCUMENT_H
 #include <iostream>
 #include <map>
 #include <string>

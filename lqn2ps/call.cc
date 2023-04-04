@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: call.cc 16004 2022-10-19 17:26:51Z greg $
+ * $Id: call.cc 16627 2023-04-03 22:04:21Z greg $
  *
  * Everything you wanted to know about a call to an entry, but were afraid to ask.
  *
@@ -1544,9 +1544,9 @@ EntityCall::updateRateFrom( const Call& src )
 
 TaskCall::TaskCall( const Task * fromTask, const Task * toTask )
     : EntityCall( fromTask, toTask ),
-      _rendezvous(nullptr),
-      _sendNoReply(nullptr),
-      _forwarding(nullptr)
+      _rendezvous(),
+      _sendNoReply(),
+      _forwarding()
 {
 }
 

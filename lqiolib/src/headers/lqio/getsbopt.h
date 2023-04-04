@@ -7,12 +7,12 @@
 /************************************************************************/
 
 /*
- * $Id: getsbopt.h 15222 2021-12-15 15:41:14Z greg $
+ * $Id: getsbopt.h 16627 2023-04-03 22:04:21Z greg $
  * This exists only if getsubopt isn't found in cstdlib (like on windoze)
  */
 
-#if	!defined(SRVNIOLIB_GETSUBOPT_H)
-#define	SRVNIOLIB_GETSUBOPT_H
+#ifndef LQIOLIB_GETSUBOPT_H
+#define	LQIOLIB_GETSUBOPT_H
 
 #if	defined(__cplusplus)
 extern "C" {

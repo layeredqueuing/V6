@@ -8,10 +8,10 @@
 /************************************************************************/
 
 /*
- * $Id: labels.h 15222 2021-12-15 15:41:14Z greg $
+ * $Id: labels.h 16627 2023-04-03 22:04:21Z greg $
  */
 
-#if	!defined(LQIO_LABELS_H)
+#ifndef LQIO_LABELS_H
 #define	LQIO_LABELS_H
 
 namespace LQIO {

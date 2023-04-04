@@ -1,7 +1,7 @@
 /* -*- c++ -*-
  * layer.h	-- Greg Franks
  *
- * $Id: layer.h 15583 2022-05-21 00:18:56Z greg $
+ * $Id: layer.h 16627 2023-04-03 22:04:21Z greg $
  */
 
 #ifndef _LQN2PS_LAYER_H
@@ -27,6 +27,16 @@ namespace LQIO {
 class Layer
 {
 private:
+    struct sum
+    {
+	typedef double (Entity::*funcPtr)() const;
+	sum( funcPtr f ) : _f(f) {}
+	double operator()( double addend, const Entity* layer ) { return addend + (layer->*_f)(); }
+	double operator()( double addend, const Entity& layer ) { return addend + (layer.*_f)(); }
+    private:
+	funcPtr _f;
+    };
+	
     typedef Task& (Task::*taskFPtr)();
 
     /*

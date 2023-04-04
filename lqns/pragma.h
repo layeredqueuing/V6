@@ -10,13 +10,13 @@
  * November, 1994
  * December, 2020
  *
- * $Id: pragma.h 16444 2023-02-25 12:39:03Z greg $
+ * $Id: pragma.h 16628 2023-04-03 22:10:44Z greg $
  *
  * ------------------------------------------------------------------------
  */
 
-#if	!defined(PRAGMA_H)
-#define	PRAGMA_H
+#ifndef LQNS_PRAGMA_H
+#define	LQNS_PRAGMA_H
 
 #include <map>
 #include <lqio/input.h>
@@ -94,7 +94,7 @@ public:
 	    return __cache->_interlock;
 	}
 
-    static unsigned int iterationLimit()
+    static double iterationLimit()
 	{
 	    assert( __cache != nullptr );
 	    return __cache->_iteration_limit;
