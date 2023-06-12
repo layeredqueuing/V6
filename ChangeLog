@@ -1,3 +1,19 @@
+2023-04-19  Greg Franks  <greg@merlin.sce.carleton.ca>
+
+	* lqns
+	- Fixes for replication=prune.  Prune is the default now.
+	* srvndiff
+	- Change (+|-)f to output throughput bound.
+	- --verbose now outputs to stderr where differences are found.
+
+2023-03-14  Greg Franks  <greg@merlin.sce.carleton.ca>
+
+	* lqiolib
+	- SPEX convergence fixes.
+	- Refactor control variable handling.
+	* petrisrvn
+	- bugfixes.
+
 2023-01-27  Greg Franks  <greg@merlin.sce.carleton.ca>
 
 	* qnsolver
@@ -586,4 +602,4 @@
 	* parasrvn:
 	- Peter Maly added service time distributions.  See '-H' option.
 
-$Id: ChangeLog 16381 2023-01-31 17:01:26Z greg $
+$Id: ChangeLog 16718 2023-05-12 12:25:33Z greg $

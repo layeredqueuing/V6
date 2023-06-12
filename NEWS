@@ -1,6 +1,7 @@
 * Bugs fixed in 6.2.28
 297 	lqiolib 	Gnuplot and result enhancements
 343 	qnsolver 	Improve compatibility with Java Modelling Tools 
+417 	qnsolver 	Bounds solution issues. 
 356 	miscella 	rpm build issues.
 359 	lqiolib 	Expressions are not output by Spex::print_header().
 366 	lqn2xxx 	EXC_BAD_ACCESS Layer::transmorgrify() at layer.cc:571:17 [opt] 
@@ -9,7 +10,13 @@
 413 	Document 	Missing plainurl. 	
 415 	petrisrv 	Signal SIGSEGV in LQIO::DOM::Phase::getServiceTime () at dom_phase.cpp:88 
 416 	lqiolib 	Fixes for plotting population mix WhatIf output. 
-417 	qnsolver 	Bounds solution issues. 
+422 	lqiolib 	Refactor handling of control variables. 
+366 	lqn2xxx 	EXC_BAD_ACCESS Layer::transmorgrify() at layer.cc:571:17 [opt] 
+428 	lqn2xxx 	lqn2fig: EXC_BAD_ACCESS libsystem_platform.dylib`_platform_strlen + 4
+432 	lqns	 	Bizarre error setting convergence value. 	
+433 	lqns	 	51-replication
+425 	lqns	 	Refactor initPopulation. 
+430 	lqns 		activity-templ.lqn:75: error: Task "Server", and-join "parB & parA" does not match and-fork "parA & parB" at line 74.
 418 	lqsim 		lqsim crashes running -t... 	
 419 	qnsolver 	model.cc:(.text+0x18ff): undefined reference to `typeinfo for QNIO::JMVA_Document'
 
