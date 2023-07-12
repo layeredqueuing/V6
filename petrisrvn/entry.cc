@@ -64,8 +64,8 @@ void
 Entry::clear()
 {
     for ( unsigned m = 0; m < MAX_MULT; ++m ) {
-	DX[m] = 0;
-	GdX[m] = 0;
+	DX[m] = nullptr;
+	GdX[m] = nullptr;
 	_throughput[m] = 0;
     }
 }
@@ -218,6 +218,8 @@ Entry::initialize()
 
     bool has_service_time = false;
     bool has_deterministic_phases = false;
+    for ( auto& fwd : forwards ) delete fwd;		// BUG 424
+    forwards.clear();					// BUG 424
 
     if ( is_regular_entry() ) {
 	for ( unsigned int p = 1; p <= DIMPH; ++p ) {
@@ -578,7 +580,7 @@ Entry::find( const std::string& from_entry_name, Entry * & from_entry, const std
     if ( !from_entry ) {
 	rc = false;
     } else if ( from_entry == to_entry ) {
-	input_error2( LQIO::ERR_SRC_EQUALS_DST, to_entry_name.c_str(), from_entry_name.c_str() );
+	LQIO::input_error( LQIO::ERR_SRC_EQUALS_DST, to_entry_name.c_str(), from_entry_name.c_str() );
 	rc = false;
     }
     return rc;

@@ -1,5 +1,5 @@
 /* share.cc	-- Greg Franks Tue Nov  4 2008
- * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqn2ps/share.cc $
+ * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/branches/merge-V5-V6/lqn2ps/share.cc $
  *
  * ------------------------------------------------------------------------
  * $Id: share.cc 15969 2022-10-13 19:49:43Z greg $

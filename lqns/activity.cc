@@ -1,5 +1,5 @@
 /* activity.c	-- Greg Franks Thu Feb 20 1997
- * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/activity.cc $
+ * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/branches/merge-V5-V6/lqns/activity.cc $
  *
  * Everything you wanted to know about an activity, but were afraid to ask.
  *
@@ -11,7 +11,7 @@
  * July 2007
  *
  * ------------------------------------------------------------------------
- * $Id: activity.cc 15969 2022-10-13 19:49:43Z greg $
+ * $Id: activity.cc 16753 2023-06-19 19:26:50Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -1000,7 +1000,7 @@ Activity::act_and_join_list ( ActivityList * activityList, LQIO::DOM::ActivityLi
 
 #if !defined(HAVE_GSL_GSL_MATH_H)       // QUORUM
     if ( dynamic_cast<LQIO::DOM::AndJoinActivityList*>(dom_activitylist) && dynamic_cast<LQIO::DOM::AndJoinActivityList*>(dom_activitylist)->hasQuorumCount() ) {
-	LQIO::input_error2( LQIO::ERR_NOT_SUPPORTED, "quorum" );
+	LQIO::input_error( LQIO::ERR_NOT_SUPPORTED, "quorum" );
     }
 #endif
     return activityList;
@@ -1133,7 +1133,7 @@ store_activity_service_time ( void * task, const char * activity_name, const dou
     Activity * activity = static_cast<Task *>(task)->findOrAddActivity( activity_name );
     activity->isSpecified( true );
     if ( activity->serviceTime() ) {
-	LQIO::input_error2( LQIO::WRN_MULTIPLE_SPECIFICATION );
+	LQIO::input_error( LQIO::WRN_MULTIPLE_SPECIFICATION );
     }
     activity->setServiceTime( service_time );
 }
@@ -1174,7 +1174,7 @@ Activity::add_calls()
 
 	/* Make sure all is well */
 	if (!destEntry) {
-	    LQIO::input_error2( LQIO::ERR_NOT_DEFINED, toDOMEntry->getName().c_str() );
+	    LQIO::input_error( LQIO::ERR_NOT_DEFINED, toDOMEntry->getName().c_str() );
 	} else if (!destEntry->owner()->isReferenceTask()) {
 	    isSpecified(true);
 	    if (domCall->getCallType() == LQIO::DOM::Call::Type::SEND_NO_REPLY) {
@@ -1201,7 +1201,7 @@ Activity::add_reply_list ()
 
 	/* Check it out and add it to the list */
 	if (entry == nullptr) {
-	    LQIO::input_error2( LQIO::ERR_NOT_DEFINED, (*domEntry)->getName().c_str() );
+	    LQIO::input_error( LQIO::ERR_NOT_DEFINED, (*domEntry)->getName().c_str() );
 	} else if ( owner()->isReferenceTask() ) {
 	    getDOM()->input_error( LQIO::ERR_REFERENCE_TASK_REPLIES, (*domEntry)->getName().c_str() );
 	} else if (entry->owner() != owner()) {
@@ -1233,7 +1233,7 @@ Activity::add_activity_lists()
 	    /* Add the activity to the appropriate list based on what kind of list we have */
 	    Activity * nextActivity = task->findActivity( domAct->getName() );
 	    if ( !nextActivity ) {
-		LQIO::input_error2( LQIO::ERR_NOT_DEFINED, domAct->getName().c_str() );
+		LQIO::input_error( LQIO::ERR_NOT_DEFINED, domAct->getName().c_str() );
 		continue;
 	    }
 
@@ -1268,7 +1268,7 @@ Activity::add_activity_lists()
 	    const LQIO::DOM::Activity* domAct = *iter;
 	    Activity * nextActivity = task->findActivity( domAct->getName() );
 	    if ( !nextActivity ) {
-		LQIO::input_error2( LQIO::ERR_NOT_DEFINED, domAct->getName().c_str() );
+		LQIO::input_error( LQIO::ERR_NOT_DEFINED, domAct->getName().c_str() );
 		continue;
 	    }
 

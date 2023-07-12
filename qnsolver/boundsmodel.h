@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/qnsolver/boundsmodel.h $
+ * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/branches/merge-V5-V6/qnsolver/boundsmodel.h $
  *
  * Bounds solver.
  *
@@ -9,7 +9,7 @@
  *
  * February 2022.
  *
- * $Id: boundsmodel.h 15943 2022-10-04 22:24:49Z greg $
+ * $Id: boundsmodel.h 16381 2023-01-31 17:01:26Z greg $
  *
  * ------------------------------------------------------------------------
  */

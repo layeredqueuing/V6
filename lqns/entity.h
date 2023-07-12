@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/entity.h $
+ * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/branches/merge-V5-V6/lqns/entity.h $
  *
  * Pure virtual class for tasks and processors.
  *
@@ -9,13 +9,13 @@
  *
  * November, 1994
  *
- * $Id: entity.h 16350 2023-01-19 11:08:31Z greg $
+ * $Id: entity.h 16755 2023-06-26 19:47:53Z greg $
  *
  * ------------------------------------------------------------------------
  */
 
-#if	!defined(ENTITY_H)
-#define ENTITY_H
+#ifndef LQNS_ENTITY_H
+#define LQNS_ENTITY_H
 
 #include <vector>
 #include <set>
@@ -30,6 +30,7 @@ class Entry;
 class Group;
 class Interlock;
 class MVASubmodel;
+class ReferenceTask;
 class Model;
 class Processor;
 class Server;
@@ -46,15 +47,16 @@ int operator==( const Entity&, const Entity& );
 class Entity {
     friend class Generate;
 
-    enum class Attributes {
-	initialized,		/* Task was initialized.		*/
-	closed_server,		/* Stn is server in closed model.	*/
-	closed_client,		/* Stn is client in closed model.	*/
-	open_server,		/* Stn is server in open model.		*/
-	deterministic,		/* an entry has det. phase.		*/
- 	variance		/* an entry has Cv_sqn != 1.		*/
-    };
+    struct Attributes {
+	Attributes() : closed_server(false), closed_client(false), open_server(false), pruned(false), deterministic(false), variance(false) {}
 
+	bool closed_server;	/* Stn is server in closed model.	*/
+	bool closed_client;	/* Stn is client in closed model.	*/
+	bool open_server;	/* Stn is server in open model.		*/
+	bool pruned;		/* Stn can be pruned			*/
+	bool deterministic;	/* an entry has det. phase.		*/
+ 	bool variance;		/* an entry has Cv_sqn != 1.		*/
+    };
 
 protected:
     /*
@@ -72,6 +74,15 @@ protected:
     };
 
 public:
+    struct sum_square {
+	typedef double (Entity::*funcPtr)() const;
+	sum_square( funcPtr f ) : _f(f) {}
+	double operator()( double addend, const Entity* object ) { return addend + square( (object->*_f)() ); }
+	double operator()( double addend, const Entity& object ) { return addend + square( (object.*_f)() ); }
+    private:
+	const funcPtr _f;
+    };
+
     /*
      * Compare two entities by their name, but not replica number
      * except that entity must be a replica.
@@ -82,17 +93,6 @@ public:
 	bool operator()( const Entity * entity ) const { return entity->name() == _name && entity->getReplicaNumber() > 1; }
     private:
 	const std::string _name;
-    };
-
-    /*
-     * Update waiting times.
-     */
-    
-    struct update_wait {
-	update_wait( Entity& entity ) : _entity(entity) {}
-	void operator()( const Submodel* submodel ) { _entity.updateWait( *submodel, 1.0 ); }
-    private:
-	Entity& _entity;
     };
 
     struct set_chain_IL_rate {
@@ -145,6 +145,7 @@ protected:
     virtual Entity * clone( unsigned int ) = 0;
 
 private:
+    Entity( const Entity& ) = delete;
     Entity& operator=( const Entity& ) = delete;
 
 public:
@@ -153,16 +154,11 @@ public:
     virtual Entity& configure( const unsigned );
     virtual bool check() const;
     virtual unsigned findChildren( Call::stack&, const bool ) const;
-    virtual Entity& initWait();
-    Entity& initInterlock();
-    virtual Entity& initThroughputBound() { return *this; }
-    virtual Entity& initPopulation() = 0;
+    void initializeInterlock();
     virtual Entity& initJoinDelay() { return *this; }
     virtual Entity& initThreads() { return *this; }
-    virtual Entity& initClient( const Vector<Submodel *>& ) { return *this; }
-    virtual Entity& reinitClient( const Vector<Submodel *>& ) { return *this; }
-    virtual Entity& initServer( const Vector<Submodel *>& );
-    virtual Entity& reinitServer( const Vector<Submodel *>& );
+    virtual void initializeServer();
+    void reinitializeServer();
 	
     /* Instance Variable Access */
 	   
@@ -170,16 +166,15 @@ public:
     virtual int priority() const { return 0; }
     virtual Entity& priority( const int ) { return *this; }
     virtual scheduling_type scheduling() const { return getDOM()->getSchedulingType(); }
-    virtual unsigned copies() const;
-    virtual unsigned replicas() const;
-    double population() const { return _population; }
+    virtual unsigned int copies() const;
+    virtual unsigned int replicas() const;
+    virtual unsigned int population() const { return copies(); }
     virtual const Processor * getProcessor() const { return nullptr; }
     unsigned submodel() const { return _submodel; }
     Entity& setSubmodel( const unsigned submodel ) { _submodel = submodel; return *this; }
     virtual double thinkTime( const unsigned = 0, const unsigned = 0 ) const { return _thinkTime; }
     virtual Entity& setOverlapFactor( const double ) { return *this; }
     unsigned getReplicaNumber() const { return _replica_number; }
-    Entity& setPruned( bool pruned ) { _pruned = pruned; return *this; }
     
     virtual unsigned int fanOut( const Entity * ) const = 0;
     virtual unsigned int fanIn( const Task * ) const = 0;
@@ -190,27 +185,24 @@ public:
 
     /* Queries */
 
-    virtual bool hasVariance() const { return _attributes.at(Attributes::variance); }
-    Entity& setVarianceAttribute( const bool yesOrNo ) { _attributes.at(Attributes::variance) = yesOrNo; return *this; }
-    bool hasDeterministicPhases() const { return _attributes.at(Attributes::deterministic); }
     bool hasSecondPhase() const { return (bool)(_maxPhase > 1); }
     bool hasOpenArrivals() const;
     
-    virtual bool hasClientChain( const unsigned, const unsigned ) const { return false; }
     bool hasServerChain( const unsigned k ) const;
     virtual bool hasActivities() const { return false; }
     bool hasThreads() const { return nThreads() > 1; }
     virtual bool hasSynchs() const { return false; }
     bool hasILWait() const ;
-    bool isOpenModelServer() const   { return _attributes.at(Attributes::open_server); }
-    bool isClosedModelServer() const { return _attributes.at(Attributes::closed_server); }
-    bool isClosedModelClient() const { return _attributes.at(Attributes::closed_client); }
-    Entity& setOpenModelServer( const bool yesOrNo )   { _attributes.at(Attributes::open_server) = yesOrNo; return *this; }
-    Entity& setClosedModelServer( const bool yesOrNo ) { _attributes.at(Attributes::closed_server) = yesOrNo; return *this; }
-    Entity& setClosedModelClient( const bool yesOrNo ) { _attributes.at(Attributes::closed_client) = yesOrNo; return *this; }
-    Entity& initialized( const bool yesOrNo ) { _attributes.at(Attributes::initialized) = yesOrNo; return *this; }
-    bool initialized() const { return _attributes.at(Attributes::initialized); }
-    virtual bool isUsed() const { return submodel() > 0; }
+    virtual bool hasVariance() const { return _attributes.variance; }
+    bool hasDeterministicPhases() const { return _attributes.deterministic; }
+    bool isClosedModelClient() const { return _attributes.closed_client; }
+    bool isClosedModelServer() const { return _attributes.closed_server; }
+    bool isOpenModelServer() const   { return _attributes.open_server; }
+    Entity& setClosedModelClient( const bool yesOrNo ) { _attributes.closed_client = yesOrNo; return *this; }
+    Entity& setClosedModelServer( const bool yesOrNo ) { _attributes.closed_server = yesOrNo; return *this; }
+    Entity& setDeterministicPhases( const bool yesOrNo ) { _attributes.deterministic = yesOrNo; return *this; }
+    Entity& setOpenModelServer( const bool yesOrNo )   { _attributes.open_server = yesOrNo; return *this; }
+    Entity& setVarianceAttribute( const bool yesOrNo ) { _attributes.variance = yesOrNo; return *this; }
 
     virtual bool isTask() const          { return false; }
     virtual bool isReferenceTask() const { return false; }
@@ -222,8 +214,10 @@ public:
     bool isCalledBy( const Task* ) const;
     bool isMultiServer() const   	{ return copies() > 1; }
     bool isReplicated() const		{ return replicas() > 1; }
-    bool isPruned() const		{ return _pruned; }
 
+    virtual bool isUsed() const { return submodel() > 0; }
+    bool isReplica() const;
+    
     const std::vector<Entry *>& entries() const { return _entries; }
     Entity& addEntry( Entry * );
     Entry * entryAt( const unsigned index ) const { return _entries.at(index); }
@@ -238,7 +232,6 @@ public:
     unsigned nEntries() const { return _entries.size(); }
     virtual unsigned nClients() const { return _tasks.size(); }
     std::set<Task *>& getClients( std::set<Task *>& ) const;
-    double nCustomers( ) const;
     const std::set<const Entry *>& commonEntries() const { return _interlock.commonEntries(); }
     double num_sources( const Task * viaTask, const Entry * serverEntry ) const { return _interlock.numberOfSources( *viaTask, serverEntry ); }
     bool isCommonEntry( const Entry * entry ) const { return _interlock.isCommonEntry( entry ); }
@@ -249,7 +242,8 @@ public:
 
     Entity& addServerChain( const unsigned k ) { _serverChains.push_back(k); return *this; }
     const ChainVector& serverChains() const { return _serverChains; }
-    Server * serverStation() const { return _station; }
+    Server* serverStation() const { return _station; }
+    virtual Entity* mapToReplica( size_t i ) const = 0;
 
     bool markovOvertaking() const;
     /* Interlock */
@@ -262,6 +256,7 @@ public:
     Probability prInterlock( const Task& ) const;
     Probability prInterlock( const Entry * aClientEntry ) const;
     Probability prInterlock( const Task& aClient, const Entry * aServerEntry, double& il_rate, bool& moreThanFour ) const;
+    void setInterlock( Submodel& ) const;
 
     bool isInterlocked() const { return _interlock.getNsources() > 0; }
     void setChainILRate(const Task& aClient, double rate) const;
@@ -276,11 +271,19 @@ private:
 public:
     virtual double prOt( const unsigned, const unsigned, const unsigned ) const { return 0.0; }
 
+    void saveServerResults( const MVASubmodel&, const Server&, double );
     Entity& updateAllWaits( const Vector<Submodel *>& );
     void setIdleTime( const double );
     virtual Entity& computeVariance();
+#if 0
+<<<<<<< .working
     void setOvertaking( const unsigned, const std::set<Task *>& );
     virtual Entity& updateWait( const Submodel&, const double ) { return *this; }	/* NOP */
+||||||| .merge-left.r16492
+    virtual Entity& updateWait( const Submodel&, const double ) { return *this; }	/* NOP */
+=======
+>>>>>>> .merge-right.r16753
+#endif
     virtual double updateWaitReplication( const Submodel&, unsigned& ) { return 0.0; }	/* NOP */
     virtual double deltaUtilization() const;
 
@@ -296,7 +299,7 @@ public:
 
     Entity& clear();
     virtual Server * makeServer( const unsigned ) = 0;
-    Entity& initServerStation( MVASubmodel& );
+    Entity& initServerStation( Submodel& );
     virtual Entity& saveServerResults( const MVASubmodel&, double );
 
     /* Threads */
@@ -309,11 +312,9 @@ protected:
     Entity& setUtilization( double );
     virtual bool schedulingIsOK() const = 0;
     virtual scheduling_type defaultScheduling() const { return SCHEDULE_FIFO; }
-    virtual double computeUtilization( const MVASubmodel& );
+    virtual double computeUtilization( const MVASubmodel&, const Server& );
 	
 private:
-    void setServiceTime( const Entry * anEntry, unsigned k ) const;
-    void setInterlock( Submodel& ) const;
     double computeIdleTime( const unsigned, const double ) const;
 
 public:
@@ -343,13 +344,12 @@ private:
 protected:
     std::vector<Entry *> _entries;	/* Entries for this entity.	*/
     std::set<const Task *> _tasks;	/* Clients of this entity	*/
-    
-    double _population;			/* customers when I'm a client	*/
+
     double _thinkTime;			/* Think time.			*/
     Server * _station;			/* Servers by submodel.		*/
 
 private:
-    std::map<Attributes,bool> _attributes;
+    Attributes _attributes;
     Interlock _interlock;		/* For interlock calculation.	*/
     unsigned _submodel;			/* My submodel, 0 == ref task.	*/
     unsigned _maxPhase;			/* Largest phase.		*/
@@ -364,6 +364,5 @@ private:
 
     ChainVector _serverChains;		/* Chains for this server.	*/
     const unsigned int _replica_number;	/* > 1 if a replica		*/
-    bool _pruned;			/* True if pruned		*/
 };
 #endif

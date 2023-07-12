@@ -1,4 +1,4 @@
-# Makefile for $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/parasol/include/parasol/Makefile.am $
+# Makefile for $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/branches/merge-V5-V6/parasol/include/parasol/Makefile.am $
 #
 # Copyright (C) 2003 Greg Franks <greg@sce.carleton.ca>
 # 

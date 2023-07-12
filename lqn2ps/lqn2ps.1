@@ -1,10 +1,10 @@
 .\" -*- nroff -*-
-.TH lqn2ps 1 "30 March 2022"  "6.2"
-.\" $Id: lqn2ps.1 16261 2023-01-04 19:39:31Z greg $
+.TH lqn2ps 1 "26 June 2023"  "6.2.29"
+.\" $Id: lqn2ps.1 16755 2023-06-26 19:47:53Z greg $
 .\"
 .\" --------------------------------
 .SH "NAME"
-lqn2emf, lqn2fig, lqn2json, lqn2out, lqn2ps, lqn2lqn, lqn2sxd, lqn2xml \- format and translate layered queueing network models.
+lqn2emf, lqn2fig, lqn2gif, lqn2jpeg, lqn2json, lqn2out, lqn2png, lqn2ps, lqn2lqn, lqn2sxd, lqn2xml \- format and translate layered queueing network models.
 .SH "SYNOPSIS"
 .br
 .B lqn2ps
@@ -177,6 +177,12 @@ Generate Windows Enhanced Meta File (vector) output.
 \fBfig\fR
 Generate input for xfig(1).
 .TP
+\fBgif\fR
+Generate GIF (bitmap) output.
+.TP
+\fBjpeg\fR
+Generate JPEG (bitmap) output.
+.TP
 \fBjson\fR
 Generate an JSON input file.  If results are available, they are included.
 The \fB\-h\fR and \fB\-S\fR options can be used to generate new input models
@@ -216,6 +222,9 @@ Generate Encapsulated Postscript.
 \fBpstex\fR
 Generate PostScript and LaTeX (pstex).
 .TP
+\fBpng\fR
+Generate Portable Network Graphics (bitmap) output.
+.TP
 \fBsvg\fR
 Generate Scalable Vector Graphics (vector) output.
 .TP
@@ -237,23 +246,23 @@ Specify which processors are displayed.
 \fBnone\fR
 Don't display any processors..
 .TP
-\fBdefault\fR
-Only display those processors that might have contention.
-.TP
 \fBall\fR
 Show all processors.
 .TP
 \fBnon-infinite\fR
 Show all non-infinite processors.
+.TP
+\fBqueueable\fR
+Only display those processors that might have contention.
 .LP
-(The default is default).
+(The default is queueable).
 This option has no effect for LQN input and output file generation.
 .RE
 .TP
 \fB\-Q\fR, \fB\-\-queueing-model=\fIqueueing-model\fR
 The \fB\-Q\fI queueing-model\fR option is used to generate a diagram of the underlying queueing
 model for the submodel number given as an argument.
-This option has no effect for LQN input and output file generation.
+This option has no effect for any input file format or LQN output file generation.
 .TP
 \fB\-R\fR, \fB\-\-replication=\fIARG\fR
 The \fB\-R\fI ARG\fR option is to expand or remove replication.
@@ -427,9 +436,9 @@ Print waiting time results. (The default is on).
 Print maximum execution time exceeded. (The default is off).
 .TP
 \fB\-\-comment\fR
-Print model comment. (The default is off).
+Print model comment.
 .TP
-\fB\-\-solver-info\fR
+\fB\-\-solver-information\fR
 Print solver information.
 .TP
 \fB\-\-ignore-errors\fR
@@ -469,6 +478,9 @@ Do not sort objects for output.
 \fB\-\-number-layers\fR
 Print layer numbers.
 .TP
+\fB\-\-offset-layer=\fIlayer,value\fR
+Offset layer by value.
+.TP
 \fB\-\-rename\fR
 Rename all objects.
 .TP
@@ -500,7 +512,7 @@ Use jlqnDef-style icons (rectangles).
 Load parseable results from filename.
 .TP
 \fB\-\-print-comment\fR
-Print the model comment on stdout.
+Print the model comment.
 .TP
 \fB\-\-print-submodels\fR
 Show submodels.

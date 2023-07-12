@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqn2ps/task.cc $
+ * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/branches/merge-V5-V6/lqn2ps/task.cc $
  *
  * Everything you wanted to know about a task, but were afraid to ask.
  *
@@ -10,7 +10,7 @@
  * January 2001
  *
  * ------------------------------------------------------------------------
- * $Id: task.cc 16627 2023-04-03 22:04:21Z greg $
+ * $Id: task.cc 16750 2023-06-19 12:16:45Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -676,7 +676,7 @@ bool
 Task::hasQueueingTime() const
 {
     return std::any_of( entries().begin(), entries().end(), std::mem_fn( &Entry::hasQueueingTime ) )
-	|| std::any_of( activities().begin(), activities().end(), ::Predicate<Activity>( &Activity::hasQueueingTime ) );
+	|| std::any_of( activities().begin(), activities().end(), std::mem_fn( &Activity::hasQueueingTime ) );
     return false;
 }
 
@@ -689,9 +689,9 @@ Task::hasQueueingTime() const
 bool
 Task::isSelectedIndirectly() const
 {
-    return Entity::isSelectedIndirectly() || std::any_of( processors().begin(), processors().end(), Predicate<Processor>( &Processor::isSelected ) )
+    return Entity::isSelectedIndirectly() || std::any_of( processors().begin(), processors().end(), std::mem_fn( &Processor::isSelected ) )
 	|| std::any_of( entries().begin(), entries().end(), std::mem_fn( &Entry::isSelectedIndirectly ) )
-	|| std::any_of( activities().begin(), activities().end(), ::Predicate<Activity>( &Activity::isSelectedIndirectly ) );
+	|| std::any_of( activities().begin(), activities().end(), std::mem_fn( &Activity::isSelectedIndirectly ) );
 }
 
 
@@ -2729,7 +2729,7 @@ Task::create( const LQIO::DOM::Task* task_dom, std::vector<Entry *>& entries )
     const std::string& processor_name = task_dom->getProcessor()->getName();
     Processor * processor = Processor::find( processor_name );
     if ( !processor ) {
-	LQIO::input_error2( LQIO::ERR_NOT_DEFINED, processor_name.c_str() );
+	LQIO::input_error( LQIO::ERR_NOT_DEFINED, processor_name.c_str() );
     }
 
     const Share * share = nullptr;
@@ -2738,7 +2738,7 @@ Task::create( const LQIO::DOM::Task* task_dom, std::vector<Entry *>& entries )
     } else if ( group_dom ) {
 	std::set<Share *>::const_iterator nextShare = find_if( processor->shares().begin(), processor->shares().end(), EQStr<Share>( group_dom->getName() ) );
 	if ( nextShare == processor->shares().end() ) {
-	    LQIO::input_error2( LQIO::ERR_NOT_DEFINED, group_dom->getName().c_str() );
+	    LQIO::input_error( LQIO::ERR_NOT_DEFINED, group_dom->getName().c_str() );
 	} else {
 	    share = *nextShare;
 	}

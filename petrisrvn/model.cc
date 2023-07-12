@@ -8,38 +8,29 @@
 /************************************************************************/
 
 /*
- * $Id: model.cc 16468 2023-03-05 13:42:56Z greg $
+ * $Id: model.cc 16753 2023-06-19 19:26:50Z greg $
  *
  * Load the SRVN model.
  */
 
 #include "petrisrvn.h"
 #include <algorithm>
-#include <iostream>
-#include <sstream>
-#include <fstream>
-#include <iomanip>
+#include <cassert>
+#include <cmath>
 #include <cstdlib>
 #include <cstring>
-#include <cmath>
-#include <cassert>
-#include <unistd.h>
-#if HAVE_SYS_UTSNAME_H
-#include <sys/utsname.h>
-#endif
+#include <fstream>
+#include <functional>
+#include <iomanip>
+#include <iostream>
+#include <sstream>
+#include <fcntl.h>
 #if HAVE_UNISTD_H
 #include <unistd.h>
-#endif
-#if HAVE_SYS_STAT_H
-#include <sys/stat.h>
-#endif
-#if HAVE_SYS_WAIT_H
-#include <sys/wait.h>
 #endif
 #if HAVE_ERRNO_H
 #include <errno.h>
 #endif
-#include <fcntl.h>
 #include <lqio/dom_activity.h>
 #include <lqio/dom_actlist.h>
 #include <lqio/dom_bindings.h>
@@ -472,9 +463,9 @@ void Model::clear()
     Task::__client_x_offset = 1;
     Processor::__x_offset   = 1;
 
-    std::for_each( ::__processor.begin(), ::__processor.end(), Exec<Processor>( &Processor::clear ) );
-    std::for_each( ::__task.begin(), ::__task.end(), Exec<Task>( &Task::clear ) );
-    std::for_each( ::__entry.begin(), ::__entry.end(), Exec<Entry>( &Entry::clear ) );
+    std::for_each( ::__processor.begin(), ::__processor.end(), std::mem_fn( &Processor::clear ) );
+    std::for_each( ::__task.begin(), ::__task.end(), std::mem_fn( &Task::clear ) );
+    std::for_each( ::__entry.begin(), ::__entry.end(), std::mem_fn( &Entry::clear ) );
 }
 
 
@@ -487,9 +478,9 @@ Model::transform()
 {
     unsigned max_width = 0;
 
-    std::for_each( ::__processor.begin(), ::__processor.end(), Exec<Processor>( &Processor::initialize ) );
-    std::for_each( ::__entry.begin(), ::__entry.end(), Exec<Entry>( &Entry::initialize ) );
-    std::for_each( ::__task.begin(), ::__task.end(), Exec<Task>( &Task::initialize ) );
+    std::for_each( ::__processor.begin(), ::__processor.end(), std::mem_fn( &Processor::initialize ) );
+    std::for_each( ::__entry.begin(), ::__entry.end(), std::mem_fn( &Entry::initialize ) );
+    std::for_each( ::__task.begin(), ::__task.end(), std::mem_fn( &Task::initialize ) );
 
     for ( std::vector<Task *>::const_iterator t = ::__task.begin(); t != ::__task.end(); ++t ) {
 	set_n_phases((*t)->n_phases());
@@ -576,13 +567,9 @@ Model::transform()
 
     /* Build tasks. */
 
-    for ( std::vector<Task *>::const_iterator t = ::__task.begin(); t != ::__task.end(); ++t ) {
-	(*t)->transmorgrify();
-    }
+    std::for_each( ::__task.begin(), ::__task.end(), std::mem_fn( &Task::transmorgrify ) );
 
-    for ( std::vector<Entry *>::const_iterator e = ::__entry.begin(); e != ::__entry.end(); ++e ) {
-	(*e)->create_forwarding_gspn();
-    }
+    std::for_each( ::__entry.begin(), ::__entry.end(), std::mem_fn( &Entry::create_forwarding_gspn ) );
 
     /* Build queues twixt tasks. */
 
@@ -620,8 +607,8 @@ Model::set_queue_length()  const
 void
 Model::remove_netobj()
 {
-    std::for_each( __processor.begin(), __processor.end(), Exec<Processor>( &Processor::remove_netobj ) );
-    std::for_each( ::__task.begin(), ::__task.end(), Exec<Task>( &Task::remove_netobj ) );
+    std::for_each( __processor.begin(), __processor.end(), std::mem_fn( &Processor::remove_netobj ) );
+    std::for_each( ::__task.begin(), ::__task.end(), std::mem_fn( &Task::remove_netobj ) );
 
     free_netobj( netobj );
     netobj = (struct net_object *)0;
@@ -682,9 +669,8 @@ Model::compute()
 	    (void) fprintf( stderr, "%s: Cannot read results for %s\n", LQIO::io_vars.toolname(), netname().c_str() );
 	    rc = false;
 	} else {
-	    for ( std::vector<Task *>::const_iterator t = ::__task.begin(); t != ::__task.end(); ++t ) {
-		(*t)->get_results();		/* Read net to get tokens. */
-	    }
+	    std::for_each( ::__task.begin(), __task.end(), std::mem_fn( &Task::get_results ) );	/* Read net to get tokens. */
+
 	    if ( stats.precision >= 0.01 || __open_class_error || LQIO::io_vars.anError() ) {
 		rc = false;
 	    }
@@ -776,12 +762,12 @@ Model::make_queues()
 	double idle_x;
 	unsigned k 	= 0;			/* Queue Kounter	*/
 	queue_fnptr queue_func;			/* Local version.	*/
-	bool sync_server = (*t)->is_sync_server() || (*t)->has_random_queueing() || (*t)->type() == Task::Type::SEMAPHORE || (*t)->is_infinite();
+	bool random_queueing = (*t)->is_sync_server() || (*t)->has_random_queueing() || (*t)->type() == Task::Type::SEMAPHORE || (*t)->is_infinite();
 	std::vector<Model::inst_arrival> ph2_place;
 
 	/* Override if dest is a join function. */
 
-	if ( sync_server ) {
+	if ( random_queueing ) {
 	    idle_x = x_pos + 1.0 + 0.5;
 	    queue_func = &Model::random_queue;
 	} else {
@@ -816,7 +802,7 @@ Model::make_queues()
 		for ( std::vector<Activity *>::const_iterator a = (*i)->activities.begin(); a != (*i)->activities.end(); ++a ) {
 		    k = make_queue( x_pos, y_pos, idle_x, (*a), *e, ne, max_m, k, queue_func, ph2_place );
 		}
-		if ( sync_server ) {
+		if ( random_queueing ) {
 		    k += 1;
 		}
 	    } /* a */
@@ -1306,7 +1292,7 @@ Model::queue_epilogue( double x_pos, double y_pos,
     c_place->layer |= ENTRY_LAYER(b->entry_id());
     create_arc( ENTRY_LAYER(b->entry_id())|(m == 0 ? PRIMARY_LAYER : 0), TO_PLACE, c_trans, c_place );
 
-#if BUG_263
+#if BUG_423
     /*
      * We have to find all of the 'sink' places and put inhibitor arcs
      * to disallow requests until all threads terminate.
@@ -1489,9 +1475,7 @@ Model::trans_rpar()
 	    Phase::inc_par_offsets();
 	}
 
-	for ( std::vector<Activity *>::const_iterator a = (*t)->activities.begin(); a != (*t)->activities.end(); ++a ) {
-	    (*a)->create_spar();
-	}
+	std::for_each( (*t)->activities.begin(), (*t)->activities.end(), std::mem_fn( &Activity::create_spar ) );
 
 	Phase::inc_par_offsets();
     }
@@ -1589,8 +1573,8 @@ Model::insert_DOM_results( const bool valid, const solution_stats_t& stats ) con
     stop_time -= __start_time;
     stop_time.insertDOMResults( *_document );
 
-    std::for_each( ::__task.begin(), ::__task.end(), ConstExec<Task>( &Task::insert_DOM_results ) );
-    std::for_each( ::__processor.begin(), ::__processor.end(), ConstExec<Processor>( &Processor::insert_DOM_results ) );
+    std::for_each( ::__task.begin(), ::__task.end(), std::mem_fn( &Task::insert_DOM_results ) );
+    std::for_each( ::__processor.begin(), ::__processor.end(), std::mem_fn( &Processor::insert_DOM_results ) );
 }
 
 /*----------------------------------------------------------------------*/

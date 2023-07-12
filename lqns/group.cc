@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/group.cc $
+ * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/branches/merge-V5-V6/lqns/group.cc $
  * 
  * Everything you wanted to know about a task, but were afraid to ask.
  *
@@ -10,7 +10,7 @@
  * November, 2008
  *
  * ------------------------------------------------------------------------
- * $Id: group.cc 15969 2022-10-13 19:49:43Z greg $
+ * $Id: group.cc 16755 2023-06-26 19:47:53Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -60,7 +60,7 @@ Group::check() const
 {
     const bool rc = 0 < getOriginalShare() && getOriginalShare() <= 1.0;
     if ( !rc ) {
-	LQIO::input_error2( LQIO::ERR_INVALID_SHARE, name().c_str(), getOriginalShare() );
+	LQIO::input_error( LQIO::ERR_INVALID_SHARE, name().c_str(), getOriginalShare() );
     }
     return rc;
 }
@@ -91,6 +91,14 @@ Group::recalculateDynamicValues()
 }
 
 
+const Group&
+Group::insertDOMResults() const
+{
+    _dom->setResultUtilization( utilization() );
+    return *this;
+}
+
+/* ------------------------------- CFS -------------------------------- */
 
 double 
 Group::utilization() const
@@ -230,14 +238,6 @@ Group::isUtilLessThanShare() const
 {
     const double util = utilization();
     return util <= _share * 0.95 && getCFSDelay() == 0 || util < _share * 1.05;
-}
-
-
-const Group&
-Group::insertDOMResults() const
-{
-    _dom->setResultUtilization( utilization() );
-    return *this;
 }
 
 /* ----------------------- External functions. ------------------------ */

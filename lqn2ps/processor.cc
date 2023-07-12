@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: processor.cc 16416 2023-02-11 23:52:40Z greg $
+ * $Id: processor.cc 16750 2023-06-19 12:16:45Z greg $
  *
  * Everything you wanted to know about a task, but were afraid to ask.
  *
@@ -65,7 +65,7 @@ Processor::Processor( const LQIO::DOM::Processor* dom )
       _groupIsSelected(false)
 { 
     if ( Flags::processors() == Processors::NONE ) {
-	isSelected(false);
+	setSelected(false);
     }
     if ( !isMultiServer() && scheduling() != SCHEDULE_DELAY && !Pragma::defaultProcessorScheduling() ) {
 	/* Change scheduling type for uni-processors (usually from FCFS to PS) */
@@ -205,8 +205,7 @@ bool
 Processor::isInteresting() const
 {
     return Flags::processors() == Processors::ALL
-	|| (Flags::processors() == Processors::DEFAULT 
-	    && !isInfinite() 
+	|| ((Flags::processors() == Processors::DEFAULT || Flags::processors() == Processors::QUEUEABLE)
 	    && clientsCanQueue() )
 	|| (Flags::processors() == Processors::NONINFINITE
 	    && !isInfinite() )

@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/entry.cc $
+ * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/branches/merge-V5-V6/lqns/entry.cc $
  *
  * Everything you wanted to know about an entry, but were afraid to ask.
  *
@@ -12,7 +12,7 @@
  * July 2007.
  *
  * ------------------------------------------------------------------------
- * $Id: entry.cc 15869 2022-09-20 09:05:46Z greg $
+ * $Id: entry.cc 16753 2023-06-19 19:26:50Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -562,7 +562,7 @@ Entry::entrySemaphoreTypeOk( const LQIO::DOM::Entry::Semaphore aType )
     if ( _semaphoreType == LQIO::DOM::Entry::Semaphore::NONE ) {
 	_semaphoreType = aType;
     } else if ( _semaphoreType != aType ) {
-	LQIO::input_error2( LQIO::ERR_MIXED_SEMAPHORE_ENTRY_TYPES, name().c_str() );
+	LQIO::input_error( LQIO::ERR_MIXED_SEMAPHORE_ENTRY_TYPES, name().c_str() );
 	return false;
     }
     return true;
@@ -940,7 +940,7 @@ Entry::sanityCheckParameters()
 {
     /* Make sure the open arrival rate is sane for the setup */
     if ( _dom && _dom->hasOpenArrivalRate() && owner()->isReferenceTask() ) {
-	LQIO::input_error2( LQIO::ERR_REFERENCE_TASK_OPEN_ARRIVALS, owner()->name().c_str(), name().c_str() );
+	LQIO::input_error( LQIO::ERR_REFERENCE_TASK_OPEN_ARRIVALS, owner()->name().c_str(), name().c_str() );
     }
     return *this;
 }
@@ -2095,7 +2095,7 @@ map_entry_name( const std::string& entry_name, Entry * & entry, bool receiver, c
     entry = Entry::find( entry_name );
 
     if ( !entry ) {
-	LQIO::input_error2( LQIO::ERR_NOT_DEFINED, entry_name.c_str() );
+	LQIO::input_error( LQIO::ERR_NOT_DEFINED, entry_name.c_str() );
 	rc = false;
     } else if ( receiver && entry->owner()->isReferenceTask() ) {
 	entry->owner()->getDOM()->input_error( LQIO::ERR_REFERENCE_TASK_IS_RECEIVER, entry_name.c_str() );
@@ -2170,7 +2170,7 @@ Entry::setForwardingInformation( Entry* toEntry, LQIO::DOM::Call * call )
     if ( owner()->isReferenceTask() ) {
 	owner()->getDOM()->runtime_error( LQIO::ERR_REFERENCE_TASK_FORWARDING, name().c_str() );
     } else if ( forward( toEntry ) > 0.0 ) {
-	LQIO::input_error2( LQIO::WRN_MULTIPLE_SPECIFICATION );
+	LQIO::input_error( LQIO::WRN_MULTIPLE_SPECIFICATION );
     } else {
 	forward( toEntry, call );
     }

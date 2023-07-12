@@ -1,6 +1,6 @@
 /* srvn2eepic.c	-- Greg Franks Sun Jan 26 2003
  *
- * $Id: option.cc 15760 2022-07-25 14:36:17Z greg $
+ * $Id: option.cc 16750 2023-06-19 12:16:45Z greg $
  */
 
 #include "lqn2ps.h"
@@ -179,7 +179,7 @@ const std::map<const Layering, const std::string> Options::layering =
 
 const std::map<const Processors, const std::string> Options::processors = {
     { Processors::NONE,         LQIO::DOM::Pragma::_none_ },
-    { Processors::DEFAULT,      "default" },
+    { Processors::QUEUEABLE,    "queueable" },
     { Processors::NONINFINITE,	"non-infinite" },
     { Processors::ALL,          LQIO::DOM::Pragma::_all_ }
 };

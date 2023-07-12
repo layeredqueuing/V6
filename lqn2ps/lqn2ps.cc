@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: lqn2ps.cc 16338 2023-01-16 21:16:33Z greg $
+ * $Id: lqn2ps.cc 16750 2023-06-19 12:16:45Z greg $
  *
  * Command line processing.
  *
@@ -123,6 +123,7 @@ std::vector<Options::Type> Flags::print = {
     { "flatten",         0x200+'f', nullptr,               {&Options::none,         0},                 "Flatten submodel/queueing output by placing clients in one layer." },
     { "no-sort",         0x200+'s', nullptr,               {&Options::none,         0},                 "Do not sort objects for output." },
     { "number-layers",   0x200+'n', nullptr,               {&Options::none,         0},                 "Print layer numbers." },
+    { "offset-layer",	 0x200+'O', "layer,value",	   {&Options::integer,      0},			"Offset layer by value." },
     { "rename",          0x200+'N', nullptr,               {&Options::none,         0},                 "Rename all objects." },
     { "tasks-only",      0x200+'t', nullptr,               {&Options::none,         0},                 "Print tasks only." },
 #if BUG_270
@@ -216,7 +217,7 @@ main(int argc, char *argv[])
     char * options;
     std::string output_file_name = "";
 
-    sscanf( "$Date: 2023-01-16 16:16:33 -0500 (Mon, 16 Jan 2023) $", "%*s %s %*s", copyrightDate );
+    sscanf( "$Date: 2023-06-19 08:16:45 -0400 (Mon, 19 Jun 2023) $", "%*s %s %*s", copyrightDate );
 
     static std::string opts = "";
 #if HAVE_GETOPT_H
@@ -530,6 +531,18 @@ main(int argc, char *argv[])
 		setOutputFormat( File_Format::LQX );
 		break;
 
+	    case 0x200+'O':
+	    {
+		unsigned int layer = 0;
+		double offset = 0;
+		if ( sscanf( optarg, "%d,%lf", &layer, &offset ) == 2 ) {
+		    Model::__offset_layer.emplace( layer, offset );
+		} else {
+		    throw std::invalid_argument( optarg );
+		}
+	    }
+		break;
+		
 	    case 'P':
 		Flags::set_processors( Options::get_processors( optarg ) );
 		break;
@@ -722,7 +735,9 @@ main(int argc, char *argv[])
 
     if ( queueing_output() ) {
 	Flags::arrow_scaling *= 0.75;
-//	Flags::print[PROCESSORS].opts.value.p = Processors::ALL;
+	if ( Flags::print[PROCESSORS].opts.value.p == Processors::DEFAULT ) {
+	    Flags::print[PROCESSORS].opts.value.p = Processors::ALL;	/* Bug 438. */
+	}
 
 	if ( submodel_output() ) {
 	    std::cerr << LQIO::io_vars.lq_toolname << ": -Q" << Flags::queueing_model()

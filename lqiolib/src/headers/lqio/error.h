@@ -8,7 +8,7 @@
 /************************************************************************/
 
 /*
- * $Id: error.h 16627 2023-04-03 22:04:21Z greg $
+ * $Id: error.h 16751 2023-06-19 12:27:48Z greg $
  */
 
 #ifndef LQIOLIB_ERROR_H
@@ -195,14 +195,12 @@ namespace LQIO {
      */
 
 
-    void runtime_error ( unsigned err, ... );
-    void solution_error2 ( unsigned err, unsigned line_no, ... );
-    void internal_error ( const char * filename, const unsigned lineno, const char *, ... );
-//    void input_error (const char * fmt, ...);
-    void input_error2 ( unsigned err, ... );
+    void runtime_error( unsigned err, ... );
+    void internal_error( const char * filename, const unsigned lineno, const char *, ... );
+    void input_error( unsigned err, ... );
     bool output_error_message( error_severity );
-    void severity_action ( error_severity );
-    void verrprintf ( FILE *, error_severity, const char *, unsigned int, unsigned int, const char *, va_list );
+    void severity_action( error_severity );
+    void verrprintf( FILE *, error_severity, const char *, unsigned int, unsigned int, const char *, va_list );
                 
     class undefined_symbol : public std::runtime_error
     {

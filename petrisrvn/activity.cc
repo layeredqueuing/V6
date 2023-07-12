@@ -194,10 +194,7 @@ Activity::count_replies( std::deque<Activity *>& activity_stack, const Entry * e
 		}
 		sum = rate;
 	    }
-	} else if ( curr_phase > 1 ) {
-	    const_cast<Entry *>(e)->set_n_phases( curr_phase );
 	}
-
 	if ( _output != nullptr ) {
 	    activity_stack.push_back( this );
 	    sum += _output->join_count_replies( activity_stack, e, rate, next_phase, next_phase );
@@ -227,7 +224,7 @@ Activity::add_reply_list()
 	Entry * ep = Entry::find( entry->getName() );
 
 	if ( !ep ) {
-	    LQIO::input_error2( LQIO::ERR_NOT_DEFINED, entry->getName().c_str() );
+	    LQIO::input_error( LQIO::ERR_NOT_DEFINED, entry->getName().c_str() );
 	} else if ( ep->task() != task() ) {
 	    get_dom()->input_error( LQIO::ERR_WRONG_TASK_FOR_ENTRY, task()->name() );
 	} else {
@@ -255,7 +252,7 @@ Activity& Activity::add_activity_lists()
 	    const LQIO::DOM::Activity* dom = *iter;
 	    Activity * nextActivity = task()->find_activity( dom->getName().c_str() );
 	    if ( !nextActivity ) {
-		LQIO::input_error2( LQIO::ERR_NOT_DEFINED, dom->getName().c_str() );
+		LQIO::input_error( LQIO::ERR_NOT_DEFINED, dom->getName().c_str() );
 		continue;
 	    }
 
@@ -291,7 +288,7 @@ Activity& Activity::add_activity_lists()
 	    const LQIO::DOM::Activity* dom = *iter;
 	    Activity * nextActivity = task()->find_activity( dom->getName().c_str() );
 	    if ( !nextActivity ) {
-		LQIO::input_error2( LQIO::ERR_NOT_DEFINED, dom->getName().c_str() );
+		LQIO::input_error( LQIO::ERR_NOT_DEFINED, dom->getName().c_str() );
 		continue;
 	    }
 
@@ -393,11 +390,11 @@ Activity::link_activity( double x_pos, double y_pos, const Entry * e, const unsi
 
 	    join_trans = move_trans_tag( create_trans( X_OFFSET(p_pos+1,0.0), y_pos+0.5, layer_mask, 1.0, 1, IMMEDIATE + 1, "aj%s%d", name(), m ), Place::PLACE_X_OFFSET, Place::PLACE_Y_OFFSET );
 	    join_list->FjT[0][m] = join_trans;
-#if BUG_263
+#if BUG_423
 	    if ( join_list->u.join.quorumCount == 0 ) {
 #endif
 		create_arc_mult( layer_mask, TO_TRANS, join_trans, join_list->FjP[m], join_list->n_acts() );
-#if BUG_263
+#if BUG_423
 	    } else {
 		struct trans_object * sink_trans = move_trans_tag( create_trans( X_OFFSET(p_pos+1,0.0), y_pos-0.5, layer_mask, 1.0, 1, IMMEDIATE + 1, "qs%s%d", name(), m ),
 								   Place::PLACE_X_OFFSET, Place::PLACE_Y_OFFSET );
@@ -701,7 +698,9 @@ Activity::act_join_item( LQIO::DOM::ActivityList * dom_activitylist )
 	get_dom()->input_error( LQIO::ERR_DUPLICATE_ACTIVITY_LVALUE, _output->get_dom()->getLineNumber() );
     } else {
 	list = realloc_list( ActivityList::Type::JOIN, 0, dom_activitylist );
+#if BUG_423
 	list->u.join.quorumCount = 0;
+#endif
 	list->list[list->_n_acts++] = this;
 	_output = list;
     }
@@ -727,11 +726,15 @@ Activity::act_and_join_list ( ActivityList* input_list, LQIO::DOM::ActivityList 
     _output = list;
 
     if ( dynamic_cast<LQIO::DOM::AndJoinActivityList*>(dom_activitylist)->hasQuorumCount() ) {
+#if BUG_423
 	list->u.join.quorumCount = dynamic_cast<LQIO::DOM::AndJoinActivityList*>(dom_activitylist)->getQuorumCountValue();
 	Task * a_task = const_cast<Task *>(task());
 	a_task->set_n_phases( 2 );
     } else {
 	list->u.join.quorumCount = 0;
+#else
+	dom_activitylist->runtime_error( LQIO::ERR_NOT_SUPPORTED, "quorum" );
+#endif
     }
     return list;
 }
@@ -790,7 +793,7 @@ Activity::act_and_fork_list ( ActivityList * input_list, LQIO::DOM::ActivityList
     if ( _is_start_activity ) {
 	get_dom()->input_error( LQIO::ERR_IS_START_ACTIVITY );
     } else if ( _input ) {
-	LQIO::input_error2( LQIO::ERR_DUPLICATE_ACTIVITY_RVALUE, task()->name(), _input->get_dom()->getLineNumber() );
+	LQIO::input_error( LQIO::ERR_DUPLICATE_ACTIVITY_RVALUE, task()->name(), _input->get_dom()->getLineNumber() );
     } else {
 	list = realloc_list( ActivityList::Type::AND_FORK, input_list, dom_activitylist );
 	list->list[list->_n_acts++] = this;
@@ -813,7 +816,7 @@ Activity::act_or_fork_list ( ActivityList * input_list, LQIO::DOM::ActivityList 
     if ( _is_start_activity ) {
 	get_dom()->input_error( LQIO::ERR_IS_START_ACTIVITY );
     } else if ( _input ) {
-	LQIO::input_error2( LQIO::ERR_DUPLICATE_ACTIVITY_RVALUE, task()->name(), name(), _input->get_dom()->getLineNumber() );
+	LQIO::input_error( LQIO::ERR_DUPLICATE_ACTIVITY_RVALUE, task()->name(), name(), _input->get_dom()->getLineNumber() );
     } else {
 	list = realloc_list( ActivityList::Type::OR_FORK, input_list, dom_activitylist );
 	list->u.fork.prob[list->_n_acts] = dom_activitylist->getParameter(dynamic_cast<LQIO::DOM::Activity *>(get_dom()));
@@ -837,7 +840,7 @@ Activity::act_loop_list ( ActivityList * input_list, LQIO::DOM::ActivityList * d
     if ( _is_start_activity ) {
 	get_dom()->input_error( LQIO::ERR_IS_START_ACTIVITY );
     } else if ( _input ) {
-	LQIO::input_error2( LQIO::ERR_DUPLICATE_ACTIVITY_RVALUE, task()->name(), name(), _input->get_dom()->getLineNumber() );
+	LQIO::input_error( LQIO::ERR_DUPLICATE_ACTIVITY_RVALUE, task()->name(), name(), _input->get_dom()->getLineNumber() );
     } else {
 	list = realloc_list( ActivityList::Type::LOOP, input_list, dom_activitylist );
 	const LQIO::DOM::ExternalVariable * count = dom_activitylist->getParameter(dynamic_cast<LQIO::DOM::Activity *>(get_dom()));
@@ -866,7 +869,7 @@ Activity::realloc_list ( const ActivityList::Type type, const ActivityList * inp
     if ( input_list ) {
 	list = const_cast<ActivityList *>(input_list);
     } else if ( task()->n_act_lists() >= MAX_ACT*2 ) {
-	input_error2( LQIO::ERR_TOO_MANY_X, "activity lists ", MAX_ACT*2 );
+	LQIO::input_error( LQIO::ERR_TOO_MANY_X, "activity lists ", MAX_ACT*2 );
 	return 0;
     } else {
 	list = new ActivityList( type, dom_activity_list );

@@ -1,7 +1,7 @@
 /* -*- c++ -*-
  * runlqx.h	-- Greg Franks
  *
- * $URL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/qnsolver/runlqx.h $
+ * $URL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/branches/merge-V5-V6/qnsolver/runlqx.h $
  * ------------------------------------------------------------------------
  * $Id: runlqx.h 16325 2023-01-12 17:47:10Z greg $
  * ------------------------------------------------------------------------

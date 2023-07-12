@@ -10,7 +10,7 @@
 /*
  * Input output processing.
  *
- * $Id: task.cc 16202 2022-12-26 22:26:49Z greg $
+ * $Id: task.cc 16752 2023-06-19 19:18:17Z greg $
  */
 
 #include <iostream>
@@ -236,7 +236,7 @@ Task::set_start_activity( LQIO::DOM::Entry* dom )
     const char * activity_name = activity_dom->getName().c_str();
     Activity * ap = find_activity( activity_name );
     if ( !ap ) {
-	LQIO::input_error2( LQIO::ERR_NOT_DEFINED, activity_name );
+	LQIO::input_error( LQIO::ERR_NOT_DEFINED, activity_name );
     } else if ( ep->get_start_activity() != nullptr ) {
 	ep->getDOM()->input_error( LQIO::ERR_DUPLICATE_START_ACTIVITY, activity_name );
     } else {
@@ -298,7 +298,7 @@ Task::add_activity( LQIO::DOM::Activity * dom_activity )
 {
     Activity * activity = find_activity( dom_activity->getName().c_str() );
     if ( activity ) {
-	LQIO::input_error2( LQIO::ERR_DUPLICATE_SYMBOL, "Activity", dom_activity->getName().c_str() );
+	LQIO::input_error( LQIO::ERR_DUPLICATE_SYMBOL, "Activity", dom_activity->getName().c_str() );
     } else {
 	activity = new Activity( this, dom_activity );
 	_activity.push_back( activity );
@@ -549,11 +549,11 @@ Task::add( LQIO::DOM::Task* dom )
 
     Group * group = nullptr;
     if ( !domGroup && processor->discipline() == SCHEDULE_CFS ) {
-	LQIO::input_error2( LQIO::ERR_NO_GROUP_SPECIFIED, task_name, processor_name );
+	LQIO::input_error( LQIO::ERR_NO_GROUP_SPECIFIED, task_name, processor_name );
     } else if ( domGroup ) {
 	group = Group::find( domGroup->getName().c_str() );
 	if ( !group ) {
-	    LQIO::input_error2( LQIO::ERR_NOT_DEFINED, domGroup->getName().c_str() );
+	    LQIO::input_error( LQIO::ERR_NOT_DEFINED, domGroup->getName().c_str() );
 	}
     }
 

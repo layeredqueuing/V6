@@ -29,7 +29,7 @@ namespace LQIO {
 
 class Place {
 public:
-    Place( const LQIO::DOM::Entity * dom ) : _dom(dom), _scheduling(SCHEDULE_FIFO), _x_pos(0.0), _y_pos(0.0) {}
+    Place( const LQIO::DOM::Entity * dom ) : _dom(dom), _x_pos(0.0), _y_pos(0.0) {}
     virtual ~Place() {}
 
     unsigned id;
@@ -38,10 +38,10 @@ public:
     const LQIO::DOM::Entity * get_dom() const { return _dom; }
 
     scheduling_type get_scheduling() const;
-    bool has_priority_scheduling() const { return _scheduling == SCHEDULE_PPR || _scheduling == SCHEDULE_HOL; }
+    bool has_priority_scheduling() const { return get_scheduling() == SCHEDULE_PPR || get_scheduling() == SCHEDULE_HOL; }
 
 protected:
-    void set_scheduling( scheduling_type scheduling ) { _scheduling = scheduling; }
+    void set_scheduling( scheduling_type scheduling );
     virtual bool scheduling_is_ok() const = 0;
 
 public:
@@ -49,6 +49,10 @@ public:
     virtual bool is_infinite() const;
     bool has_random_queueing() const;
 
+protected:
+    void check();
+
+public:
     Place& set_origin( double x_pos, double y_pos ) { _x_pos = x_pos, _y_pos = y_pos; return *this; }
     double get_x_pos() const { return _x_pos; }
     double get_y_pos() const { return _y_pos; }
@@ -61,7 +65,6 @@ public:
 
 private:
     const LQIO::DOM::Entity* _dom;		/* The DOM Representation	*/
-    scheduling_type _scheduling;
     double _x_pos;
     double _y_pos;
 };

@@ -1,5 +1,5 @@
 # -*- Makefile -*-
-# $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/parasol/src/Makefile.am $
+# $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/branches/merge-V5-V6/parasol/src/Makefile.am $
 # Makefile for Parasol libraries.
 #
 # ------------------------------------------------------------------------

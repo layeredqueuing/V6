@@ -1,7 +1,7 @@
 /* histogram.cc	-- Greg Franks Mon Jun 15 2009
  *
  * ------------------------------------------------------------------------
- * $Id: histogram.cc 15305 2021-12-31 16:01:37Z greg $
+ * $Id: histogram.cc 16752 2023-06-19 19:18:17Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -26,7 +26,7 @@ Histogram::Histogram( const LQIO::DOM::Histogram * histogram )
       _hist(_n_bins+2)
 {
     if ( _max < _min ) {
-	input_error2( LQIO::ERR_HISTOGRAM_INVALID_MAX, _max );
+	LQIO::input_error( LQIO::ERR_HISTOGRAM_INVALID_MAX, _max );
     }
     for_each ( _hist.begin(), _hist.end(), Exec<hist_bin>(&hist_bin::clear) );
 }

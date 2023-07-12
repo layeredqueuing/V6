@@ -9,7 +9,7 @@
 /*
  * Lqsim-parasol Processor interface.
  *
- * $Id: processor.cc 16124 2022-11-18 11:26:13Z greg $
+ * $Id: processor.cc 16752 2023-06-19 19:18:17Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -87,7 +87,7 @@ Processor::create()
 			      SF_PER_NODE|SF_PER_HOST );
 
     if ( _node_id < 0 || MAX_NODES < _node_id ) {
-	LQIO::input_error2( ERR_CANNOT_CREATE_X, "processor", name().c_str() );
+	LQIO::input_error( ERR_CANNOT_CREATE_X, "processor", name().c_str() );
     } else {
 	processor_table[_node_id] = this;
 	r_util.init( ps_get_node_stat_index( _node_id ) );
@@ -180,7 +180,7 @@ Custom_Processor::create()
     _node_id = ps_build_node2( name().c_str(), multiplicity(), cpu_rate(), cpu_scheduler_task, SF_PER_NODE|SF_PER_HOST );
 
     if ( _node_id < 0 || MAX_NODES < _node_id ) {
-	LQIO::input_error2( ERR_CANNOT_CREATE_X, "processor", name().c_str() );
+	LQIO::input_error( ERR_CANNOT_CREATE_X, "processor", name().c_str() );
     } else {
 	processor_table[_node_id] = this;
     }

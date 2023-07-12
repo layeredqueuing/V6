@@ -1,5 +1,5 @@
 /* actlist.cc   -- Greg Franks Thu Feb 20 1997
- * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/actlist.cc $
+ * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/branches/merge-V5-V6/lqns/actlist.cc $
  *
  * Everything you wanted to know about connecting activities, but were afraid to ask.
  *

@@ -1,6 +1,6 @@
 /* help.cc	-- Greg Franks Wed Oct 12 2005
  *
- * $Id: help.cc 16444 2023-02-25 12:39:03Z greg $
+ * $Id: help.cc 16756 2023-06-27 08:25:25Z greg $
  */
 
 #include "lqns.h"
@@ -1065,13 +1065,6 @@ Help::flagXML( std::ostream& output, bool verbose ) const
 /* ------------------------------------------------------------------------ */
 
 std::ostream&
-Help::debugAll( std::ostream & output, bool verbose ) const
-{
-    output << "Enable all debug output." << std::endl;
-    return output;
-}
-
-std::ostream&
 Help::debugActivities( std::ostream & output, bool verbose ) const
 {
     output << "Activities -- not functional." << std::endl;
@@ -1138,6 +1131,13 @@ std::ostream&
 Help::debugQuorum( std::ostream & output, bool verbose ) const
 {
     output << "Print out results from pseudo activities used by quorum." << std::endl;
+    return output;
+}
+
+std::ostream&
+Help::debugReplication( std::ostream & output, bool verbose ) const
+{
+    output << "Print out replica expansion and pruning." << std::endl;
     return output;
 }
 
@@ -2293,7 +2293,7 @@ HelpTroff::preamble( std::ostream& output ) const
     output << __comment << " t -*- nroff -*-" << std::endl
 	   << ".TH lqns 1 \"" << date << "\" \"" << VERSION << "\"" << std::endl;
 
-    output << __comment << " $Id: help.cc 16444 2023-02-25 12:39:03Z greg $" << std::endl
+    output << __comment << " $Id: help.cc 16756 2023-06-27 08:25:25Z greg $" << std::endl
 	   << __comment << std::endl
 	   << __comment << " --------------------------------" << std::endl;
 
@@ -2587,12 +2587,12 @@ HelpLaTeX::preamble( std::ostream& output ) const
     output << __comment << "  -*- mode: latex; mode: outline-minor; fill-column: 108 -*- " << std::endl
 	   << __comment << " Title:  lqns" << std::endl
 	   << __comment << "" << std::endl
-	   << __comment << " $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/help.cc $" << std::endl
+	   << __comment << " $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/branches/merge-V5-V6/lqns/help.cc $" << std::endl
 	   << __comment << " Original Author:     Greg Franks <greg@sce.carleton.ca>" << std::endl
 	   << __comment << " Created:             " << date << std::endl
 	   << __comment << "" << std::endl
 	   << __comment << " ----------------------------------------------------------------------" << std::endl
-	   << __comment << " $Id: help.cc 16444 2023-02-25 12:39:03Z greg $" << std::endl
+	   << __comment << " $Id: help.cc 16756 2023-06-27 08:25:25Z greg $" << std::endl
 	   << __comment << " ----------------------------------------------------------------------" << std::endl << std::endl;
 
     output << "\\chapter{Invoking the Analytic Solver ``lqns''}" << std::endl

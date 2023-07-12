@@ -13,7 +13,7 @@
 #define _PETRISRVN_H
 
 /*
- * $Id: petrisrvn.h 16458 2023-03-02 11:51:54Z greg $
+ * $Id: petrisrvn.h 16753 2023-06-19 19:26:50Z greg $
  *
  * Solve LQN using petrinets.
  */
@@ -35,7 +35,7 @@
 /*  #define OLD_JOIN */
 #define BUG_163	1		/* Measure sync delay.			*/
 #define BUG_263	1		/* Quroum delay				*/
-#define BUG_423	1		/* Trace count_replies.			*/
+// define BUG_423	0	/* Trace count_replies.			*/
 
 extern struct lqio_params_stats io_vars;
 
@@ -106,34 +106,4 @@ extern unsigned open_model_tokens;	/* Default global open queue max size	*/
 extern FILE * stddbg;			/* debugging output goes here.		*/
 
 static inline bool bit_test( unsigned flag, unsigned bits ) { return ((1 << flag) & bits ) != 0; }
-
-template <class Type> struct Exec
-{
-    typedef void (Type::*funcPtr)();
-    Exec<Type>( funcPtr f ) : _f(f) {};
-    void operator()( Type * object ) const { (object->*_f)(); }
-    void operator()( Type& object ) const { (object.*_f)(); }
-private:
-    funcPtr _f;
-};
-
-template <class Type> struct ConstExec
-{
-    typedef void (Type::*funcPtr)() const;
-    ConstExec<Type>( const funcPtr f ) : _f(f) {}
-    void operator()( const Type * object ) const { (object->*_f)(); }
-    void operator()( const Type& object ) const { (object.*_f)(); }
-private:
-    const funcPtr _f;
-};
-
-template <class Type> struct Predicate
-{
-    typedef bool (Type::*predicate)() const;
-    Predicate<Type>( const predicate p ) : _p(p) {};
-    bool operator()( const Type * object ) const { return (object->*_p)(); }
-    bool operator()( const Type& object ) const { return (object.*_p)(); }
-private:
-    const predicate _p;
-};
 #endif /* _PETRISRVN_H */

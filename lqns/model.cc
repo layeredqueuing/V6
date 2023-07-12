@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: model.cc 16444 2023-02-25 12:39:03Z greg $
+ * $Id: model.cc 16755 2023-06-26 19:47:53Z greg $
  *
  * Layer-ization of model.  The basic concept is from the reference
  * below.  However, model partioning is more complex than task vs device.
@@ -21,7 +21,7 @@
  *           Activitly lists checked and are set up during the sorting process.
  *       ii) addToSubmodel() to add server stations to the basic model.
  *    c) Call configure (dimension arrays)
- *    d) Call initStations (initialize service times, etc...)
+ *    d) Call initializeSubmodels (initialize service times, etc...)
  * 3) Call solve()
  *
  * Copyright the Real-Time and Distributed Systems Group,
@@ -33,10 +33,12 @@
  */
 
 #include "lqns.h"
-#include <fstream>
-#include <cstdlib>
 #include <cmath>
+#include <cstdlib>
 #include <errno.h>
+#include <fstream>
+#include <functional>
+#include <iostream>
 #if HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -310,10 +312,8 @@ Model::prepare(const LQIO::DOM::Document* document)
 
 	/* Add activities for the task (all of them) */
 	const std::map<std::string,LQIO::DOM::Activity*>& activities = task->getActivities();
-	std::map<std::string,LQIO::DOM::Activity*>::const_iterator iter;
-	for (iter = activities.begin(); iter != activities.end(); ++iter) {
-	    const LQIO::DOM::Activity* activity = iter->second;
-	    activityList.push_back(add_activity(newTask, const_cast<LQIO::DOM::Activity*>(activity)));
+	for (std::map<std::string,LQIO::DOM::Activity*>::const_iterator activity = activities.begin(); activity != activities.end(); ++activity) {
+	    activityList.push_back(add_activity(newTask, const_cast<LQIO::DOM::Activity*>(activity->second)));
 	}
 
 	/* Set all the start activities */
@@ -348,8 +348,7 @@ Model::prepare(const LQIO::DOM::Document* document)
 
 	/* Add in all of the P(frwd) calls */
 	const std::vector<LQIO::DOM::Call*>& forwarding = entry->getForwarding();
-	std::vector<LQIO::DOM::Call*>::const_iterator nextFwd;
-	for ( nextFwd = forwarding.begin(); nextFwd != forwarding.end(); ++nextFwd ) {
+	for ( std::vector<LQIO::DOM::Call*>::const_iterator nextFwd = forwarding.begin(); nextFwd != forwarding.end(); ++nextFwd ) {
 	    Entry* targetEntry = Entry::find((*nextFwd)->getDestinationEntry()->getName());
 	    newEntry->setForwardingInformation(targetEntry, *nextFwd );
 	}
@@ -358,17 +357,14 @@ Model::prepare(const LQIO::DOM::Document* document)
     /* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- [Step 4: Add Calls/Lists for Activities] */
 
     /* Go back and add all of the lists and calls now that activities all exist */
-    std::vector<Activity*>::iterator actIter;
-    for (actIter = activityList.begin(); actIter != activityList.end(); ++actIter) {
-	Activity* activity = *actIter;
-	activity->add_calls()
-	    .add_reply_list()
-	    .add_activity_lists();
+
+    for (std::vector<Activity*>::iterator activity = activityList.begin(); activity != activityList.end(); ++activity) {
+	(*activity)->add_calls().add_reply_list().add_activity_lists();
     }
 
     /* Use the generated connections list to finish up */
     Activity::completeConnections();
-    std::for_each( __task.begin(), __task.end(), Exec<Task>( &Task::linkForkToJoin ) );	/* Link forks to joins		*/
+    std::for_each( __task.begin(), __task.end(), std::mem_fn( &Task::linkForkToJoin ) );	/* Link forks to joins		*/
 
     /* Tell the user that we have finished */
     return true;
@@ -387,9 +383,9 @@ void
 Model::recalculateDynamicValues()
 {
     setModelParameters();
-    std::for_each( __processor.begin(), __processor.end(), Exec<Processor>( &Processor::recalculateDynamicValues ) );
-    std::for_each( __group.begin(), __group.end(), Exec<Group>( &Group::recalculateDynamicValues ) );
-    std::for_each( __task.begin(), __task.end(), Exec<Task>( &Task::recalculateDynamicValues ) );
+    std::for_each( __processor.begin(), __processor.end(), std::mem_fn( &Processor::recalculateDynamicValues ) );
+    std::for_each( __group.begin(), __group.end(), std::mem_fn( &Group::recalculateDynamicValues ) );
+    std::for_each( __task.begin(), __task.end(), std::mem_fn( &Task::recalculateDynamicValues ) );
 }
 
 
@@ -451,7 +447,7 @@ Model::setModelParameters()
 	_iteration_limit = Pragma::iterationLimit() > 0 ? Pragma::iterationLimit() : getDOM()->getModelIterationLimitValue();
     }
     if ( _iteration_limit < 1 ) {
-	LQIO::input_error2( ADV_ITERATION_LIMIT, _iteration_limit, 50 );
+	LQIO::input_error( ADV_ITERATION_LIMIT, _iteration_limit, 50 );
 	_iteration_limit =  50;
     }
     if ( _iteration_limit != getDOM()->getModelIterationLimitValue() ) {
@@ -460,10 +456,10 @@ Model::setModelParameters()
 
     _convergence_value = Pragma::convergenceValue() > 0. ? Pragma::convergenceValue() : getDOM()->getModelConvergenceValue();
     if ( _convergence_value <= 0. ) {
-	LQIO::input_error2( ADV_CONVERGENCE_VALUE, _convergence_value, 0.00001 );
+	LQIO::input_error( ADV_CONVERGENCE_VALUE, _convergence_value, 0.00001 );
 	_convergence_value = 0.00001;
     } else if ( _convergence_value > 0.01 ) {
-	LQIO::input_error2( ADV_LARGE_CONVERGENCE_VALUE, _convergence_value );
+	LQIO::input_error( ADV_LARGE_CONVERGENCE_VALUE, _convergence_value );
     }
     if ( _convergence_value != getDOM()->getModelConvergenceValue() ) {
 	const_cast<LQIO::DOM::Document *>(getDOM())->setModelConvergence( new LQIO::DOM::ConstantExternalVariable( _convergence_value ) );
@@ -471,7 +467,7 @@ Model::setModelParameters()
     
     _underrelaxation = Pragma::underrelaxation() > 0. ? Pragma::underrelaxation() : getDOM()->getModelUnderrelaxationCoefficientValue();
     if ( _underrelaxation <= 0.0 || 2.0 < _underrelaxation ) {
-	LQIO::input_error2( ADV_UNDERRELAXATION, _underrelaxation );
+	LQIO::input_error( ADV_UNDERRELAXATION, _underrelaxation );
 	_underrelaxation = 0.9;
     }
     if ( _underrelaxation != getDOM()->getModelUnderrelaxationCoefficientValue() ) {
@@ -554,22 +550,22 @@ Model::initialize()
 	/* Expand replicas and add think server. */
 	extend();			/* Do this before Task::initProcessor() */
 
-	std::for_each( __task.begin(), __task.end(), Exec<Task>( &Task::initProcessor ) );	/* Set Processor Service times.	*/
+	std::for_each( __task.begin(), __task.end(), std::mem_fn( &Task::initProcessor ) );	/* Set Processor Service times.	*/
 
 	if ( Options::Trace::verbose() ) std::cerr << "Generate... " << std::endl;
 	if ( generate( assignSubmodel() ) ) {
 	    _model_initialized = true;
 	    partition();
 	    configure();		/* Dimension arrays and threads	*/
-	    initStations();		/* Init MVA values (pop&waits). */		/* -- Step 2 -- */
+	    initializeSubmodels();	/* Init MVA values (pop&waits). */		/* -- Step 2 -- */
 	}
 
 	if ( Options::Debug::submodels() ) {	/* Print out layers... 		*/
-	    std::for_each( _submodels.begin(), _submodels.end(), ConstPrint<Submodel>( &Submodel::print, std::cout ) );
+	    for ( const auto& submodel : _submodels ) submodel->print( std::cout );
 	}
 
     } else {
-	reinitStations();
+	reinitializeSubmodels();
     }
 
     return !LQIO::io_vars.anError();
@@ -593,13 +589,13 @@ Model::extend()
 	const std::set<Entry *,lt_replica<Entry>> entries(Model::__entry);
 
 	/* Create processors and entries first as tasks need them.  */
-	std::for_each( processors.begin(), processors.end(), Exec<Processor>( &Processor::expand ) );
-	std::for_each( entries.begin(), entries.end(), Exec<Entry>( &Entry::expand ) );
-	std::for_each( tasks.begin(), tasks.end(), Exec<Task>( &Task::expand ) );
+	std::for_each( processors.begin(), processors.end(), std::mem_fn( &Processor::expand ) );
+	std::for_each( entries.begin(), entries.end(), std::mem_fn( &Entry::expand ) );
+	std::for_each( tasks.begin(), tasks.end(), std::mem_fn( &Task::expand ) );
 
 	/* Calls are done after all entries have been created and linked to tasks */
-	std::for_each( entries.begin(), entries.end(), Exec<Entry>( &Entry::expandCalls ) );
-	std::for_each( tasks.begin(), tasks.end(), Exec<Task>( &Task::expandCalls ) );
+	std::for_each( entries.begin(), entries.end(), std::mem_fn( &Entry::expandCalls ) );
+	std::for_each( tasks.begin(), tasks.end(), std::mem_fn( &Task::expandCalls ) );
     }
 
     /* Think times. */
@@ -611,6 +607,7 @@ Model::extend()
 	if ( (*task)->hasThinkTime() ) {
 	    if ( !__think_server ) {
 		__think_server = new DelayServer("THINK_DELAY");
+		__think_server->setClosedModelServer( true );
 	    }
 	    __think_server->addTask( *task );	/* link the task in */
 	}
@@ -645,11 +642,11 @@ Model::check()
     if ( LQIO::io_vars.anError() ) return false;	/* Don't bother */
 
     bool rc = true;
-    rc = std::all_of( __processor.begin(), __processor.end(), Predicate<Processor>( &Processor::check ) ) && rc;
-    rc = std::all_of( __task.begin(), __task.end(), Predicate<Task>( &Task::check ) ) && rc;
+    rc = std::all_of( __processor.begin(), __processor.end(), std::mem_fn( &Processor::check ) ) && rc;
+    rc = std::all_of( __task.begin(), __task.end(), std::mem_fn( &Task::check ) ) && rc;
 
-    if ( std::none_of( __task.begin(), __task.end(), Predicate<Task>( &Task::isReferenceTask ) )
-	 && std::none_of( __task.begin(), __task.end(), Predicate<Task>( &Task::hasOpenArrivals ) ) ) {
+    if ( std::none_of( __task.begin(), __task.end(), std::mem_fn( &Task::isReferenceTask ) )
+	 && std::none_of( __task.begin(), __task.end(), std::mem_fn( &Task::hasOpenArrivals ) ) ) {
 	rc = false;
 	LQIO::runtime_error( LQIO::ERR_NO_REFERENCE_TASKS );
     }
@@ -692,7 +689,7 @@ Model::generate( unsigned max_depth )
 
     /* Add submodel for join delay calculation */
 
-    if ( std::any_of( __task.begin(), __task.end(), Predicate<Task>( &Task::hasForks ) ) ) {
+    if ( std::any_of( __task.begin(), __task.end(), std::mem_fn( &Task::hasForks ) ) ) {
 	__sync_submodel = nSubmodels() + 1;	/* Set global here, used in addToSubmodel */
 	_submodels.push_back(new SynchSubmodel(__sync_submodel));
     }
@@ -700,7 +697,7 @@ Model::generate( unsigned max_depth )
     /* Build model. */
 
     addToSubmodel();			/* Add tasks to layers.		*/
-    std::for_each( _submodels.begin(), _submodels.end(), Exec<Submodel>( &Submodel::addClients ) );
+    std::for_each( _submodels.begin(), _submodels.end(), std::mem_fn( &Submodel::addClients ) );
 
     /* split/prune submodels -- this will have to be done by subclass */
 
@@ -710,18 +707,18 @@ Model::generate( unsigned max_depth )
 
 
 /*
- * Initialize the fan-in/out and the waiting time arrays.  The latter
- * need to know the number of layers.  Called after the model has been
- * GENERATED.  The model MUST BE COMPLETE before it can be
- * initialized.  Tasks must be done before processors.
+ * Initialize the fan-in/out and the waiting time arrays.  The latter need to
+ * know the number of layers.  Called after the model has been GENERATED.  The
+ * model MUST BE COMPLETE before it can be initialized.  Tasks must be done
+ * before processors.
  */
 
 void
 Model::configure()
 {
     _MVAStats.resize( nSubmodels() );	/* MVA statistics by level.	*/
-    std::for_each( __task.begin(), __task.end(), Exec1<Entity,unsigned>( &Entity::configure, nSubmodels() ) );
-    std::for_each( __processor.begin(), __processor.end(), Exec1<Entity,unsigned>( &Entity::configure, nSubmodels() ) );
+    for ( auto& task : __task ) task->configure( nSubmodels() );
+    for ( auto& processor : __processor ) processor->configure( nSubmodels() );
     if ( __think_server ) {
 	__think_server->configure( nSubmodels() );
     }
@@ -733,41 +730,36 @@ Model::configure()
 
 
 /*
- * Initialize waiting times, interlocking etc.  Servers are done by
- * subclasses because of the structure of the model.  Clients are done
- * here.
+ * Initialize waiting times, interlocking etc.  Servers are done by subclasses
+ * because of the structure of the model.  Clients are done here.
  */
 
 void
-Model::initStations()
+Model::initializeSubmodels()
 {
     if ( Pragma::interlock() ) {
-	std::for_each( __task.begin(), __task.end(), Exec<Task>( &Task::createInterlock ) );
+	std::for_each( __task.begin(), __task.end(), std::mem_fn( &Task::createInterlock ) );
 	if ( Options::Debug::interlock() ) {
 	    Interlock::printPathTable( std::cout );
 	}
     }
 
     /*
-     * Initialize waiting times and populations at servers Done in
-     * reverse order (bottom up) because waits propogate upwards.
+     * Initialize waiting times and populations at servers Done in reverse
+     * order (bottom up) because waits propogate upwards.
      */
 
-    std::for_each( _submodels.rbegin(), _submodels.rend(), Exec1<Submodel,const Model&>( &Submodel::initServers, *this ) );
+    std::for_each( _submodels.rbegin(), _submodels.rend(), std::mem_fn( &Submodel::initializeSubmodel ) );
 
-    /* Initialize waiting times and populations for the reference tasks. */
-
-    std::for_each( __task.begin(), __task.end(), Exec1<Entity,const Vector<Submodel *>&>( &Entity::initClient, getSubmodels() ) );
-
-    /* Initialize Interlocking */
+    /* Initialize Interlocking -- must be done after all submodels initialized. */
 
     if ( Pragma::interlock() ) {
-	std::for_each( _submodels.begin(), _submodels.end(), Exec<Submodel>( &Submodel::initInterlock ) );
+	std::for_each( _submodels.begin(), _submodels.end(), std::mem_fn( &Submodel::initializeInterlock ) );
     }
-
+    
     /* build stations and customers as needed. */
 
-    std::for_each( _submodels.begin(), _submodels.end(), Exec<Submodel>( &Submodel::build ) );      	    /* For use by MVA stats/generate*/
+    std::for_each( _submodels.begin(), _submodels.end(), std::mem_fn( &Submodel::build ) );      	    /* For use by MVA stats/generate*/
 
     _runDPS = false;
 }
@@ -776,52 +768,47 @@ Model::initStations()
 
 /*
  * Re-initialize waiting times, interlocking etc.  Servers are done by
- * subclasses because of the structure of the model.  Clients are done
- * here.
+ * subclasses because of the structure of the model.  Clients are done here.
  */
 
 void
-Model::reinitStations()
+Model::reinitializeSubmodels()
 {
     /*
-     * Reset all counters before a run.  In particular, iterations
-     * needs to reset to zero for the convergence test.
+     * Reset all counters before a run.  In particular, iterations needs to
+     * reset to zero for the convergence test.
      */
 
     _iterations = 0;
     _step_count = 0;
 
-    std::for_each( _MVAStats.begin(), _MVAStats.end(), Exec<MVACount>( &MVACount::initialize ) );
+    std::for_each( _MVAStats.begin(), _MVAStats.end(), std::mem_fn( &MVACount::initialize ) );
     if ( Pragma::interlock() ) {
-	std::for_each( __entry.begin(), __entry.end(), Exec<Entry>( &Entry::resetInterlock ) );
+	std::for_each( __entry.begin(), __entry.end(), std::mem_fn( &Entry::resetInterlock ) );
     }
 
     /*
      * Reinitialize the MVA stuff
      */
 
-    std::for_each( __task.begin(),  __task.end(), Exec<Task>( &Task::createInterlock ) );
+    std::for_each( __task.begin(),  __task.end(), std::mem_fn( &Task::createInterlock ) );
 
     /*
-     * Initialize waiting times and populations at servers Done in
-     * reverse order (bottom up) because waits propogate upwards.
+     * Initialize waiting times and populations at servers Done in reverse
+     * order (bottom up) because waits propogate upwards.
      */
 
-    std::for_each( _submodels.rbegin(), _submodels.rend(), Exec1<Submodel,const Model&>( &Submodel::reinitServers, *this ) );
-
-    /* Initialize waiting times and populations for the reference tasks. */
-
-    std::for_each( __task.begin(), __task.end(), Exec1<Entity,const Vector<Submodel *>&>( &Entity::reinitClient, getSubmodels() ) );
+    std::for_each( _submodels.rbegin(), _submodels.rend(), std::mem_fn( &Submodel::reinitializeSubmodel ) );
 
     /* Reinitialize Interlocking */
 
     if ( Pragma::interlock() ) {
-	std::for_each( _submodels.begin(), _submodels.end(), Exec<Submodel>( &Submodel::initInterlock ) );
+	std::for_each( _submodels.begin(), _submodels.end(), std::mem_fn( &Submodel::initializeInterlock ) );
     }
-
+    
     /* Rebuild stations and customers as needed. */
 
-    std::for_each( _submodels.begin(), _submodels.end(), Exec<Submodel>( &Submodel::rebuild ) );
+    std::for_each( _submodels.begin(), _submodels.end(), std::mem_fn( &Submodel::rebuild ) );
 }
 
 
@@ -899,7 +886,7 @@ Model::reload()
 
     unsigned int errorCode;
     if ( !const_cast<LQIO::DOM::Document *>(getDOM())->loadResults( directory_name(), _input_file_name,
-								     SolverInterface::Solve::customSuffix, _output_format, errorCode ) ) {
+								    SolverInterface::Solve::customSuffix, _output_format, errorCode ) ) {
 	throw LQX::RuntimeException( "--reload-lqx can't load results." );
     } else {
 	return getDOM()->getResultValid();
@@ -926,8 +913,8 @@ Model::restart()
 void
 Model::sanityCheck()
 {
-    std::for_each( __task.begin(), __task.end(), ConstExec<Entity>( &Entity::sanityCheck ) );
-    std::for_each( __processor.begin(), __processor.end(), ConstExec<Entity>( &Entity::sanityCheck ) );
+    std::for_each( __task.begin(), __task.end(), std::mem_fn( &Entity::sanityCheck ) );
+    std::for_each( __processor.begin(), __processor.end(), std::mem_fn( &Entity::sanityCheck ) );
 }
 
 
@@ -967,9 +954,9 @@ Model::setRunDPS( double delta )
 void
 Model::insertDOMResults() const
 {
-    std::for_each( __task.begin(), __task.end(), ConstExec<Task>( &Task::insertDOMResults ) );
-    std::for_each( __processor.begin(), __processor.end(), ConstExec<Processor>( &Processor::insertDOMResults ) );
-    std::for_each( __group.begin(), __group.end(), ConstExec<Group>( &Group::insertDOMResults ) );
+    std::for_each( __task.begin(), __task.end(), std::mem_fn( &Task::insertDOMResults ) );
+    std::for_each( __processor.begin(), __processor.end(), std::mem_fn( &Processor::insertDOMResults ) );
+    std::for_each( __group.begin(), __group.end(), std::mem_fn( &Group::insertDOMResults ) );
 }
 
 
@@ -999,12 +986,9 @@ Model::printSubmodelWait( std::ostream& output ) const
     output.setf( std::ios::left, std::ios::adjustfield );
 
     output << std::setw(8) <<  "Submodel    ";
-    for ( unsigned i = 1; i <= nSubmodels(); ++i ) {
-	output << std::setw(8) << i;
-    }
+    for ( unsigned i = 1; i <= nSubmodels(); ++i ) output << std::setw(8) << i;
     output << std::endl;
-
-    std::for_each( __task.begin(), __task.end(), ConstPrint<Task>( &Task::printSubmodelWait, output ) );
+    for ( const auto& task : __task ) task->printSubmodelWait( output );
 
     output.setf( flags );
     output.precision( precision );
@@ -1166,8 +1150,7 @@ MOL_Model::run()
 
 	    std::for_each( _submodels.begin(), &_submodels[_HWSubmodel], solveSubmodel );
 
-	    delta = std::for_each( __task.begin(), __task.end(), ExecSumSquare<Task,double>( &Task::deltaUtilization ) ).sum();
-	    delta = sqrt( delta / __task.size() );		/* RMS */
+	    delta = sqrt( std::accumulate( __task.begin(), __task.end(), 0.0, Entity::sum_square( &Entity::deltaUtilization ) ) / __task.size() );		/* RMS */
 
 	    if ( delta > convergenceValue() ) {
 		backPropogate();
@@ -1192,8 +1175,7 @@ MOL_Model::run()
 	    printSubmodelWait();
 	}
 
-	delta = std::for_each( __processor.begin(), __processor.end(), ExecSumSquare<Processor,double>( &Processor::deltaUtilization ) ).sum();
-	delta = sqrt( delta / __processor.size() );		/* RMS */
+	delta = sqrt( std::accumulate( __processor.begin(), __processor.end(), 0.0, Entity::sum_square( &Entity::deltaUtilization ) ) / __processor.size() );		/* RMS */
 
 	setRunDPS( delta );	/* Let the model converge preliminarily then run DPS. */
 
@@ -1293,7 +1275,7 @@ Batch_Model::addToSubmodel()
 void
 Batch_Model::partition()
 {
-    std::for_each( _submodels.begin(), _submodels.end(), Exec<Submodel>( &Submodel::partition ) );
+    std::for_each( _submodels.begin(), _submodels.end(), std::mem_fn( &Submodel::partition ) );
 }
 
 
@@ -1318,9 +1300,10 @@ Batch_Model::run()
 
 	/* compute convergence for next pass. */
 
-	delta =  std::for_each( __task.begin(), __task.end(), ExecSumSquare<Task,double>( &Task::deltaUtilization ) ).sum();
-	delta += std::for_each( __processor.begin(), __processor.end(), ExecSumSquare<Processor,double>( &Processor::deltaUtilization ) ).sum();
-	delta =  sqrt( delta / count );		/* RMS */
+	delta = sqrt( std::accumulate( __processor.begin(), __processor.end(),
+				       std::accumulate( __task.begin(), __task.end(), 0.0,
+							Entity::sum_square( &Entity::deltaUtilization ) ),
+				       Entity::sum_square( &Entity::deltaUtilization ) ) / count );		/* RMS */
 
 	if ( delta > convergenceValue() ) {
 	    backPropogate();

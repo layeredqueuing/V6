@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: entity.cc 16124 2022-11-18 11:26:13Z greg $
+ * $Id: entity.cc 16756 2023-06-27 08:25:25Z greg $
  *
  * Everything you wanted to know about a task or processor, but were
  * afraid to ask.
@@ -16,6 +16,7 @@
 
 #include "lqns.h"
 #include <cmath>
+#include <functional>
 #include <numeric>
 #include <sstream>
 #include <limits>
@@ -75,27 +76,20 @@ Entity::Entity( LQIO::DOM::Entity* dom, const std::vector<Entry *>& entries )
     : _dom(dom),
       _entries(entries),
       _tasks(),
-      _population(1.0),
       _thinkTime(0.0),
       _station(nullptr),		/* Reference tasks don't have server stations. */
+      _attributes(),
       _interlock( *this ),
       _submodel(0),
       _maxPhase(1),
       _utilization(0),
       _lastUtilization(-1.0),		/* Force update 		*/
       _weight(0.0),
-#if defined(BUG_393)
+#if BUG_393
       _marginalQueueProbabilities(),
 #endif
-      _replica_number(1),		/* This object is not a replica	*/
-      _pruned(false)
+      _replica_number(1)		/* This object is not a replica	*/
 {
-    _attributes[Attributes::initialized]	= false;	/* entity was initialized.		*/
-    _attributes[Attributes::closed_server]   	= false;	/* Stn in server in closed model.     	*/
-    _attributes[Attributes::closed_client]   	= false;	/* Stn in client in closed model.     	*/
-    _attributes[Attributes::open_server]	= false;	/* Stn is server in open model.		*/
-    _attributes[Attributes::deterministic]  	= false;	/* an entry has det. phase[		*/
-    _attributes[Attributes::variance]		= false;	/* */
 }
 
 
@@ -107,7 +101,6 @@ Entity::Entity( const Entity& src, unsigned int replica )
     : _dom(src._dom),
       _entries(),
       _tasks(),
-      _population(src._population),
       _thinkTime(src._thinkTime),
       _station(nullptr),		/* Reference tasks don't have server stations. */
       _attributes(src._attributes),
@@ -117,11 +110,10 @@ Entity::Entity( const Entity& src, unsigned int replica )
       _utilization(0),
       _lastUtilization(-1.0),		/* Force update 		*/
       _weight(0.0),
-#if defined(BUG_393)
+#if BUG_393
       _marginalQueueProbabilities(),	/* Result, don't care.		*/
 #endif
-      _replica_number(replica),		/* This object is a replica	*/
-      _pruned(false)
+      _replica_number(replica)		/* This object is a replica	*/
 {
 }
 
@@ -145,11 +137,11 @@ Entity::~Entity()
 Entity&
 Entity::configure( const unsigned nSubmodels )
 {
-    std::for_each( entries().begin(), entries().end(), Exec1<Entry,unsigned>( &Entry::configure, nSubmodels ) );
-    if ( std::any_of( entries().begin(), entries().end(), Predicate<Entry>( &Entry::hasDeterministicPhases ) ) ) _attributes.at(Attributes::deterministic) = true;
+    for ( auto& entry : entries() ) entry->configure( nSubmodels );
+    if ( std::any_of( entries().begin(), entries().end(), std::mem_fn( &Entry::hasDeterministicPhases ) ) ) setDeterministicPhases( true );
     if ( !Pragma::variance(Pragma::Variance::NONE)
 	 && ((nEntries() > 1 && Pragma::entry_variance())
-	     || std::any_of( entries().begin(), entries().end(), Predicate<Entry>( &Entry::hasVariance ) )) ) _attributes.at(Attributes::variance) = true;
+	     || std::any_of( entries().begin(), entries().end(), std::mem_fn( &Entry::hasVariance ) )) ) setVarianceAttribute( true );
     _maxPhase = (*std::max_element( entries().begin(), entries().end(), Entry::max_phase ))->maxPhase();
     return *this;
 }
@@ -165,43 +157,32 @@ Entity::check() const
     return true;
 }
 
+
 /*
  * Recursively find all children and grand children from `father'.  As
  * we descend down, we bump the depth.  If our path's cross, we have a
- * loop and abort.
+ * loop and abort.  Implemented by subclasses.  The superclass
+ * performs common operations (setting the depth and population).   
  */
 
 unsigned
 Entity::findChildren( Call::stack& callStack, const bool ) const
 {
     unsigned max_depth = std::max( submodel(), callStack.depth() );
-
+    Entity * entity = const_cast<Entity *>(this);		// findChildren is normally const...
 #if 0
     std::cerr << "Entity::findChildren: " << print_name() << "->setSubmodel(" << max_depth << ")" << std::endl;
 #endif
-    const_cast<Entity *>(this)->setSubmodel( max_depth );
+    entity->setSubmodel( max_depth );
     return max_depth;
 }
 
 
 
-/*
- * Initialize waiting time at my entries.
- */
-
-Entity&
-Entity::initWait()
-{
-    std::for_each( entries().begin(), entries().end(), Exec<Entry>( &Entry::initWait ) );
-    return *this;
-}
-
-
-Entity&
-Entity::initInterlock()
+void
+Entity::initializeInterlock()
 {
     _interlock.initialize();
-    return *this;
 }
 
 
@@ -210,17 +191,11 @@ Entity::initInterlock()
  * Initialize server's waiting times and populations (called after recalculate dynamic variables)
  */
 
-Entity&
-Entity::initServer( const Vector<Submodel *>& submodels )
+void
+Entity::initializeServer()
 {
-    initWait();
-    updateAllWaits( submodels );
     computeVariance();
-    initThroughputBound();
-    initPopulation();
     initThreads();
-    initialized(true);
-    return *this;
 }
 
 
@@ -228,14 +203,10 @@ Entity::initServer( const Vector<Submodel *>& submodels )
  * Initialize server's waiting times and populations (called after recalculate dynamic variables)
  */
 
-Entity&
-Entity::reinitServer( const Vector<Submodel *>& submodels )
+void
+Entity::reinitializeServer()
 {
-    updateAllWaits( submodels );
     computeVariance();
-    initThroughputBound();
-    initPopulation();
-    return *this;
 }
 
 
@@ -295,6 +266,13 @@ Entity::isCalledBy( const Task* task ) const
 }
 
 
+bool
+Entity::isReplica() const
+{
+    return Pragma::replication() == Pragma::Replication::PRUNE && getReplicaNumber() > 1;
+}
+
+
 
 /*
  * Add an entry to the list of entries for this task and set local index
@@ -316,7 +294,7 @@ Entity::addEntry( Entry * anEntry )
 double
 Entity::throughput() const
 {
-    return std::accumulate( entries().begin(), entries().end(), 0., add_using<Entry>( &Entry::throughput ) );
+    return std::accumulate( entries().begin(), entries().end(), 0., Entry::sum( &Entry::throughput ) );
 }
 
 
@@ -352,7 +330,7 @@ Entity::hasServerChain( const unsigned k ) const
 bool
 Entity::hasOpenArrivals() const
 {
-    return std::any_of( entries().begin(), entries().end(), Predicate<Entry>( &Entry::hasOpenArrivals ) );
+    return std::any_of( entries().begin(), entries().end(), std::mem_fn( &Entry::hasOpenArrivals ) );
 }
 
 
@@ -368,14 +346,6 @@ Entity::getClients( std::set<Task *>& clients ) const
 }
 
 
-double
-Entity::nCustomers() const
-{
-    std::set<Task *> clients;
-    getClients( clients );
-    return std::accumulate( clients.begin(), clients.end(), 0., add_using<Task>( &Task::population ) );
-}
-
 /*
  * Return true if phased server are used.
  */
@@ -390,22 +360,13 @@ Entity::markovOvertaking() const
 
 
 /*
- * Upated the waiting time over all submodels.
+ * Compute the utilization based on the throughput and residence times of entries.
  */
 
-Entity&
-Entity::updateAllWaits( const Vector<Submodel *>& submodels )
-{
-    std::for_each( submodels.begin(), submodels.end(), update_wait( *this ) );
-    return *this;
-}
-
-
-
 double
-Entity::computeUtilization( const MVASubmodel& submodel )
+Entity::computeUtilization( const MVASubmodel& submodel, const Server& )
 {
-    return std::accumulate( entries().begin(), entries().end(), 0., add_using<Entry>( &Entry::utilization ) );
+    return std::accumulate( entries().begin(), entries().end(), 0., Entry::sum( &Entry::utilization ) );
 }
 
 
@@ -416,7 +377,7 @@ Entity::computeUtilization( const MVASubmodel& submodel )
 Entity&
 Entity::computeVariance()
 {
-    std::for_each( entries().begin(), entries().end(), Exec<Entry>( &Entry::computeVariance ) );
+    std::for_each( entries().begin(), entries().end(), std::mem_fn( &Entry::computeVariance ) );
     return *this;
 }
 
@@ -751,32 +712,6 @@ Entity::setInterlockRelation( Server * station, const Entry * server_entry_1, co
 /* -------------------------------------------------------------------- */
 
 /*
- * Calculate and set think time.  Note that population returns the
- * maximum number of customers possible at a station.  It is used,
- * rather than copies, because some multi-servers may have more
- * threads specified than can possibly be active.
- */
-
-void
-Entity::setIdleTime( const double relax )
-{
-    if ( !std::isfinite( population() ) ) {
-	_thinkTime = 0.0;
-    } else if ( utilization() >= population() ) {
-	_thinkTime = 0.0;
-    } else if ( throughput() > 0.0 ) {
-	_thinkTime = under_relax( _thinkTime, (population() - utilization()) / throughput(), relax );
-    } else {
-	_thinkTime = std::numeric_limits<double>::infinity();
-    }
-    if ( flags.trace_idle_time ) {
-	std::cout << "\nEntity::setIdleTime():" << name() << "   Idle Time:  " << _thinkTime << std::endl;
-    }
-}
-
-
-
-/*
  * Check results for sanity.
  * Note -- make sure all errors are advisories, or no output will be generated.
  */
@@ -822,163 +757,43 @@ Entity::clear()
 }
 
 
-/*
- * Initialize the service and visit parameters for a server.  Also set myChains to
- * all chains that visit this server.
- */
 
-Entity&
-Entity::initServerStation( MVASubmodel& submodel )
+const Entity&
+Entity::insertDOMResults() const
 {
-    Server * station = serverStation();
-    if ( !station ) return *this;
-
-    if ( !Pragma::init_variance_only() ) {
-	computeVariance();
+#if BUG_393
+    if ( !_marginalQueueProbabilities.empty() ) {
+	std::vector<double>& marginals = getDOM()->getResultMarginalQueueProbabilities();
+	marginals = _marginalQueueProbabilities;
     }
-
-    /* If this entity has been pruned, remap to the base replica */
-#if BUG_299_PRUNE
-    const Entity * entity = nullptr;
-    if ( !isPruned() ) {
-	entity = this;
-    } else if ( isProcessor() ) {
-	entity = Processor::find( name() );
-    } else {
-	entity = Task::find( name() );
-    }
-    const std::vector<Entry *>& entries = entity->entries();
-#else
-    const std::vector<Entry *>& entries = this->entries();
 #endif
-
-    const ChainVector& chains = serverChains();
-    for ( std::vector<Entry *>::const_iterator entry = entries.begin(); entry != entries.end(); ++entry ) {
-	const unsigned e = (*entry)->index();
-	const double openArrivalRate = (*entry)->openArrivalRate();
-
-	if ( openArrivalRate > 0.0 ) {
-	    station->setVisits( e, 0, 1, openArrivalRate );	// Chain 0 reserved for open class.
-	}
-
-	/* -- Set service time for entries with visits only. -- */
-	if ( isClosedModelServer() ) {
-	    for ( ChainVector::const_iterator k = chains.begin(); k != chains.end(); ++k ) {
-		setServiceTime( (*entry), *k );
-	    }
-	}
-
-	/*
-	 * Open arrivals and other open models use chain zero which are special
-	 * and won't work in the above loop anyway)
-	 */
-
-	if ( isOpenModelServer() ) {
-	    setServiceTime( (*entry), 0 );
-	}
-
-    }
-
-    /* Overtaking -- compute for MARKOV overtaking only. */
-
-    const std::set<Task *>& clients = submodel.getClients();
-    if ( markovOvertaking() ) {
-	std::for_each( clients.begin(), clients.end(), Exec1<Task,Entity*>( &Task::computeOvertaking, this ) );
-	for ( std::vector<Entry *>::const_iterator entry = entries.begin(); entry != entries.end(); ++entry ) {
-	    if ( (*entry)->hasOvertaking() ) {
-		const unsigned e = (*entry)->index();
-		for ( unsigned p = 2; p <= (*entry)->maxPhase(); p++ ) {
-		    (*entry)->setPrOvertaking( p, station->PrOT_e(e, p) );
-		}
-	    }
-	}
-    }
-
-    /* Set interlock */
-
-    if ( isClosedModelServer() && Pragma::interlock() ) {
-	initWeights( submodel );
-	this->setInterlock( submodel );
-    }
-
-    std::for_each( clients.begin(), clients.end(), ConstExec2<Task,const MVASubmodel&,const Entity *>( &Task::setRealCustomers, submodel, this ) );
-
-    if ( hasSynchs() && !Pragma::threads(Pragma::Threads::NONE) ) {
-	joinOverlapFactor( submodel );
-    }
     return *this;
 }
-
+
+/* ----------------------------- Save Results ----------------------------- */
 
 /*
- * Set the service time for my station.
+ * Common code.
  */
 
 void
-Entity::setServiceTime( const Entry * entry, unsigned k ) const
+Entity::saveServerResults( const MVASubmodel& submodel, const Server& station, double relaxation )
 {
-    Server * station = serverStation();
-    const unsigned e = entry->index();
+    std::for_each( entries().begin(), entries().end(), Entry::SaveServerResults( submodel, station, *this ) );
 
-    if ( station->V( e, k ) == 0 ) return;
-
-    for ( unsigned p = 1; p <= entry->maxPhase(); ++p ) {
-	station->setService( e, k, p, entry->elapsedTimeForPhase(p) );
-	if ( hasVariance() ) {
-	    station->setVariance( e, k, p, entry->varianceForPhase(p) );
-	}
-    }
-}
-
-
-
-/*
- * Save server results.  Servers only occur in one submodel.
- */
-
-Entity&
-Entity::saveServerResults( const MVASubmodel& submodel, double relax )
-{
-    const Server * station = serverStation();
-
-    for ( std::vector<Entry *>::const_iterator entry = entries().begin(); entry != entries().end(); ++entry ) {
-	const unsigned e = (*entry)->index();
-	double lambda = 0.0;
-
-	if ( isOpenModelServer() ) {
-	    lambda = submodel.openModelThroughput( *station, e );		/* BUG_168 */
-	    (*entry)->saveOpenWait( station->R( e, 0 ) );
-	}
-
-	if ( isClosedModelServer() ) {
-	    const double tput = submodel.closedModelThroughput( *station, e );
-	    if ( std::isfinite( tput ) ) {
-		lambda += tput;
-	    } else if ( tput < 0.0 ) {
-		throw std::domain_error( "MVASubmodel::saveServerResults" );
-	    } else {
-		lambda = tput;
-		break;
-	    }
-	}
-	(*entry)->saveThroughput( lambda );
-    }
-
-#if defined(BUG_393)
+#if BUG_393
     /* Only save if needed */
-    if ( Pragma::saveMarginalProbabilities() && isClosedModelServer() && station->getMarginalProbabilitiesSize() > 0 ) {
-	unsigned int copies = static_cast<unsigned int>(station->mu());
+    if ( Pragma::saveMarginalProbabilities() && isClosedModelServer() && station.getMarginalProbabilitiesSize() > 0 ) {
+	unsigned int copies = static_cast<unsigned int>(station.mu());
 	_marginalQueueProbabilities.resize(copies+1);
 	for ( unsigned int i = 0; i <= copies; ++i ) {
-	    _marginalQueueProbabilities[i] = submodel.closedModelMarginalQueueProbability( *station, i );
+	    _marginalQueueProbabilities[i] = submodel.closedModelMarginalQueueProbability( station, i );
 	}
     }
 #endif
 
-    setUtilization( computeUtilization( submodel ) );
-    setIdleTime( relax );
-
-    return *this;
+    setUtilization( computeUtilization( submodel, station ) );
+    setIdleTime( relaxation );
 }
 
 
@@ -995,18 +810,30 @@ Entity::setUtilization( double utilization )
 }
 
 
-const Entity&
-Entity::insertDOMResults() const
-{
-#if defined(BUG_393)
-    if ( !_marginalQueueProbabilities.empty() ) {
-	std::vector<double>& marginals = getDOM()->getResultMarginalQueueProbabilities();
-	marginals = _marginalQueueProbabilities;
-    }
-#endif
-    return *this;
-}
 
+/*
+ * Calculate and set think time.  Note that population returns the maximum
+ * number of customers possible at a station.  It is used, rather than copies,
+ * because some multi-servers may have more threads specified than can
+ * possibly be active.
+ */
+
+void
+Entity::setIdleTime( const double relax )
+{
+    if ( population() == std::numeric_limits<unsigned int>::max() ) {
+	_thinkTime = 0.0;
+    } else if ( utilization() >= population() ) {
+	_thinkTime = 0.0;
+    } else if ( throughput() > 0.0 ) {
+	_thinkTime = under_relax( _thinkTime, (population() - utilization()) / throughput(), relax );
+    } else {
+	_thinkTime = std::numeric_limits<double>::infinity();
+    }
+    if ( flags.trace_idle_time ) {
+	std::cout << "Entity(" << name() << ")::setIdleTime()   thinkTime=" << _thinkTime << std::endl;
+    }
+}
 
 /* -------------------------------------------------------------------- */
 /* Funky Formatting functions for inline with <<.			*/
@@ -1079,7 +906,7 @@ Entity::output_type( std::ostream& output, const Entity& entity )
     } else if ( entity.isInfinite() ) {
 	buf = "inf";
     } else if ( n > 1 ) {
-	buf = std::string( "mult(" + std::to_string( n ) + ")" );
+	buf = std::string( "mult(" ) + std::to_string( n ) + ")";
     } else {
 	buf = "serv";
     }

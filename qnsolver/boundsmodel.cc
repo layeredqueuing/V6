@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/qnsolver/boundsmodel.cc $
+ * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/branches/merge-V5-V6/qnsolver/boundsmodel.cc $
  *
  * SRVN command line interface.
  *
@@ -9,7 +9,7 @@
  *
  * December 2020
  *
- * $Id: boundsmodel.cc 16359 2023-01-23 10:48:17Z greg $
+ * $Id: boundsmodel.cc 16381 2023-01-31 17:01:26Z greg $
  *
  * ------------------------------------------------------------------------
  */

@@ -1,6 +1,6 @@
 /* model.cc	-- Greg Franks Mon Feb  3 2003
  *
- * $Id: model.cc 16627 2023-04-03 22:04:21Z greg $
+ * $Id: model.cc 16750 2023-06-19 12:16:45Z greg $
  *
  * Load, slice, and dice the lqn model.
  */
@@ -68,9 +68,11 @@ private:
 
 
 Model * Model::__model = 0;
+#if BUG_270
 std::vector<Entity *> Model::__zombies;
+#endif
 std::vector<std::string> Model::__group_list;
-
+std::map<unsigned int,double> Model::__offset_layer;
 
 unsigned Model::openArrivalCount  = 0;
 unsigned Model::forwardingCount	  = 0;
@@ -1261,10 +1263,12 @@ Model::format()
     for ( std::vector<Layer>::reverse_iterator layer = _layers.rbegin(); layer != _layers.rend(); ++layer ) {
 	if ( !*layer ) continue;
 	layer->format( start_y ).label().sort( (compare_func_ptr)(&Entity::compare) ).depth( (nLayers() - layer->number()) * 10 );
+	start_y += (layer->height() + Flags::y_spacing());
+
+	/* Calculate origin and extent for this layer */
+
 	_origin.min( layer->x(), layer->y() );
 	_extent.max( layer->x() + layer->width(), layer->y() + layer->height() );
-
-	start_y += (layer->height() + Flags::y_spacing());
     }
 
     justify();
@@ -1284,6 +1288,15 @@ Model::format()
     for ( std::vector<Layer>::reverse_iterator layer = _layers.rbegin(); layer != _layers.rend(); ++layer ) {
 	if ( !*layer ) continue;
 	layer->moveLabelTo( right() + Flags::x_spacing(), layer->height() / 2.0 );
+
+	/* Shift layer if neccessary */
+
+	std::map<unsigned int,double>::const_iterator offset = __offset_layer.find(layer->number());
+	if ( offset != __offset_layer.end() ) {
+	    layer->moveBy( offset->second, 0. );
+	    _extent.x( std::max( _extent.x(), layer->x() + layer->width() ) );
+	}
+
     }
     return *this;
 }
@@ -2889,7 +2902,7 @@ SRVN_Model::selectSubmodel( const unsigned submodel )
     unsigned int s = 1;
     for ( std::multiset<Entity *,lt_submodel>::const_iterator server = servers.begin(); server != servers.end(); ++server, ++s ) {
 	if ( s == submodel ) {
-	    (*server)->isSelected( true );
+	    (*server)->setSelected( true );
 	    return true;
 	}
     }

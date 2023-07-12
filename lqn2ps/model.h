@@ -1,7 +1,7 @@
 /* -*- c++ -*-
  * model.h	-- Greg Franks
  *
- * $Id: model.h 15969 2022-10-13 19:49:43Z greg $
+ * $Id: model.h 16750 2023-06-19 12:16:45Z greg $
  */
 
 #ifndef _MODEL_H
@@ -35,7 +35,6 @@ class Model
 {
     typedef std::ostream& (*outputFuncPtr)( std::ostream& );
     typedef Model * (*create_func)( LQIO::DOM::Document * document, const std::string& input_file_name, const std::string& output_file_name, unsigned int number_of_layers );
-
 
     /* Statistics collected.  Output is ordered by the order here. */
 
@@ -312,6 +311,7 @@ private:
     double _scaling;
 
 public:
+    static std::map<unsigned int,double> __offset_layer;
 #if BUG_270
     static std::vector<Entity *> __zombies;	/* transmorgrify	*/
 #endif

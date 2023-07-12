@@ -9,7 +9,7 @@
 /*
  * Input output processing.
  *
- * $Id: group.cc 15760 2022-07-25 14:36:17Z greg $
+ * $Id: group.cc 16752 2023-06-19 19:18:17Z greg $
  */
 
 #include "lqsim.h"
@@ -80,7 +80,7 @@ Group::create()
 	    if ( cp->multiplicity() > 1 ) {
 		int group_id = ps_build_group( name(), new_share, _processor.node_id(), cap() );
 		if ( group_id < 0 ) {
-		    LQIO::input_error2( ERR_CANNOT_CREATE_X, "group", name() );
+		    LQIO::input_error( ERR_CANNOT_CREATE_X, "group", name() );
 		    return *this;
 		}
 		cp->set_group_id( group_id );
@@ -93,7 +93,7 @@ Group::create()
 
     int group_id = ps_build_group( name(), std::max( 0.0, share - share_sum ), _processor.node_id(), cap() );
     if ( group_id < 0 ) {
-	LQIO::input_error2( ERR_CANNOT_CREATE_X, "group", name() );
+	LQIO::input_error( ERR_CANNOT_CREATE_X, "group", name() );
 	return *this;
     }
 

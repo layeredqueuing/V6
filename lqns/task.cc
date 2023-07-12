@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/task.cc $
+ * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/branches/merge-V5-V6/lqns/task.cc $
  *
  * Everything you wanted to know about a task, but were afraid to ask.
  *
@@ -10,7 +10,7 @@
  * November, 1994
  *
  * ------------------------------------------------------------------------
- * $Id: task.cc 15969 2022-10-13 19:49:43Z greg $
+ * $Id: task.cc 16753 2023-06-19 19:26:50Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -2478,7 +2478,7 @@ Task::create( LQIO::DOM::Task* dom, const std::vector<Entry *>& entries )
     Processor * processor = Processor::find( processor_name );
 
     if ( !processor ) {
-	LQIO::input_error2( LQIO::ERR_NOT_DEFINED, processor_name.c_str() );
+	LQIO::input_error( LQIO::ERR_NOT_DEFINED, processor_name.c_str() );
 	return nullptr;
     }
 
@@ -2490,7 +2490,7 @@ Task::create( LQIO::DOM::Task* dom, const std::vector<Entry *>& entries )
 	const std::string& group_name = group_dom->getName();
 	group = Group::find( group_name );
 	if ( !group ) {
-	    LQIO::input_error2( LQIO::ERR_NOT_DEFINED, group_name.c_str() );
+	    LQIO::input_error( LQIO::ERR_NOT_DEFINED, group_name.c_str() );
 	}
     }
 
@@ -2528,7 +2528,7 @@ Task::create( LQIO::DOM::Task* dom, const std::vector<Entry *>& entries )
 	if ( entries.size() != N_SEMAPHORE_ENTRIES ) {
 	    dom->runtime_error( LQIO::ERR_TASK_ENTRY_COUNT, entries.size(), N_SEMAPHORE_ENTRIES );
 	}
-	LQIO::input_error2( LQIO::ERR_NOT_SUPPORTED, "Semaphore tasks" );
+	LQIO::input_error( LQIO::ERR_NOT_SUPPORTED, "Semaphore tasks" );
 	//	task = new SemaphoreTask( task_name, n_copies, replications, processor, entries, priority );
 	//	break;
 	/* fall through for now */

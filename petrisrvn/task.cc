@@ -15,27 +15,27 @@
  */
 
 #include <algorithm>
-#include <set>
 #include <cassert>
 #include <cmath>
-#include <lqio/glblerr.h>
-#include <lqio/dom_activity.h>
-#include <lqio/dom_task.h>
-#include <lqio/dom_processor.h>
-#include <lqio/dom_extvar.h>
+#include <set>
 #include <lqio/common_io.h>
-#include "errmsg.h"
-#include "results.h"
-#include "petrisrvn.h"
-#include "task.h"
-#include "entry.h"
-#include "processor.h"
-#include "phase.h"
+#include <lqio/dom_activity.h>
+#include <lqio/dom_extvar.h>
+#include <lqio/dom_processor.h>
+#include <lqio/dom_task.h>
+#include <lqio/glblerr.h>
 #include "activity.h"
 #include "actlist.h"
+#include "entry.h"
+#include "errmsg.h"
 #include "makeobj.h"
-#include "results.h"
+#include "petrisrvn.h"
+#include "phase.h"
 #include "pragma.h"
+#include "processor.h"
+#include "results.h"
+#include "results.h"
+#include "task.h"
 
 using namespace std;
 
@@ -149,14 +149,9 @@ Task::create( const LQIO::DOM::Task * dom )
     const string& task_name = dom->getName();
     if ( task_name.size() == 0 ) abort();
 
-    if ( dom->getReplicasValue() != 1 ) {
-	dom->runtime_error( LQIO::ERR_NOT_SUPPORTED, "replication" );
-    }
-
-
     Processor * processor = Processor::find( dom->getProcessor()->getName() );
     if ( !processor ) {
-	LQIO::input_error2( LQIO::ERR_NOT_DEFINED, dom->getProcessor()->getName().c_str() );
+	LQIO::input_error( LQIO::ERR_NOT_DEFINED, dom->getProcessor()->getName().c_str() );
 	return nullptr;
     }
 
@@ -176,7 +171,7 @@ Task::create( const LQIO::DOM::Task * dom )
 	/* Fall through */
     case SCHEDULE_CUSTOMER:
 	if ( dom->hasQueueLength() ) {
-	    LQIO::input_error2( LQIO::WRN_TASK_QUEUE_LENGTH, task_name.c_str() );
+	    LQIO::input_error( LQIO::WRN_TASK_QUEUE_LENGTH, task_name.c_str() );
 	}
 	if ( dom->isInfinite() ) {
 	    dom->input_error( LQIO::ERR_REFERENCE_TASK_IS_INFINITE );
@@ -186,13 +181,13 @@ Task::create( const LQIO::DOM::Task * dom )
 
     default:
 	dom->runtime_error( LQIO::WRN_SCHEDULING_NOT_SUPPORTED, scheduling_label.at(scheduling).str.c_str() );
-	if ( !Pragma::__pragmas->default_task_scheduling() ) {
-	    scheduling = Pragma::__pragmas->task_scheduling();
-	}
 	/* Fall Through */
     case SCHEDULE_FIFO:
 	if ( dom->hasThinkTime() ) {
 	    dom->runtime_error( LQIO::ERR_NON_REF_THINK_TIME );
+	}
+	if ( !Pragma::__pragmas->default_task_scheduling() ) {
+	    scheduling = Pragma::__pragmas->task_scheduling();
 	}
         task = new Task( dom, Task::Type::SERVER, processor );
 	break;
@@ -202,7 +197,7 @@ Task::create( const LQIO::DOM::Task * dom )
 	    dom->runtime_error( LQIO::ERR_NON_REF_THINK_TIME );
 	}
 	if ( dom->hasQueueLength() ) {
-	    LQIO::input_error2( LQIO::WRN_TASK_QUEUE_LENGTH, task_name.c_str() );
+	    LQIO::input_error( LQIO::WRN_TASK_QUEUE_LENGTH, task_name.c_str() );
 	}
 	if ( dom->isMultiserver() ) {
 	    dom->runtime_error( LQIO::WRN_INFINITE_MULTI_SERVER, dom->getCopiesValue() );
@@ -212,7 +207,7 @@ Task::create( const LQIO::DOM::Task * dom )
 
     case SCHEDULE_SEMAPHORE:
 	if ( dom->hasQueueLength() ) {
-	    LQIO::input_error2( LQIO::WRN_TASK_QUEUE_LENGTH, task_name.c_str() );
+	    LQIO::input_error( LQIO::WRN_TASK_QUEUE_LENGTH, task_name.c_str() );
 	}
 	if ( dom->getCopiesValue() != 1 ) {
 	    dom->runtime_error( LQIO::ERR_INFINITE_SERVER );
@@ -222,7 +217,7 @@ Task::create( const LQIO::DOM::Task * dom )
 	    dom->runtime_error( LQIO::ERR_INFINITE_SERVER );
 	    dom->setCopiesValue( 1 );
 	} else if ( n_copies > MAX_MULT ) {
-	    LQIO::input_error2( LQIO::ERR_TOO_MANY_X, "multi-server copies", MAX_MULT );
+	    LQIO::input_error( LQIO::ERR_TOO_MANY_X, "multi-server copies", MAX_MULT );
 	    dom->setCopiesValue( MAX_MULT );
 	}
 #endif
@@ -241,6 +236,8 @@ Task::create( const LQIO::DOM::Task * dom )
 void
 Task::initialize()
 {
+    check();
+    
     if ( !entries.size() ) {
 	get_dom()->runtime_error( LQIO::ERR_TASK_HAS_NO_ENTRIES );
     }
@@ -430,7 +427,7 @@ Task::add_activity( LQIO::DOM::Activity * dom )
 {
     Activity * activity = find_activity( dom->getName() );
     if ( activity ) {
-	LQIO::input_error2( LQIO::ERR_DUPLICATE_SYMBOL, "Activity", dom->getName().c_str() );
+	LQIO::input_error( LQIO::ERR_DUPLICATE_SYMBOL, "Activity", dom->getName().c_str() );
     } else {
 	activity = new Activity( dom, this );
 	activities.push_back( activity );
@@ -809,7 +806,7 @@ Task::get_results()
 {
     const unsigned int max_m = n_customers();
     for ( unsigned int m = 0; m < max_m; ++m ) {
-	get_results(m);
+	get_results_for( m );
     }
     for ( std::vector<Entry *>::const_iterator e = entries.begin(); e != entries.end(); ++e ) {
 	(*e)->check_open_result();
@@ -819,7 +816,7 @@ Task::get_results()
 
 
 void
-Task::get_results( unsigned m )
+Task::get_results_for( unsigned m )
 {
     if ( is_single_place_task() ) {
 	_utilization[m] = multiplicity() - get_pmmean( "T%s%d", name(), m );
@@ -1043,7 +1040,7 @@ Task::insert_DOM_results() const
 /* -------------------------------------------------------------------- */
 
 void
-OpenTask::get_results( unsigned m )
+OpenTask::get_results_for( unsigned m )
 {
     Phase& phase = entries[0]->phase[1];
     Call call;

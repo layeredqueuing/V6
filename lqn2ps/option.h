@@ -1,7 +1,7 @@
 /* -*- c++ -*-
  * lqn2ps.h	-- Greg Franks
  *
- * $Id: option.h 15437 2022-02-12 17:03:35Z greg $
+ * $Id: option.h 16750 2023-06-19 12:16:45Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -118,6 +118,7 @@ enum class Layering {
 enum class Processors {
     ALL,
     DEFAULT,
+    QUEUEABLE,
     NONE,
     NONINFINITE
 };
