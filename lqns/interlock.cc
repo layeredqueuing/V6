@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: interlock.cc 15535 2022-04-13 13:41:38Z greg $
+ * $Id: interlock.cc 16800 2023-08-21 19:23:24Z greg $
  *
  * Call-chain/interlock finder.
  *
@@ -661,7 +661,7 @@ Interlock::countSources( const std::set<const Entity *>& interlockedTasks )
      * properly for infinite servers.
      */
 
-    unsigned n = std::accumulate( _allSourceTasks.begin(), _allSourceTasks.end(), 0., add_using<const Entity>( &Entity::population ) );
+    unsigned n = std::accumulate( _allSourceTasks.begin(), _allSourceTasks.end(), static_cast<unsigned int>(0), add_using<unsigned int,const Entity>( &Entity::population ) );
 
     /*
      * Add in phase 2 sources of tasks that are on the interlock

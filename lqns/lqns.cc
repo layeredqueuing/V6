@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: lqns.cc 16756 2023-06-27 08:25:25Z greg $
+ * $Id: lqns.cc 16444 2023-02-25 12:39:03Z greg $
  *
  * Command line processing.
  *
@@ -144,7 +144,7 @@ int main (int argc, char *argv[])
     
     command_line = LQIO::io_vars.lq_toolname;
 
-    sscanf( "$Date: 2023-06-27 04:25:25 -0400 (Tue, 27 Jun 2023) $", "%*s %s %*s", copyrightDate );
+    sscanf( "$Date: 2023-02-25 07:39:03 -0500 (Sat, 25 Feb 2023) $", "%*s %s %*s", copyrightDate );
 
     matherr_disposition = fp_exception_reporting::DEFERRED_ABORT;
 

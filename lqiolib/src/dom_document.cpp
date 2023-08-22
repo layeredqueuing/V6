@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_document.cpp 16627 2023-04-03 22:04:21Z greg $
+ *  $Id: dom_document.cpp 16803 2023-08-21 19:55:46Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -202,48 +202,17 @@ namespace LQIO {
 	    return *this;
 	}
 
-	Document& Document::setModelConvergence( const ExternalVariable * value )
+	Document& Document::set( const std::string& name, const ExternalVariable * var )
 	{
-	    _controlVariables[XConvergence] = value;
+	    /* Set/replace the value */
+	    std::pair<std::map<const std::string, const ExternalVariable*>::iterator,bool> result =  _controlVariables.emplace( std::pair<const std::string,const ExternalVariable*>(name,var) );
+	    if ( !result.second ) {
+		delete result.first->second;
+		result.first->second = var;
+	    }
 	    return *this;
 	}
-
-	Document& Document::setModelIterationLimit( const ExternalVariable * value )
-	{
-	    _controlVariables[XIterationLimit] = value;
-	    return *this;
-	}
-
-	Document& Document::setModelPrintInterval( const ExternalVariable * value )
-	{
-	    _controlVariables[XPrintInterval] = value;
-	    return *this;
-	}
-
-	Document& Document::setModelUnderrelaxationCoefficient( const ExternalVariable * value )
-	{
-	    _controlVariables[XUnderrelaxationCoefficient] = value;
-	    return *this;
-	}
-
-	Document& Document::setSpexIterationLimit( const ExternalVariable * spexIterationLimit )
-	{
-	    _controlVariables[XSpexIterationLimit] = spexIterationLimit;
-	    return *this;
-	}
-
-	Document& Document::setSpexUnderrelaxation( const ExternalVariable * spexUnderrelaxation )
-	{
-	    _controlVariables[XSpexUnderrelaxation] = spexUnderrelaxation;
-	    return *this;
-	}
-
-	Document& Document::setSpexConvergence( const ExternalVariable * spexConvergence )
-	{
-	    _controlVariables[XSpexConvergence] = spexConvergence;
-	    return *this;
-	}
-
+	
 	const double Document::getValue( const std::string& index ) const
 	{
 	    /* Set to default value if NOT set elsewhere (usually the control program) */
@@ -266,9 +235,7 @@ namespace LQIO {
 		    return iter->second;
 		}
 	    }
-	    SymbolExternalVariable * var = new SymbolExternalVariable( index );
-	    var->set( __initialValues.at( index ) );
-	    return var;
+	    return new ConstantExternalVariable( __initialValues.at( index ) );
 	}
 
 	unsigned Document::getNextEntityId()
@@ -944,9 +911,12 @@ namespace LQIO {
 	    const std::string directory_name = LQIO::Filename::createDirectory( Filename::Filename::isFileName( output_file_name ) ? output_file_name : __input_file_name, lqx_output );
 
 	    /* Set output format from input, or if LQN and LQX then force to XML. */
-    
-	    if ( output_format == OutputFormat::DEFAULT && (getInputFormat() != InputFormat::LQN || getLQXProgram() != nullptr) ) {
-		output_format = __input_to_output_format.at( getInputFormat() );
+
+	    if ( output_format == OutputFormat::DEFAULT ) {
+		size_t pos = output_file_name.find_last_of( "." );
+		if ( getLQXProgram() != nullptr || (getInputFormat() != InputFormat::LQN && (output_file_name.empty() || (pos != std::string::npos && output_file_name.substr( pos ) != ".out")) ) ) {
+		    output_format = __input_to_output_format.at( getInputFormat() );
+		}
 	    }
 
 	    /* override is true for '-p -o filename.out when filename.in' == '-p filename.in' */
@@ -1092,17 +1062,6 @@ namespace LQIO {
 	Document::print( std::ostream& output, const OutputFormat format ) const
 	{
 	    switch ( format ) {
-	    case OutputFormat::DEFAULT:
-	    case OutputFormat::LQN: {
-		SRVN::Output srvn( *this, _entities );
-		srvn.print( output );
-		break;
-	    }
-	    case OutputFormat::PARSEABLE:{
-		SRVN::Parseable srvn( *this, _entities );
-		srvn.print( output );
-		break;
-	    }
 	    case OutputFormat::RTF: {
 		SRVN::RTF srvn( *this, _entities );
 		srvn.print( output );
@@ -1120,8 +1079,11 @@ namespace LQIO {
 		json.serializeDOM( output );
 		break;
 	    }
-	    default:
-		abort();
+	    default: {
+		SRVN::Output srvn( *this, _entities );
+		srvn.print( output );
+		break;
+	    }
 	    }
 
 	    return output;

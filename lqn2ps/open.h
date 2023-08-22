@@ -1,7 +1,7 @@
 /* -*- c++ -*-
  * open.h	-- Greg Franks
  *
- * $Id: open.h 15258 2021-12-25 13:21:14Z greg $
+ * $Id: open.h 16791 2023-07-27 11:21:46Z greg $
  */
 
 #ifndef _OPEN_H
@@ -35,6 +35,10 @@ public:
     virtual unsigned referenceTasks( std::vector<Entity *>&, Element * ) const { return 0; }	/* We don't have clients */
     virtual unsigned clients( std::vector<Entity *>&, const callPredicate = 0 ) const { return 0; }	/* We don't have clients */
     virtual unsigned servers( std::vector<Entity *>& ) const;
+
+    void addSrcCall( OpenArrival * );
+    void removeSrcCall( OpenArrival * );
+
     virtual bool isInOpenModel( const std::vector<Entity *>& servers ) const;
     virtual bool isSelectedIndirectly() const;
     

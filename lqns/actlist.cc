@@ -1,5 +1,5 @@
 /* actlist.cc   -- Greg Franks Thu Feb 20 1997
- * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/branches/merge-V5-V6/lqns/actlist.cc $
+ * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/actlist.cc $
  *
  * Everything you wanted to know about connecting activities, but were afraid to ask.
  *
@@ -10,7 +10,7 @@
  * February 1997
  *
  * ------------------------------------------------------------------------
- * $Id: actlist.cc 15969 2022-10-13 19:49:43Z greg $
+ * $Id: actlist.cc 16804 2023-08-21 20:22:29Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -641,7 +641,6 @@ AndOrForkActivityList::find_children::operator()( unsigned arg1, const Activity 
     }
     Activity::Children path( _path );
     if ( dynamic_cast<const OrForkActivityList *>(&_self) != nullptr ) {
-	path.setReplyAllowed(false);
 	try {
 	    path.setRate(dynamic_cast<const OrForkActivityList *>(&_self)->prBranch( arg2 ) );
 	}
@@ -729,7 +728,7 @@ OrForkActivityList::collect( std::deque<const Activity *>& activityStack, std::d
     const unsigned int submodel = data.submodel();
     Entry * currEntry = entryStack.back();
     unsigned phase = data.phase();
-    Activity::Function f = data.collect();
+    Activity::Collect::Function f = data.collect();
 
     /* Now search down lists */
 
@@ -1049,7 +1048,7 @@ AndForkActivityList::collect( std::deque<const Activity *>& activityStack, std::
     const unsigned n = activityList().size();
     Entry * currEntry = entryStack.back();
     unsigned phase = data.phase();
-    Activity::Function f = data.collect();
+    Activity::Collect::Function f = data.collect();
 
     if (flags.trace_quorum) {
         std::cout <<"\nAndForkActivityList::collect()...the start --------------- : submodel = " << submodel <<  std::endl;
@@ -1542,7 +1541,7 @@ AndForkActivityList::callsPerform( const Phase::CallExec& exec ) const
 unsigned
 AndForkActivityList::concurrentThreads( unsigned n ) const
 {
-    const unsigned m = std::accumulate( activityList().begin(), activityList().end(), 0, unsigned_add_using_arg<Activity,unsigned>( &Activity::concurrentThreads, 1 ) );
+    const unsigned m = std::accumulate( activityList().begin(), activityList().end(), 0, add_threads( &Activity::concurrentThreads, 1 ) );
     n = std::max( n, m - 1 );
 
     return hasNextFork() ? getNextFork()->concurrentThreads( n ) : n;
@@ -2076,7 +2075,7 @@ RepeatActivityList::collect( std::deque<const Activity *>& activityStack, std::d
     const unsigned int submodel = data.submodel();
     const unsigned int n = activityList().size();
     Entry * currEntry = entryStack.back();
-    Activity::Function f = data.collect();
+    Activity::Collect::Function f = data.collect();
 
     for ( unsigned i = 0; i < n; ++i ) {
 	const Activity * anActivity = activityList().at(i);
@@ -2129,6 +2128,7 @@ RepeatActivityList::count_if( std::deque<const Activity *>& stack, Activity::Cou
 {
     for ( std::vector<const Activity *>::const_iterator activity = activityList().begin(); activity != activityList().end(); ++activity ) {
 	Activity::Count_If branch( data, rateBranch(*activity) );
+	branch.setReplyAllowed( false );
 	branch = (*activity)->count_if( stack, branch );
 	data += branch.sum() - data.sum();				/* only accumulate difference */
     }
@@ -2178,6 +2178,7 @@ RepeatActivityList::find_children::operator()( unsigned arg1, const Activity * a
 {
     std::deque<const AndOrForkActivityList *> forkStack;    // For matching forks/joins.
     Activity::Children path( _path, forkStack, _self.rateBranch( arg2 ) );
+    path.setReplyAllowed(false);		// Bug 427
     return std::max( arg1, arg2->findChildren(path) );
 }
 

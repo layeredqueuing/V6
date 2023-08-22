@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/branches/merge-V5-V6/lqns/processor.cc $
+ * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/processor.cc $
  *
  * Everything you wanted to know about a task, but were afraid to ask.
  *
@@ -10,7 +10,7 @@
  * November, 1994
  *
  * ------------------------------------------------------------------------
- * $Id: processor.cc 16755 2023-06-26 19:47:53Z greg $
+ * $Id: processor.cc 16802 2023-08-21 19:51:34Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -30,8 +30,8 @@
 #include "call.h"
 #include "entry.h"
 #include "errmsg.h"
-#include "flags.h"
 #include "group.h"
+#include "flags.h"
 #include "model.h"
 #include "pragma.h"
 #include "processor.h"
@@ -63,22 +63,10 @@ Processor::~Processor()
 
 /* ------------------------ Instance Methods -------------------------- */
 
-void
-Processor::initializeServer()
-{
-    for ( std::vector<Entry *>::const_iterator entry = entries().begin(); entry != entries().end(); ++entry ) {
-	DeviceEntry* device = dynamic_cast<DeviceEntry*>(*entry);
-	if ( device == nullptr ) continue;	// abort()?
-	device->initWait();
-    }
-}
-
-
-
 bool
 Processor::check() const
 {
-    Entity::check();
+    bool rc = Entity::check();
     
     /* Check replication */
 
@@ -87,6 +75,7 @@ Processor::check() const
 	double temp = static_cast<double>((*task)->replicas()) / static_cast<double>(proc_replicas);
 	if ( trunc( temp ) != temp  ) {			/* Integer multiple */
 	    LQIO::runtime_error( LQIO::ERR_REPLICATION_PROCESSOR, (*task)->replicas(), (*task)->name().c_str(), proc_replicas, name().c_str() );
+	    rc = false;
 	}
     }
     
@@ -94,7 +83,7 @@ Processor::check() const
 	getDOM()->runtime_error( LQIO::WRN_INFINITE_MULTI_SERVER, copies() );
 	getDOM()->setCopies(new LQIO::DOM::ConstantExternalVariable(1.0));
     }
-    return true;
+    return rc;
 }
 
 
@@ -239,6 +228,7 @@ Processor::hasPriorities() const
 }
 
 
+
 /*
  * Return the scheduling type allowed for this object.  Overridden by
  * subclasses if the scheduling type can be something other than FIFO.
@@ -256,17 +246,6 @@ Processor::schedulingIsOK() const
 	|| scheduling() == SCHEDULE_RAND;
 }
 
-
-
-/*
- * Return the base replica.
- */
-
-Entity*
-Processor::mapToReplica( size_t i ) const
-{
-    return find( name(), i );
-}
 
 
 /*
@@ -428,6 +407,11 @@ Processor::makeServer( const unsigned nChains )
 	    _station = new PS_Server( nEntries(), nChains, maxPhase() );
 	    break;
 
+	case SCHEDULE_CFS:
+	    if ( dynamic_cast<HVFCFS_Server *>(_station) ) return nullptr;
+	    _station = new CFS_Server( nEntries(), nChains, maxPhase() );
+
+	    break;
 	}
     }
 
@@ -447,25 +431,53 @@ Processor::sanityCheck() const
 }
 
 
-/*
- * The superclass derives the utilization.  For processors, it's easy to get directly.
- */
-
 double
-Processor::computeUtilization( const MVASubmodel& submodel, const Server& station )
+Processor::computeUtilization( const MVASubmodel& submodel )
 {
-    return submodel.closedModelUtilization( station ) + submodel.openModelUtilization( station );
+    const Server * station = serverStation();
+    const std::set<Task *>& clients = submodel.getClients();
+    const unsigned int n = submodel.number();
+
+    double utilization = 0.0;
+    for ( std::set<Task *>::const_iterator client = clients.begin(); client != clients.end(); ++client ) {
+	if ( isClosedModelServer() ) {
+	    const ChainVector& chains = (*client)->clientChains( n );
+	    for ( ChainVector::const_iterator k = chains.begin(); k != chains.end(); ++k ) {
+		if ( hasServerChain( *k ) ) {
+		    utilization += submodel.closedModelUtilization( *station, *k );
+		}
+	    }
+	}
+	utilization += submodel.openModelUtilization( *station );
+    }
+    
+    return utilization;
 }
 
 
 const Processor&
 Processor::insertDOMResults(void) const
 {
-    if ( getDOM()== nullptr || getReplicaNumber() != 1 ) return *this;		/* NOP */
+    if ( getReplicaNumber() != 1 ) return *this;		/* NOP */
 
     Entity::insertDOMResults();
     
-    getDOM()->setResultUtilization( std::accumulate( tasks().begin(), tasks().end(), 0.0, Task::sum( &Task::processorUtilization ) ) );
+    double sumOfProcUtil = 0.0;
+    for ( std::set<const Task *>::const_iterator task = tasks().begin(); task != tasks().end(); ++task ) {
+
+	const std::vector<Entry *>& entries = (*task)->entries();
+	for ( std::vector<Entry *>::const_iterator entry = entries.begin(); entry != entries.end(); ++entry ) {
+	    if ((*entry)->isStandardEntry()) {
+		sumOfProcUtil += (*entry)->processorUtilization();
+	    }
+	}
+	const std::vector<Activity *>& activities = (*task)->activities();
+	sumOfProcUtil += std::accumulate( activities.begin(), activities.end(), 0., add_using<double,Activity>( &Activity::processorUtilization ) );
+    }
+
+    if ( getDOM() ) {
+	getDOM()->setResultUtilization(sumOfProcUtil);
+    }
     return *this;
 }
 
@@ -475,7 +487,8 @@ Processor::insertDOMResults(void) const
  * Add a processor to the model.
  */
 
-void Processor::create( const std::pair<std::string,LQIO::DOM::Processor*>& p )
+void
+Processor::create( const std::pair<std::string,LQIO::DOM::Processor*>& p )
 {
     const std::string& name = p.first;
     LQIO::DOM::Processor * dom = p.second;
@@ -483,8 +496,26 @@ void Processor::create( const std::pair<std::string,LQIO::DOM::Processor*>& p )
 
     if ( Processor::find( name ) ) {
 	dom->runtime_error( LQIO::ERR_DUPLICATE_SYMBOL );
+	return;
     } else {
 	Model::__processor.insert( new Processor( dom ) );
+    }
+
+    const scheduling_type sched_type = dom->getSchedulingType();
+    switch ( sched_type ) {
+    case SCHEDULE_CFS:
+	if ( Pragma::disableProcessorCFS() ) {
+	    dom->setSchedulingType( SCHEDULE_PS );	// Change to PS 
+	    Model::__processor.insert( new Processor( dom ) );
+	} else {
+	    Model::__processor.insert( new CFS_Processor( dom ) );
+	    break;
+	}
+	break;
+	
+    default:
+	Model::__processor.insert( new Processor( dom ) );
+	break;
     }
 }
 
@@ -526,7 +557,6 @@ Processor::print( std::ostream& output ) const
 }
 
 
-
 /*
  * Print out who calls this processor (by submodel if submodel != 0 )
  */
@@ -536,7 +566,7 @@ Processor::printTasks( std::ostream& output, unsigned int submodel ) const
 {
     if ( submodel != 0 && this->submodel() != submodel ) return output;
     for ( std::set<const Task *>::const_iterator task = _tasks.begin(); task != _tasks.end(); ++task ) {
-	if ( (isReplica() && (*task)->isReplica()) ) continue;
+	if ( (isPruned() && (*task)->isPruned()) ) continue;
 	output << std::setw(2) << " " << (*task)->print_name() << " *> " << print_name() << std::endl;
     }
     return output;
@@ -551,7 +581,7 @@ CFS_Processor::check() const
 {
     bool rc = Processor::check();
 
-    const double sum = std::accumulate( groups().begin(), groups().end(), 0., add_using<Group>( &Group::getOriginalShare ) );
+    const double sum = std::accumulate( groups().begin(), groups().end(), 0., add_using<double,Group>( &Group::getOriginalShare ) );
     if ( sum <= 0.0 || 1.0 < sum ) {
 	getDOM()->runtime_error( LQIO::ERR_INVALID_GROUP_SHARE, sum );
 	rc = false;
@@ -564,8 +594,8 @@ CFS_Processor::check() const
 CFS_Processor&
 CFS_Processor::resetGroups()
 {
-    for_each( groups().begin(), groups().end(), Exec<Group>( &Group::reset ) );
-//    for_each( groups().begin(), groups().end(), Exec<Group>( &Group::setLastUtil ) );
+    for_each( groups().begin(), groups().end(), std::mem_fn( &Group::reset ) );
+//    for_each( groups().begin(), groups().end(), std::mem_fn( &Group::setLastUtil ) );
     serverStation()->resetGroup();
     return *this;
 }
@@ -580,9 +610,9 @@ CFS_Processor::resetGroups()
 CFS_Processor&
 CFS_Processor::initGroups()
 {
-    for_each( groups().begin(), groups().end(), Exec<Group>( &Group::reset ) );
-    for_each( groups().begin(), groups().end(), Exec<Group>( &Group::initGroupTask ) );
-    _all_caps = std::all_of( groups().begin(), groups().end(), Predicate<Group>( &Group::isCap ) );
+    for_each( groups().begin(), groups().end(), std::mem_fn( &Group::reset ) );
+    for_each( groups().begin(), groups().end(), std::mem_fn( &Group::initGroupTask ) );
+    _all_caps = std::all_of( groups().begin(), groups().end(), std::mem_fn( &Group::isCap ) );
     return *this;
 }
 

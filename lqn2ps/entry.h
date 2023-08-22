@@ -9,7 +9,7 @@
  * January 2003
  *
  * ------------------------------------------------------------------------
- * $Id: entry.h 16627 2023-04-03 22:04:21Z greg $
+ * $Id: entry.h 16791 2023-07-27 11:21:46Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -177,12 +177,13 @@ public:
     unsigned fanOut( const Entry * toEntry ) const;
     Entry& setStartActivity( Activity * );
     Activity * startActivity() const { return _startActivity; }
+    const std::map<unsigned,Phase>& phases() const { return  _phases; }
     bool phaseIsPresent( const unsigned p ) const { return _phases.find(p) != _phases.end(); }
 
     /* Result queries */
 
-    double executionTime( const unsigned p ) const;
-    double executionTime() const;
+    double residenceTime( const unsigned p ) const;
+    double residenceTime() const;
     double openWait() const;
     double processorUtilization() const;
     double queueingTime( const unsigned p ) const;
@@ -194,7 +195,8 @@ public:
     double utilization() const;
     double variance( const unsigned p ) const;
     double variance() const;
-
+    double visitProbability() const;
+    
     double numberSlices( const unsigned p ) const;
     double sliceTime( const unsigned p ) const;
 
@@ -251,7 +253,6 @@ public:
     unsigned countArcs( const callPredicate = nullptr ) const;
     unsigned countCallers( const callPredicate = nullptr ) const;
 
-    double serviceTimeForSRVNInput() const;
     double serviceTimeForSRVNInput( const unsigned p ) const;
     Entry& aggregateService( const Activity * anActivity, const unsigned p, const double rate );
     Entry& aggregatePhases();
@@ -277,11 +278,11 @@ public:
 
     virtual Entry& rename();
 
-#if defined(BUG_270)
+#if BUG_270
     Entry& linkToClients( const std::vector<EntityCall *>& );
     Entry& unlinkFromServers();
 #endif
-#if defined(REP2FLAT)
+#if REP2FLAT
     static Entry * find_replica( const std::string&, const unsigned );
 
     Entry& expand();
@@ -304,7 +305,7 @@ private:
     Entry& moveSrc();
     Entry& moveDst();
 
-#if defined(BUG_270)
+#if BUG_270
     static void remove_from_dst( Call * call );
 #endif
 

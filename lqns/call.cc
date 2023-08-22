@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: call.cc 15827 2022-08-14 15:20:00Z greg $
+ * $Id: call.cc 16802 2023-08-21 19:51:34Z greg $
  *
  * Everything you wanted to know about a call to an entry, but were afraid to ask.
  *
@@ -16,6 +16,8 @@
 #include "lqns.h"
 #include <algorithm>
 #include <cmath>
+#include <limits>
+#include <functional>
 #include <sstream>
 #include <mva/fpgoop.h>
 #include <mva/server.h>
@@ -152,6 +154,34 @@ Call::operator!=( const Call& item ) const
 }
 
 
+/*+ BUG_425 */
+/*
+ * Set the number of customers by chain (reference task/open arrival).
+ * Note! DO NOT follow forwarding calls as the transformation process
+ * maps these to regular rendezvous from the proper source task.
+ * Forwarding is effectively an infinite server, so we need the
+ * source.
+ */
+
+Call&
+Call::initCustomers( std::deque<const Task *>& stack, unsigned int customers )
+{
+    Task * task = const_cast<Task *>(dynamic_cast<const Task *>(dstTask()));
+    if ( task == nullptr ) return *this;	/* Don't care about processors */
+
+    if ( hasRendezvous() ) {
+	task->initCustomers( stack, customers );
+    } else if ( hasSendNoReply() ) {
+	/* Asynchronous send, so this is effectively an open arrival */
+	std::deque<const Task *> stack2;
+	task->initCustomers( stack2, std::numeric_limits<unsigned int>::max() );
+    } // Ignore hasForwarding().
+    return *this;
+}
+/*- BUG_425 */
+
+
+
 /*
  * Expand replicas (Not PAN_REPLICATION) from Call(src,dst) to
  * Call(src(src_replica),dst(dst_replica)).  There is no need to copy
@@ -268,7 +298,7 @@ Call::getMaxCustomers()const
     if ( srcTask()->hasInfinitePopulation() ) {
 	return getSource()->getMaxCustomers();
     } else {
-	return std::min( srcTask()->population(), getSource()->getMaxCustomers() );
+	return std::min( static_cast<double>(srcTask()->population()), getSource()->getMaxCustomers() );
     }
 }
 
@@ -1164,5 +1194,5 @@ Call::Find::operator()( const Call * call ) const
 unsigned
 Call::stack::depth() const	
 {
-    return std::count_if( begin(), end(), Predicate<Call>( &Call::hasNoForwarding ) );
+    return std::count_if( begin(), end(), std::mem_fn( &Call::hasNoForwarding ) );
 }

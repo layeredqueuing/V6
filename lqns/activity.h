@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/branches/merge-V5-V6/lqns/activity.h $
+ * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/activity.h $
  *
  * Everything you wanted to know about an activity, but were afraid to ask.
  *
@@ -11,7 +11,7 @@
  * July 2007
  *
  * ------------------------------------------------------------------------
- * $Id: activity.h 15762 2022-07-25 16:16:52Z greg $
+ * $Id: activity.h 16800 2023-08-21 19:23:24Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -66,7 +66,6 @@ public:
     class Collect;
     
     typedef bool (Activity::*Predicate)( Count_If& ) const;
-    typedef void (Activity::*Function)( Entry *, const Collect& ) const;
     
     class Backtrack
     {
@@ -92,9 +91,9 @@ public:
 
     class Count_If {
     public:
-	Count_If() : _e(nullptr), _f(nullptr), _p(0), _replyAllowed(false), _rate(0.0), _sum(0.0) {}
+	Count_If() : _e(nullptr), _f(nullptr), _p(0), _replyAllowed(true), _rate(0.0), _sum(0.0) {}
 	Count_If( const Entry* e, const Predicate f ) : _e(e), _f(f), _p(1), _replyAllowed(true), _rate(1.0), _sum(0.0) {}
-	Count_If( const Count_If& src, double rate ) : _e(src._e), _f(src._f), _p(src._p), _replyAllowed(false), _rate(src._rate*rate), _sum(src._sum) {}
+	Count_If( const Count_If& src, double rate ) : _e(src._e), _f(src._f), _p(src._p), _replyAllowed(true), _rate(src._rate*rate), _sum(src._sum) {}
 
     private:
 	Count_If( const Count_If& ) = delete;
@@ -125,8 +124,11 @@ public:
 
     class Collect {
     public:
-	Collect() : _f(nullptr), _submodel(0), _p(0), _rate(1) {}
-	Collect( unsigned int submodel, Function f ) : _f(f), _submodel(submodel), _p(1), _rate(1) {}
+	typedef void (Activity::*Function)( Entry *, const Collect& ) const;
+	
+	Collect() : _f(nullptr), _submodel(0), _p(0), _rate(1), _taskStack(nullptr), _customers(0) {}
+	Collect( Function f, unsigned int submodel=0 ) : _f(f), _submodel(submodel), _p(1), _rate(1), _taskStack(nullptr), _customers(0) {}
+	Collect( Function f, std::deque<const Task *>& stack, unsigned int customers ) : _f(f), _submodel(0), _p(0), _rate(1), _taskStack(&stack), _customers(customers) {}
 	Collect( const Collect& ) = default;
 
     private:
@@ -139,12 +141,16 @@ public:
 	double rate() const { return _rate; }
 	void setRate( double rate ) { _rate = rate; }
 	void setPhase( unsigned int p ) { _p = p; }
+	std::deque<const Task *>& taskStack() { return *_taskStack; }
+	unsigned int customers() const { return _customers; }
 	
     private:
 	Function _f;
 	unsigned int _submodel;
 	unsigned int _p;
 	double _rate;
+	std::deque<const Task *>* _taskStack;	/* BUG_425 */
+	unsigned int _customers;		/* BUG_425 */
     };
 
     class Children {
@@ -251,6 +257,7 @@ public:
     void collectReplication( Entry *, const Activity::Collect& ) const;
 #endif
     void collectServiceTime( Entry *, const Activity::Collect& ) const;
+    void collectCustomers( Entry *, const Activity::Collect& ) const;
     void setThroughput( Entry *, const Activity::Collect& ) const;
     void setMaxCustomers( Entry *, const Activity::Collect& ) const;
 

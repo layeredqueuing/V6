@@ -1,5 +1,5 @@
 /* -*- c++ -*-
-< * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/branches/merge-V5-V6/lqns/task.h $
+ * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/task.h $
  *
  * Tasks.
  *
@@ -10,7 +10,7 @@
  * November, 1994
  * May 2009.
  *
- * $Id: task.h 16755 2023-06-26 19:47:53Z greg $
+ * $Id: task.h 16800 2023-08-21 19:23:24Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -39,15 +39,6 @@ public:
     enum class root_level_t { IS_NON_REFERENCE, IS_REFERENCE, HAS_OPEN_ARRIVALS };
     friend class Interlock;		// BUG_425 deprecate
 
-    struct sum {
-	typedef double (Task::*funcPtr)() const;
-	sum( funcPtr f ) : _f(f) {}
-	double operator()( double l, const Task* r ) const { return l + (r->*_f)(); }
-	double operator()( double l, const Task& r ) const { return l + (r.*_f)(); }
-    private:
-	const funcPtr _f;
-    };
-
 private:
     struct find_max_depth {
 	find_max_depth( Call::stack& callStack, bool directPath ) : _callStack(callStack), _directPath(directPath), _dstEntry(callStack.back()->dstEntry()) {}
@@ -63,6 +54,7 @@ private:
 	unsigned int operator()( unsigned int addend, const Entity * augend ) const;	// BUG_425 deprecate
     };
 
+
     class SRVNManip {
     public:
 	SRVNManip( std::ostream& (*f)(std::ostream&, const Task & ), const Task & task ) : _f(f), _task(task) {}
@@ -76,7 +68,7 @@ private:
     class SRVNIntManip {
     public:
 	SRVNIntManip( std::ostream& (*f)(std::ostream&, const Task &, const unsigned ),
-		      const Task & task, const unsigned n ) : _f(f), _task(task), _n(n) {}
+			  const Task & task, const unsigned n ) : _f(f), _task(task), _n(n) {}
     private:
 	std::ostream& (*_f)( std::ostream&, const Task&, const unsigned );
 	const Task & _task;
@@ -120,8 +112,6 @@ protected:
     virtual Task * clone( unsigned int ) = 0;
 
 private:
-    Task( const Task& ) = delete;
-    Task& operator=( const Task& ) = delete;
     void cloneActivities( const Task& src, unsigned int replica );
     
 public:
@@ -135,10 +125,11 @@ public:
     virtual Task& configure( const unsigned );
     virtual unsigned findChildren( Call::stack&, const bool ) const;
     Task& initProcessor();
-    virtual void initializeClient();
-    virtual void reinitializeClient();
+    virtual Task& initClient( const Vector<Submodel *>& );
+    virtual Task& reinitClient( const Vector<Submodel *>& );
     Task& initCustomers( std::deque<const Task *>& stack, unsigned int customers );
-    void initializeWait( const Submodel& submodel );
+    virtual Task& initWait();
+    virtual Task& initThroughputBound();
     Task& createInterlock();
     virtual Task& initThreads();
 
@@ -165,7 +156,7 @@ public:
     virtual unsigned int fanOut( const Entity * ) const;
     virtual unsigned int fanIn( const Task * ) const;
 #if PAN_REPLICATION
-    void clearSurrogateDelay();
+    void resetReplication();
 #endif
     Task& addThread( Thread * aThread ) { _threads.push_back(aThread); return *this; }
 
@@ -182,6 +173,8 @@ public:
     bool hasQuorum() const { return _has_quorum; }
     double  processorUtilization() const;
 
+    virtual bool hasClientChain( const unsigned submodel, const unsigned k ) const;
+
     virtual unsigned nClients() const;		// # Calling tasks
     virtual unsigned nThreads() const;
     virtual unsigned concurrentThreads() const { return _maxThreads; }
@@ -190,8 +183,7 @@ public:
 	
     Task& addClientChain( const unsigned submodel, const unsigned k ) { _clientChains[submodel].push_back(k); return *this; }
     const ChainVector& clientChains( const unsigned submodel ) const { return _clientChains[submodel]; }
-    Server* clientStation( const unsigned submodel ) const { return _clientStation[submodel]; }
-    virtual Task* mapToReplica( size_t ) const;
+    Server * clientStation( const unsigned submodel ) const { return _clientStation[submodel]; }
 
     /* Model Building. */
 
@@ -201,9 +193,14 @@ public:
     Task& expandCalls();
 
     Server * makeClient( const unsigned, const unsigned  );
-    void saveClientResults( const MVASubmodel&, const Server&, unsigned int chain );
-    const Task& closedCallsPerform( Call::Perform ) const;	// Copy arg.
-    const Task& openCallsPerform( Call::Perform ) const;	// Copy arg.
+    Task& initClientStation( Submodel& );
+#if PAN_REPLICATION
+    Task& modifyClientServiceTime( const MVASubmodel& );
+#endif
+    Task& saveClientResults( const MVASubmodel& );
+    const Task& callsPerform( callFunc, const unsigned submodel ) const;
+    const Task& openCallsPerform( callFunc, const unsigned submodel ) const;
+    const Task& setChains( MVASubmodel& submodel ) const;
 
     void saveILWait(const unsigned );
     bool isViaTask() const { return _isViaTask;}
@@ -211,14 +208,13 @@ public:
 
     /* Computation */
 	
-    virtual void recalculateDynamicValues();
-
-    void computeThroughputBound();
+    virtual Task& recalculateDynamicValues();
     virtual Task& computeVariance();
-    Task& updateWait( const Submodel&, const double );
+    virtual Task& updateWait( const Submodel&, const double );
 #if PAN_REPLICATION
     virtual double updateWaitReplication( const Submodel&, unsigned& );
 #endif
+    Task& computeOvertaking( Entity * );
 
     /* Interlock */
     
@@ -287,7 +283,7 @@ protected:
 
 private:
 #if PAN_REPLICATION
-    Task& setSurrogateDelaySize( size_t );
+    Task& initReplication( const unsigned );	 	// REP N-R
 #endif
     double bottleneckStrength() const;
     void store_activity_service_time ( const char * activity_name, const double service_time );	// quorum.
@@ -348,11 +344,11 @@ protected:
 public:
     virtual unsigned copies() const;
     
-    virtual void initializeClient();
-    virtual void reinitializeClient();
+    virtual ReferenceTask& initClient( const Vector<Submodel *>& );
+    virtual ReferenceTask& reinitClient( const Vector<Submodel *>& );
 
     virtual bool check() const;
-    virtual void recalculateDynamicValues();
+    virtual ReferenceTask& recalculateDynamicValues();
     virtual unsigned findChildren( Call::stack&, const bool ) const;
 
     virtual bool isReferenceTask() const { return true; }

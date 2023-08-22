@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/branches/merge-V5-V6/libmva/regression/test1hvp.cc $
+ * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/libmva/regression/test1hvp.cc $
  *
  * Test case from:
  *     author =   "Chandy, K. Mani and Neuse, Doug",

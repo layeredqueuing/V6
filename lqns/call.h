@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/branches/merge-V5-V6/lqns/call.h $
+ * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/call.h $
  *
  * Everything you wanted to know about an entry, but were afraid to ask.
  *
@@ -10,12 +10,12 @@
  * November, 1994
  * March, 2004
  *
- * $Id: call.h 15969 2022-10-13 19:49:43Z greg $
+ * $Id: call.h 16800 2023-08-21 19:23:24Z greg $
  *
  * ------------------------------------------------------------------------
  */
 
-#if	!defined(LQNS_CALL_H)
+#ifndef	LQNS_CALL_H
 #define LQNS_CALL_H
 
 #include <cmath>
@@ -203,6 +203,8 @@ public:
     int operator!=( const Call& item ) const;
 
     virtual Call& initWait() = 0;
+    Call& initCustomers( std::deque<const Task *>& stack, unsigned int customers );
+    
     virtual bool check() const;
 
     /* Instance variable access */

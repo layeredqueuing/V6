@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/branches/merge-V5-V6/lqns/model.h $
+ * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/model.h $
  *
  * Layer-ization of model.
  *
@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: model.h 16755 2023-06-26 19:47:53Z greg $
+ * $Id: model.h 16800 2023-08-21 19:23:24Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -106,8 +106,8 @@ protected:
     static unsigned topologicalSort();
     virtual void addToSubmodel() = 0;
     virtual void partition() {}		// Partition disjoin chains.
-    void initializeSubmodels();
-    void reinitializeSubmodels();
+    void initStations();
+    void reinitStations();
 
     double convergenceValue() const { return _convergence_value; }	/* Cached */
     unsigned iterationLimit() const { return _iteration_limit; }

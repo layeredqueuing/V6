@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/branches/merge-V5-V6/lqiolib/src/headers/lqio/qnio_document.h $
+ * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqiolib/src/headers/lqio/qnio_document.h $
  *
  * Proxy for the input model.
  *

@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/branches/merge-V5-V6/lqns/entry.cc $
+ * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/entry.cc $
  *
  * Everything you wanted to know about an entry, but were afraid to ask.
  *
@@ -12,13 +12,14 @@
  * July 2007.
  *
  * ------------------------------------------------------------------------
- * $Id: entry.cc 16753 2023-06-19 19:26:50Z greg $
+ * $Id: entry.cc 16804 2023-08-21 20:22:29Z greg $
  * ------------------------------------------------------------------------
  */
 
 
 #include "lqns.h"
 #include <cmath>
+#include <functional>
 #include <numeric>
 #include <iostream>
 #include <iomanip>
@@ -185,7 +186,7 @@ Entry::check() const
     }
 
     if ( isStandardEntry() ) {
-	std::for_each( _phase.begin(), _phase.end(), Predicate<Phase>( &Phase::check ) );
+	std::for_each( _phase.begin(), _phase.end(), std::mem_fn( &Phase::check ) );
     } else if ( isActivityEntry() ) {
 	if ( !isVirtualEntry() ) {
 	    Activity::Count_If data( this, &Activity::checkReplies );
@@ -196,7 +197,7 @@ Entry::check() const
 	    //tomari: disable to allow a quorum use the default reply which is after all threads completes exection.
 	    //(replies == 1 || (replies == 0 && owner->hasQuorum()))
 	    //Only tasks have activity entries.
-	    if ( isCalledUsing( RequestType::RENDEZVOUS ) && replies != 1.0 && (replies != 0.0 || !dynamic_cast<const Task *>(owner())->hasQuorum()) ) {
+	    if ( isCalledUsingRendezvous() && replies != 1.0 && (replies != 0.0 || !dynamic_cast<const Task *>(owner())->hasQuorum()) ) {
 		if ( replies == 0 ) {
 		    getDOM()->runtime_error( LQIO::ERR_REPLY_NOT_GENERATED );		/* redundant, but more explicit. */
 		} else {
@@ -283,7 +284,7 @@ Entry::expand()
 Entry&
 Entry::expandCalls()
 {
-    std::for_each( _phase.begin(), _phase.end(), Exec<Phase>( &Phase::expandCalls ) );
+    std::for_each( _phase.begin(), _phase.end(), std::mem_fn( &Phase::expandCalls ) );
     return *this;
 }
 
@@ -322,6 +323,29 @@ Entry::findChildren( Call::stack& callStack, const bool directPath ) const
 
 
 
+/*+ BUG_425 */
+/*
+ * Set the number of customers by chain (reference task/open arrival).
+ */
+
+Entry&
+Entry::initCustomers( std::deque<const Task *>& stack, unsigned int customers )
+{
+    /* for all phases, activities, chase calls. -- since calls end up at entries... recurse there */
+    if ( isActivityEntry() ) {
+	std::deque<const Activity *> activityStack;
+	std::deque<Entry *> entryStack;
+	entryStack.push_back( this );
+	Activity::Collect collect( &Activity::collectCustomers, stack, customers );
+	getStartActivity()->collect( activityStack, entryStack, collect );
+    } else {
+	std::for_each( _phase.begin(), _phase.end(), Exec2<Phase,std::deque<const Task *>&,unsigned int>( &Phase::initCustomers, stack, customers ) );
+    }
+    return *this;
+}
+/*- BUG_425 */
+
+
 /*
  * Type 1 throughput bounds.  Reference task think times will limit throughput
  */
@@ -352,12 +376,12 @@ Entry::initServiceTime()
 	std::deque<const Activity *> activityStack;
 	std::deque<Entry *> entryStack;
 	entryStack.push_back( this );
-	Activity::Collect collect( 0, &Activity::collectServiceTime );
+	Activity::Collect collect( &Activity::collectServiceTime );
 	getStartActivity()->collect( activityStack, entryStack, collect );
 	entryStack.pop_back();
     }
 
-    _total.setServiceTime( std::accumulate( _phase.begin(), _phase.end(), 0., add_using<Phase>( &Phase::serviceTime ) ) );
+    _total.setServiceTime( std::accumulate( _phase.begin(), _phase.end(), 0., add_using<double,Phase>( &Phase::serviceTime ) ) );
     return *this;
 }
 
@@ -381,7 +405,7 @@ Entry::initReplication( const unsigned n_chains )
 Entry&
 Entry::resetInterlock()
 {
-    std::for_each( _interlock.begin(), _interlock.end(), Exec<InterlockInfo>( &InterlockInfo::reset ) );
+    std::for_each( _interlock.begin(), _interlock.end(), std::mem_fn( &InterlockInfo::reset ) );
     return *this;
 }
 
@@ -468,7 +492,7 @@ Entry::addServiceTime( const unsigned p, const double value )
 
     setMaxPhase( p );
     _phase[p].addServiceTime( value );
-    _total.setServiceTime( std::accumulate( _phase.begin(), _phase.end(), 0., add_using<Phase>( &Phase::serviceTime ) ) );
+    _total.setServiceTime( std::accumulate( _phase.begin(), _phase.end(), 0., add_using<double,Phase>( &Phase::serviceTime ) ) );
     return *this;
 }
 
@@ -525,7 +549,7 @@ bool
 Entry::hasVariance() const
 {
     if ( isStandardEntry() ) {
-	return std::any_of( _phase.begin(), _phase.end(), Predicate<Phase>( &Phase::hasVariance ) );
+	return std::any_of( _phase.begin(), _phase.end(), std::mem_fn( &Phase::hasVariance ) );
     } else {
 	return true;
     }
@@ -647,7 +671,7 @@ Entry::saveThroughput( const double value )
 	std::deque<const Activity *> activityStack;
 	std::deque<Entry *> entryStack;
 	entryStack.push_back( this );
-	Activity::Collect collect( 0, &Activity::setThroughput );
+	Activity::Collect collect( &Activity::setThroughput );
 	getStartActivity()->collect( activityStack, entryStack, collect );
 	entryStack.pop_back();
     }
@@ -681,7 +705,7 @@ Entry::rendezvous( Entry * toEntry, const unsigned p, const LQIO::DOM::Call* cal
 double
 Entry::rendezvous( const Entry * entry ) const
 {
-    return std::accumulate( _phase.begin(), _phase.end(), 0., add_using_arg<Phase,const Entry *>( &Phase::rendezvous, entry ) );
+    return std::accumulate( _phase.begin(), _phase.end(), 0., add_calls( &Phase::rendezvous, entry ) );
 }
 
 
@@ -727,7 +751,7 @@ Entry::sendNoReply( Entry * toEntry, const unsigned p, const LQIO::DOM::Call* ca
 double
 Entry::sendNoReply( const Entry * entry ) const
 {
-    return std::accumulate( _phase.begin(), _phase.end(), 0., add_using_arg<Phase,const Entry *>( &Phase::sendNoReply, entry ) );
+    return std::accumulate( _phase.begin(), _phase.end(), 0., add_calls( &Phase::sendNoReply, entry ) );
 }
 
 
@@ -741,7 +765,7 @@ double
 Entry::sumOfSendNoReply( const unsigned p ) const
 {
     const std::set<Call *>& callList = _phase[p].callList();
-    return std::accumulate( callList.begin(), callList.end(), 0., add_using<Call>( &Call::sendNoReply ) );
+    return std::accumulate( callList.begin(), callList.end(), 0., add_using<double,Call>( &Call::sendNoReply ) );
 }
 
 
@@ -783,7 +807,7 @@ Entry::setStartActivity( Activity * anActivity )
 double
 Entry::processorCalls() const
 {
-    return std::accumulate( _phase.begin(), _phase.end(), 0., add_using<Phase>( &Phase::processorCalls ) );
+    return std::accumulate( _phase.begin(), _phase.end(), 0., add_using<double,Phase>( &Phase::processorCalls ) );
 }
 
 
@@ -796,7 +820,7 @@ Entry::processorCalls() const
 Entry&
 Entry::resetReplication()
 {
-    std::for_each( _phase.begin(), _phase.end(), Exec<Phase>( &Phase::resetReplication ) );
+    std::for_each( _phase.begin(), _phase.end(), std::mem_fn( &Phase::resetReplication ) );
     return *this;
 }
 #endif
@@ -810,12 +834,12 @@ Entry::resetReplication()
 double
 Entry::computeCV_sqr() const
 {
-    const double sum_S = std::accumulate( _phase.begin(), _phase.end(), 0., add_using<Phase>( &Phase::elapsedTime ) );
+    const double sum_S = std::accumulate( _phase.begin(), _phase.end(), 0., add_using<double,Phase>( &Phase::elapsedTime ) );
 
     if ( !std::isfinite( sum_S ) ) {
 	return sum_S;
     } else if ( sum_S > 0.0 ) {
-	const double sum_V = std::accumulate( _phase.begin(), _phase.end(), 0., add_using<Phase>( &Phase::variance ) );
+	const double sum_V = std::accumulate( _phase.begin(), _phase.end(), 0., add_using<double,Phase>( &Phase::variance ) );
 	return sum_V / square(sum_S);
     } else {
 	return 0.0;
@@ -883,7 +907,7 @@ Entry::waitExceptChain( const unsigned submodel, const unsigned k, const unsigne
 double
 Entry::utilization() const
 {
-    return std::accumulate( _phase.begin(), _phase.end(), 0., add_using<Phase>( &Phase::utilization ) );
+    return std::accumulate( _phase.begin(), _phase.end(), 0., add_using<double,Phase>( &Phase::utilization ) );
 }
 
 
@@ -1024,7 +1048,7 @@ double
 Entry::getCFSDelay() const
 {
     if ( isProcessorEntry() ) return 0.;
-    return std::accumulate( _phase.begin(), _phase.end(), 0., add_using<Phase>( &Phase::getCFSDelay ) );
+    return std::accumulate( _phase.begin(), _phase.end(), 0., add_using<double,Phase>( &Phase::getCFSDelay ) );
 }
 
 
@@ -1032,7 +1056,7 @@ Entry::getCFSDelay() const
 Entry&
 Entry::reset_lowerbound()
 {
-    std::for_each (_phase.begin(), _phase.end(), Exec<Phase>( &Phase::reset_lowerbound ) );
+    std::for_each (_phase.begin(), _phase.end(), std::mem_fn( &Phase::reset_lowerbound ) );
     return *this;
 }
 
@@ -1186,8 +1210,8 @@ Entry::output_name( std::ostream& output, const Entry& entry )
 Entry&
 Entry::recalculateDynamicValues()
 {
-    std::for_each( _phase.begin(), _phase.end(), Exec<Phase>( &Phase::recalculateDynamicValues ) );
-    _total.setServiceTime( std::accumulate( _phase.begin(), _phase.end(), 0., add_using<Phase>( &Phase::serviceTime ) ) );
+    std::for_each( _phase.begin(), _phase.end(), std::mem_fn( &Phase::recalculateDynamicValues ) );
+    _total.setServiceTime( std::accumulate( _phase.begin(), _phase.end(), 0., add_using<double,Phase>( &Phase::serviceTime ) ) );
     return *this;
 }
 
@@ -1370,9 +1394,9 @@ Entry::isSendingTask( const MVASubmodel& submodel ) const
 double
 Entry::getILWait(unsigned submodel) const
 {
-    const double sum = std::accumulate( _phase.begin(), _phase.end(), 0., add_using_arg<Phase,unsigned>( &Phase::waitExcept, submodel ) );
+    const double sum = std::accumulate( _phase.begin(), _phase.end(), 0., Phase::add_wait( &Phase::waitExcept, submodel ) );
     if ( sum <= 0.0 ) return 0.0;
-    return std::min( std::accumulate( _phase.begin(), _phase.end(), 0., add_using_arg<Phase,unsigned>( &Phase::getILWait, submodel ) ) / sum, 1.0 );
+    return std::min( std::accumulate( _phase.begin(), _phase.end(), 0., Phase::add_wait( &Phase::getILWait, submodel ) ) / sum, 1.0 );
 }
 
 
@@ -1396,7 +1420,7 @@ Entry::getILQueueLength()const
     if ( flags.trace_interlock ) {
 	std::cout << "Entry::getILQueueLength() client entry:" << name() << " ILQueueLength is "<< sum<< std::endl;
     }
-    return std::min( sum, owner()->population() );
+    return std::min( sum, static_cast<double>(owner()->population()) );
 }
 
 
@@ -1469,7 +1493,7 @@ Entry::saveMaxCustomers(double nCusts, bool isRefOrServerEntry)
 	std::deque<const Activity *> activityStack;
 	std::deque<Entry *> entryStack;
 	entryStack.push_back( this );
-	Activity::Collect collect( 0, &Activity::setMaxCustomers );
+	Activity::Collect collect( &Activity::setMaxCustomers );
 	_startActivity->collect( activityStack, entryStack, collect );
 	entryStack.pop_back();
     }
@@ -1487,7 +1511,7 @@ Entry::setMaxCustomersForChain( unsigned int k ) const
     if ( dynamic_cast<ActivityCall *>(call) ){
 	station->setMaxCustomers( index(), k, call->getMaxCustomers() );
     } else {
-	station->setMaxCustomers( index(), k, std::min( call->getMaxCustomers(), call->srcTask()->population() ));
+	station->setMaxCustomers( index(), k, std::min( call->getMaxCustomers(), static_cast<double>(call->srcTask()->population()) ));
     }
     return *this;
 }
@@ -1662,7 +1686,7 @@ TaskEntry&
 TaskEntry::initProcessor()
 {
     if ( isStandardEntry() ) {
-	std::for_each( _phase.begin(), _phase.end(), Exec<Phase>( &Phase::initProcessor ) );
+	std::for_each( _phase.begin(), _phase.end(), std::mem_fn( &Phase::initProcessor ) );
     }
     return *this;
 }
@@ -1676,7 +1700,7 @@ TaskEntry::initProcessor()
 TaskEntry&
 TaskEntry::initWait()
 {
-    std::for_each( _phase.begin(), _phase.end(), Exec<Phase>( &Phase::initWait ) );
+    std::for_each( _phase.begin(), _phase.end(), std::mem_fn( &Phase::initWait ) );
     return *this;
 }
 
@@ -1742,13 +1766,13 @@ TaskEntry::computeVariance()
 	std::deque<const Activity *> activityStack;
 	std::deque<Entry *> entryStack; //( dynamic_cast<const Task *>(owner())->activities().size() );
 	entryStack.push_back( this );
-	Activity::Collect collect( 0, &Activity::collectWait );
+	Activity::Collect collect( &Activity::collectWait );
 	getStartActivity()->collect( activityStack, entryStack, collect );
 	entryStack.pop_back();
-	_total.addVariance( std::accumulate( _phase.begin(), _phase.end(), 0., add_using<Phase>( &Phase::variance ) ) );
+	_total.addVariance( std::accumulate( _phase.begin(), _phase.end(), 0., add_using<double,Phase>( &Phase::variance ) ) );
     } else {
-	std::for_each( _phase.begin(), _phase.end(), Exec<Phase>( &Phase::updateVariance ) );
-	_total.addVariance( std::accumulate( _phase.begin(), _phase.end(), 0., add_using<Phase>( &Phase::variance ) ) );
+	std::for_each( _phase.begin(), _phase.end(), std::mem_fn( &Phase::updateVariance ) );
+	_total.addVariance( std::accumulate( _phase.begin(), _phase.end(), 0., add_using<double,Phase>( &Phase::variance ) ) );
     }
     if ( flags.trace_variance != 0 && (dynamic_cast<TaskEntry *>(this) != nullptr) ) {
 	std::cout << "Variance(" << name() << ",p) ";
@@ -1769,7 +1793,7 @@ TaskEntry::computeVariance()
 void
 Entry::set( const Entry * src, const Activity::Collect& data )
 {
-    const Activity::Function f = data.collect();
+    const Activity::Collect::Function f = data.collect();
     const unsigned int submodel = data.submodel();
 
     if ( f == &Activity::collectServiceTime ) {
@@ -1829,7 +1853,7 @@ TaskEntry::updateWait( const Submodel& submodel, const double relax )
 	std::deque<const Activity *> activityStack;
 	std::deque<Entry *> entryStack;
 	entryStack.push_back( this );
-	Activity::Collect collect( n, &Activity::collectWait );
+	Activity::Collect collect( &Activity::collectWait, n );
 	getStartActivity()->collect( activityStack, entryStack, collect );
 	entryStack.pop_back();
 
@@ -1867,12 +1891,12 @@ TaskEntry::updateWaitReplication( const Submodel& submodel, unsigned & n_delta )
 {
     double delta = 0.0;
     if ( isActivityEntry() ) {
-	std::for_each( _phase.begin(), _phase.end(), Exec<Phase>( &Phase::resetReplication ) );
+	std::for_each( _phase.begin(), _phase.end(), std::mem_fn( &Phase::resetReplication ) );
 
 	std::deque<const Activity *> activityStack;
 	std::deque<Entry *> entryStack;
 	entryStack.push_back( this );
-	Activity::Collect collect( submodel.number(), &Activity::collectReplication );
+	Activity::Collect collect( &Activity::collectReplication, submodel.number() );
 	getStartActivity()->collect( activityStack, entryStack, collect );
 	entryStack.pop_back();
 
@@ -1894,7 +1918,7 @@ DeviceEntry::DeviceEntry( LQIO::DOM::Entry* dom, Processor * processor )
     : Entry( dom, processor->nEntries() ), _processor(processor)
 {
     entryTypeOk( LQIO::DOM::Entry::Type::STANDARD );
-    isCalledUsing( RequestType::RENDEZVOUS );
+    setIsCalledBy( RequestType::RENDEZVOUS );
     processor->addEntry( this );
 }
 

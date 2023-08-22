@@ -1,6 +1,6 @@
 /* -*- c++ -*-
  * submodel.C	-- Greg Franks Wed Dec 11 1996
- * $Id: submodel.cc 16755 2023-06-26 19:47:53Z greg $
+ * $Id: submodel.cc 16802 2023-08-21 19:51:34Z greg $
  *
  * MVA submodel creation and solution.  This class is the interface
  * between the input model consisting of processors, tasks, and entries,
@@ -10,7 +10,7 @@
  * The submodel number (myNumber) MUST be set by layerize.
  *
  * Prior to MVA submodel solution, stations are initilized by calling
- * Entry::residenceTime() and Call::setVisits().  After MVA solution
+ * Entry::elapsedTime() and Call::setVisits().  After MVA solution
  * the input model is updated with Call:saveWait() and Entry::updateWait().
  * Entry::updateWait() returns the difference in waiting times between
  * iterations of this submodel which is used for the stopping criteria.
@@ -83,6 +83,16 @@ Submodel::Submodel( const unsigned n ) :
 }
 
 
+#if 0
+// DEBUG
+void
+Submodel::setThinkTime( unsigned int k, double thinkTime )
+{
+    std::cerr << "Submodel " << number() << " chain " << k << ": think time = " << thinkTime << std::endl;
+    _thinkTime[k] = thinkTime;
+}
+#endif
+
 /*
  * Now create client tables which are simply all callers to
  * the servers at each level.  Note that _clients is an intersection
@@ -95,57 +105,8 @@ Submodel::addClients()
     _clients = std::accumulate( _servers.begin(), _servers.end(), _clients, Entity::add_clients );
     return *this;
 }
-
-/* ---------------------------- Initialization ---------------------------- */
-
-/*
- * Initialize server and client waiting times and populations.
- */
-
-void
-Submodel::initializeSubmodel()
-{
-    std::for_each( _servers.begin(), _servers.end(), std::mem_fn( &Entity::initializeServer ) );
-    std::for_each( _clients.begin(), _clients.end(), std::mem_fn( &Task::initializeClient ) );
-    std::for_each( _clients.begin(), _clients.end(), InitializeWait( *this ) );
-    std::for_each( _clients.begin(), _clients.end(), std::mem_fn( &Task::computeThroughputBound ) );
-}
 
 
-/*
- * Initialize server's waiting times and populations.
- */
-
-void
-Submodel::reinitializeSubmodel()
-{
-    std::for_each( _servers.begin(), _servers.end(), std::mem_fn( &Entity::reinitializeServer ) );
-    std::for_each( _clients.begin(), _clients.end(), std::mem_fn( &Task::reinitializeClient ) );
-    std::for_each( _clients.begin(), _clients.end(), InitializeWait( *this ) );
-    std::for_each( _clients.begin(), _clients.end(), std::mem_fn( &Task::computeThroughputBound ) );
-}
-
-
-
-/*+ BUG_433
- * Initialize the waiting time on all calls from client.  If replicated, then do the replicas
- * too as this client may be a server in another submodel.
- */
-
-void
-Submodel::InitializeWait::operator()( Task * client ) const
-{
-    client->initializeWait( _submodel );
-
-    if ( !client->isReplicated() || Pragma::replication() != Pragma::Replication::PRUNE ) return;
-    for ( size_t i = 2; i <= client->replicas(); ++i ) {
-	client = client->mapToReplica( i );
-	if ( _submodel.hasClient( client ) ) break;
-	client->initializeWait( _submodel );
-    }
-}
-/*- BUG_433 */
-
 /*
  * Handy debug function
  */
@@ -190,17 +151,7 @@ Submodel::submodel_header_str( std::ostream& output, const Submodel& submodel, c
 	   << submodel.submodelType() << " " << submodel.number() << ": "
 	   << submodel._clients.size() << " client" << (submodel._clients.size() != 1 ? "s, " : ", ")
 	   << submodel._servers.size() << " server" << (submodel._servers.size() != 1 ? "s."  : ".")
-	   << " ==========";
-    return output;
-}
-
-
-std::ostream&
-Submodel::submodel_trace_header_str( std::ostream& output, const std::string& str )
-{
-    const size_t len = (66 - str.size()) / 2 - 1;
-    output << std::setw( len ) << std::setfill( '-' ) << "-" << " " << str << " "
-	   << std::setw( len ) << "-" << std::endl << std::setfill( ' ' ) ;
+	   << "==========";
     return output;
 }
 
@@ -248,6 +199,48 @@ MVASubmodel::~MVASubmodel()
 }
 
 
+/*----------------------------------------------------------------------*/
+/*                       Initialize the model.                          */
+/*----------------------------------------------------------------------*/
+
+
+/*
+ * Initialize server's waiting times and populations.
+ */
+
+MVASubmodel&
+MVASubmodel::initServers( const Model& model )
+{
+    std::for_each( _servers.begin(), _servers.end(), Exec1<Entity,const Vector<Submodel *>&>( &Entity::initServer, model.getSubmodels() ) );
+    return *this;
+}
+
+
+
+/*
+ * Initialize server's waiting times and populations.
+ */
+
+MVASubmodel&
+MVASubmodel::reinitServers( const Model& model )
+{
+    std::for_each( _servers.begin(), _servers.end(), Exec1<Entity,const Vector<Submodel *>&>( &Entity::reinitServer, model.getSubmodels() ) );
+    return *this;
+}
+
+
+
+/*
+ * Go through all servers and set up path tables.
+ */
+
+MVASubmodel&
+MVASubmodel::initInterlock()
+{
+    std::for_each( _servers.begin(), _servers.end(), std::mem_fn( &Entity::initInterlock ) );
+    return *this;
+}
+
 
 #if PAN_REPLICATION
 /*
@@ -260,10 +253,7 @@ MVASubmodel::usePanReplication() const
     return Pragma::pan_replication() && hasReplicas();
 }
 #endif
-
-/*----------------------------------------------------------------------*/
-/*                          Build the model.                            */
-/*----------------------------------------------------------------------*/
+
 
 /*
  * Build a submodel.
@@ -296,10 +286,9 @@ MVASubmodel::build()
 
     /* ----------------------- Create Chains.  ------------------------ */
 
-    makeChains();
-    const unsigned int n_chains = nChains();
-    if ( n_chains > MAX_CLASSES ) {
-	LQIO::runtime_error( ADV_MANY_CLASSES, n_chains, number() );
+    setNChains( makeChains() );
+    if ( nChains() > MAX_CLASSES ) {
+	LQIO::runtime_error( ADV_MANY_CLASSES, nChains(), number() );
     }
 
     /* --------------------- Create the clients. ---------------------- */
@@ -308,7 +297,7 @@ MVASubmodel::build()
     for ( std::set<Task *>::const_iterator client = _clients.begin(); client != _clients.end(); ++client ) {
 	if ( (*client)->isClosedModelClient() ) {
 	    closedStnNo += 1;
-	    _closedStation[closedStnNo] = (*client)->makeClient( n_chains, number() );
+	    _closedStation[closedStnNo] = (*client)->makeClient( nChains(), number() );
 	}
 	if ( Pragma::interlock() ) {
 	    (*client)->setInterlockedFlow( *this );
@@ -320,7 +309,7 @@ MVASubmodel::build()
     unsigned openStnNo = 0;
     for ( std::set<Entity *>::const_iterator server = _servers.begin(); server != _servers.end(); ++server ) {
 	if ( (*server)->nEntries() == 0 ) continue;	/* Null server. */
-	Server * aStation = (*server)->makeServer( n_chains );
+	Server * aStation = (*server)->makeServer( nChains() );
 	if ( (*server)->isClosedModelServer() ) {
 	    closedStnNo += 1;
 	    _closedStation[closedStnNo] = aStation;
@@ -334,9 +323,9 @@ MVASubmodel::build()
     /* --------- Create overlap probabilities and durations. ---------- */
 
     if ( ( hasThreads() || hasSynchs() ) && !Pragma::threads(Pragma::Threads::NONE) ) {
-	_overlapFactor = new Vector<double> [n_chains+1];
-	for ( unsigned i = 1; i <= n_chains; ++i ) {
-	    _overlapFactor[i].resize( n_chains, 1.0 );
+	_overlapFactor = new Vector<double> [nChains()+1];
+	for ( unsigned i = 1; i <= nChains(); ++i ) {
+	    _overlapFactor[i].resize( nChains(), 1.0 );
 	}
     }
 
@@ -344,11 +333,11 @@ MVASubmodel::build()
 
     assert ( closedStnNo <= n_stations && openStnNo <= n_stations );
 
-    if ( nOpenStns() > 0 && !flags.no_execute ) {
+    if ( n_openStns() > 0 && !flags.no_execute ) {
 	_openModel = new Open( _openStation );
     }
 
-    if ( n_chains > 0 && nClosedStns() > 0 ) {
+    if ( nChains() > 0 && n_closedStns() > 0 ) {
 	switch ( Pragma::mva() ) {
 	case Pragma::MVA::EXACT:
 	    _closedModel = new ExactMVA(          _closedStation, _customers, _thinkTime, _priority, _overlapFactor );
@@ -371,11 +360,11 @@ MVASubmodel::build()
 	}
     }
 
-    std::for_each( _clients.begin(), _clients.end(), InitializeChains( *this ) );
+    std::for_each( _clients.begin(), _clients.end(), ConstExec1<Task,MVASubmodel&>( &Task::setChains, *this ) );
 #if PAN_REPLICATION
     if ( usePanReplication() ) {
 	unsigned not_used = 0;
-	for ( auto& client : _clients ) client->updateWaitReplication( *this, not_used );
+	std::for_each( _clients.begin(), _clients.end(), ExecSum2<Task,double,const Submodel&,unsigned&>( &Task::updateWaitReplication, *this, not_used ) );
     }
 #endif
     std::for_each( _clients.begin(), _clients.end(), ConstExec1<Task,const MVASubmodel&>(&Task::setMaxCustomers,*this) );
@@ -400,7 +389,62 @@ MVASubmodel::build()
 MVASubmodel&
 MVASubmodel::rebuild()
 {
-    remakeChains();
+    unsigned k = 0;			/* Chain number.		*/
+
+    /* ----- Set think times, customers and chains for this pass. ----- */
+
+    for ( std::set<Task *>::const_iterator client = _clients.begin(); client != _clients.end(); ++client ) {
+	const std::set<Entity *> clientsServers = (*client)->getServers( _servers );	/* Get all servers for this client	*/
+	const unsigned threads = (*client)->nThreads();
+
+#if PAN_REPLICATION
+	if ( !usePanReplication() || (*client)->replicas() <= 1 ) {
+
+	    /* ---------------- Simple case --------------- */
+#endif
+
+	    for ( unsigned i = 1; i <= threads; ++i ) {
+		k += 1;				// Add one chain.
+
+		if ( (*client)->population() != std::numeric_limits<unsigned int>::max() ) {
+		    _customers[k] = (*client)->population();
+		} else {
+		    _customers[k] = 0;
+		}
+		_priority[k]  = (*client)->priority();
+	    }
+
+#if PAN_REPLICATION
+	} else {
+	    //REPL changes
+	    /* --------------- Complex case --------------- */
+
+	    //!!! If chains are extended to entries to handle
+	    //!!! fanins, modify delta_chains and Entity::fanIn()
+	    //!!! for the entry-to-entry case.
+
+	    /*
+	     * Do all the chains for to a server at once.  This makes
+	     * Task::threadIndex() simpler.
+	     */
+
+	    for ( std::set<Entity *>::const_iterator server = clientsServers.begin(); server != clientsServers.end(); ++server ) {
+		for ( unsigned i = 1; i <= threads; ++i ) {
+		    k += 1;
+
+		    if ( (*client)->population() != std::numeric_limits<unsigned int>::max() ) {
+			_customers[k] = (*client)->population() * (*server)->fanIn(*client);
+		    } else {
+			_customers[k] = 0;
+		    }
+		}
+	    }
+	}
+#endif
+	if ( Pragma::interlock() ) {
+	    (*client)->setInterlockedFlow( *this );
+	}
+    }
 
     /* ------------------ Recreate servers for model. -----------------	*/
 
@@ -496,14 +540,14 @@ Submodel::partition()
 	    for ( std::vector<submodel_group_t*>::const_iterator j = std::next(i); j != disjoint.end(); ++j ) {
 		/* If all the clients in j are replicas of i, then prune j */
 		if ( !replicaGroups( (*i)->first, (*j)->first ) ) continue;
-		if ( Options::Debug::replication() ) {
-		    std::cerr << "Submodel " << number() << ", can prune: ";
-		    std::set<Task *>& clients = (*j)->first;
-		    for ( std::set<Task *>::const_iterator client = clients.begin(); client != clients.end(); ++client ) {
-			std::cerr << (*client)->name() << ":" << (*client)->getReplicaNumber();
-		    }
-		    std::cerr << std::endl;
+#if 0
+		std::cerr << "Submodel " << number() << ", can prune: ";
+		std::set<Task *>& clients = (*j)->first;
+		for ( std::set<Task *>::const_iterator client = clients.begin(); client != clients.end(); ++client ) {
+		    std::cerr << (*client)->name() << ":" << (*client)->getReplicaNumber();
 		}
+		std::cerr << std::endl;
+#endif
 		purgeable.insert( *j );
 	    }
 	}
@@ -597,9 +641,9 @@ MVASubmodel::makeChains()
 #endif
 
 	    const size_t new_size = _customers.size() + threads;
-	    _customers.resize( new_size );
-	    _thinkTime.resize( new_size );
-	    _priority.resize( new_size );
+	    _customers.resize( new_size ); /* N.B. -- Vector class.  Must*/
+	    _thinkTime.resize( new_size, static_cast<double>(0.0) ); /* grow() explicitly.	*/
+	    _priority.resize( new_size, static_cast<unsigned int>(0) );
 
 	    for ( unsigned i = 1; i <= threads; ++i ) {
 		k += 1;				// Add one chain.
@@ -614,7 +658,7 @@ MVASubmodel::makeChains()
 
 		/* add chain to all servers of this client */
 
-		for ( auto& server : clientsServers ) server->addServerChain( k );
+		std::for_each( clientsServers.begin(), clientsServers.end(), Exec1<Entity,unsigned int>( &Entity::addServerChain, k ) );
 	    }
 
 #if PAN_REPLICATION
@@ -659,252 +703,26 @@ MVASubmodel::makeChains()
 }
 
 
-unsigned
-MVASubmodel::remakeChains()
-{
-    unsigned k = 0;			/* Chain number.		*/
-
-    /* ----- Set think times, customers and chains for this pass. ----- */
-
-    for ( std::set<Task *>::const_iterator client = _clients.begin(); client != _clients.end(); ++client ) {
-	const std::set<Entity *> clientsServers = (*client)->getServers( _servers );	/* Get all servers for this client	*/
-	const unsigned threads = (*client)->nThreads();
-
 #if PAN_REPLICATION
-	if ( !usePanReplication() || (*client)->replicas() <= 1 ) {
-
-	    /* ---------------- Simple case --------------- */
-#endif
-
-	    for ( unsigned i = 1; i <= threads; ++i ) {
-		k += 1;				// Add one chain.
-
-		if ( (*client)->population() != std::numeric_limits<unsigned int>::max() ) {
-		    _customers[k] = (*client)->population();
-		} else {
-		    _customers[k] = 0;
-		}
-		_priority[k]  = (*client)->priority();
-	    }
-
-#if PAN_REPLICATION
-	} else {
-	    //REPL changes
-	    /* --------------- Complex case --------------- */
-
-	    //!!! If chains are extended to entries to handle
-	    //!!! fanins, modify delta_chains and Entity::fanIn()
-	    //!!! for the entry-to-entry case.
-
-	    /*
-	     * Do all the chains for to a server at once.  This makes
-	     * Task::threadIndex() simpler.
-	     */
-
-	    for ( std::set<Entity *>::const_iterator server = clientsServers.begin(); server != clientsServers.end(); ++server ) {
-		for ( unsigned i = 1; i <= threads; ++i ) {
-		    k += 1;
-
-		    if ( (*client)->population() != std::numeric_limits<unsigned int>::max() ) {
-			_customers[k] = (*client)->population() * (*server)->fanIn(*client);
-		    } else {
-			_customers[k] = 0;
-		    }
-		}
-	    }
-	}
-#endif
-    }
-    return k;
-}
-
-/* ---------------------------- Initialization ---------------------------- */
-
+//REPL changes
 /*
- * Go through all servers and set up path tables.
+ * Query the closed model to determine the factor needed for
+ * Newton Raphson stuff.
+ * (5.18) [Pan, pg 73].
  */
 
-void
-MVASubmodel::initializeInterlock()
+double
+MVASubmodel::nrFactor( const Server * aStation, const unsigned e, const unsigned k ) const
 {
-    std::for_each( _servers.begin(), _servers.end(), std::mem_fn( &Entity::initializeInterlock ) );
-}
+    const double s = aStation->S( e, k, 1 );
+    if ( std::isfinite( s ) && _closedModel ) {  //tomari
+	//Solution for replicated models with open arrivals.
+	// See bug # 87.
 
+	return _closedModel->nrFactor( *aStation, e, k ) * s;
 
-void
-MVASubmodel::InitializeChains::operator()( Task* client ) const
-{
-    client->closedCallsPerform( Call::Perform( &Call::Perform::setChain, _submodel ) );
-    if ( client->nThreads() > 1 ) {
-	_submodel.setChains( client->clientChains( _submodel.number() ) );
-    }
-}
-
-
-/*
- * Called from submodel to initialize client.  
- */
-
-void
-MVASubmodel::InitializeClientStation::operator()( Task* client )
-{
-    const unsigned int n = _submodel.number();
-    Server * station = client->clientStation( n );
-
-    if ( client->isClosedModelClient() ) {
-	const ChainVector& chains = client->clientChains( n );
-	const std::vector<Entry *>& entries = client->entries();
-	for ( ChainVector::const_iterator k = chains.begin(); k != chains.end(); ++k ) {
-	    for ( std::vector<Entry *>::const_iterator entry = entries.begin(); entry != entries.end(); ++entry ) {
-		const unsigned e = (*entry)->index();
-
-		for ( unsigned p = 1; p <= (*entry)->maxPhase(); ++p ) {
-		    station->setService( e, *k, p, (*entry)->waitExcept( n, *k, p ) );
-		}
-		station->setVisits( e, *k, 1, (*entry)->prVisit() );	// As client, called-by phase does not matter.
-	    }
-
-	    /* Set idle times for stations. */
-	    _submodel.setThinkTime( *k, client->thinkTime( n, *k ) );
-	}
-
-	if ( client->hasThreads() && !Pragma::threads(Pragma::Threads::NONE) ) {
-	    client->forkOverlapFactor( _submodel );
-	}
-
-	/* Set visit ratios to all servers for this client */
-
-	client->closedCallsPerform( Call::Perform( &Call::Perform::setVisits, _submodel ) );
-    }
-
-    /* This will also set arrival rates for open class from sendNoReply */
-
-    client->openCallsPerform( Call::Perform( &Call::Perform::setLambda, _submodel ) );
-}
-
-
-/*
- * Initialize the service and visit parameters for a server.  Also set
- * myChains to all chains that visit this server.
- */
-
-void
-MVASubmodel::InitializeServerStation::operator()( Entity * server )
-{
-    Server * station = server->serverStation();
-    if ( !station ) return;
-
-    if ( !Pragma::init_variance_only() ) {
-	server->computeVariance();
-    }
-
-    const ChainVector& chains = server->serverChains();
-    const std::vector<Entry *>& entries = server->entries();
-    for ( std::vector<Entry *>::const_iterator entry = entries.begin(); entry != entries.end(); ++entry ) {
-	const unsigned e = (*entry)->index();
-	const double openArrivalRate = (*entry)->openArrivalRate();
-
-	if ( openArrivalRate > 0.0 ) {
-	    station->setVisits( e, 0, 1, openArrivalRate );	// Chain 0 reserved for open class.
-	}
-
-	/* -- Set service time for entries with visits only. -- */
-	if ( server->isClosedModelServer() ) {
-	    for ( ChainVector::const_iterator k = chains.begin(); k != chains.end(); ++k ) {
-		setServiceTimeAndVariance( station, *entry, *k );
-	    }
-	}
-
-	/*
-	 * Open arrivals and other open models use chain zero which are special
-	 * and won't work in the above loop anyway)
-	 */
-
-	if ( server->isOpenModelServer() ) {
-	    setServiceTimeAndVariance( station, *entry, 0 );
-	}
-
-    }
-
-    /* Overtaking -- compute for MARKOV overtaking only. */
-
-    if ( server->markovOvertaking() ) {
-	const std::set<Task *>& clients = _submodel.getClients();
-	std::for_each( clients.begin(), clients.end(), ComputeOvertaking( server ) );
-    }
-
-    /* Set interlock */
-
-    if ( server->isClosedModelServer() && Pragma::interlock() ) {
-	server->setInterlock( _submodel );
-    }
-
-    if ( server->hasSynchs() && !Pragma::threads(Pragma::Threads::NONE) ) {
-	server->joinOverlapFactor( _submodel );
-    }
-}
-
-
-/*
- * Set the service time for station, entry and chain.
- */
-
-void
-MVASubmodel::InitializeServerStation::setServiceTimeAndVariance( Server * station, const Entry * entry, unsigned k ) const
-{
-    const unsigned e = entry->index();
-
-    if ( station->V( e, k ) == 0 ) return;
-
-    for ( unsigned p = 1; p <= entry->maxPhase(); ++p ) {
-	station->setService( e, k, p, entry->residenceTimeForPhase(p) );
-	if ( entry->owner()->hasVariance() ) {
-	    station->setVariance( e, k, p, entry->varianceForPhase(p) );
-	}
-    }
-}
-
-
-/*
- * Compute overtaking from client to server.
- */
-
-void
-MVASubmodel::InitializeServerStation::ComputeOvertaking::operator()( Task * client )
-{
-    Overtaking( client, _server ).compute();
-}
-
-
-
-#if PAN_REPLICATION
-/*
- * If I am replicated and I have multiple chains, I have to add on the waiting
- * time made to all other tasks in my partition but NOT in my chain too.  This
- * step must be performed after BOTH the clients and servers have been created
- * so that all of the chain information is available at all stations.  Chain
- * information is initialized in makeChains.  Submodel information is
- * initialized in initializeServer.
- */
-
-//++ REPL changes
-
-void
-MVASubmodel::ModifyClientServiceTime::operator()( Task * client )
-{
-    const unsigned int n = _submodel.number();
-    Server * station = client->clientStation( n );
-    const ChainVector& chains = client->clientChains( n );
-
-    const std::vector<Entry *>& entries = client->entries();
-    for ( std::vector<Entry *>::const_iterator entry = entries.begin(); entry != entries.end(); ++entry ) {
-	const unsigned e = (*entry)->index();
-
-	for ( ChainVector::const_iterator k = chains.begin(); k != chains.end(); ++k ) {
-	    for ( unsigned p = 1; p <= (*entry)->maxPhase(); ++p ) {
-		station->setService( e, *k, p, (*entry)->waitExceptChain( n, *k, p ) );
-	    }
-	}
+    } else {
+	return s;
     }
 }
 #endif
@@ -936,8 +754,8 @@ MVASubmodel::solve( long iterations, MVACount& MVAStats, const double relax )
     /* ----------------- initialize the stations ------------------ */
 
     std::for_each( _servers.begin(), _servers.end(), std::mem_fn( &Entity::clear ) );	/* Clear visit ratios and what have you */
-    std::for_each( _clients.begin(), _clients.end(), InitializeClientStation( *this ) );
-    std::for_each( _servers.begin(), _servers.end(), InitializeServerStation( *this ) );
+    std::for_each( _clients.begin(), _clients.end(), Exec1<Task,Submodel&>( &Task::initClientStation, *this ) );
+    std::for_each( _servers.begin(), _servers.end(), Exec1<Entity,MVASubmodel&>( &Entity::initServerStation, *this ) );
 
 #if PAN_REPLICATION
     /* ------------------- Replication Iteration ------------------- */
@@ -960,7 +778,7 @@ MVASubmodel::solve( long iterations, MVACount& MVAStats, const double relax )
 
 	    }
 
-	    std::for_each( _clients.begin(), _clients.end(), ModifyClientServiceTime( *this ) );
+	    std::for_each( _clients.begin(), _clients.end(), Exec1<Task,const MVASubmodel&>( &Task::modifyClientServiceTime, *this ) );
 	}
 #endif
 
@@ -968,24 +786,18 @@ MVASubmodel::solve( long iterations, MVACount& MVAStats, const double relax )
 	    Generate::program( *this );
 	}
 
-	if ( trace ) {
-	    if ( _openModel != nullptr ) {
-		if ( _closedModel != nullptr ) std::cout << print_trace_header( "Open Model" );
-		printOpenModel( std::cout );
-	    }
-	    if ( _closedModel != nullptr ) {
-		if ( _openModel != nullptr ) std::cout << print_trace_header( "Closed Model" );
-		printClosedModel( std::cout );
-	    }
-	}
-
 	/* ----------------- Solve the model. ----------------- */
 
 	if ( _closedModel ) {
 
 	    if ( _openModel ) {
+		if ( trace ) {
+		    printOpenModel( std::cout );
+		}
 
-		/* If model has any open classes, convert for closed model. */
+		/*
+		 * If model has any open classes, convert for closed model.
+		 */
 
 		try {
 		    _openModel->convert( _customers );
@@ -998,6 +810,9 @@ MVASubmodel::solve( long iterations, MVACount& MVAStats, const double relax )
 		}
 	    }
 
+	    if ( trace ) {
+		printClosedModel( std::cout );
+	    }
 	    try {
 		_closedModel->solve();
 	    }
@@ -1011,6 +826,10 @@ MVASubmodel::solve( long iterations, MVACount& MVAStats, const double relax )
 	}
 
 	if ( _openModel ) {
+	    if ( trace && !_closedModel ) {
+		printOpenModel( std::cout );
+	    }
+
 	    try {
 		if ( _closedModel ) {
 		    _openModel->solve( *_closedModel, _customers );	/* Calculate L[0] queue lengths. */
@@ -1023,18 +842,15 @@ MVASubmodel::solve( long iterations, MVACount& MVAStats, const double relax )
 		    throw;
 		}
 	    }
-	}
 
-	if ( trace ) {
-	    std::ios_base::fmtflags oldFlags = std::cout.setf( std::ios::right, std::ios::adjustfield );
-	    if ( _openModel != nullptr  ) {
-		if ( _closedModel != nullptr ) std::cout << print_trace_header( "Open Model" );
+	    if ( trace ) {
 		std::cout << *_openModel << std::endl << std::endl;
 	    }
-	    if ( _closedModel != nullptr ) {
-		if ( _openModel != nullptr ) std::cout << print_trace_header( "Closed Model" );
-		std::cout << *_closedModel << std::endl << std::endl;
-	    }
+	}
+
+	if ( _closedModel && trace ) {
+	    std::ios_base::fmtflags oldFlags = std::cout.setf( std::ios::right, std::ios::adjustfield );
+	    std::cout << *_closedModel << std::endl << std::endl;
 	    std::cout.flags( oldFlags );
 	}
 
@@ -1044,8 +860,8 @@ MVASubmodel::solve( long iterations, MVACount& MVAStats, const double relax )
 	    std::cout <<"MVASubmodel::solve( ) .... completed solving the MVA model......." << std::endl;
 	}
 
-	std::for_each( _clients.begin(), _clients.end(), MVASubmodel::SaveClientResults( *this ) );
-	std::for_each( _servers.begin(), _servers.end(), MVASubmodel::SaveServerResults( *this, relax ) );
+	std::for_each( _clients.begin(), _clients.end(), Exec1<Task,const MVASubmodel&>( &Task::saveClientResults, *this ) );
+	std::for_each( _servers.begin(), _servers.end(), Exec2<Entity,const MVASubmodel&,double>( &Entity::saveServerResults, *this, relax ) );
 
 	/* --- Compute and save new values for entry service times. --- */
 
@@ -1059,7 +875,7 @@ MVASubmodel::solve( long iterations, MVACount& MVAStats, const double relax )
 	deltaRep = 0.0;
 	if ( usePanReplication() ) {
 	    unsigned n_deltaRep = 0;
-	    for ( auto& client : _clients ) deltaRep += client->updateWaitReplication( *this, n_deltaRep );
+	    deltaRep = std::for_each( _clients.begin(), _clients.end(), ExecSum2<Task,double,const Submodel&,unsigned&>( &Task::updateWaitReplication, *this, n_deltaRep ) ).sum();
 	    if ( n_deltaRep ) {
 		deltaRep = sqrt( deltaRep / n_deltaRep );	/* Take RMS value over all phases */
 	    }
@@ -1074,7 +890,7 @@ MVASubmodel::solve( long iterations, MVACount& MVAStats, const double relax )
 	if ( flags.trace_interlock ) {
 	    std::cout << "------ update interlocked Wait for submodel " << number() << ", iteration " << iterations << " ------" << std::endl;
 	}
-	for ( auto& client : _clients ) client->updateWait( *this, relax );
+	std::for_each( _clients.begin(), _clients.end(), Exec2<Task,const Submodel&,double>( &Task::updateWait,  *this, relax ) );
 
 	if ( !check_fp_ok() ) {
 	    throw floating_point_error( __FILE__, __LINE__ );
@@ -1093,71 +909,7 @@ MVASubmodel::solve( long iterations, MVACount& MVAStats, const double relax )
 
     return *this;
 }
-
-/* ----------------------------- Save Results ----------------------------- */
 
-
-/*
- * Save client results.  Clients can occur in moret than one submodel.  If a
- * client has been pruned, set its results from the primary replica of both
- * the client and and server.
- */
-
-void
-MVASubmodel::SaveClientResults::operator()( Task * client ) const
-{
-    const unsigned int n = _submodel.number();
-    const Server& station = *client->clientStation(n);
-    const unsigned int chain = client->clientChains(n)[1];
-
-    /* Always save the results from the call from submodel. */
-
-    client->saveClientResults( _submodel, station, chain );
-
-    /*+ BUG_433
-     * If this is replica 1, and it's replicated and the replicas are pruned,
-     * then save the results from replica 1's station to all the pruned
-     * copies.  If PAN replication, the replicas are never even created.
-     */
-
-    if ( !client->isReplicated() || Pragma::replication() != Pragma::Replication::PRUNE ) return;
-    for ( size_t i = 2; i <= client->replicas(); ++i ) {
-	client = client->mapToReplica( i );
-	if ( _submodel.hasClient( client ) ) break;
-	client->saveClientResults( _submodel, station, chain );
-    }
-    /*- BUG_433 */
-}
-
-
-
-/*
- * Save server results.  Servers only occur in one submodel.  If servers have
- * been pruned, set their results from the primary copy.
- */
-
-void
-MVASubmodel::SaveServerResults::operator()( Entity * server ) const
-{
-    const Server& station = *server->serverStation();
-    
-    /* Always save the results from the call from submodel. */
-    server->saveServerResults( _submodel, station, _relaxation );
-
-    /*+ BUG_433
-     * If this is replica 1, and it's replicated and the replicas are pruned,
-     * then save the results from replica 1's station to all the pruned
-     * copies.  If PAN replication, the replicas are never even created.
-     */
-    
-    if ( !server->isReplicated() || Pragma::replication() != Pragma::Replication::PRUNE ) return;
-    for ( size_t i = 2; i <= server->replicas(); ++i ) {
-	server = server->mapToReplica( i );
-	if ( _submodel.hasServer( server ) ) break;
-	server->saveServerResults( _submodel, station, _relaxation );
-    }
-    /*- BUG_433 */
-}
 
 double
 MVASubmodel::openModelThroughput( const Server& station, unsigned int e ) const
@@ -1186,12 +938,6 @@ MVASubmodel::closedModelNormalizedThroughput( const Server& station, unsigned in
 #endif
 
 double
-MVASubmodel::closedModelUtilization( const Server& station ) const
-{
-    return _closedModel != nullptr ? _closedModel->utilization( station ) : 0.0;
-}
-
-double
 MVASubmodel::closedModelUtilization( const Server& station, unsigned int k ) const
 {
     return _closedModel != nullptr ? _closedModel->utilization( station, k ) : 0.0;
@@ -1203,35 +949,11 @@ MVASubmodel::openModelUtilization( const Server& station ) const
     return _openModel != nullptr ? _openModel->utilization( station ) : 0.0;
 }
 
-#if BUG_393
+#if defined(BUG_393)
 double
 MVASubmodel::closedModelMarginalQueueProbability( const Server& station, unsigned int i ) const
 {
     return _closedModel != nullptr ? static_cast<double>(_closedModel->marginalQueueProbability( station, i ) ) : 0.0;
-}
-#endif
-
-
-#if PAN_REPLICATION
-//REPL changes
-/*
- * Query the closed model to determine the factor needed for Newton Raphson
- * stuff (5.18) [Pan, pg 73].  Called from Phase::updateWaitReplication.
- */
-
-double
-MVASubmodel::nrFactor( const Server * aStation, const unsigned e, const unsigned k ) const
-{
-    const double s = aStation->S( e, k, 1 );
-    if ( std::isfinite( s ) && _closedModel ) {  //tomari
-	//Solution for replicated models with open arrivals.
-	// See bug # 87.
-
-	return _closedModel->nrFactor( *aStation, e, k ) * s;
-
-    } else {
-	return s;
-    }
 }
 #endif
 
@@ -1257,24 +979,23 @@ MVASubmodel::print( std::ostream& output ) const
 
     if ( std::any_of( _servers.begin(), _servers.end(), std::mem_fn( &Entity::isClosedModelServer ) ) ) {
 	output << std::endl << "Closed Model Servers: " << std::endl;
-	std::for_each( _servers.begin(), _servers.end(), PrintServer( output, &Entity::isClosedModelServer ) );
+	std::for_each( _servers.begin(), _servers.end(), print_server( output, &Entity::isClosedModelServer ) );
     }
     if ( std::any_of( _servers.begin(), _servers.end(), std::mem_fn( &Entity::isOpenModelServer ) ) ) {
 	output << std::endl << "Open Model Servers: " << std::endl;
-	std::for_each( _servers.begin(), _servers.end(), PrintServer( output, &Entity::isOpenModelServer ) );
+	std::for_each( _servers.begin(), _servers.end(), print_server( output, &Entity::isOpenModelServer ) );
     }
 
     output << std::endl << "Calls: " << std::endl;
-    for ( const auto& entry : Model::__entry ) entry->printCalls( output, number() );
-    for ( const auto& processor : Model::__processor ) processor->printTasks( output, number() );
+    std::for_each( Model::__entry.begin(), Model::__entry.end(), ConstPrint1<Entry,unsigned int>( &Entry::printCalls, output, number() ) );
+    std::for_each( Model::__processor.begin(), Model::__processor.end(), ConstPrint1<Processor,unsigned int>( &Processor::printTasks, output, number() ) );
     output << std::endl;
-
     return output;
 }
 
 
 void
-MVASubmodel::PrintServer::operator()( const Entity * server ) const
+MVASubmodel::print_server::operator()( const Entity * server ) const
 {
     if ( (server->*_predicate)() ) {
 	_output << std::setw(2) << "  " << *server << std::endl;
@@ -1363,12 +1084,41 @@ MVASubmodel::printMaxCustomers( std::ostream& output ) const
 /*			  Fair Share MVA Submodel			*/
 /*----------------------------------------------------------------------*/
 
+/*
+ * Initialize server's waiting times and populations.  _cfs_servers are set at the same time as _servers, so
+ * we'll stick with the known processors.
+ */
+
+CFSSubmodel&
+CFSSubmodel::initServers( const Model& model )
+{
+    MVASubmodel::initServers( model );
+    for_each ( _servers.begin(), _servers.end(), std::mem_fn( &Entity::initGroups ) );
+    return *this;
+}
+
+
+
+/*
+ * Initialize server's waiting times and populations.
+ */
+
+CFSSubmodel&
+CFSSubmodel::reinitServers( const Model& model )
+{
+    MVASubmodel::reinitServers( model );
+    for_each ( _servers.begin(), _servers.end(), std::mem_fn( &Entity::initGroups ) );
+    return *this;
+}
+
+
+
 CFSSubmodel&
 CFSSubmodel::build()
 {
     MVASubmodel::build();
     _redistributed = false;
-    for_each ( _servers.begin(), _servers.end(), Exec<Entity>( &Entity::resetGroups ) );
+    for_each ( _servers.begin(), _servers.end(), std::mem_fn( &Entity::resetGroups ) );
     return *this;
 }
 
@@ -1379,7 +1129,7 @@ CFSSubmodel::rebuild()
 {
     MVASubmodel::rebuild();
     _redistributed = false;
-    for_each ( _servers.begin(), _servers.end(), Exec<Entity>( &Entity::resetGroups ) );
+    for_each ( _servers.begin(), _servers.end(), std::mem_fn( &Entity::resetGroups ) );
     return *this;
 }
 
@@ -1420,7 +1170,7 @@ CFSSubmodel::redistribute::operator()( Entity * server )
     const std::set<Group *>& groups = processor->groups();
     const bool trace = flags.trace_cfs && (Options::Trace::mva(_submodel.number()) );
 
-    std::for_each( groups.begin(), groups.end(), Exec<Group>( &Group::setSpareStatus ) );
+    std::for_each( groups.begin(), groups.end(), std::mem_fn( &Group::setSpareStatus ) );
 
     /*
      * This block is only run once, and after the model has stabilized
@@ -1432,8 +1182,8 @@ CFSSubmodel::redistribute::operator()( Entity * server )
 	
     if ( !redistributed()
 	 && !processor->allCaps()			/* All shares are caps */
-	 && std::all_of( groups.begin(), groups.end(), Predicate<Group>( &Group::isUtilLessThanShare ) )
-	 && std::accumulate( groups.begin(), groups.end(), 0., add_using<Group>( &Group::utilization ) ) <= processor->copies() * 0.99 ) {
+	 && std::all_of( groups.begin(), groups.end(), std::mem_fn( &Group::isUtilLessThanShare ) )
+	 && std::accumulate( groups.begin(), groups.end(), 0., add_using<double,Group>( &Group::utilization ) ) <= processor->copies() * 0.99 ) {
 
 	/* share redistritbution */
 
@@ -1466,7 +1216,7 @@ CFSSubmodel::redistribute::operator()( Entity * server )
 		// need to change group task share as well;
 		const std::set<Task *>& tasks = (*group)->tasks();
 		for_each ( tasks.begin(), tasks.end(), Exec1<Task,double>( &Task::changeShare, ratio ) );
-		for_each ( tasks.begin(), tasks.end(), Exec<Task>( &Task::reset_lowerbound ) );
+		for_each ( tasks.begin(), tasks.end(), std::mem_fn( &Task::reset_lowerbound ) );
 
 		//delta += (*group)->adjustGroupRatio();
 		if ( trace ) {
@@ -1502,5 +1252,5 @@ CFSSubmodel::redistribute::operator()( Entity * server )
      * adjusting group ratio : reduce the extra delay for the receiving groups.
      */
 
-    for_each ( groups.begin(), groups.end(), Exec<Group>( &Group::computeCFSDelay ) );
+    for_each ( groups.begin(), groups.end(), std::mem_fn( &Group::computeCFSDelay ) );
 }

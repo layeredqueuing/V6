@@ -8,7 +8,7 @@
  * January 2003
  *
  * ------------------------------------------------------------------------
- * $Id: entry.cc 16750 2023-06-19 12:16:45Z greg $
+ * $Id: entry.cc 16791 2023-07-27 11:21:46Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -519,9 +519,9 @@ Entry::removeDstCall( GenericCall * aCall)
 
 
 void
-Entry::removeSrcCall( Call * aCall )
+Entry::removeSrcCall( Call * call )
 {
-    std::vector<Call *>::iterator pos = std::find( _calls.begin(), _calls.end(), aCall ) ;
+    std::vector<Call *>::iterator pos = std::find( _calls.begin(), _calls.end(), call ) ;
     if ( pos != _calls.end() ) {
 	_calls.erase( pos );
     }
@@ -651,13 +651,13 @@ Entry::thinkTime() const
 
 
 double
-Entry::executionTime( const unsigned p ) const
+Entry::residenceTime( const unsigned p ) const
 {
     if ( isStandardEntry() ) {
 	const std::map<unsigned,Phase>::const_iterator i = _phases.find(p);
 	if ( i == _phases.end() ) return 0.;
 	const Phase& phase = i->second;
-	return phase.executionTime();
+	return phase.residenceTime();
     } else if ( getDOM() ) {
 	return dynamic_cast<const LQIO::DOM::Entry *>(getDOM())->getResultPhasePServiceTime(p);
     } else {
@@ -668,9 +668,9 @@ Entry::executionTime( const unsigned p ) const
 
 
 double
-Entry::executionTime() const
+Entry::residenceTime() const
 {
-    return std::accumulate( _phases.begin(), _phases.end(), 0.0, sum( &Phase::executionTime ) );
+    return std::accumulate( _phases.begin(), _phases.end(), 0.0, sum( &Phase::residenceTime ) );
 }
 
 
@@ -685,6 +685,14 @@ double
 Entry::variance() const
 {
     return std::accumulate( _phases.begin(), _phases.end(), 0.0, sum( &Phase::variance ) );
+}
+
+
+double
+Entry::visitProbability() const
+{
+    double total = owner()->throughput();
+    return total > 0. ? throughput() / total : 0.0;
 }
 
 
@@ -708,7 +716,11 @@ Entry::serviceExceeded() const
 bool
 Entry::isCalledBy( const request_type requestType )
 {
-    if ( _requestType != request_type::NOT_CALLED && _requestType != requestType ) {
+    if ( requestType == request_type::NOT_CALLED ) {
+	assert( callers().empty() );
+	_requestType = requestType;
+	return true;
+    } else if ( _requestType != request_type::NOT_CALLED && _requestType != requestType ) {
 	getDOM()->runtime_error( LQIO::ERR_OPEN_AND_CLOSED_CLASSES );
 	return false;
     } else {
@@ -879,7 +891,7 @@ Entry::sliceTime( const unsigned p ) const
 double
 Entry::Cv_sqr() const
 {
-    const double t = executionTime();
+    const double t = residenceTime();
 
     if ( !std::isfinite( t ) ) {
 	return t;
@@ -1384,7 +1396,6 @@ Entry::check() const
 
 	/* Set some globals for output formatting */
 
-	Model::thinkTimePresent     = Model::thinkTimePresent     || hasThinkTime();
 	Model::boundsPresent        = Model::boundsPresent        || throughputBound() > 0.0;
 
     } else {
@@ -1646,7 +1657,7 @@ Entry::colour() const
 
     case Colouring::DIFFERENCES:
 	if ( Flags::have_results ) {
-	    return colourForDifference( executionTime() );
+	    return colourForDifference( residenceTime() );
 	}
 	break;
 	
@@ -1981,14 +1992,6 @@ Entry::labelQueueingNetworkService( Label& aLabel )
  */
 
 double
-Entry::serviceTimeForSRVNInput() const
-{
-    return std::accumulate( _phases.begin(), _phases.end(), 0.0, sum( &Phase::serviceTimeForSRVNInput ) );
-}
-
-
-
-double
 Entry::serviceTimeForSRVNInput( const unsigned p ) const
 {
     return getPhase(p).serviceTimeForSRVNInput();
@@ -2105,7 +2108,7 @@ Entry::remove_from_dst( Call * call )
 
 
 
-#if defined(REP2FLAT)
+#if REP2FLAT
 Entry *
 Entry::find_replica( const std::string& entry_name, const unsigned replica ) 
 {
@@ -2462,7 +2465,7 @@ Entry::print_execution_time( Label& label, const Entry& entry )
 {
     for ( unsigned p = 1; p <= entry.maxPhase(); ++p ) {
 	if ( p > 1 ) label << ",";
-	label << opt_pct(entry.executionTime(p));
+	label << opt_pct(entry.residenceTime(p));
     }
     return label;
 }

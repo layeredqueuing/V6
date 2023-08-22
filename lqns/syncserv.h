@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/branches/merge-V5-V6/lqns/syncserv.h $
+ * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/syncserv.h $
  *
  * Servers for MVA solver.  Subclass as needed.
  *
@@ -9,13 +9,13 @@
  *
  * November, 1994
  *
- * $Id: syncserv.h 15249 2021-12-22 20:06:52Z greg $
+ * $Id: syncserv.h 16800 2023-08-21 19:23:24Z greg $
  *
  * ------------------------------------------------------------------------
  */
 
-#if	!defined(SYNCH_SERVER_H)
-#define	SYNCH_SERVER_H
+#ifndef LQNS_SYNCH_SERVER_H
+#define	LQNS_SYNCH_SERVER_H
 
 #include <mva/server.h>
 

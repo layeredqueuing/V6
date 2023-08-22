@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/branches/merge-V5-V6/lqns/interlock.h $
+ * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/interlock.h $
  *
  * Layer-ization of model.
  *
@@ -9,13 +9,13 @@
  *
  * November, 1994
  *
- * $Id: interlock.h 14882 2021-07-07 11:09:54Z greg $
+ * $Id: interlock.h 16800 2023-08-21 19:23:24Z greg $
  *
  * ------------------------------------------------------------------------
  */
 
-#if	!defined(INTERLOCK_H)
-#define	INTERLOCK_H
+#ifndef LQNS_INTERLOCK_H
+#define	LQNS_INTERLOCK_H
 
 #include <deque>
 #include <set>

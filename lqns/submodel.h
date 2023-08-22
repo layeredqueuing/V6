@@ -7,7 +7,7 @@
  *
  * June 2007
  *
- * $Id: submodel.h 16755 2023-06-26 19:47:53Z greg $
+ * $Id: submodel.h 16350 2023-01-19 11:08:31Z greg $
  */
 
 #ifndef _SUBMODEL_H
@@ -38,14 +38,6 @@ protected:
     typedef std::pair< std::set<Task *>, std::set<Entity*> > submodel_group_t;
     
 private:
-    class InitializeWait {
-    public:
-	InitializeWait( const Submodel& submodel ) : _submodel(submodel) {}
-	void operator()( Task* client ) const;
-    private:
-	const Submodel& _submodel;
-    };
-    
     class SubmodelManip {
     public:
 	SubmodelManip( std::ostream& (*ff)(std::ostream&, const Submodel&, const unsigned long ),
@@ -59,18 +51,6 @@ private:
 	friend std::ostream& operator<<(std::ostream & os, const SubmodelManip& m ) { return m.f(os,m.submodel,m.arg); }
     };
 
-    class SubmodelTraceManip {
-    public:
-	SubmodelTraceManip( std::ostream& (*ff)(std::ostream&, const std::string& ),
-			    const std::string& s )
-	    : f(ff), str(s) {}
-    private:
-	std::ostream& (*f)( std::ostream&, const std::string& );
-	const std::string& str;
-
-	friend std::ostream& operator<<(std::ostream & os, const SubmodelTraceManip& m ) { return m.f(os,m.str); }
-    };
-
     /*
      * Remove all tasks/entites 'y' from either _clients/_servers 'x'.  Mark 'y'
      * as pruned.
@@ -78,7 +58,7 @@ private:
     
     template <class Type> struct erase_from {
 	erase_from<Type>( std::set<Type>& x ) : _x(x) {}
-	void operator()( Type y ) { _x.erase(y); }
+	void operator()( Type y ) { _x.erase(y); y->setPruned(true); }
     private:
 	std::set<Type>& _x;
     };
@@ -95,21 +75,19 @@ public:
     int operator==( const Submodel& aSubmodel ) const { return &aSubmodel == this; }
     int operator!() const { return _servers.size() + _clients.size() == 0; }	/* Submodel is empty! */
 
-    void addClient( Task * task ) { _clients.insert(task); }
-    void addServer( Entity * server ) { _servers.insert(server); }
-    bool hasClient( const Task * client ) const { return _clients.find(const_cast<Task *>(client)) != _clients.end(); }
-    bool hasServer( const Entity * server ) const { return _servers.find(const_cast<Entity *>(server)) != _servers.end(); }
+    void addClient( Task * aTask ) { _clients.insert(aTask); }
+    void addServer( Entity * anEntity ) { _servers.insert(anEntity); }
 
-    const std::set<Task *>& getClients() const { return _clients; }		/* Table of clients 		*/
     virtual const char * const submodelType() const = 0;
     unsigned number() const { return _submodel_number; }
 
     virtual Vector<double> * getOverlapFactor() const { return nullptr; } 
+    unsigned nChains() const { return _n_chains; }
 
     Submodel& addClients();
-    virtual void initializeSubmodel();
-    virtual void reinitializeSubmodel();
-    virtual void initializeInterlock() {}
+    virtual Submodel& initServers( const Model& ) { return *this; }
+    virtual Submodel& reinitServers( const Model& ) { return *this; }
+    virtual Submodel& initInterlock() { return *this; }
     virtual Submodel& build() { return *this; }
     virtual Submodel& rebuild() { return *this; }
     virtual Submodel& partition();
@@ -119,8 +97,8 @@ public:
     virtual double nrFactor( const Server *, const unsigned, const unsigned ) const { return 0; }
 #endif
 
-    virtual unsigned nClosedStns() const { return 0; }
-    virtual unsigned nCopenStns() const { return 0; }
+    virtual unsigned n_closedStns() const { return 0; }
+    virtual unsigned n_openStns() const { return 0; }
 
     virtual Submodel& solve( long, MVACount&, const double ) = 0;
 
@@ -131,15 +109,13 @@ public:
 protected:
     void setNChains( unsigned int n ) { _n_chains = n; }
     SubmodelManip print_submodel_header( const Submodel& aSubModel, const unsigned long iterations  ) { return SubmodelManip( &Submodel::submodel_header_str, aSubModel, iterations ); }
-    SubmodelTraceManip print_trace_header( const std::string& str ) { return SubmodelTraceManip( &Submodel::submodel_trace_header_str, str ); }
-    
+
 private:
     void addToGroup( Task *, submodel_group_t& group ) const;
     bool replicaGroups( const std::set<Task *>&, const std::set<Task *>& ) const;
 		     
     static std::ostream& submodel_header_str( std::ostream& output, const Submodel& aSubmodel, const unsigned long iterations );
-    static std::ostream& submodel_trace_header_str( std::ostream& output, const std::string& );
-    
+
 protected:
     std::set<Task *> _clients;		/* Table of clients 		*/
     std::set<Entity *> _servers;	/* Table of servers 		*/
@@ -162,72 +138,14 @@ class MVASubmodel : public Submodel {
     friend class Generate;
     friend class CFS_Processor;
 
-    struct InitializeClientStation {
-	InitializeClientStation( MVASubmodel& submodel ) : _submodel(submodel) {}
-	void operator()( Task* task );
-    private:
-	MVASubmodel& _submodel;
-    };
-
-#if PAN_REPLICATION
-    struct ModifyClientServiceTime {
-	ModifyClientServiceTime( MVASubmodel& submodel ) : _submodel(submodel) {}
-	void operator()( Task* task );
-    private:
-	MVASubmodel& _submodel;
-    };
-#endif
-
-    class InitializeChains {
-    public:
-	InitializeChains( MVASubmodel& submodel ) : _submodel(submodel) {}
-	void operator()( Task* client ) const;
-    private:
-	MVASubmodel& _submodel;
-    };
-    
-    struct InitializeServerStation {
-	InitializeServerStation( MVASubmodel& submodel ) : _submodel(submodel) {}
-	void operator()( Entity* entity );
-    private:
-	struct ComputeOvertaking  {
-	    ComputeOvertaking( Entity * server ) : _server(server) {}
-	    void operator()( Task * client );
-	private:
-	    Entity * _server;
-	};
-
-	void setServiceTimeAndVariance( Server * station, const Entry * entry, unsigned k ) const;
-    private:
-	MVASubmodel& _submodel;
-    };
-
-    class SaveClientResults {
-    public:
-	SaveClientResults( const MVASubmodel& submodel ) : _submodel(submodel) {}
-	void operator()( Task * client ) const;
-    private:
-	const MVASubmodel& _submodel;
-    };
-    
-    class SaveServerResults {
-    public:
-	SaveServerResults( const MVASubmodel& submodel , double relaxation ) : _submodel(submodel), _relaxation(relaxation) {}
-	void operator()( Entity * entity ) const;
-    private:
-	const MVASubmodel& _submodel;
-	const double _relaxation;
-    };
-
-    struct PrintServer {
-	PrintServer( std::ostream& output, bool (Entity::*predicate)() const ) : _output(output), _predicate(predicate) {}
+    struct print_server {
+	print_server( std::ostream& output, bool (Entity::*predicate)() const ) : _output(output), _predicate(predicate) {}
 	void operator()( const Entity * ) const;
     private:
 	std::ostream& _output;
 	bool (Entity::*_predicate)() const;
     };
-
- 
+    
 public:
     MVASubmodel( const unsigned );
     virtual ~MVASubmodel();
@@ -235,18 +153,23 @@ public:
     const std::set<Task *>& getClients() const { return _clients; }			/* Table of clients 		*/
     const char * const submodelType() const { return "Submodel"; }
 
-    virtual void initializeInterlock();
+    virtual MVASubmodel& initServers( const Model& );
+    virtual MVASubmodel& reinitServers( const Model& );
+    virtual MVASubmodel& initInterlock();
     virtual MVASubmodel& build();
     virtual MVASubmodel& rebuild();
 		
     unsigned customers( const unsigned k ) const { return _customers[k]; }
     double thinkTime( const unsigned k ) const { return _thinkTime[k]; }
+#if 0
+    void setThinkTime( unsigned int k, double thinkTime );
+#else
     void setThinkTime( unsigned int k, double thinkTime ) { _thinkTime[k] = thinkTime; }
+#endif
     unsigned priority( const unsigned k ) const { return _priority[k]; }
 
-    unsigned nChains() const { return _customers.size(); }
-    virtual unsigned nClosedStns() const { return _closedStation.size(); }
-    virtual unsigned nOpenStns() const { return _openStation.size(); }
+    virtual unsigned n_closedStns() const { return _closedStation.size(); }
+    virtual unsigned n_openStns() const { return _openStation.size(); }
     virtual Vector<double> * getOverlapFactor() const { return _overlapFactor; } 
 
 #if PAN_REPLICATION
@@ -261,10 +184,9 @@ public:
 #if PAN_REPLICATION
     double closedModelNormalizedThroughput( const Server& station, unsigned int e, const unsigned int k ) const;
 #endif
-    double closedModelUtilization( const Server& station ) const;
     double closedModelUtilization( const Server& station, unsigned int k ) const;
     double openModelUtilization( const Server& station ) const;
-#if BUG_393
+#if defined(BUG_393)
     double closedModelMarginalQueueProbability( const Server& station, unsigned int i ) const;
 #endif
 
@@ -283,7 +205,6 @@ public:
 
 protected:
     unsigned makeChains();
-    unsigned remakeChains();
     void saveWait( Entry *, const Server * );
 
     std::ostream& printClosedModel( std::ostream& ) const;
@@ -333,6 +254,8 @@ public:
 
     const char * const submodelType() const { return "CFS Submodel"; }
 
+    virtual CFSSubmodel& initServers( const Model& );
+    virtual CFSSubmodel& reinitServers( const Model& );
     virtual CFSSubmodel& build();
     virtual CFSSubmodel& rebuild();
 

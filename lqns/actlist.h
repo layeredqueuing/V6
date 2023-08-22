@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/branches/merge-V5-V6/lqns/actlist.h $
+ * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/actlist.h $
  *
  * Everything you wanted to know about an activity, but were afraid to ask.
  *
@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: actlist.h 15762 2022-07-25 16:16:52Z greg $
+ * $Id: actlist.h 16804 2023-08-21 20:22:29Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -357,6 +357,18 @@ protected:
 
 class AndForkActivityList : public AndOrForkActivityList
 {
+private:
+    struct add_threads
+    {
+	typedef unsigned (Activity::*funcPtr)( unsigned int ) const;
+	add_threads( funcPtr f, unsigned int arg ) : _f(f), _arg(arg) {}
+	unsigned operator()( unsigned l, const Activity * r ) const { return l + (r->*_f)(_arg); }
+	unsigned operator()( unsigned l, const Activity& r ) const { return l + (r.*_f)(_arg); }
+    private:
+	const funcPtr _f;
+	const unsigned int _arg;
+    };
+
 public:
     AndForkActivityList( Task * owner, LQIO::DOM::ActivityList * dom );
     virtual ActivityList * clone( const Task* task, unsigned int replica ) const { return new AndForkActivityList( *this, task, replica ); }

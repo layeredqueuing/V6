@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_group.cpp 14498 2021-02-27 23:08:51Z greg $
+ *  $Id: dom_group.cpp 16790 2023-07-27 11:21:15Z greg $
  *
  *  Created by Martin Mroz on 1/07/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -63,7 +63,7 @@ namespace LQIO {
 	void Group::setGroupShare( const ExternalVariable * groupShare )
 	{
 	    /* Stores the given GroupShare of the Group */ 
-	    _groupShare = checkDoubleVariable( groupShare, 0.0 );
+	    _groupShare = checkDoubleVariable( groupShare, 0.0, 1.0 );
 	}
     
 	void Group::setGroupShareValue(const double value)

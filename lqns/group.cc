@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/branches/merge-V5-V6/lqns/group.cc $
+ * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/group.cc $
  * 
  * Everything you wanted to know about a task, but were afraid to ask.
  *
@@ -10,7 +10,7 @@
  * November, 2008
  *
  * ------------------------------------------------------------------------
- * $Id: group.cc 16755 2023-06-26 19:47:53Z greg $
+ * $Id: group.cc 16802 2023-08-21 19:51:34Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -91,22 +91,14 @@ Group::recalculateDynamicValues()
 }
 
 
-const Group&
-Group::insertDOMResults() const
-{
-    _dom->setResultUtilization( utilization() );
-    return *this;
-}
-
-/* ------------------------------- CFS -------------------------------- */
 
 double 
 Group::utilization() const
 {
     if ( Pragma::disableProcessorCFS() ) {
-	return std::accumulate( tasks().begin(), tasks().end(), 0., add_using<Task>( &Task::processorUtilization ) );
+	return std::accumulate( tasks().begin(), tasks().end(), 0., add_using<double,Task>( &Task::processorUtilization ) );
     } else {
-	return std::accumulate( tasks().begin(), tasks().end(), 0., add_using<Task>( &Task::getGroupUtilization ) );
+	return std::accumulate( tasks().begin(), tasks().end(), 0., add_using<double,Task>( &Task::getGroupUtilization ) );
     }
 }
 
@@ -161,7 +153,7 @@ Group::reset()
     _ratio2 = 0.;
     _status = status_t::RECEIVING;
     _state = status_t::THROTTLE;
-    for_each( tasks().begin(), tasks().end(), Exec<Task>( &Task::resetCFSDelay ) );
+    for_each( tasks().begin(), tasks().end(), std::mem_fn( &Task::resetCFSDelay ) );
 
     const double groupdelay = getCFSDelay();
     if ( groupdelay > 0. ) {
@@ -175,7 +167,7 @@ Group::reset()
 Group&
 Group::initGroupTask()
 {
-    for_each( tasks().begin(), tasks().end(), Exec<Task>( &Task::initGroupTask ) );
+    for_each( tasks().begin(), tasks().end(), std::mem_fn( &Task::initGroupTask ) );
     return *this;
 }
 
@@ -203,7 +195,7 @@ Group::computeCFSDelay()
 	_ratio2  = ( group_util -_share ) / group_util;
     }
 
-    for_each( tasks().begin(), tasks().end(), Exec<Task>( &Task::computeCFSDelay ) );
+    for_each( tasks().begin(), tasks().end(), std::mem_fn( &Task::computeCFSDelay ) );
     return *this;
 }
 
@@ -229,7 +221,7 @@ Group::setSpareStatus()
 double 
 Group::getCFSDelay() const
 {
-    return std::accumulate( tasks().begin(), tasks().end(), 0., add_using<Task>( &Task::getCFSDelay ) );
+    return std::accumulate( tasks().begin(), tasks().end(), 0., add_using<double,Task>( &Task::getCFSDelay ) );
 }
 
 
@@ -238,6 +230,14 @@ Group::isUtilLessThanShare() const
 {
     const double util = utilization();
     return util <= _share * 0.95 && getCFSDelay() == 0 || util < _share * 1.05;
+}
+
+
+const Group&
+Group::insertDOMResults() const
+{
+    _dom->setResultUtilization( utilization() );
+    return *this;
 }
 
 /* ----------------------- External functions. ------------------------ */

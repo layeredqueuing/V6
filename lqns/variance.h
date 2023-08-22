@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/branches/merge-V5-V6/lqns/variance.h $
+ * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/variance.h $
  *
  * Variance calculations.
  *
@@ -9,13 +9,13 @@
  *
  * November, 1994
  *
- * $Id: variance.h 14882 2021-07-07 11:09:54Z greg $
+ * $Id: variance.h 16800 2023-08-21 19:23:24Z greg $
  *
  * ------------------------------------------------------------------------
  */
 
-#if	!defined(VARIANCE_H)
-#define	VARIANCE_H
+#ifndef LQNS_VARIANCE_H
+#define	LQNS_VARIANCE_H
 
 class Probability;
 class Entity;

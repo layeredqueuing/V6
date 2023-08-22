@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/branches/merge-V5-V6/lqns/flags.h $
+ * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/flags.h $
  *
  * SRVN command line interface.
  *
@@ -9,12 +9,12 @@
  *
  * November, 1994
  *
- * $Id: flags.h 15620 2022-06-01 22:32:18Z greg $
+ * $Id: flags.h 16800 2023-08-21 19:23:24Z greg $
  *
  * ------------------------------------------------------------------------
  */
 
-#if !defined(LQNS_FLAGS_H)
+#ifndef LQNS_FLAGS_H
 #define LQNS_FLAGS_H
 
 extern char * generate_file_name;

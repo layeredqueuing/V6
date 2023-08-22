@@ -1,6 +1,6 @@
 /*  -*- c++ -*-
  * synmodel.C	-- Greg Franks Fri Aug  7 1998
- * $Id: synmodel.cc 15620 2022-06-01 22:32:18Z greg $
+ * $Id: synmodel.cc 16802 2023-08-21 19:51:34Z greg $
  *
  * Special submodel to handle synchronization.  These delays are added into
  * the waiting time arrays in the usual fashion (I hope...)
@@ -10,6 +10,7 @@
 
 #include "lqns.h"
 #include <cstdlib>
+#include <functional>
 #include <cmath>
 #include <mva/fpgoop.h>
 #include "flags.h"
@@ -60,7 +61,7 @@ SynchSubmodel::solve( long iterations, MVACount& MVAStats, const double relax )
     /* Delta Wait will re-compute the join delay, normal clients don't care about variance, but join delay needs it. */
 
     if ( !Pragma::init_variance_only() ) {
-	std::for_each( _clients.begin(), _clients.end(), Exec<Task>( &Task::computeVariance ) );
+	std::for_each( _clients.begin(), _clients.end(), std::mem_fn( &Task::computeVariance ) );
     }
     std::for_each( _clients.begin(), _clients.end(), Exec2<Task,const Submodel&,double>( &Task::updateWait, *this, relax ) );
 	

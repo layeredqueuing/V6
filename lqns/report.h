@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/branches/merge-V5-V6/lqns/report.h $
+ * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/report.h $
  *
  * Various statistics of marginal use.
  *
@@ -9,13 +9,13 @@
  *
  * November, 1994
  *
- * $Id: report.h 14882 2021-07-07 11:09:54Z greg $
+ * $Id: report.h 16800 2023-08-21 19:23:24Z greg $
  *
  * ------------------------------------------------------------------------
  */
 
-#if	!defined(SOLVERREPORT_H)
-#define	SOLVERREPORT_H
+#ifndef LQNS_SOLVERREPORT_H
+#define	LQNS_SOLVERREPORT_H
 
 #include <lqio/common_io.h>
 #include <mva/vector.h>

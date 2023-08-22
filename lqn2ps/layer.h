@@ -1,7 +1,7 @@
 /* -*- c++ -*-
  * layer.h	-- Greg Franks
  *
- * $Id: layer.h 16750 2023-06-19 12:16:45Z greg $
+ * $Id: layer.h 16791 2023-07-27 11:21:46Z greg $
  */
 
 #ifndef _LQN2PS_LAYER_H
@@ -16,6 +16,7 @@
 
 class Label;
 class Task;
+class Phase;
 class Processor;
 namespace LQIO {
     namespace DOM {
@@ -58,32 +59,18 @@ private:
 	double _h;
     };
 
-    /*
-     * Create chain for queueing model.
-     */
-
-    class Create_Chain
+    class ResetServerPhaseParameters
     {
     public:
-	Create_Chain( LQIO::PMIF_Document& document, const std::vector<Entity *>& entities ) : _document(document), _entities(entities) {}
-	void operator()( const Entity *);
+	ResetServerPhaseParameters( bool hasResults ) : _hasResults(hasResults) {}
+	void operator()( const std::pair<unsigned,LQIO::DOM::Phase*>& p ) const { reset( p.second ); }
+	void operator()( const std::pair<std::string,LQIO::DOM::Activity*>& p  ) const { reset( p.second ); }
     private:
-	LQIO::PMIF_Document& _document;
-	const std::vector<Entity *> _entities;
+	void reset( LQIO::DOM::Phase * phase ) const;
+	void reset( LQIO::DOM::Activity * activity ) const;
+	bool _hasResults;
     };
 
-
-    class Create_Station
-    {
-    public:
-	Create_Station( LQIO::PMIF_Document& document, const std::vector<Entity *>& clients ) : _document(document), _clients(clients) {}
-	void operator()( const Entity * server );
-    private:
-	LQIO::PMIF_Document& _document;
-	const std::vector<Entity *> _clients;
-    };
-	
-    
 public:
     Layer();
     Layer( const Layer& );
@@ -121,7 +108,8 @@ public:
     Layer& selectSubmodel();
     Layer& deselectSubmodel();
     Layer& generateSubmodel();
-    Layer& transmorgrify( LQIO::DOM::Document *, Processor *&, Task *& );			/* BUG_626. */
+    Layer& transmorgrifyClients( LQIO::DOM::Document * );		/* BUG_440 */
+    Layer& transmorgrifyServers( LQIO::DOM::Document * );		/* BUG_440 */
     Layer& aggregate();
     bool createBCMPModel();
 
@@ -145,10 +133,8 @@ public:
 #endif
 
 private:
-    Processor * findOrAddSurrogateProcessor( LQIO::DOM::Document * document, Processor *& processor, Task * task, const size_t level ) const;
-    Task * findOrAddSurrogateTask( LQIO::DOM::Document * document, Processor *& processor, Task *& task, Entry * call, const size_t level ) const;
-    Entry * findOrAddSurrogateEntry( LQIO::DOM::Document * document, Task * task, Entry * call ) const;
-    const Layer& resetServerPhaseParameters( LQIO::DOM::Document* document, LQIO::DOM::Phase * ) const;
+    Layer& addSurrogateProcessor( LQIO::DOM::Document * document, Task * task, const size_t level );
+    void resetClientPhaseParameters( Entry * entry );
 
 private:
     std::vector<Entity *> _entities;

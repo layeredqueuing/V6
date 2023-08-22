@@ -1,6 +1,6 @@
 /* activity.cc	-- Greg Franks Thu Apr  3 2003
  *
- * $Id: activity.cc 16750 2023-06-19 12:16:45Z greg $
+ * $Id: activity.cc 16791 2023-07-27 11:21:46Z greg $
  */
 
 #include "activity.h"
@@ -346,6 +346,16 @@ Activity::appendReplyList( const Activity& src )
 }
 
 
+
+
+void
+Activity::removeSrcCall( Call * call )
+{
+    std::vector<Call *>::iterator pos = std::find( _calls.begin(), _calls.end(), call ) ;
+    if ( pos != _calls.end() ) {
+	_calls.erase( pos );
+    }
+}
 
 
 Activity&
@@ -797,7 +807,7 @@ Activity::serviceTimeForSRVNInput() const
     double time = to_double(*getDOM()->getServiceTime());
     for ( std::vector<Call *>::const_iterator call = calls().begin(); call != calls().end(); ++call ) {
 	if ( !(*call)->isSelected() && (*call)->hasRendezvous() ) {
-	    time += (*call)->sumOfRendezvous()->invoke(nullptr)->getDoubleValue() * ((*call)->waiting(1) + (*call)->dstEntry()->executionTime(1));
+	    time += (*call)->sumOfRendezvous()->invoke(nullptr)->getDoubleValue() * ((*call)->waiting(1) + (*call)->dstEntry()->residenceTime(1));
 	}
     }
 
@@ -1015,7 +1025,7 @@ Activity::label()
     }
     if ( Flags::have_results ) {
 	if ( Flags::print[SERVICE].opts.value.b ) {
-	    _label->newLine() << begin_math() << opt_pct(executionTime()) << end_math();
+	    _label->newLine() << begin_math() << opt_pct(residenceTime()) << end_math();
 	}
 	if ( Flags::print[VARIANCE].opts.value.b ) {
 	    _label->newLine() << begin_math( &Label::sigma ) << "=" << opt_pct(variance()) << end_math();
@@ -1056,7 +1066,7 @@ Activity::rename()
 }
 
 
-#if defined(REP2FLAT)
+#if REP2FLAT
 Activity&
 Activity::expandActivityCalls( const Activity& src, int replica )
 {

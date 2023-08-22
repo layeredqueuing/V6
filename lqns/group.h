@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/branches/merge-V5-V6/lqns/group.h $
+ * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/group.h $
  *
  * Groups.
  *
@@ -9,13 +9,13 @@
  *
  * November, 2008
  *
- * $Id: group.h 14882 2021-07-07 11:09:54Z greg $
+ * $Id: group.h 16800 2023-08-21 19:23:24Z greg $
  *
  * ------------------------------------------------------------------------
  */
 
-#if	!defined(GROUP_H)
-#define GROUP_H
+#ifndef LQNS_GROUP_H
+#define LQNS_GROUP_H
 
 #include <set>
 #include <map>

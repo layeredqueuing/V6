@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/branches/merge-V5-V6/lqns/slice.h $
+ * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/slice.h $
  *
  * Everything you wanted to know about an entry, but were afraid to ask
  * for Markov phase 2 servers.
@@ -10,13 +10,13 @@
  *
  * November, 1994
  *
- * $Id: slice.h 14882 2021-07-07 11:09:54Z greg $
+ * $Id: slice.h 16800 2023-08-21 19:23:24Z greg $
  *
  * ------------------------------------------------------------------------
  */
 
-#if	!defined(SLICE_H)
-#define	SLICE_H
+#ifndef LQNS_SLICE_H
+#define	LQNS_SLICE_H
 
 #include <set>
 #include <mva/prob.h>

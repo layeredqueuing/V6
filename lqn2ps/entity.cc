@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: entity.cc 16627 2023-04-03 22:04:21Z greg $
+ * $Id: entity.cc 16791 2023-07-27 11:21:46Z greg $
  *
  * Everything you wanted to know about a task or processor, but were
  * afraid to ask.
@@ -281,7 +281,7 @@ Entity::sort()
 }
 
 
-#if defined(REP2FLAT)
+#if REP2FLAT
 Entity& 
 Entity::removeReplication() 
 { 
@@ -315,7 +315,7 @@ unsigned int
 Entity::count_callers::operator()( unsigned int augend, const Entity * entity ) const
 {
     const Task * task = dynamic_cast<const Task *>(entity);
-    if ( !task && task->isServerTask() ) return augend;
+    if ( task != nullptr && task->isServerTask() ) return augend;
     const std::vector<Entry *> entries = task->entries();
     return std::accumulate( entries.begin(), entries.end(), augend, Entry::count_callers( _predicate ) );
 }
@@ -793,6 +793,13 @@ Entity::getLQXVariable( const LQIO::DOM::ExternalVariable* variable )
 	expression = new LQX::VariableExpression( variable->getName(), true );
     }
     return expression;
+}
+
+/* static */ LQX::SyntaxTreeNode *
+Entity::getLQXVariable( const LQIO::DOM::ExternalVariable* variable, double default_value )
+{
+    if ( variable == nullptr ) return new LQX::ConstantValueExpression( default_value );
+    return getLQXVariable( variable );
 }
 
 LQX::SyntaxTreeNode *

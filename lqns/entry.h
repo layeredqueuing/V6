@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/branches/merge-V5-V6/lqns/entry.h $
+ * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/entry.h $
  *
  * Everything you wanted to know about an entry, but were afraid to ask.
  *
@@ -9,17 +9,17 @@
  *
  * November, 1994
  *
- * $Id: entry.h 15969 2022-10-13 19:49:43Z greg $
+ * $Id: entry.h 16804 2023-08-21 20:22:29Z greg $
  *
  * ------------------------------------------------------------------------
  */
 
-#if	!defined(ENTRY_H)
-#define ENTRY_H
+#ifndef LQNS_ENTRY_H
+#define LQNS_ENTRY_H
 
-#include <lqio/dom_entry.h>
 #include <set>
 #include <vector>
+#include <lqio/dom_entry.h>
 #include <mva/prob.h>
 #include <mva/vector.h>
 #include "call.h"
@@ -166,6 +166,17 @@ protected:
 
 
 private:
+    struct add_calls
+    {
+	typedef double (Phase::*funcPtr)( const Entry* ) const;
+	add_calls( funcPtr f, const Entry* arg ) : _f(f), _arg(arg) {}
+	double operator()( double l, const Phase * r ) const { return l + (r->*_f)(_arg); }
+	double operator()( double l, const Phase& r ) const { return l + (r.*_f)(_arg); }
+    private:
+	const funcPtr _f;
+	const Entry * _arg;
+    };
+
     class SRVNManip {
     public:
 	SRVNManip( std::ostream& (*f)( std::ostream&, const Entry& ), const Entry& entry ) : _f(f), _entry(entry) {}
@@ -235,6 +246,7 @@ public:
     Entry& expand();
     Entry& expandCalls();
     unsigned findChildren( Call::stack&, const bool ) const;
+    Entry& initCustomers( std::deque<const Task *>& stack, unsigned int customers );
     virtual Entry& initProcessor() = 0;
     virtual Entry& initWait() = 0;
     Entry& initThroughputBound();
@@ -256,7 +268,9 @@ public:
     double computeCV_sqr() const;
     int priority() const;
     bool setIsCalledBy( const RequestType callType );
-    bool isCalledUsing( const RequestType callType ) const { return callType == _calledBy; }
+    bool isCalledUsingRendezvous() const { return _calledBy == RequestType::RENDEZVOUS; }
+    bool isCalledUsingSendNoReply() const { return _calledBy == RequestType::SEND_NO_REPLY; }
+    bool isCalledUsingOpenArrival() const { return _calledBy == RequestType::OPEN_ARRIVAL; }
     bool isCalled() const { return _calledBy != RequestType::NOT_CALLED; }
     Entry& setEntryInformation( LQIO::DOM::Entry * entryInfo );
     virtual Entry& setDOM( unsigned phase, LQIO::DOM::Phase* phaseInfo );

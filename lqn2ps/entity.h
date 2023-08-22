@@ -1,7 +1,7 @@
 /* -*- c++ -*-
  * entity.h	-- Greg Franks
  *
- * $Id: entity.h 16750 2023-06-19 12:16:45Z greg $
+ * $Id: entity.h 16791 2023-07-27 11:21:46Z greg $
  */
 
 #ifndef _ENTITY_H
@@ -97,7 +97,7 @@ public:
     static double to_double( LQX::SyntaxTreeNode * );
     static unsigned int to_unsigned( LQX::SyntaxTreeNode * );
     static LQX::SyntaxTreeNode * getLQXVariable( const LQIO::DOM::ExternalVariable* );
-    static LQX::SyntaxTreeNode * getVariableExpression( const LQIO::DOM::ExternalVariable * variable );
+    static LQX::SyntaxTreeNode * getLQXVariable( const LQIO::DOM::ExternalVariable*, double );
     static LQX::SyntaxTreeNode * addLQXExpressions( LQX::SyntaxTreeNode *, LQX::SyntaxTreeNode * );
     static LQX::SyntaxTreeNode * multiplyLQXExpressions( LQX::SyntaxTreeNode *, LQX::SyntaxTreeNode * );
     static LQX::SyntaxTreeNode * divideLQXExpressions( LQX::SyntaxTreeNode *, LQX::SyntaxTreeNode * );
@@ -126,6 +126,7 @@ public:
     Entity& setLevel( size_t level ) { _level = level; return *this; }
     size_t level() const { return _level; }
     bool isSelected() const { return _isSelected; }
+    bool isNotSelected() const { return !_isSelected; }
     Entity& setSelected( bool yesOrNo ) { _isSelected = yesOrNo; return *this; }
     bool isSurrogate() const { return _isSurrogate; }
     Entity& setSurrogate( bool yesOrNo ) { _isSurrogate = yesOrNo; return *this; }

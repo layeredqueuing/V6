@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: model.cc 16755 2023-06-26 19:47:53Z greg $
+ * $Id: model.cc 16803 2023-08-21 19:55:46Z greg $
  *
  * Layer-ization of model.  The basic concept is from the reference
  * below.  However, model partioning is more complex than task vs device.
@@ -21,7 +21,7 @@
  *           Activitly lists checked and are set up during the sorting process.
  *       ii) addToSubmodel() to add server stations to the basic model.
  *    c) Call configure (dimension arrays)
- *    d) Call initializeSubmodels (initialize service times, etc...)
+ *    d) Call initStations (initialize service times, etc...)
  * 3) Call solve()
  *
  * Copyright the Real-Time and Distributed Systems Group,
@@ -35,10 +35,11 @@
 #include "lqns.h"
 #include <cmath>
 #include <cstdlib>
-#include <errno.h>
+#include <fstream>
 #include <fstream>
 #include <functional>
 #include <iostream>
+#include <errno.h>
 #if HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -312,8 +313,10 @@ Model::prepare(const LQIO::DOM::Document* document)
 
 	/* Add activities for the task (all of them) */
 	const std::map<std::string,LQIO::DOM::Activity*>& activities = task->getActivities();
-	for (std::map<std::string,LQIO::DOM::Activity*>::const_iterator activity = activities.begin(); activity != activities.end(); ++activity) {
-	    activityList.push_back(add_activity(newTask, const_cast<LQIO::DOM::Activity*>(activity->second)));
+	std::map<std::string,LQIO::DOM::Activity*>::const_iterator iter;
+	for (iter = activities.begin(); iter != activities.end(); ++iter) {
+	    const LQIO::DOM::Activity* activity = iter->second;
+	    activityList.push_back(add_activity(newTask, const_cast<LQIO::DOM::Activity*>(activity)));
 	}
 
 	/* Set all the start activities */
@@ -348,7 +351,8 @@ Model::prepare(const LQIO::DOM::Document* document)
 
 	/* Add in all of the P(frwd) calls */
 	const std::vector<LQIO::DOM::Call*>& forwarding = entry->getForwarding();
-	for ( std::vector<LQIO::DOM::Call*>::const_iterator nextFwd = forwarding.begin(); nextFwd != forwarding.end(); ++nextFwd ) {
+	std::vector<LQIO::DOM::Call*>::const_iterator nextFwd;
+	for ( nextFwd = forwarding.begin(); nextFwd != forwarding.end(); ++nextFwd ) {
 	    Entry* targetEntry = Entry::find((*nextFwd)->getDestinationEntry()->getName());
 	    newEntry->setForwardingInformation(targetEntry, *nextFwd );
 	}
@@ -357,9 +361,12 @@ Model::prepare(const LQIO::DOM::Document* document)
     /* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- [Step 4: Add Calls/Lists for Activities] */
 
     /* Go back and add all of the lists and calls now that activities all exist */
-
-    for (std::vector<Activity*>::iterator activity = activityList.begin(); activity != activityList.end(); ++activity) {
-	(*activity)->add_calls().add_reply_list().add_activity_lists();
+    std::vector<Activity*>::iterator actIter;
+    for (actIter = activityList.begin(); actIter != activityList.end(); ++actIter) {
+	Activity* activity = *actIter;
+	activity->add_calls()
+	    .add_reply_list()
+	    .add_activity_lists();
     }
 
     /* Use the generated connections list to finish up */
@@ -557,15 +564,15 @@ Model::initialize()
 	    _model_initialized = true;
 	    partition();
 	    configure();		/* Dimension arrays and threads	*/
-	    initializeSubmodels();	/* Init MVA values (pop&waits). */		/* -- Step 2 -- */
+	    initStations();		/* Init MVA values (pop&waits). */		/* -- Step 2 -- */
 	}
 
 	if ( Options::Debug::submodels() ) {	/* Print out layers... 		*/
-	    for ( const auto& submodel : _submodels ) submodel->print( std::cout );
+	    std::for_each( _submodels.begin(), _submodels.end(), ConstPrint<Submodel>( &Submodel::print, std::cout ) );
 	}
 
     } else {
-	reinitializeSubmodels();
+	reinitStations();
     }
 
     return !LQIO::io_vars.anError();
@@ -707,18 +714,18 @@ Model::generate( unsigned max_depth )
 
 
 /*
- * Initialize the fan-in/out and the waiting time arrays.  The latter need to
- * know the number of layers.  Called after the model has been GENERATED.  The
- * model MUST BE COMPLETE before it can be initialized.  Tasks must be done
- * before processors.
+ * Initialize the fan-in/out and the waiting time arrays.  The latter
+ * need to know the number of layers.  Called after the model has been
+ * GENERATED.  The model MUST BE COMPLETE before it can be
+ * initialized.  Tasks must be done before processors.
  */
 
 void
 Model::configure()
 {
     _MVAStats.resize( nSubmodels() );	/* MVA statistics by level.	*/
-    for ( auto& task : __task ) task->configure( nSubmodels() );
-    for ( auto& processor : __processor ) processor->configure( nSubmodels() );
+    std::for_each( __task.begin(), __task.end(), Exec1<Entity,unsigned>( &Entity::configure, nSubmodels() ) );
+    std::for_each( __processor.begin(), __processor.end(), Exec1<Entity,unsigned>( &Entity::configure, nSubmodels() ) );
     if ( __think_server ) {
 	__think_server->configure( nSubmodels() );
     }
@@ -730,12 +737,13 @@ Model::configure()
 
 
 /*
- * Initialize waiting times, interlocking etc.  Servers are done by subclasses
- * because of the structure of the model.  Clients are done here.
+ * Initialize waiting times, interlocking etc.  Servers are done by
+ * subclasses because of the structure of the model.  Clients are done
+ * here.
  */
 
 void
-Model::initializeSubmodels()
+Model::initStations()
 {
     if ( Pragma::interlock() ) {
 	std::for_each( __task.begin(), __task.end(), std::mem_fn( &Task::createInterlock ) );
@@ -745,18 +753,22 @@ Model::initializeSubmodels()
     }
 
     /*
-     * Initialize waiting times and populations at servers Done in reverse
-     * order (bottom up) because waits propogate upwards.
+     * Initialize waiting times and populations at servers Done in
+     * reverse order (bottom up) because waits propogate upwards.
      */
 
-    std::for_each( _submodels.rbegin(), _submodels.rend(), std::mem_fn( &Submodel::initializeSubmodel ) );
+    std::for_each( _submodels.rbegin(), _submodels.rend(), Exec1<Submodel,const Model&>( &Submodel::initServers, *this ) );
 
-    /* Initialize Interlocking -- must be done after all submodels initialized. */
+    /* Initialize waiting times and populations for the reference tasks. */
+
+    std::for_each( __task.begin(), __task.end(), Exec1<Task,const Vector<Submodel *>&>( &Task::initClient, getSubmodels() ) );
+
+    /* Initialize Interlocking */
 
     if ( Pragma::interlock() ) {
-	std::for_each( _submodels.begin(), _submodels.end(), std::mem_fn( &Submodel::initializeInterlock ) );
+	std::for_each( _submodels.begin(), _submodels.end(), std::mem_fn( &Submodel::initInterlock ) );
     }
-    
+
     /* build stations and customers as needed. */
 
     std::for_each( _submodels.begin(), _submodels.end(), std::mem_fn( &Submodel::build ) );      	    /* For use by MVA stats/generate*/
@@ -768,15 +780,16 @@ Model::initializeSubmodels()
 
 /*
  * Re-initialize waiting times, interlocking etc.  Servers are done by
- * subclasses because of the structure of the model.  Clients are done here.
+ * subclasses because of the structure of the model.  Clients are done
+ * here.
  */
 
 void
-Model::reinitializeSubmodels()
+Model::reinitStations()
 {
     /*
-     * Reset all counters before a run.  In particular, iterations needs to
-     * reset to zero for the convergence test.
+     * Reset all counters before a run.  In particular, iterations
+     * needs to reset to zero for the convergence test.
      */
 
     _iterations = 0;
@@ -794,18 +807,22 @@ Model::reinitializeSubmodels()
     std::for_each( __task.begin(),  __task.end(), std::mem_fn( &Task::createInterlock ) );
 
     /*
-     * Initialize waiting times and populations at servers Done in reverse
-     * order (bottom up) because waits propogate upwards.
+     * Initialize waiting times and populations at servers Done in
+     * reverse order (bottom up) because waits propogate upwards.
      */
 
-    std::for_each( _submodels.rbegin(), _submodels.rend(), std::mem_fn( &Submodel::reinitializeSubmodel ) );
+    std::for_each( _submodels.rbegin(), _submodels.rend(), Exec1<Submodel,const Model&>( &Submodel::reinitServers, *this ) );
+
+    /* Initialize waiting times and populations for the reference tasks. */
+
+    std::for_each( __task.begin(), __task.end(), Exec1<Task,const Vector<Submodel *>&>( &Task::reinitClient, getSubmodels() ) );
 
     /* Reinitialize Interlocking */
 
     if ( Pragma::interlock() ) {
-	std::for_each( _submodels.begin(), _submodels.end(), std::mem_fn( &Submodel::initializeInterlock ) );
+	std::for_each( _submodels.begin(), _submodels.end(), std::mem_fn( &Submodel::initInterlock ) );
     }
-    
+
     /* Rebuild stations and customers as needed. */
 
     std::for_each( _submodels.begin(), _submodels.end(), std::mem_fn( &Submodel::rebuild ) );
@@ -886,7 +903,7 @@ Model::reload()
 
     unsigned int errorCode;
     if ( !const_cast<LQIO::DOM::Document *>(getDOM())->loadResults( directory_name(), _input_file_name,
-								    SolverInterface::Solve::customSuffix, _output_format, errorCode ) ) {
+								     SolverInterface::Solve::customSuffix, _output_format, errorCode ) ) {
 	throw LQX::RuntimeException( "--reload-lqx can't load results." );
     } else {
 	return getDOM()->getResultValid();
@@ -986,9 +1003,12 @@ Model::printSubmodelWait( std::ostream& output ) const
     output.setf( std::ios::left, std::ios::adjustfield );
 
     output << std::setw(8) <<  "Submodel    ";
-    for ( unsigned i = 1; i <= nSubmodels(); ++i ) output << std::setw(8) << i;
+    for ( unsigned i = 1; i <= nSubmodels(); ++i ) {
+	output << std::setw(8) << i;
+    }
     output << std::endl;
-    for ( const auto& task : __task ) task->printSubmodelWait( output );
+
+    std::for_each( __task.begin(), __task.end(), ConstPrint<Task>( &Task::printSubmodelWait, output ) );
 
     output.setf( flags );
     output.precision( precision );

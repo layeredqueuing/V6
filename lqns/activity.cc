@@ -1,5 +1,5 @@
 /* activity.c	-- Greg Franks Thu Feb 20 1997
- * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/branches/merge-V5-V6/lqns/activity.cc $
+ * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/activity.cc $
  *
  * Everything you wanted to know about an activity, but were afraid to ask.
  *
@@ -11,7 +11,7 @@
  * July 2007
  *
  * ------------------------------------------------------------------------
- * $Id: activity.cc 16753 2023-06-19 19:26:50Z greg $
+ * $Id: activity.cc 16802 2023-08-21 19:51:34Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -331,7 +331,7 @@ Activity::collect( std::deque<const Activity *>& activityStack, std::deque<Entry
     if ( std::find( activityStack.begin(), activityStack.end(), this ) != activityStack.end() ) {
 	return data;
     }
-    Function f = data.collect();
+    Collect::Function f = data.collect();
     (this->*f)( entryStack.back(), data );
 
     if ( repliesTo( entryStack.front() ) ) {
@@ -845,9 +845,9 @@ Activity::checkReplies( Activity::Count_If& data ) const
 {
     const Entry * entry = data.entry();
     if ( repliesTo( entry ) ) {
-	if (  entry->isCalledUsing( Entry::RequestType::SEND_NO_REPLY ) || entry->isCalledUsing( Entry::RequestType::OPEN_ARRIVAL ) ) {
+	if (  entry->isCalledUsingSendNoReply() || entry->isCalledUsingOpenArrival() ) {
 	    getDOM()->runtime_error( LQIO::ERR_INVALID_REPLY_FOR_SNR_ENTRY, entry->name().c_str() );
-	} else if ( !data.canReply() || data.rate() != 1 ) {
+	} else if ( !data.canReply() ) {
 	    getDOM()->runtime_error( LQIO::ERR_INVALID_REPLY_FROM_BRANCH, entry->name().c_str() );
 	} else if ( data.phase() > 1 ) {
 	    getDOM()->runtime_error( LQIO::ERR_INVALID_REPLY_DUPLICATE, entry->name().c_str() );
@@ -921,6 +921,15 @@ Activity::collectServiceTime( Entry * entry, const Activity::Collect& data ) con
 {
     entry->addServiceTime( data.phase(), serviceTime() );
 }
+
+/*+ BUG_425 */
+void
+Activity::collectCustomers( Entry * entry, const Activity::Collect& data ) const
+{
+    const_cast<Activity *>(this)->initCustomers( const_cast<Activity::Collect&>(data).taskStack(), data.customers() );
+}
+/*- BUG_425 */
+
 
 /*
  * Set our throughput by chasing back to all entries that call me.
@@ -998,7 +1007,7 @@ Activity::act_and_join_list ( ActivityList * activityList, LQIO::DOM::ActivityLi
     nextJoin( activityList );
     activityList->add( this );
 
-#if !defined(HAVE_GSL_GSL_MATH_H)       // QUORUM
+#if !HAVE_GSL_GSL_MATH_H       // QUORUM
     if ( dynamic_cast<LQIO::DOM::AndJoinActivityList*>(dom_activitylist) && dynamic_cast<LQIO::DOM::AndJoinActivityList*>(dom_activitylist)->hasQuorumCount() ) {
 	LQIO::input_error( LQIO::ERR_NOT_SUPPORTED, "quorum" );
     }

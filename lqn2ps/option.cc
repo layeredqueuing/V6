@@ -1,6 +1,6 @@
 /* srvn2eepic.c	-- Greg Franks Sun Jan 26 2003
  *
- * $Id: option.cc 16750 2023-06-19 12:16:45Z greg $
+ * $Id: option.cc 16791 2023-07-27 11:21:46Z greg $
  */
 
 #include "lqn2ps.h"
@@ -548,6 +548,18 @@ input_output()
 	|| Flags::output_format() == File_Format::LQX
 	|| Flags::output_format() == File_Format::XML
 	;
+}
+
+
+/*
+ * Return true if we are generating a new input file of some form.
+ */
+
+bool
+bcmp_output()
+{
+    return Flags::output_format() == File_Format::JMVA
+	|| Flags::output_format() == File_Format::QNAP2;
 }
 
 

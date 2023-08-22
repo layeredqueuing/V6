@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: lqn2ps.cc 16750 2023-06-19 12:16:45Z greg $
+ * $Id: lqn2ps.cc 16791 2023-07-27 11:21:46Z greg $
  *
  * Command line processing.
  *
@@ -217,7 +217,7 @@ main(int argc, char *argv[])
     char * options;
     std::string output_file_name = "";
 
-    sscanf( "$Date: 2023-06-19 08:16:45 -0400 (Mon, 19 Jun 2023) $", "%*s %s %*s", copyrightDate );
+    sscanf( "$Date: 2023-07-27 07:21:46 -0400 (Thu, 27 Jul 2023) $", "%*s %s %*s", copyrightDate );
 
     static std::string opts = "";
 #if HAVE_GETOPT_H
@@ -956,14 +956,14 @@ setOutputFormat( const File_Format f )
 
 #if JMVA_OUTPUT && HAVE_EXPAT_H
     case File_Format::JMVA:
-	Flags::bcmp_model = true;					/* No entries. */
+	Flags::set_aggregation( Aggregate::ENTRIES );			/* No entries. */
 	break;
 #endif
 #if QNAP2_OUTPUT
     case File_Format::QNAP2:
 #warning .. need to separate by class and station
 	Flags::squish_names = true;					/* Always */
-	Flags::bcmp_model = true;					/* No entries. */
+	Flags::set_aggregation( Aggregate::ENTRIES );			/* No entries. */
 	break;
 #endif
 

@@ -1,4 +1,4 @@
-# $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/branches/merge-V5-V6/xml/Makefile.am $
+# $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/xml/Makefile.am $
 #
 # Used for make dist.
 #

@@ -1,6 +1,6 @@
 /* model.cc	-- Greg Franks Mon Feb  3 2003
  *
- * $Id: model.cc 16750 2023-06-19 12:16:45Z greg $
+ * $Id: model.cc 16791 2023-07-27 11:21:46Z greg $
  *
  * Load, slice, and dice the lqn model.
  */
@@ -81,16 +81,9 @@ unsigned Model::sendNoReplyCount[MAX_PHASES+1];
 unsigned Model::phaseCount[MAX_PHASES+1];
 int Model::maxModelNumber = 1;
 
-/* input */
-bool Model::deterministicPhasesPresent	= false;
-bool Model::maxServiceTimePresent	= false;
-bool Model::nonExponentialPhasesPresent	= false;
-bool Model::thinkTimePresent		= false;
 /* output */
 bool Model::boundsPresent		= false;
-bool Model::serviceExceededPresent	= false;
 bool Model::variancePresent		= false;
-bool Model::histogramPresent		= false;
 
 Model::Stats Model::stats[Model::N_STATS];
 
@@ -152,15 +145,8 @@ Model::Model( LQIO::DOM::Document * document, const std::string& input_file_name
     stats[FORWARDING_PROBABILITY_PER_CALL].name( "Forwarding Probabilty per Call" );
     stats[TASKS_PER_LAYER].name( "Tasks per Layer" );
 
-    /* input */
-    deterministicPhasesPresent	= false;
-    maxServiceTimePresent	= false;
-    nonExponentialPhasesPresent	= false;
-    thinkTimePresent		= false;
     /* output */
     boundsPresent		= false;
-    histogramPresent		= false;
-    serviceExceededPresent	= false;
     variancePresent		= false;
 }
 
@@ -437,6 +423,10 @@ Model::create( const std::string& input_file_name, const LQIO::DOM::Pragma& prag
     }
 
     if ( Flags::bcmp_model ) {
+	if ( Flags::queueing_model() != 0 ) {
+	    std::cerr << LQIO::io_vars.lq_toolname << ": -Q" << Flags::queueing_model() << " and --bcmp=yes are incompatible." << std::endl;
+	    exit( 1 );
+	}
 	Flags::set_queueing_model(1);
 	Flags::set_aggregation( Aggregate::ENTRIES );
     }
@@ -741,9 +731,6 @@ Model::process()
 	squish();
     }
 
-    Processor * surrogate_processor = nullptr;
-    Task * surrogate_task = nullptr;
-
     const unsigned layer = Flags::queueing_model() | Flags::submodel();
     if ( layer > 0 ) {
  	if ( !selectSubmodel( layer ) ) {
@@ -752,7 +739,7 @@ Model::process()
 	} else if ( Flags::layering() != Layering::SRVN ) {
  	    _layers.at(layer).generateSubmodel();
 	    if ( Flags::surrogates ) {
-		_layers[layer].transmorgrify( _document, surrogate_processor, surrogate_task );
+		_layers[layer].transmorgrifyClients( _document ).transmorgrifyServers( _document );;
 		relayerize(layer);
 		_layers.at(layer).sort( (compare_func_ptr)(&Entity::compare) ).format( 0 ).justify( Entry::__entries.size() * Flags::entry_width );
 	    }
@@ -761,9 +748,10 @@ Model::process()
 
 	/* Call transmorgrify on all layers */
 	
+//	Need to find the highest layer "included"
+//	_layers[layer].transmorgrifyClients( _document );
 	for ( unsigned i = _layers.size(); i > 0; --i ) {
-	    _layers[i-1].generateSubmodel();
-	    _layers[i-1].transmorgrify( _document, surrogate_processor, surrogate_task );
+	    _layers[i-1].generateSubmodel().transmorgrifyServers( _document );
 	    relayerize( i );
 	    _layers[i].sort( Element::compare ).format( 0 ).justify( Entry::__entries.size() * Flags::entry_width );
 	}
@@ -774,8 +762,9 @@ Model::process()
 	return false;
     }
 
-    if ( Flags::bcmp_model ) {
-	_layers.at(std::min(static_cast<unsigned>(1),layer)).createBCMPModel();
+
+    if ( bcmp_output() ) {
+	_layers.at(layer).createBCMPModel();
     }
 
     if ( graphical_output() ) {

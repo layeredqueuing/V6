@@ -2,7 +2,7 @@
 # Copyright (C) 2005 Greg Franks <greg@sce.carleton.ca>
 #
 # ------------------------------------------------------------------------
-# $Id: Makefile.am 16497 2023-03-08 11:21:07Z greg $
+# $Id: Makefile.am 16800 2023-08-21 19:23:24Z greg $
 # ------------------------------------------------------------------------
 
 SRVN=	../lqns
@@ -131,7 +131,7 @@ diff:	.files
 	-@for i in `cat .files | sed -e 's/\\.lqxo//'`; do make $$i.diff; done
 
 check:	$(OBJS) $(VAR) $(SPEX)
-	echo $(OBJS) $(VAR) | tr -s " " "\n" | srvndiff $(DIFFOPTS) -@- . ../../models/regression/lqns-results
+	echo $(OBJS) $(VAR) $(SPEX) | tr -s " " "\n" | srvndiff $(DIFFOPTS) -@- . ../../models/regression/lqns-results
 
 recheck:
 	rm -f $(OBJS) $(VAR)

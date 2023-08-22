@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/branches/merge-V5-V6/lqns/phase.h $
+ * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/phase.h $
  *
  * Everything you wanted to know about an entry, but were afraid to ask.
  *
@@ -9,13 +9,13 @@
  *
  * November, 1994
  *
- * $Id: phase.h 15969 2022-10-13 19:49:43Z greg $
+ * $Id: phase.h 16804 2023-08-21 20:22:29Z greg $
  *
  * ------------------------------------------------------------------------
  */
 
-#if	!defined(PHASE_H)
-#define PHASE_H
+#ifndef LQNS_PHASE_H
+#define LQNS_PHASE_H
 
 #include <set>
 #include <mva/vector.h>
@@ -128,6 +128,17 @@ public:
 	std::set<Entity *>& _servers;
     };
 
+    struct add_wait
+    {
+	typedef double (Phase::*funcPtr)( unsigned int ) const;
+	add_wait( funcPtr f, unsigned int arg ) : _f(f), _arg(arg) {}
+	double operator()( double l, const Phase& r ) const { return l + (r.*_f)(_arg); }
+    private:
+	const funcPtr _f;
+	unsigned int _arg;
+    };
+
+    
 private:
     struct add_IL_wait {
 	add_IL_wait( unsigned int submodel ) : _submodel(submodel) {}
@@ -247,6 +258,7 @@ public:
     Phase& initReplication( const unsigned );
     Phase& resetReplication();
 #endif
+    Phase& initCustomers( std::deque<const Task *>& stack, unsigned int customers );
     Phase& initWait();
     Phase& initVariance();
     

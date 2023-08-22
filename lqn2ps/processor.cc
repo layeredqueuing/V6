@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: processor.cc 16750 2023-06-19 12:16:45Z greg $
+ * $Id: processor.cc 16791 2023-07-27 11:21:46Z greg $
  *
  * Everything you wanted to know about a task, but were afraid to ask.
  *
@@ -472,7 +472,7 @@ Processor::rename()
 
 
 
-#if defined(REP2FLAT)
+#if REP2FLAT
 Processor *
 Processor::find_replica( const std::string& processor_name, const unsigned replica )
 {

@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/branches/merge-V5-V6/lqns/processor.h $
+ * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/processor.h $
  *
  * Processors.
  *
@@ -11,7 +11,7 @@
  * May, 2009
  *
  * ------------------------------------------------------------------------
- * $Id: processor.h 16755 2023-06-26 19:47:53Z greg $
+ * $Id: processor.h 16800 2023-08-21 19:23:24Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -54,11 +54,10 @@ protected:
     
 public:
     /* Initialization */
-    virtual void initializeServer();
 
     virtual bool check() const;
     virtual Processor& configure( const unsigned );
-    virtual void recalculateDynamicValues() {}
+    virtual Processor& recalculateDynamicValues() { return *this; }
 
     /* Instance Variable access */
 
@@ -79,11 +78,10 @@ public:
 
     /* Model Building. */
 
-    virtual Entity* mapToReplica( size_t ) const;
     Processor& expand();
     
     Server * makeServer( const unsigned nChains );
-    virtual double computeUtilization( const MVASubmodel&, const Server& );
+    virtual double computeUtilization( const MVASubmodel& );
 
     /* DOM insertion of results */
 

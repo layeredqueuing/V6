@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: qnap2_document.cpp 16718 2023-05-12 12:25:33Z greg $
+ * $Id: qnap2_document.cpp 16790 2023-07-27 11:21:15Z greg $
  *
  * Read in XML input files.
  *
@@ -2230,9 +2230,10 @@ namespace QNIO {
 
 	for ( BCMP::Model::Chain::map_t::const_iterator k = chains().begin(); k != chains().end(); ++k ) {
 	    if ( !k->second.isClosed() ) continue;
+	    LQX::SyntaxTreeNode * customers = k->second.customers();
+	    if ( customers == nullptr ) continue;
 	    std::string comment;
 	    LQX::SyntaxTreeNode * think_time = classes.at(k->first).service_time();
-	    LQX::SyntaxTreeNode * customers = k->second.customers();
 	    if ( dynamic_cast<LQX::VariableExpression *>(k->second.customers()) ) {
 		comment = "SPEX variable " + dynamic_cast<LQX::VariableExpression *>(k->second.customers())->getName();
 	    }
