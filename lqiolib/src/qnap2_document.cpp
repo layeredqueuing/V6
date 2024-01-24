@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: qnap2_document.cpp 16790 2023-07-27 11:21:15Z greg $
+ * $Id: qnap2_document.cpp 16905 2024-01-22 11:55:41Z greg $
  *
  * Read in XML input files.
  *
@@ -834,6 +834,40 @@ namespace QNIO {
 
 
     /*
+     * For loading a QNAP2 document into an LQN document.  There is a
+     * memory leak here, but the external variables are shared between
+     * the jmva document and the dom.
+     */
+
+    bool
+    QNAP2_Document::load( LQIO::DOM::Document& lqn, const std::string& input_file_name )
+    {
+	QNAP2_Document * input = new QNAP2_Document( input_file_name );
+	if ( !input->load() ) return false;
+
+	/* Now run presolve as the solver. */
+
+	LQX::Program * lqx = input->getLQXProgram();
+	assert( lqx != nullptr );
+	LQX::Environment * environment = lqx->getEnvironment();
+	input->setLQXEnvironment( environment );
+	input->registerExternalSymbolsWithProgram( lqx );
+	input->disableDefaultOutputWithLQX();
+	
+	/* Run preSolve() to map transits to visits */	    
+	BCMP::RegisterBindings(environment, &input->model());
+	environment->getMethodTable()->registerMethod(new QNIO::QNAP2_Document::PreSolve(*input));
+	if ( input->_debug ) {
+	    lqx->print( std::cerr );		// debug
+	}
+	if ( !lqx->invoke() ) {
+	    LQIO::runtime_error( LQIO::ERR_LQX_EXECUTION, input_file_name.c_str() );
+	}
+	return input->convertToLQN( lqn );
+    }
+
+
+    /*
      * Declare a chain/class.  For single class models, a chain is still needed, so "" is accepted
      */
     
@@ -1183,6 +1217,12 @@ namespace QNIO {
 	method_table->registerMethod(new DeepCopy);
 	method_table->registerMethod(new Print);
 	method_table->registerMethod(new Output(model()));
+    }
+
+    LQX::SymbolAutoRef
+    QNAP2_Document::PreSolve::invoke(LQX::Environment* env, std::vector<LQX::SymbolAutoRef >& args)
+    {
+	return LQX::Symbol::encodeBoolean( _model.preSolve() );
     }
 }
 
@@ -1726,7 +1766,9 @@ namespace QNIO {
     QNAP2_Document::Output::print( std::ostream& output ) const
     {
 	const std::streamsize old_precision = output.precision(__precision);
-//    output << " - (" << _solver << ") - " << std::endl;
+	if ( !model().getResultDescription().empty() ) {
+	    output << " - " << model().getResultDescription() << " - " << std::endl;
+	}
 	output.fill('*');
 	output << std::setw(__width*6+7) << "*" << std::endl;
 	output.fill(' ');
@@ -1819,11 +1861,14 @@ namespace QNIO {
     QNAP2_Document::exportModel( std::ostream& output ) const
     {
 	std::ios_base::fmtflags flags = output.setf( std::ios::left, std::ios::adjustfield );
+	if ( !getComment().empty() ) {
+	    output << "& " << getComment() << std::endl;
+	}
+	output << "/control/ option=nsource;" << std::endl;	/* Suppress source output with qnap2 */
 	output << "& " << LQIO::DOM::Common_IO::svn_id() << std::endl;
 	if ( LQIO::io_vars.lq_command_line.size() > 0 ) {
 	    output << "& " << LQIO::io_vars.lq_command_line << std::endl;
 	}
-
 
 	/* Special stations for closed and open classes */
 	bool has_closed_chain = false;
@@ -2245,6 +2290,8 @@ namespace QNIO {
 		output << qnap2_statement( "n_users:=" + to_unsigned(customers), comment  ) << std::endl;
 	    }
 
+	    if ( think_time == nullptr ) continue;
+	    
 	    const std::string think_visits = std::accumulate( stations().begin(), stations().end(), std::string(""), fold_visits( k->first ) );
 	    if ( !think_visits.empty() ) {
 		if ( multiclass() ) {

@@ -1,6 +1,6 @@
 /* element.cc	-- Greg Franks Wed Feb 12 2003
  *
- * $Id: key.cc 15615 2022-06-01 12:27:08Z greg $
+ * $Id: key.cc 16906 2024-01-22 12:02:11Z greg $
  */
 
 #include "key.h"
@@ -120,7 +120,7 @@ Key::scaleBy( const double sx, const double sy )
 {
     origin.scaleBy( sx, sy );
     extent.scaleBy( sx, sy );
-    for ( std::map<Label *,Arc *>::const_iterator label = _labels.begin(); label != _labels.begin(); ++label ) {
+    for ( std::map<Label *,Arc *>::const_iterator label = _labels.begin(); label != _labels.end(); ++label ) {
 	label->first->scaleBy( sx, sy );
 	label->second->scaleBy( sx, sy );
     }
@@ -131,7 +131,7 @@ Key::scaleBy( const double sx, const double sy )
 Key& 
 Key::translateY( const double y )
 {
-    for ( std::map<Label *,Arc *>::const_iterator label = _labels.begin(); label != _labels.begin(); ++label ) {
+    for ( std::map<Label *,Arc *>::const_iterator label = _labels.begin(); label != _labels.end(); ++label ) {
 	label->first->translateY( y );
 	label->second->translateY( y );
     }

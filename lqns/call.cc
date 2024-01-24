@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: call.cc 16802 2023-08-21 19:51:34Z greg $
+ * $Id: call.cc 16910 2024-01-23 20:30:04Z greg $
  *
  * Everything you wanted to know about a call to an entry, but were afraid to ask.
  *
@@ -12,6 +12,7 @@
  * ------------------------------------------------------------------------
  */
 
+#define BUG_433 1
 
 #include "lqns.h"
 #include <algorithm>
@@ -26,6 +27,7 @@
 #include "entry.h"
 #include "errmsg.h"
 #include "flags.h"
+#include "option.h"
 #include "pragma.h"
 #include "submodel.h"
 #include "task.h"
@@ -101,7 +103,6 @@ Call::Call( const Phase * fromPhase, const Entry * toEntry )
       _source(fromPhase),
       _destination(toEntry), 
       _chainNumber(0),
-      _replica_number(1),
       _wait(0.0),
       _interlockedFlow(-1.0),
       _callWeight(0.0)
@@ -115,13 +116,12 @@ Call::Call( const Phase * fromPhase, const Entry * toEntry )
 }
 
 
-Call::Call( const Call& src, unsigned int replica )
+Call::Call( const Call& src )
     : _dom(src._dom),
       _source(nullptr),
       _destination(nullptr),
       _chainNumber(src._chainNumber),
-      _replica_number(replica),
-      _wait(0.0),
+      _wait(src._wait),
       _interlockedFlow(-1.0),
       _callWeight(0.0)
 #if BUG_267
@@ -167,8 +167,12 @@ Call&
 Call::initCustomers( std::deque<const Task *>& stack, unsigned int customers )
 {
     Task * task = const_cast<Task *>(dynamic_cast<const Task *>(dstTask()));
+#if BUG_425
+    std::cerr << std::setw( stack.size() * 2 ) << " " << "    Call::initCustomers(" << stack.size() << "," << customers << ") -> ";
+    if ( task != nullptr ) std::cerr << task->print_name();
+    std::cerr << std::endl;
+#endif
     if ( task == nullptr ) return *this;	/* Don't care about processors */
-
     if ( hasRendezvous() ) {
 	task->initCustomers( stack, customers );
     } else if ( hasSendNoReply() ) {
@@ -182,7 +186,7 @@ Call::initCustomers( std::deque<const Task *>& stack, unsigned int customers )
 
 
 
-/*
+/*+ BUG_433
  * Expand replicas (Not PAN_REPLICATION) from Call(src,dst) to
  * Call(src(src_replica),dst(dst_replica)).  There is no need to copy
  * src_replica=1 to dst_replica=1.  The real guts are in the copy
@@ -192,21 +196,25 @@ Call::initCustomers( std::deque<const Task *>& stack, unsigned int customers )
 Call&
 Call::expand()
 {
+    unsigned int next_replica = 1;
     const unsigned int src_replicas = srcTask()->replicas();
     for ( unsigned int src_replica = 1; src_replica <= src_replicas; ++src_replica ) {
-	const unsigned int dst_replicas = fanOut();
-	for ( unsigned int dst_replica = 1; dst_replica <= dst_replicas; ++dst_replica ) {
+
+	const unsigned int dst_replicas = dstEntry()->owner()->replicas();
+	const unsigned int fan_out = fanOut();
+	for ( unsigned int k = 1; k <= fan_out; k++ ) {
+
+	    /* divide the destination entries equally between calling entries. */
+	    const unsigned int dst_replica = (next_replica++ - 1) % dst_replicas + 1;
 	    if ( src_replica == 1 && dst_replica == 1 ) continue;	/* This exists already */
-	    Call * call = clone( src_replica, (src_replica - 1) * dst_replicas + dst_replica );	/* 2 goes to 2, etc */
-#if 0
-	    std::cerr << "Call::expand(): " << srcName() << "." << src_replica << " -> " << call->dstName() << "." << call->dstTask()->getReplicaNumber() << std::endl;
-#endif
+
+	    Call * call = clone( src_replica, dst_replica );		/* 2 goes to 2, etc */
 	    const_cast<Entity *>(call->dstTask())->addTask( call->srcTask() );
 	}
     }
     return *this;
 }
-
+/*- BUG_433 */
 
 
 bool
@@ -386,14 +394,14 @@ Call::srcTask() const
 
 
 double
-Call::elapsedTime() const
+Call::residenceTime() const
 {
     if (flags.trace_quorum) {
-	std::cout <<"\nCall::elapsedTime(): call " << this->srcName() << " to " << dstEntry()->name() << std::endl;
+	std::cout <<"\nCall::residenceTime(): call " << this->srcName() << " to " << dstEntry()->name() << std::endl;
     }
 
     if ( hasRendezvous() ) {
-	return dstEntry()->elapsedTimeForPhase(1);
+	return dstEntry()->residenceTimeForPhase(1);
     } else {
 	return 0.0;
     }
@@ -409,17 +417,17 @@ double
 Call::queueingTime() const
 {
     if ( hasRendezvous() ) {
-	if ( std::isinf( _wait ) ) return _wait;
-	const double q = _wait - elapsedTime();
+	if ( std::isinf( wait() ) ) return wait();
+	const double q = wait() - residenceTime();
 	if ( q <= 0.000001 ) {
 	    return 0.0;
-	} else if ( q * elapsedTime() > 0. && (q/elapsedTime()) <= 0.0001 ) {
+	} else if ( q * residenceTime() > 0. && (q/residenceTime()) <= 0.0001 ) {
 	    return 0.0;
 	} else {
 	    return q;
 	}
     } else if ( hasSendNoReply() ) {
-	return _wait;
+	return wait();
     } else {
 	return 0.0;
     }
@@ -499,7 +507,7 @@ double
 Call::CV_sqr() const
 {
 #ifdef NOTDEF
-    return dstEntry()->variance(1) / square(elapsedTime());
+    return dstEntry()->variance(1) / square(residenceTime());
 #endif
     return variance() / square(wait());
 }
@@ -517,46 +525,74 @@ Call::followInterlock( Interlock::CollectTable& path ) const
 
     if ( rendezvous() > 0.0 && !path.prune() ) {
 	Interlock::CollectTable branch( path, path.calls() * rendezvous() );
-	const_cast<Entry *>(dstEntry())->initInterlock( branch );
+	const_cast<Entry *>(dstEntry())->initializeInterlock( branch );
     }
     return *this;
 }
+
+/* ----------------------------- Save Results ----------------------------- */
+
+/*
+ * Call::Perform is invoked from task by submodel and interfaces to the MVA
+ * Solver.
+ */
+
+void Call::Perform::operator()( Call * call ) 
+{
+    if ( call->submodel() != submodel() ) return;
+    (this->*f())( *call );
+}
+
+
+unsigned int 
+Call::Perform::submodel() const
+{
+    return _submodel.number();
+}
+
+
+
+bool
+Call::Perform::hasServer( const Entity * server ) const
+{
+    return _submodel.hasServer( server );
+}
 
 
 
 /*
- * Set the visit ratio at the destinations station.  Called from
- * Task::initClientStation only.  The calling task is mapped to the
- * base replica if necessary.
+ * Set the visit ratio at the destination's station.  Called from
+ * Task::initClientStation only.  The calling task is mapped to the base
+ * replica if necessary.
  */
 
 void
-Call::setVisits( const unsigned k, const unsigned p, const double rate )
+Call::Perform::setVisits( Call& call )
 {
-    const Entity * server = dstTask();
-    if ( server->hasServerChain( k ) && hasRendezvous() && !srcTask()->hasInfinitePopulation() ) {
+    const Entity * server = call.dstTask();
+    if ( server->hasServerChain( k() ) && call.hasRendezvous() && !call.srcTask()->hasInfinitePopulation() ) {
 	Server * station = server->serverStation();
-	const unsigned e = dstEntry()->index();
-	station->addVisits( e, k, p, rendezvous() * rate );
+	const unsigned e = call.dstEntry()->index();
+	station->addVisits( e, k(), p(), call.rendezvous() * rate() );
     }
 }
 
 
 /*
- * Set the open arrival rate to the destination's station.Called from
- * Task::initClientStation only.  The calling task is mapped to the
- * base replica if necessary.
+ * Set the open arrival rate to the destination's station.  Called from
+ * Task::initClientStation only.  The calling task is mapped to the base
+ * replica if necessary.
  */
 
 void
-Call::setLambda( const unsigned, const unsigned p, const double rate )
+Call::Perform::setLambda( Call& call )
 {
-    Server * station = dstTask()->serverStation();
-    const unsigned e = dstEntry()->index();
-    if ( hasSendNoReply() ) {
-	station->addVisits( e, 0, p, getSource()->throughput() * sendNoReply() );
-    } else if ( hasRendezvous() && srcTask()->isOpenModelServer() && srcTask()->isInfinite() ) {
-	station->addVisits( e, 0, p, getSource()->throughput() * rendezvous() );
+    Server * station = call.dstTask()->serverStation();
+    const unsigned e = call.dstEntry()->index();
+    if ( call.hasSendNoReply() ) {
+	station->addVisits( e, 0, p(), call.getSource()->throughput() * call.sendNoReply() );
+    } else if ( call.hasRendezvous() && call.srcTask()->isOpenModelServer() && call.srcTask()->isInfinite() ) {
+	station->addVisits( e, 0, p(), call.getSource()->throughput() * call.rendezvous() );
     }
 }
 
@@ -564,31 +600,35 @@ Call::setLambda( const unsigned, const unsigned p, const double rate )
 
 //tomari: set the chain number associated with this call.
 void
-Call::setChain( const unsigned k, const unsigned p, const double rate )
+Call::Perform::setChain( Call& call )
 {
-    const Entity * server = dstTask();
-    if ( server->hasServerChain( k )  ){
+    const Entity * server = call.dstTask();
+    if ( server->hasServerChain( k() )  ){
 
-	_chainNumber = k;
+	call._chainNumber = k();
 
 	if ( flags.trace_replication ) {
-	    std::cout <<"\nCall::setChain, k=" << k<< "  " ;
-	    std::cout <<",call from "<< srcName() << " To " << dstName()<< std::endl;
+	    std::cout <<"\nCall::setChain, k=" << k() << "  " ;
+	    std::cout <<",call from "<< call.srcName() << " To " << call.dstName()<< std::endl;
 	}
     }
 }
 
 
-
-
 /*
- * Clear waiting time.
+ * Initialize waiting time.
  */
 
 void
-Call::clearWait( const unsigned k, const unsigned p, const double )
+Call::Perform::initWait( Call& call )
 {
-    _wait = 0.0;
+    double time = 0.0;
+    if ( call.isProcessorCall() ) {
+	time = call.dstEntry()->serviceTimeForPhase(1);
+    } else {
+	time = call.residenceTime();
+    }
+    call.setWait( time );			/* Initialize arc wait. 	*/
 }
 
 /*
@@ -603,40 +643,60 @@ Call::clearILWait( const unsigned k, const unsigned p, const double )
 
 
 /*
- * Get the waiting time for this call from the mva submodel.  A call
- * can potentially orginate from multiple chains, so add them all up.
- * (Call clearWait first.)
+ * Get the waiting time for this call from the mva submodel.  A call can
+ * potentially orginate from multiple chains, so add them all up.  (Call
+ * clearWait first.)
  */
 
 void
-Call::saveOpen( const unsigned, const unsigned p, const double )
+Call::Perform::saveOpen( Call& call )
 {
-    const unsigned e = dstEntry()->index();
-    const Server * station = dstTask()->serverStation();
+    const Entity * server = call.dstTask();		// BUG_433 -- remap to base?
+    const unsigned e = call.dstEntry()->index();
 
-    if ( station->V( e, 0, p ) > 0.0 ) {
-	setWait( station->W[e][0][p] );
+#define DEBUG 0
+    /*+ BUG_433 */
+    if ( !hasServer( server ) ) {		// Need to check for server in submodel. Need code in client? This might work as-is. */
+#if DEBUG
+	std::cerr << "Call::Perform::saveOpenWait(submodel=" << _submodel.number() << ") server=" << server->print_name() << " pruned." << std::endl;
+#endif
+	server = server->mapToReplica( 1 );	// Map to base replica.
+    }
+    /*- BUG_433 */
+
+    const Server * station = server->serverStation();
+    if ( station->V( e, 0, p() ) > 0.0 ) {
+	call.setWait( station->W[e][0][p()] );
     }
 }
 
 
 
 /*
- * Get the waiting time for this call from the mva submodel.  A call
- * can potentially orginate from multiple chains, so add them all up.
- * (Call clearWait first.).  This may havve to be changed if the
- * result varies by chain.  Priorities perhaps?
+ * Get the waiting time for this call from the mva submodel.  A call can
+ * potentially orginate from multiple chains, so add them all up.  (Call
+ * clearWait first.)  This may have to be changed if the result varies by
+ * chain.  Priorities perhaps?
  */
 
 void
-Call::saveWait( const unsigned k, const unsigned p, const double )
+Call::Perform::saveWait( Call& call )
 {
-    const Entity * server = dstTask();
-    const unsigned e = dstEntry()->index();
-    const Server * station = server->serverStation();
+    const Entity * server = call.dstTask();		// BUG_433 -- remap to base?
+    const unsigned e = call.dstEntry()->index();
 
-    if ( station->V( e, k, p ) > 0.0 ) {
-	setWait( station->W[e][k][p] );
+    /*+ BUG_433 */
+    if ( !hasServer( server ) ) {		// Need to check for server in submodel. Need code in client? This might work as-is. */
+#if DEBUG
+	std::cerr << "Call::Perform::saveWait(submodel=" << _submodel.number() << ") server=" << server->print_name() << " pruned." << std::endl;
+#endif
+	server = server->mapToReplica( 1 );	// Map to base replica.
+    }
+    /*- BUG_433 */
+
+    const Server * station = server->serverStation();
+    if ( station->V( e, k(), p() ) > 0.0 ) {
+	call.setWait( station->W[e][k()][p()] );
     }
 }
 
@@ -712,7 +772,7 @@ Call::setInterlockedFlow( const MVASubmodel& submodel )
 
     if ( num > 0. ) {
 	//p =num-(srcTask()->population());
-	p = srcTask()->nCustomers() - srcTask()->population();
+	p = srcTask()->population() - srcTask()->copies();
 	if ( p > 0.0 ) {
 	    _interlockedFlow = Probability( 1.0 / p ); 
 	} else {
@@ -767,7 +827,7 @@ Call::saveILWait( const unsigned k, const unsigned p, const double )
     const unsigned e = dstEntry()->index();
     const Server * aStation = aServer->serverStation();
 
-    double eps=elapsedTime();
+    double eps=residenceTime();
     double diff;
 
     if ( aStation->nILRate[e][k] > 0 ) {
@@ -797,7 +857,7 @@ Call::saveILWait( const unsigned k, const unsigned p, const double )
 	    std::cout << "has interlocked wait "<<diff << std::endl;
 	    std::cout << "aStation->nILRate[e][k]="<<aStation->nILRate[e][k]
 		<<", CallMeanValue="<<getDOM()->getCallMeanValue()<< std::endl;
-	    std::cout << "call->elapsedTime() ="<<eps <<", _wait="<<_wait <<",diff="<<diff<< std::endl;
+	    std::cout << "call->residenceTime() ="<<eps <<", _wait="<<_wait <<",diff="<<diff<< std::endl;
 	}
 
 	const Probability IL_Pr(getInterlockedFlow());
@@ -819,11 +879,11 @@ double
 Call::interlockPr() const
 {
     if ( flags.trace_quorum ) {
-	std::cout <<"\nCall::elapsedTime(): call " << this->srcName() << " to " << dstEntry()->name() << std::endl;
+	std::cout <<"\nCall::residenceTime(): call " << this->srcName() << " to " << dstEntry()->name() << std::endl;
     }
     if ( srcTask()->hasInfinitePopulation() ) return 0.0;
 
-    const double et = elapsedTime();
+    const double et = residenceTime();
     if ( et <= 0. ) return 0.;
 
 #warning Bugs here?  division?  Hoist common expression.
@@ -838,7 +898,7 @@ Call::interlockPr() const
     const double upperbound = std::min( 1.0 / getMaxCustomers(), 1.0 );
     if ( queue < 0.1 ) {
 	if ( flags.trace_interlock ) {
-	    std::cout <<"queueingTime()="<<queueingTime()<<", et="<<elapsedTime()<<",queueingTime()/et= "<<queue <<", 1/N="<<1.0/getMaxCustomers()<< std::endl;
+	    std::cout <<"queueingTime()="<<queueingTime()<<", et="<<residenceTime()<<",queueingTime()/et= "<<queue <<", 1/N="<<1.0/getMaxCustomers()<< std::endl;
 	}
 	return std::max( upperbound, queue );
     }
@@ -850,7 +910,7 @@ Call::interlockPr() const
     if ( et && d > 0 ) {
 	double t =  1. - ((queueingTime() * getqueueWeight()) / (et * d));
 	if ( flags.trace_interlock ) {
-	    std::cout <<"queueingTime()="<<queueingTime()<<", et="<<elapsedTime()<<";getqueueWeight()="<<getqueueWeight()<<",t="<<t<< std::endl;
+	    std::cout <<"queueingTime()="<<queueingTime()<<", et="<<residenceTime()<<";getqueueWeight()="<<getqueueWeight()<<",t="<<t<< std::endl;
 	}
 	const double ql = srcEntry()->getILQueueLength();		// sourcing entry.
 	if ( ql > 0.0 && t < ql ) {
@@ -916,12 +976,12 @@ PhaseCall::PhaseCall( const Phase * fromPhase, const Entry * toEntry )
 }
 
 
-/*
+/*+ BUG_433
  * Deep copy.  Set FromEntry to the replica.
  */
 
 PhaseCall::PhaseCall( const PhaseCall& src, unsigned int src_replica, unsigned int dst_replica )
-    : Call( src, dst_replica ),		/* link to DOM.	*/
+    : Call( src ),		/* link to DOM.	*/
       FromEntry( Entry::find( src.srcEntry()->name(), src_replica ) )
 {
     /* Link to source replica */
@@ -931,40 +991,27 @@ PhaseCall::PhaseCall( const PhaseCall& src, unsigned int src_replica, unsigned i
 
     /* Link to destination replica */
     if ( src.dstEntry() != nullptr ) {
-	const unsigned int replica = static_cast<unsigned>(std::ceil( static_cast<double>(dst_replica) / static_cast<double>(src.fanIn()) ));
-	Entry * dst = Entry::find( src.dstEntry()->name(), replica );
+	Entry * dst = Entry::find( src.dstEntry()->name(), dst_replica );
 	if ( dst == nullptr ) {
 	    std::ostringstream err;
-	    err << "PhaseCall::PhaseCall: Can't find entry " << src.dstEntry()->name() << "." << replica;
+	    err << "PhaseCall::PhaseCall: Can't find entry " << src.dstEntry()->name() << "." << dst_replica;
 	    throw std::runtime_error( err.str() );
 	}
 	setDestination( dst );
 	dst->addDstCall( this );	/* Set reverse link */
     }
-#if 0
-    std::cerr << "PhaseCall::PhaseCall() from: " << getSource()->name() << "(" << srcEntry()->getReplicaNumber() << ")"
-	      << " to: " << dstEntry()->name() << "(" << dstEntry()->getReplicaNumber() << ")" << std::endl;
-#endif
+    if ( Options::Debug::replication() ) {
+	std::cerr << "PhaseCall::PhaseCall(\"" << getSource()->name() << "." << srcEntry()->getReplicaNumber() << "\"," << src_replica << "," << dst_replica << ")"
+		  << " link to entry: " << dstEntry()->name() << "." << dstEntry()->getReplicaNumber() << std::endl;
+    }
 }
+/*- BUG_433 */
 
 
 bool
 PhaseCall::isCalledBy( const Entry * entry ) const
 {
     return srcEntry() == entry;
-}
-
-
-
-/*
- * Initialize waiting time.
- */
-
-Call&
-PhaseCall::initWait()
-{
-    setWait( elapsedTime() );			/* Initialize arc wait. 	*/
-    return *this;
 }
 
 /*----------------------------------------------------------------------*/
@@ -1030,19 +1077,6 @@ ProcessorCall::ProcessorCall( const Phase * fromPhase, const Entry * toEntry )
     : Call( fromPhase, toEntry )
 {
 }
-
-
-
-/*
- * Set up waiting time to processors.
- */
-
-Call&
-ProcessorCall::initWait()
-{
-    setWait( dstEntry()->serviceTimeForPhase(1) );		/* Initialize arc wait. 	*/
-    return *this;
-}
 
 /*----------------------------------------------------------------------*/
 /*                            Activity Calls                            */
@@ -1078,7 +1112,7 @@ ActivityCall::ActivityCall( const Activity * fromActivity, const Entry * toEntry
 
 
 ActivityCall::ActivityCall( const ActivityCall& src, unsigned int src_replica, unsigned int dst_replica )
-    : Call( src, dst_replica ), FromActivity()
+    : Call( src ), FromActivity()
 {
     const Task * task = Task::find( src.srcTask()->name(), src_replica );
     const Activity * src_activity = task->findActivity( src.getSource()->name() );
@@ -1087,14 +1121,19 @@ ActivityCall::ActivityCall( const ActivityCall& src, unsigned int src_replica, u
     
     /* Link to destination replica */
     if ( src.dstEntry() != nullptr ) {
-	Entry * dst = Entry::find( src.dstEntry()->name(), static_cast<unsigned>(std::ceil( static_cast<double>(dst_replica) / static_cast<double>(src.fanIn())) ) );
+	Entry * dst = Entry::find( src.dstEntry()->name(), dst_replica );	// BUG_433
+	if ( dst == nullptr ) {
+	    std::ostringstream err;
+	    err << "ActivityCall::ActivityCall: Can't find entry " << src.dstEntry()->name() << "." << dst_replica;
+	    throw std::runtime_error( err.str() );
+	}
 	setDestination( dst );
 	dst->addDstCall( this );	/* Set reverse link */
     }
-#if 0
-    std::cerr << "ActivityCall::ActivityCall() from: " << getSource()->name() << "(" << srcEntry()->getReplicaNumber() << ")"
-	      << " to: " << dstEntry()->name() << "(" << dstEntry()->getReplicaNumber() << ")" << std::endl;
-#endif
+    if ( Options::Debug::replication() ) {
+	std::cerr << "ActivityCall::ActivityCall() from: " << getSource()->name() << "(" << task->getReplicaNumber() << ")"
+		  << " to: " << dstEntry()->name() << "(" << dstEntry()->getReplicaNumber() << ")" << std::endl;
+    }
 }
 
 
@@ -1102,17 +1141,6 @@ bool
 ActivityCall::isCalledBy( const Entry * entry ) const
 {
     return entry->hasStartActivity() && srcTask() == entry->owner();
-}
-
-/*
- * Initialize waiting time.
- */
-
-Call&
-ActivityCall::initWait()
-{
-    setWait( elapsedTime() );			/* Initialize arc wait. 	*/
-    return *this;
 }
 
 /*----------------------------------------------------------------------*/

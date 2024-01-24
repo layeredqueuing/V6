@@ -8,7 +8,7 @@
  *
  * November, 1994
  *
- * $Id: phase.h 16791 2023-07-27 11:21:46Z greg $
+ * $Id: phase.h 16888 2023-12-08 12:18:20Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -16,7 +16,6 @@
 #if	!defined(PHASE_H)
 #define PHASE_H
 
-#include <lqio/dom_phase.h>
 #include <lqio/bcmp_document.h>
 #include <lqio/dom_phase.h>
 

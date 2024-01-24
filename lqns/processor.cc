@@ -10,7 +10,7 @@
  * November, 1994
  *
  * ------------------------------------------------------------------------
- * $Id: processor.cc 16802 2023-08-21 19:51:34Z greg $
+ * $Id: processor.cc 16908 2024-01-23 20:11:48Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -62,6 +62,18 @@ Processor::~Processor()
 }
 
 /* ------------------------ Instance Methods -------------------------- */
+
+void
+Processor::initializeServer()
+{
+    for ( std::vector<Entry *>::const_iterator entry = entries().begin(); entry != entries().end(); ++entry ) {
+	DeviceEntry* device = dynamic_cast<DeviceEntry*>(*entry);
+	if ( device == nullptr ) continue;	// abort()?
+	device->initWait();
+    }
+}
+
+
 
 bool
 Processor::check() const
@@ -249,6 +261,17 @@ Processor::schedulingIsOK() const
 
 
 /*
+ * Return the base replica.
+ */
+
+Entity*
+Processor::mapToReplica( size_t i ) const
+{
+    return find( name(), i );
+}
+
+
+/*
  * Expand replicas (Not PAN_REPLICATION).
  * Clone the processor.  Use orignal dom.  Mark as replica (through the copy constructor)
  */
@@ -431,53 +454,25 @@ Processor::sanityCheck() const
 }
 
 
-double
-Processor::computeUtilization( const MVASubmodel& submodel )
-{
-    const Server * station = serverStation();
-    const std::set<Task *>& clients = submodel.getClients();
-    const unsigned int n = submodel.number();
+/*
+ * The superclass derives the utilization.  For processors, it's easy to get directly.
+ */
 
-    double utilization = 0.0;
-    for ( std::set<Task *>::const_iterator client = clients.begin(); client != clients.end(); ++client ) {
-	if ( isClosedModelServer() ) {
-	    const ChainVector& chains = (*client)->clientChains( n );
-	    for ( ChainVector::const_iterator k = chains.begin(); k != chains.end(); ++k ) {
-		if ( hasServerChain( *k ) ) {
-		    utilization += submodel.closedModelUtilization( *station, *k );
-		}
-	    }
-	}
-	utilization += submodel.openModelUtilization( *station );
-    }
-    
-    return utilization;
+double
+Processor::computeUtilization( const MVASubmodel& submodel, const Server& station )
+{
+    return submodel.closedModelUtilization( station ) + submodel.openModelUtilization( station );
 }
 
 
 const Processor&
 Processor::insertDOMResults(void) const
 {
-    if ( getReplicaNumber() != 1 ) return *this;		/* NOP */
+    if ( getDOM()== nullptr || getReplicaNumber() != 1 ) return *this;		/* NOP */
 
     Entity::insertDOMResults();
     
-    double sumOfProcUtil = 0.0;
-    for ( std::set<const Task *>::const_iterator task = tasks().begin(); task != tasks().end(); ++task ) {
-
-	const std::vector<Entry *>& entries = (*task)->entries();
-	for ( std::vector<Entry *>::const_iterator entry = entries.begin(); entry != entries.end(); ++entry ) {
-	    if ((*entry)->isStandardEntry()) {
-		sumOfProcUtil += (*entry)->processorUtilization();
-	    }
-	}
-	const std::vector<Activity *>& activities = (*task)->activities();
-	sumOfProcUtil += std::accumulate( activities.begin(), activities.end(), 0., add_using<double,Activity>( &Activity::processorUtilization ) );
-    }
-
-    if ( getDOM() ) {
-	getDOM()->setResultUtilization(sumOfProcUtil);
-    }
+    getDOM()->setResultUtilization( std::accumulate( tasks().begin(), tasks().end(), 0.0, Task::sum( &Task::processorUtilization ) ) );
     return *this;
 }
 
@@ -566,7 +561,7 @@ Processor::printTasks( std::ostream& output, unsigned int submodel ) const
 {
     if ( submodel != 0 && this->submodel() != submodel ) return output;
     for ( std::set<const Task *>::const_iterator task = _tasks.begin(); task != _tasks.end(); ++task ) {
-	if ( (isPruned() && (*task)->isPruned()) ) continue;
+	if ( (isReplica() && (*task)->isReplica()) ) continue;
 	output << std::setw(2) << " " << (*task)->print_name() << " *> " << print_name() << std::endl;
     }
     return output;
@@ -581,7 +576,7 @@ CFS_Processor::check() const
 {
     bool rc = Processor::check();
 
-    const double sum = std::accumulate( groups().begin(), groups().end(), 0., add_using<double,Group>( &Group::getOriginalShare ) );
+    const double sum = std::accumulate( groups().begin(), groups().end(), 0., Group::sum( &Group::getOriginalShare ) );
     if ( sum <= 0.0 || 1.0 < sum ) {
 	getDOM()->runtime_error( LQIO::ERR_INVALID_GROUP_SHARE, sum );
 	rc = false;
@@ -633,9 +628,9 @@ CFS_Processor::runDPS() const
 CFS_Processor&
 CFS_Processor::saveServerResults( const MVASubmodel& submodel, double relax )
 {
-    Processor::saveServerResults( submodel, relax );
-
     const Server * station = serverStation();
+    Processor::saveServerResults( submodel, *station, relax );
+
     const std::set<Task *>& clients = submodel.getClients();
     const unsigned int n = submodel.number();
     

@@ -10,7 +10,7 @@
  * November, 1994
  * March, 2004
  *
- * $Id: call.h 16800 2023-08-21 19:23:24Z greg $
+ * $Id: call.h 16805 2023-08-22 20:04:14Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -39,7 +39,6 @@ class Submodel;
 class Task;
 struct InterlockInfo;
 
-typedef void (Call::*callFunc)( const unsigned, const unsigned, const double );
 typedef bool (Call::*queryFunc)() const;
 
 /* ------------------- Arcs between entries are... -------------------- */
@@ -71,9 +70,48 @@ public:
     };
 	
     class Perform {
-	Perform();
-    };
+    public:
+	typedef void (Perform::*F)( Call& );
 
+	Perform( F f, const Submodel& submodel, unsigned int k=0 ) : _f(f), _submodel(submodel), _e(nullptr), _k(k), _p(0), _rate(0.0) {}
+	Perform( F f, const Submodel& submodel, const Entry * e, unsigned k, unsigned p, double rate ) : _f(f), _submodel(submodel), _e(e), _k(k), _p(p), _rate(rate) {}
+	Perform( const Perform& src, unsigned p, double rate ) : _f(src._f), _submodel(src._submodel), _e(src._e), _k(src._k), _p(p), _rate(rate) {}		// Set rate and phase.
+	Perform( const Perform& src, double scale ) : _f(src._f), _submodel(src._submodel), _e(src._e), _k(src._k), _p(src._p), _rate(src._rate * scale) {}	// Set rate.
+
+	unsigned int submodel() const; // { return _submodel.number(); }
+	Perform& setEntry( const Entry * entry ) { _e = entry; return *this; }
+	const Entry * entry() const { return _e; }
+	Perform& setChain( unsigned int k ) { _k = k; return *this; }
+	Perform& setPhase( unsigned int p ) { _p = p; return *this; }
+	Perform& setRate( double rate ) { _rate = rate; return *this; }
+	double rate() const { return _rate; }
+
+	bool hasServer( const Entity * ) const;
+	void operator()( Call * call );
+
+	/* Functions invoked from task */
+	
+	void setChain( Call& );
+	void setVisits( Call& );
+	void setLambda( Call& );
+	void initWait( Call& );
+	void saveWait( Call& );
+	void saveOpen( Call& );
+
+    private:
+	const F f() const { return _f; };
+	unsigned int k() const { return _k; }
+	unsigned int p() const { return _p; }
+
+    private:
+	const F _f;
+	const Submodel& _submodel;
+	const Entry * _e;
+	unsigned int _k;
+	unsigned int _p;
+	double _rate;
+    };
+    
     class stack : public std::deque<const Call *>
     {
     public:
@@ -119,6 +157,15 @@ public:
 	const Entry * _e;
     };
     
+    struct sum {
+	typedef double (Call::*funcPtr)() const;
+	sum( funcPtr f ) : _f(f) {}
+	double operator()( double l, const Call* r ) const { return l + (r->*_f)(); }
+	double operator()( double l, const Call& r ) const { return l + (r.*_f)(); }
+    private:
+	const funcPtr _f;
+    };
+
     struct add_replicated_rendezvous {
 	add_replicated_rendezvous( unsigned int submodel ) : _submodel(submodel) {}
 	double operator()( double sum, const Call * call ) { return call->submodel() == _submodel ? sum + call->rendezvous() * call->fanOut() : sum; }
@@ -189,7 +236,7 @@ public:
     Call( const Phase * fromPhase, const Entry * toEntry );
 
 protected:
-    Call( const Call&, unsigned int );
+    Call( const Call& );
     virtual Call * clone( unsigned int src_replica, unsigned int dst_replica ) = 0;
 
 public:
@@ -202,7 +249,6 @@ public:
     int operator==( const Call& item ) const;
     int operator!=( const Call& item ) const;
 
-    virtual Call& initWait() = 0;
     Call& initCustomers( std::deque<const Task *>& stack, unsigned int customers );
     
     virtual bool check() const;
@@ -246,6 +292,9 @@ public:
     bool hasNoForwarding() const { return dstEntry() == nullptr || hasRendezvous() || hasSendNoReply(); }		/* Special case for topological sort */
     virtual bool isCalledBy( const Entry * ) const = 0;
     bool hasTypeForCallInfo( LQIO::DOM::Call::Type type ) const;
+#if PAN_REPLICATION
+    unsigned getChain() const { return _chainNumber; } //tomari
+#endif
     
     virtual const std::string& srcName() const;
     const Task * srcTask() const;
@@ -258,7 +307,7 @@ public:
 #if PAN_REPLICATION
     double rendezvousDelay( const unsigned k );
 #endif
-    double elapsedTime() const;
+    double residenceTime() const;
     double queueingTime() const;
 #if PAN_REPLICATION
     double nrFactor( const Submodel& aSubmodel, const unsigned k ) const;
@@ -273,18 +322,6 @@ public:
     double CV_sqr() const;
     const Call& followInterlock( Interlock::CollectTable& ) const;
 
-    /* MVA interface */
-
-    void setChain( const unsigned k, const unsigned p, const double rate );
-    unsigned getChain() const { return _chainNumber; } //tomari
-    bool hasChain( unsigned int k ) const { return k == _chainNumber; }
-
-    void setVisits( const unsigned k, const unsigned p, const double rate );
-    virtual void setLambda( const unsigned k, const unsigned p, const double rate );
-    void clearWait( const unsigned k, const unsigned p, const double );
-    void saveWait( const unsigned k, const unsigned p, const double );
-    void saveOpen( const unsigned k, const unsigned p, const double );
-
     /*  Interlocked flow */
     double getMaxCustomers() const;
     double addRealCustomers( const MVASubmodel&, const Entity * aServer, unsigned int k ) const;
@@ -292,6 +329,7 @@ public:
     void saveILWait( const unsigned k, const unsigned p, const double );
     void clearILWait( const unsigned k, const unsigned p, const double );
 
+    bool hasChain( unsigned int k ) const { return k == _chainNumber; }
     bool isInterlocked () const { return _interlockedFlow > 0.0; }
     bool isAlongILPath() const { return _interlockedFlow >= 0.0; }
     void setInterlockedFlow( double flow ) { _interlockedFlow = flow; }
@@ -329,10 +367,9 @@ private:
     const LQIO::DOM::Call* _dom;	/* Input */
     const Phase* _source;		/* Calling Phase/activity.	*/
     const Entry* _destination;		/* to whom I am referring to	*/
-
+#if PAN_REPLICATION
     unsigned _chainNumber;
-    const unsigned int _replica_number;	/* > 1 if a replica		*/
-
+#endif
     double _wait;			/* Waiting time.		*/
     double _interlockedFlow;   		/* >0.0: interlocked flow 	*/
     					/* =0.0: is along the Path of an interlocked flow. */
@@ -351,7 +388,6 @@ public:
     virtual NullCall * clone( unsigned int, unsigned int ) { abort(); return nullptr; }
 
     virtual const std::string& srcName() const { static const std::string null("NULL"); return null; }
-    virtual NullCall& initWait() { return *this; }
     virtual Entry * srcEntry() const { return nullptr; }
     virtual bool isCalledBy( const Entry * ) const { return false; }
 };
@@ -374,7 +410,6 @@ public:
 
     virtual bool isCalledBy( const Entry * ) const;
 
-    virtual Call& initWait();
     virtual PhaseCall * clone( unsigned int src_replica, unsigned int dst_replica ) { return new PhaseCall( *this, src_replica, dst_replica ); }
 };
 
@@ -407,8 +442,6 @@ public:
     ActivityCall( const ActivityCall&, unsigned int src_replica, unsigned int dst_replica );
 
     virtual bool isCalledBy( const Entry * ) const;
-
-    virtual Call& initWait();
     virtual ActivityCall * clone( unsigned int src_replica, unsigned int dst_replica ) { return new ActivityCall( *this, src_replica, dst_replica ); }
 };
 
@@ -425,8 +458,6 @@ public:
 class ProcessorCall : virtual public Call {
 public:
     ProcessorCall( const Phase *, const Entry * toEntry );
-
-    virtual Call& initWait();
 
     virtual bool isProcessorCall() const { return true; }
     virtual ProcessorCall * clone( unsigned int, unsigned int ) { abort(); return nullptr; }

@@ -1,7 +1,7 @@
 /* -*- c++ -*-
  * model.h	-- Greg Franks
  *
- * $Id: model.h 16791 2023-07-27 11:21:46Z greg $
+ * $Id: model.h 16888 2023-12-08 12:18:20Z greg $
  */
 
 #ifndef _MODEL_H
@@ -143,7 +143,7 @@ public:
 
     Model& setModelNumber( unsigned int n ) { _modelNumber = n; return *this; }
 
-    static void create( const std::string& inputFileName, const LQIO::DOM::Pragma& pragmas, const std::string& output_file_name, const std::string& parse_file_name, int model_no );
+    static int create( const std::string& inputFileName, const LQIO::DOM::Pragma& pragmas, const std::string& output_file_name, const std::string& parse_file_name, int model_no );
     bool load( const char * );
     bool process();
     bool store();
@@ -222,9 +222,6 @@ private:
     Model const& accumulateEntryStats( const std::string& ) const;	/* Does not count ref. tasks. */
     std::map<unsigned, LQIO::DOM::Entity *>& remapEntities() const;
 
-#if JMVA_OUTPUT || QNAP2_OUTPUT
-    std::ostream& printBCMP( std::ostream& output ) const;
-#endif
     std::ostream& printEEPIC( std::ostream& output ) const;
 #if EMF_OUTPUT
     std::ostream& printEMF( std::ostream& output ) const;
@@ -241,6 +238,12 @@ private:
 #if HAVE_LIBPNG
     std::ostream& printPNG( std::ostream& output ) const;
 #endif
+#endif
+#if JMVA_OUTPUT
+    std::ostream& printJMVA( std::ostream& output ) const;
+#endif
+#if QNAP2_OUTPUT
+    std::ostream& printQNAP2( std::ostream& output ) const;
 #endif
     std::ostream& printPostScript( std::ostream& output ) const;
 #if defined(SVG_OUTPUT)
@@ -270,7 +273,8 @@ private:
     std::ostream& printLQX( std::ostream& output ) const;
     std::ostream& printXML( std::ostream& output ) const;
 
-    std::ostream& printLayers( std::ostream& ) const;
+    std::ostream& printModelComment( std::ostream& output, const std::string&, const std::string& = std::string("") ) const;
+    std::ostream& draw( std::ostream& ) const;
 
     static const char * get_userid();
 

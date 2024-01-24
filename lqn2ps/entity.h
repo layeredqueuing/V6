@@ -1,7 +1,7 @@
 /* -*- c++ -*-
  * entity.h	-- Greg Franks
  *
- * $Id: entity.h 16791 2023-07-27 11:21:46Z greg $
+ * $Id: entity.h 16888 2023-12-08 12:18:20Z greg $
  */
 
 #ifndef _ENTITY_H
@@ -11,9 +11,6 @@
 #include <map>
 #include <lqio/bcmp_document.h>
 #include "element.h"
-#if defined(PMIF_OUTPUT)
-#include <lqio/pmif_document.h>
-#endif
 
 class Processor;
 class Task;
@@ -38,41 +35,13 @@ public:
 	const callPredicate _predicate;
     };
 
-#if defined(PMIF_OUTPUT)
-    /* This class is used when aggregating entries to tasks (for queueing) */
-    class Chain {
-    public:
-	struct SetServerDemand {
-	    SetServerDemand( LQIO::PMIF_Document::Station& station ) : _station(station) {}
-	    void operator()( const std::pair<const Task *,Chain>& );
-	private:
-	    LQIO::PMIF_Document::Station& _station;
-	};
-
-    public:
-	Chain() : _visits(0.0), _demand(0.0), _wait(0.0) {}
-	void addDemand( double, double );
-	double getVisits() const { return _visits; }
-	double getService() const { return _visits ? _demand / _visits : 0.0; }
-	double getDemand() const { return _demand; }
-    private:
-	double _visits;
-	double _demand;		/* Can compute service time using visits */
-	double _wait;
-    };
-#endif
-    
-    struct accumulate_demand {
-	accumulate_demand( BCMP::Model& model ) : _model(model) {}
-	void operator()( const Entity * entity ) const { entity->accumulateDemand( _model.stationAt(entity->name() ) ); }
-    private:
-	BCMP::Model& _model;
-    };
-
+private:
+    friend class Layer;
     struct create_station {
 	create_station( BCMP::Model& model, BCMP::Model::Station::Type type = BCMP::Model::Station::Type::NOT_DEFINED ) : _model(model) {}
-	void operator()( const Entity * entity ) const;
+	void operator()( const Entity * entity );
     private:
+	BCMP::Model::Chain::map_t& chains() { return _model.chains(); }
 	BCMP::Model& _model;
     };
 
@@ -84,7 +53,6 @@ public:
 	const BCMP::Model& _model;
     };
 
-    
     struct label_BCMP_client {
 	label_BCMP_client( const BCMP::Model& model ) : _model(model) {}
 	void operator()( Entity * entity ) const;
@@ -99,6 +67,7 @@ public:
     static LQX::SyntaxTreeNode * getLQXVariable( const LQIO::DOM::ExternalVariable* );
     static LQX::SyntaxTreeNode * getLQXVariable( const LQIO::DOM::ExternalVariable*, double );
     static LQX::SyntaxTreeNode * addLQXExpressions( LQX::SyntaxTreeNode *, LQX::SyntaxTreeNode * );
+    static LQX::SyntaxTreeNode * subtractLQXExpressions( LQX::SyntaxTreeNode *, LQX::SyntaxTreeNode * );
     static LQX::SyntaxTreeNode * multiplyLQXExpressions( LQX::SyntaxTreeNode *, LQX::SyntaxTreeNode * );
     static LQX::SyntaxTreeNode * divideLQXExpressions( LQX::SyntaxTreeNode *, LQX::SyntaxTreeNode * );
 
@@ -169,14 +138,12 @@ public:
     virtual bool isInOpenModel( const std::vector<Entity *>& servers ) const { return false; }
     virtual bool isInClosedModel( const std::vector<Entity *>& servers ) const { return false; }
 
-#if defined(PMIF_OUTPUT)
-    void addDemand( const EntityCall *, const GenericCall * );
-    const std::map<const Task *,Chain> getChains() const { return _chains; }
-#endif
-    
 #if defined(REP2FLAT)
     virtual Entity& removeReplication();
 #endif
+    /*+ BUG_323 */
+    void addSPEXObservations( BCMP::Model::Station& station, const std::string& class_name ) const;
+    /*- BUG_323 */
 
     double align() const;
 
@@ -184,8 +151,6 @@ public:
 
     virtual Entity& label();
     virtual Entity& labelBCMPModel( const BCMP::Model::Station::Class::map_t&, const std::string& class_name="" ) = 0;
-
-    virtual void accumulateDemand( BCMP::Model::Station& ) const = 0;
 
     std::ostream& print( std::ostream& output ) const;
 
@@ -208,9 +173,6 @@ private:
 
 private:
     std::vector<GenericCall *> _callers;/* who calls me			*/
-#if defined(PMIF_OUTPUT)
-    std::map<const Task*,Chain> _chains;
-#endif
     size_t _level;			/* For sorting (by Y)		*/
     bool _isSelected;			/* Flag for picking off parts.	*/
     bool _isSurrogate;			/* Flag for formatting.		*/

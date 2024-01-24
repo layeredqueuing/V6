@@ -10,7 +10,7 @@
  * April 2010.
  *
  * ------------------------------------------------------------------------
- * $Id: task.h 16791 2023-07-27 11:21:46Z greg $
+ * $Id: task.h 16888 2023-12-08 12:18:20Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -59,22 +59,27 @@ class Task : public Entity {
     };
 #endif
     
-public:
+private:
+    friend class Layer;
+    
     struct create_chain {
-	create_chain( BCMP::Model& model, const std::vector<Entity *>& servers ) : _model(model), _servers(servers) {}
+	create_chain( BCMP::Model& model, BCMP::Model::Station& terminals, const std::vector<Entity *>& servers ) : _model(model), _terminals(terminals), _servers(servers) {}
 	void operator()( const Task * ) const;
     private:
 	BCMP::Model& _model;
+	BCMP::Model::Station& _terminals;
 	const std::vector<Entity *>& _servers;
     };
 
-    struct create_customers {
-	create_customers( BCMP::Model::Station& terminals ) : _terminals(terminals) {}
-	void operator()( const Task * entity );
+    struct create_demand {
+	create_demand( BCMP::Model& model, BCMP::Model::Station& terminals, const std::vector<Entity *>& servers ) : _model(model), _terminals(terminals), _servers(servers) {}
+	void operator()( const Task * ) const;
     private:
+	BCMP::Model& _model;
 	BCMP::Model::Station& _terminals;
+	const std::vector<Entity *>& servers() const { return _servers; }
+	const std::vector<Entity *>& _servers;
     };
-
 
 public:
     enum class root_level_t { IS_NON_REFERENCE, IS_REFERENCE, HAS_OPEN_ARRIVALS };
@@ -179,8 +184,8 @@ public:
     static LQX::SyntaxTreeNode * sum_rendezvous( LQX::SyntaxTreeNode *, const merge_pair& );
     static LQX::SyntaxTreeNode * sum_demand( LQX::SyntaxTreeNode *, const merge_pair& );
 #endif
-    virtual void accumulateDemand( BCMP::Model::Station& ) const;
-    static BCMP::Model::Station::Class accumulate_demand( const BCMP::Model::Station::Class&, const Task * );
+    static double sum_throughput( double augend, const Task * task ) { return augend + task->throughput(); }
+    
     /* Activities */
     
     unsigned generate();
@@ -202,6 +207,7 @@ public:
 
     virtual Task& label();
     virtual Task& labelBCMPModel( const BCMP::Model::Station::Class::map_t&, const std::string& class_name="" );
+    Task& labelQueueingNetwork( entryLabelFunc func, Label& label );
 
     virtual Task& rename();
     virtual Task& squish( std::map<std::string,unsigned>&, std::map<std::string,std::string>& );
@@ -237,7 +243,6 @@ public:
 
 private:
     size_t topologicalSort();
-    Task& labelQueueingNetwork( entryLabelFunc aFunc );
     unsigned countArcs( const callPredicate = 0 ) const;
     double countCalls( const callPredicate2 ) const;
 
@@ -313,7 +318,6 @@ public:
     bool canPrune() const;
     virtual Task& relink();
 #endif
-    virtual void accumulateDemand( BCMP::Model::Station& ) const;
 
 public:
     static const std::string __BCMP_station_name;

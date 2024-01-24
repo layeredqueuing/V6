@@ -1,6 +1,6 @@
 /* activity.cc	-- Greg Franks Thu Apr  3 2003
  *
- * $Id: activity.cc 16791 2023-07-27 11:21:46Z greg $
+ * $Id: activity.cc 16888 2023-12-08 12:18:20Z greg $
  */
 
 #include "activity.h"
@@ -412,31 +412,31 @@ Activity::findChildren( CallStack& callStack, const unsigned directPath, std::de
  */
 
 size_t
-Activity::findActivityChildren( std::deque<const Activity *>& activityStack, std::deque<const AndForkActivityList *>& forkStack, Entry * srcEntry, size_t depth, unsigned p, const double rate ) const
+Activity::findActivityChildren( Ancestors& ancestors ) const
 {
     /* Check for cyles. */
-    if ( std::find( activityStack.begin(), activityStack.end(), this ) != activityStack.end() ) {
-	throw cycle_error( activityStack );
+    if ( ancestors.find( this ) ) {
+	throw cycle_error( ancestors.getActivityStack() );
     }
-    activityStack.push_back( this );
+    unsigned int last_phase = ancestors.getPhase();	/* BUG 384 */
+    ancestors.push_activity( this );
 
-    size_t max_depth = std::max( depth+1, level() );
+    size_t max_depth = std::max( ancestors.depth()+1, level() );
     const_cast<Activity *>(this)->level( max_depth );
 
-    if ( repliesTo( srcEntry ) ) {
-	if ( p == 2 ) {
-	    getDOM()->runtime_error( LQIO::ERR_INVALID_REPLY_DUPLICATE, srcEntry->name().c_str() );
+    if ( repliesTo( ancestors.sourceEntry() ) ) {
+	if ( ancestors.getPhase() == 2 ) {
+	    getDOM()->runtime_error( LQIO::ERR_INVALID_REPLY_DUPLICATE, ancestors.sourceEntry()->name().c_str() );
 	}
-	if (  srcEntry->requestType() == request_type::SEND_NO_REPLY || srcEntry->requestType() == request_type::OPEN_ARRIVAL ) {
-	    getDOM()->runtime_error( LQIO::ERR_INVALID_REPLY_FOR_SNR_ENTRY, srcEntry->name().c_str() );
-	}
-	p = 2;
+	ancestors.setPhase( 2 );
     }
 
     if ( outputTo() ) {
-	max_depth = std::max( outputTo()->findActivityChildren( activityStack, forkStack, srcEntry, max_depth, p, rate ), max_depth );
+	max_depth = std::max( outputTo()->findActivityChildren( ancestors ), max_depth );
     }
-    activityStack.pop_back();
+
+    ancestors.pop_activity();
+    ancestors.setPhase( last_phase );			/* BUG 384 */
 
     return max_depth;
 }
@@ -449,7 +449,15 @@ Activity::findActivityChildren( std::deque<const Activity *>& activityStack, std
 const Activity&
 Activity::backtrack( const std::deque<const AndForkActivityList *>& forkStack, std::set<const AndForkActivityList *>& forkSet, std::set<const AndOrJoinActivityList *>& joinSet ) const
 {
-    if ( inputFrom() ) inputFrom()->backtrack( forkStack, forkSet, joinSet );
+    ActivityList * fork_list = inputFrom();
+    if ( fork_list != nullptr ) {
+	RepeatActivityList * loop_list = dynamic_cast<RepeatActivityList *>(fork_list);
+	if ( loop_list != nullptr ) {
+	    throw ActivityList::path_error( static_cast<const LQIO::DOM::Activity *>(getDOM()) );
+	} else {
+	    fork_list->backtrack( forkStack, forkSet, joinSet );
+	}
+    }
     return *this;
 }
 
@@ -487,7 +495,7 @@ Activity::aggregate( Entry * anEntry, const unsigned curr_p, unsigned& next_p, c
     }
     next_p = curr_p;
     if ( repliesTo( anEntry ) ) {
-	next_p = 2;		/* aFunc may clobber the repliesTo list, so check first. */
+	next_p = 2;		/* aFunc may clobber the repliesTo list, so checkfirst. */
     }
     double sum = (this->*aFunc)( anEntry, curr_p, rate );
     if ( outputTo() ) {
@@ -1218,7 +1226,7 @@ Activity::compareCoord( const Activity * a1, const Activity * a2 )
 
 /* ------------------------ Exception Handling ------------------------ */
 
-Activity::cycle_error::cycle_error( std::deque<const Activity *>& activityStack )
+Activity::cycle_error::cycle_error( const std::deque<const Activity *>& activityStack )
     : std::runtime_error( std::accumulate( std::next( activityStack.rbegin() ), activityStack.rend(), activityStack.back()->name(), fold  ) ),
       _depth( activityStack.size() )
 {

@@ -1,7 +1,7 @@
 /* -*- c++ -*-
  * layer.h	-- Greg Franks
  *
- * $Id: layer.h 16791 2023-07-27 11:21:46Z greg $
+ * $Id: layer.h 16888 2023-12-08 12:18:20Z greg $
  */
 
 #ifndef _LQN2PS_LAYER_H
@@ -18,12 +18,6 @@ class Label;
 class Task;
 class Phase;
 class Processor;
-namespace LQIO {
-    namespace DOM {
-	class Document;
-    }
-    class PMIF_Document;
-}
 
 class Layer
 {
@@ -129,7 +123,7 @@ public:
     std::ostream& printSubmodel( std::ostream& ) const;
     std::ostream& drawQueueingNetwork( std::ostream& ) const;
 #if JMVA_OUTPUT || QNAP2_OUTPUT
-    std::ostream& printBCMPQueueingNetwork( std::ostream& ) const;
+    const BCMP::Model& getBCMPModel() const { return _bcmp_model; }
 #endif
 
 private:
@@ -145,7 +139,7 @@ private:
 
     std::vector<Task *> _clients;		/* Only if doing a submodel 	*/
     mutable unsigned _chains;			/* Only set if doing a submodel */
-    BCMP::Model  _bcmp_model;			/* For queuing output		*/
+    BCMP::Model _bcmp_model;			/* For queuing output		*/
 };
 
 inline std::ostream& operator<<( std::ostream& output, const Layer& self ) { return self.print( output ); }

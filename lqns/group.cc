@@ -10,12 +10,13 @@
  * November, 2008
  *
  * ------------------------------------------------------------------------
- * $Id: group.cc 16802 2023-08-21 19:51:34Z greg $
+ * $Id: group.cc 16908 2024-01-23 20:11:48Z greg $
  * ------------------------------------------------------------------------
  */
 
 #include "lqns.h"
 #include <cmath>
+#include <functional>
 #include <numeric>
 #include <lqio/error.h>
 #include <lqio/dom_group.h>
@@ -96,9 +97,9 @@ double
 Group::utilization() const
 {
     if ( Pragma::disableProcessorCFS() ) {
-	return std::accumulate( tasks().begin(), tasks().end(), 0., add_using<double,Task>( &Task::processorUtilization ) );
+	return std::accumulate( tasks().begin(), tasks().end(), 0., Task::sum( &Task::processorUtilization ) );
     } else {
-	return std::accumulate( tasks().begin(), tasks().end(), 0., add_using<double,Task>( &Task::getGroupUtilization ) );
+	return std::accumulate( tasks().begin(), tasks().end(), 0., Task::sum( &Task::getGroupUtilization ) );
     }
 }
 
@@ -221,7 +222,7 @@ Group::setSpareStatus()
 double 
 Group::getCFSDelay() const
 {
-    return std::accumulate( tasks().begin(), tasks().end(), 0., add_using<double,Task>( &Task::getCFSDelay ) );
+    return std::accumulate( tasks().begin(), tasks().end(), 0., Task::sum( &Task::getCFSDelay ) );
 }
 
 

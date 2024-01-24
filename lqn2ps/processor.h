@@ -9,7 +9,7 @@
  * November, 1994
  *
  * ------------------------------------------------------------------------
- * $Id: processor.h 15258 2021-12-25 13:21:14Z greg $
+ * $Id: processor.h 16888 2023-12-08 12:18:20Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -52,12 +52,14 @@ public:
     size_t taskDepth() const;
     double meanLevel() const;
 	
+    double throughput() const;
     virtual double utilization() const;
 
     /* Queries */
 	
     bool hasPriorities() const;
     bool isInteresting() const;
+    bool clientsCanQueue() const;
     virtual bool isProcessor() const { return true; }
     virtual bool isPureServer() const { return true; }
 
@@ -97,8 +99,10 @@ public:
 
     virtual const Processor& draw( std::ostream& output ) const;
 
-protected:
-    virtual void accumulateDemand( BCMP::Model::Station& ) const;
+    /*+ BUG_323. */
+    void accumulateDemand( const Entry& entry, const std::string& class_name, BCMP::Model::Station& station ) const;
+    void accumulateResponseTime( const Entry& entry, const std::string& class_name, BCMP::Model::Station& station ) const;
+    /*- BUG_323. */
 
 public:
     static std::ostream& printHeader( std::ostream& );
@@ -111,7 +115,6 @@ private:
     Processor& operator=( const Processor& );
 
     Processor& moveDst();
-    bool clientsCanQueue() const;
 
 private:
     std::set<Task *> _tasks;

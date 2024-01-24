@@ -1,5 +1,5 @@
 /*
- *  $Id: srvn_input.cpp 16799 2023-08-21 18:41:37Z greg $
+ *  $Id: srvn_input.cpp 16905 2024-01-22 11:55:41Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -231,13 +231,14 @@ srvn_add_entry (const char * entry_name, const void * entry_list)
     /* This method adds an entry for the current name, with given next entry */
 
     std::vector<LQIO::DOM::Entry *> * entries = const_cast<std::vector<LQIO::DOM::Entry *>*>(static_cast<const std::vector<LQIO::DOM::Entry *> *>(entry_list));
+    if ( !entries ) {
+	entries = new std::vector<LQIO::DOM::Entry *>;
+    }
+
     LQIO::DOM::Entry* entry = LQIO::DOM::__document->getEntryByName(entry_name);
     if ( entry != nullptr  ) {
 	entry->input_error( LQIO::ERR_DUPLICATE_SYMBOL );
     } else {
-	if ( !entries ) {
-	    entries = new std::vector<LQIO::DOM::Entry *>;
-	}
 	entry = new LQIO::DOM::Entry(LQIO::DOM::__document, entry_name );
 	entries->push_back(entry);
 	LQIO::DOM::__document->addEntry(entry);

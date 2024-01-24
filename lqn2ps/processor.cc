@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: processor.cc 16791 2023-07-27 11:21:46Z greg $
+ * $Id: processor.cc 16888 2023-12-08 12:18:20Z greg $
  *
  * Everything you wanted to know about a task, but were afraid to ask.
  *
@@ -16,13 +16,12 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <lqx/SyntaxTree.h>
 #include <lqio/dom_document.h>
 #include <lqio/dom_processor.h>
 #include <lqio/dom_task.h>
 #include <lqio/error.h>
 #include <lqio/labels.h>
-#include <lqio/../../srvn_gram.h>
-#include <lqio/srvn_spex.h>
 #include "call.h"
 #include "entry.h"
 #include "errmsg.h"
@@ -138,6 +137,17 @@ Processor::quantum() const
 }
 
 /* -------------------------- Result Queries -------------------------- */
+
+/*
+ * Derive from the tasks.
+ */
+
+double
+Processor::throughput() const
+{
+    return std::accumulate( tasks().begin(), tasks().end(), 0., Task::sum_throughput );
+}
+
 
 double 
 Processor::utilization() const
@@ -389,11 +399,15 @@ Processor&
 Processor::label()
 {
     *_label << name();
-    if ( Flags::print_input_parameters() && queueing_output() ) {
-	for ( std::set<Task *>::const_iterator nextTask = tasks().begin(); nextTask != tasks().end(); ++nextTask ) {
-	    const Task * aTask = *nextTask;
-	    for ( std::vector<Entry *>::const_iterator entry = aTask->entries().begin(); entry != aTask->entries().end(); ++entry ) {
-		_label->newLine() << (*entry)->name() << " [" << service_time_of( **entry ) << "]";
+    if ( queueing_output() ) {
+	if ( Flags::print_input_parameters() ) {
+	    for ( std::set<Task *>::const_iterator task = tasks().begin(); task != tasks().end(); ++task ) {
+		if ( utilization() > 0. ) {
+		    /* We have results... */
+		    (*task)->labelQueueingNetwork( &Entry::labelQueueingNetworkProcessorResponseTime, *_label );
+		} else {
+		    (*task)->labelQueueingNetwork( &Entry::labelQueueingNetworkProcessorServiceTime, *_label );
+		}
 	    }
 	}
     } else {
@@ -423,10 +437,30 @@ Processor::label()
 	    }
 	}
     }
-    if ( Flags::have_results && Flags::print[PROCESSOR_UTILIZATION].opts.value.b ) {
-	_label->newLine() << begin_math( &Label::rho ) << "=" << opt_pct(utilization()) << end_math();
-	if ( hasBogusUtilization() && Flags::colouring() != Colouring::NONE ) {
-	    _label->colour(Graphic::Colour::RED);
+    if ( Flags::have_results ) {
+ 	bool print_goop = false;
+	if ( Flags::print[TASK_THROUGHPUT].opts.value.b ) {
+	    _label->newLine();
+	    if ( throughput() == 0.0 && Flags::colouring() != Colouring::NONE ) {
+		_label->colour( Graphic::Colour::RED );
+	    }
+	    *_label << begin_math( &Label::lambda ) << "=" << opt_pct(throughput());
+	    print_goop = true;
+	}
+	if ( Flags::print[PROCESSOR_UTILIZATION].opts.value.b ) {
+	    if ( print_goop ) {
+		*_label << ',';
+	    } else {
+		_label->newLine() << begin_math();
+		print_goop = true;
+	    }
+	    *_label << _rho() << "=" << opt_pct(utilization());
+	    if ( hasBogusUtilization() && Flags::colouring() != Colouring::NONE ) {
+		_label->colour(Graphic::Colour::RED);
+	    }
+	}
+	if ( print_goop ) {
+	    *_label << end_math();
 	}
     }
     return *this;
@@ -566,61 +600,27 @@ Processor::draw( std::ostream& output ) const
 }
 
 
+/*+ BUG_323 */
+
 /* 
- * Find the total demand by each class (client tasks in submodel),
- * then change back to visits/service time when needed.  Demands are
+ * Find the total demand by each class (client tasks in submodel), then change back to visits/service time when needed.  Demands are
  * stored in entries of tasks.
  */
 
 void
-Processor::accumulateDemand( BCMP::Model::Station& station ) const
+Processor::accumulateDemand( const Entry& entry, const std::string& class_name, BCMP::Model::Station& station ) const
 {
-    typedef std::pair<const std::string,BCMP::Model::Station::Class> demand_item;
-    typedef std::map<const std::string,BCMP::Model::Station::Class> demand_map;
-    
-    demand_map& classes = const_cast<demand_map&>(station.classes());
-    
-    for ( std::vector<GenericCall *>::const_iterator call = callers().begin(); call != callers().end(); ++call ) {
-	const ProcessorCall * src = dynamic_cast<const ProcessorCall *>(*call);
-	if ( !src ) continue;
-
-        const std::pair<demand_map::iterator,bool> result = classes.insert( demand_item( src->srcTask()->name(), BCMP::Model::Station::Class() ) );	/* null entry */
-	demand_map::iterator item = result.first;
-	
-	if ( src->callType() == LQIO::DOM::Call::Type::NULL_CALL ) {
-	    /* If it is generic processor call then accumulate by entry */
-	    item->second.accumulate( Task::accumulate_demand( BCMP::Model::Station::Class(), src->srcTask() ) );
-	} else {
-	    /* Otherwise, we've been cloned, so get the values */
-	    item->second.accumulate( BCMP::Model::Station::Class(src->visits(), src->srcEntry()->serviceTime()) );
-	}
-    }
-
-    /* Search for SPEX observations. */
-    const LQIO::Spex::obs_var_tab_t& observations = LQIO::Spex::observations();
-    for ( LQIO::Spex::obs_var_tab_t::const_iterator obs = observations.begin(); obs != observations.end(); ++obs ) {
-	if ( obs->first == getDOM() ) {
-	    switch ( obs->second.getKey() ) {
-	    case KEY_THROUGHPUT:  station.insertResultVariable( BCMP::Model::Result::Type::THROUGHPUT, obs->second.getVariableName() ); break;
-	    case KEY_UTILIZATION: station.insertResultVariable( BCMP::Model::Result::Type::UTILIZATION, obs->second.getVariableName() ); break;
-	    }
-	} else {
-	    for ( demand_map::iterator k = classes.begin(); k != classes.end(); ++k ) {
-		const LQIO::DOM::Task * task = getDOM()->getDocument()->getTaskByName( k->first );
-		if ( obs->first == task ) {
-		    switch ( obs->second.getKey() ) {
-		    case KEY_PROCESSOR_UTILIZATION: k->second.insertResultVariable( BCMP::Model::Result::Type::UTILIZATION, obs->second.getVariableName() ); break;
-		    }
-		} else if ( dynamic_cast<const LQIO::DOM::Phase *>(obs->first) && dynamic_cast<const LQIO::DOM::Phase *>(obs->first)->getSourceEntry()->getTask() == task ) {
-		    BCMP::Model::Station::Class& result = station.classAt(k->first);
-		    switch ( obs->second.getKey() ) {
-		    case KEY_SERVICE_TIME: result.insertResultVariable( BCMP::Model::Result::Type::RESIDENCE_TIME, obs->second.getVariableName() ); break;	/* by class? */
-		    }
-		}
-	    }
-	}
-    }
+    BCMP::Model::Station::Class& k = station.classAt(class_name);
+    LQX::ConstantValueExpression * visits = new LQX::ConstantValueExpression(entry.visitProbability());
+    k.accumulate( BCMP::Model::Station::Class( visits, entry.serviceTime()) );
 }
+
+void
+Processor::accumulateResponseTime( const Entry& entry, const std::string& class_name, BCMP::Model::Station& station ) const
+{
+    accumulateDemand( entry, class_name, station );
+}
+/*- BUG_323 */
 
 /*----------------------------------------------------------------------*/
 /*		 	   Called from yyparse.  			*/

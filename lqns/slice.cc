@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: slice.cc 14882 2021-07-07 11:09:54Z greg $
+ * $Id: slice.cc 16805 2023-08-22 20:04:14Z greg $
  *
  * Everything you wanted to know about a slice, but were afraid to ask.
  *
@@ -270,7 +270,7 @@ Slice_Info::prStartStates( Slice_Info rate[], const Entry& entC, const Entry& en
     /* Have to further adjust starting probabilities. */
 
     for ( unsigned j = 2; j <= entD.maxPhase(); ++j ) {
-	const double x_j = entD.elapsedTimeForPhase(j);
+	const double x_j = entD.residenceTimeForPhase(j);
 			
 	for ( i = 0; i < entC.maxPhase(); ++i ) {
 	    rate[i].setRates( x_j, Probability(1.0) );

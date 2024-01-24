@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: lqn2ps.cc 16791 2023-07-27 11:21:46Z greg $
+ * $Id: lqn2ps.cc 16888 2023-12-08 12:18:20Z greg $
  *
  * Command line processing.
  *
@@ -102,6 +102,7 @@ std::vector<Options::Type> Flags::print = {
     { "waiting",               'w', nullptr,               {&Options::result,       true},              "Print waiting time results." },
     { "service-exceeded",      'x', nullptr,               {&Options::result,       false},             "Print maximum execution time exceeded." },
     { "comment",         0x300+'#', nullptr,               {&Options::result,       false},             "Print model comment." },
+    { "description",	 0x300+'$', nullptr,		   {&Options::result,       false},             "Print model description." },
     { "solver-information", 0x300+'!', nullptr,            {&Options::none,         0},                 "Print solver information." },
     { "ignore-errors",   0x200+'E', nullptr,               {&Options::none,         0},                 "Ignore errors during model checking phase." },
     { "task-service-time", 512+'P', nullptr,               {&Options::none,         0},                 "Print task service times (for --tasks-only)." },
@@ -217,7 +218,7 @@ main(int argc, char *argv[])
     char * options;
     std::string output_file_name = "";
 
-    sscanf( "$Date: 2023-07-27 07:21:46 -0400 (Thu, 27 Jul 2023) $", "%*s %s %*s", copyrightDate );
+    sscanf( "$Date: 2023-12-08 07:18:20 -0500 (Fri, 08 Dec 2023) $", "%*s %s %*s", copyrightDate );
 
     static std::string opts = "";
 #if HAVE_GETOPT_H
@@ -316,7 +317,7 @@ main(int argc, char *argv[])
 		if ( parse_file_name != "-" && access( parse_file_name.c_str(), R_OK ) != 0 ) {
 		    std::cerr << LQIO::io_vars.lq_toolname << ": Cannot open parseable output file " << parse_file_name << " - "
 			      << strerror( errno ) << std::endl;
-		    exit ( 1 );
+		    exit( 1 );
 		}
 		break;
 
@@ -337,6 +338,7 @@ main(int argc, char *argv[])
 
 	    case 0x200+'f':
 		Flags::flatten_submodel = true;
+		Flags::print_alignment_box = false;	/* No need */
 		break;
 
 	    case 0x200+'F':
@@ -344,13 +346,13 @@ main(int argc, char *argv[])
 		break;
 
 	    case 0x200+'G':
-		Flags::set_run_lqx( true );		    /* Run lqx */
+		Flags::set_run_lqx( true );		/* Run lqx */
 		Flags::dump_graphviz 		= true;
 		break;
 
 	    case 'H':
 		usage();
-		exit(0);
+		exit( 0 );
 
 	    case 0x200+'h':
 		Flags::set_processors( Processors::ALL );
@@ -496,7 +498,7 @@ main(int argc, char *argv[])
 
 	    case 0x200+'M':
 		man();
-		exit(0);
+		exit( 0 );
 
 	    case 0x200+'m':
 		Flags::set_processors( Processors::ALL );
@@ -669,6 +671,11 @@ main(int argc, char *argv[])
 		Flags::print[MODEL_COMMENT].opts.value.b = enable;
 		break;
 
+	    case 0x200+'$':
+	    case 0x300+'$':
+		Flags::print[MODEL_DESCRIPTION].opts.value.b = enable;
+		break;
+		
 	    case 0x200+'!':
 	    case 0x300+'!':
 		Flags::print[SOLVER_INFO].opts.value.b = enable;
@@ -705,6 +712,13 @@ main(int argc, char *argv[])
     if ( Flags::bcmp_model ) {
 	Flags::surrogates = false;					/* Never add surrogates */
     }
+
+    if ( (Flags::output_format() == File_Format::QNAP2 || Flags::output_format() == File_Format::JMVA) ) {
+	if ( submodel_output() && !queueing_output() ) {
+	    Flags::set_queueing_model( submodel_output() );		/* Silently fix. */
+	    Flags::set_submodel( 0 );
+	}
+    } 
 
     if ( Flags::annotate_input && !input_output() ) {
 	std::cerr << LQIO::io_vars.lq_toolname << ": -Z " << Options::special.at(Special::ANNOTATE)
@@ -851,11 +865,12 @@ main(int argc, char *argv[])
 	}
     }
 
+    int status = 0;
     if ( optind == argc ) {
-	Model::create( "-", pragmas, output_file_name, parse_file_name, 1 );
+	status = Model::create( "-", pragmas, output_file_name, parse_file_name, 1 );
     } else {
 	for ( int i = 1; optind < argc; ++optind, ++i ) {
-	    Model::create( argv[optind], pragmas, output_file_name, parse_file_name, i );
+	    status = Model::create( argv[optind], pragmas, output_file_name, parse_file_name, i ) | status;
 	}
     }
 
@@ -871,7 +886,7 @@ main(int argc, char *argv[])
 	if ( opt->name != nullptr ) free( const_cast<char *>(opt->name) );
     }
 #endif
-    return 0;
+    exit( status );
 }
 
 #if HAVE_GETOPT_H

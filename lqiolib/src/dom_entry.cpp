@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_entry.cpp 16790 2023-07-27 11:21:15Z greg $
+ *  $Id: dom_entry.cpp 16842 2023-11-06 16:04:56Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -141,18 +141,17 @@ namespace LQIO {
 	{
 	    std::map<unsigned, Phase*>::iterator phase = _phases.find(p);
 	    if ( phase == _phases.end()) throw std::domain_error( "Phase not found" );
+
 	    delete phase->second;
+	    _phases.erase(phase);	    /* Erase the item in the map. */
 
 	    /* Reset the maxPhase */
-	    if ( phase->first == _maxPhase ) {
+	    if ( p == _maxPhase ) {
 		_maxPhase = 0;
 		for ( phase = _phases.begin(); phase != _phases.end(); ++phase ) {
 		    _maxPhase = std::max( phase->first, _maxPhase );
 		}
 	    }
-
-	    /* Erase the item in the map. */
-	    _phases.erase(phase);
 	}
 	
 	void Entry::setPhase( unsigned p, Phase * phase )

@@ -9,13 +9,15 @@
  *
  * November, 1994
  *
- * $Id: entry.h 16804 2023-08-21 20:22:29Z greg $
+ * $Id: entry.h 16911 2024-01-23 20:35:04Z greg $
  *
  * ------------------------------------------------------------------------
  */
 
 #ifndef LQNS_ENTRY_H
 #define LQNS_ENTRY_H
+
+//#define BUG_425 1
 
 #include <set>
 #include <vector>
@@ -42,6 +44,7 @@ class MVASubmodel;
 class Model;
 class Model;
 class Processor;
+class Server;
 class Submodel;
 class Task;
 typedef Vector<unsigned> ChainVector;
@@ -62,37 +65,28 @@ public:
     enum class RequestType { NOT_CALLED, RENDEZVOUS, SEND_NO_REPLY, OPEN_ARRIVAL };
 
     
-    class CallExec {
+    class CallsPerform {
     public:
-	CallExec( callFunc f, unsigned submodel, unsigned k=0 ) : _f(f), _submodel(submodel), _k(k)  {}
-	void operator()( Entry * object ) const { object->callsPerform( _f, _submodel, _k ); }
+	CallsPerform( Call::Perform& g ) : _g(g)  {}
+	void operator()( Entry * object ) const { object->callsPerform( _g ); }
 	
-	const callFunc f() const { return _f; }
-	unsigned submodel() const { return _submodel; }
-	unsigned k() const { return _k; }
-
     private:
-	const callFunc _f;
-	const unsigned _submodel;
-	const unsigned _k;
+	Call::Perform& _g;
     };
 
     /*
      * Used to run f over all entries (and threads).  Each thread has it's own chain.
      */
     
-    class CallExecWithChain {
+    class CallsPerformWithChain {
     public:
-	CallExecWithChain( callFunc f, unsigned submodel, const ChainVector& chains, unsigned int i ) : _f(f), _submodel(submodel), _chains(chains), _i(i)  {}
-	void operator()( Entry * object ) const { object->callsPerform( _f, _submodel, _chains[_i] ); _i += 1; }
-	
-	const callFunc f() const { return _f; }
-	unsigned submodel() const { return _submodel; }
+	CallsPerformWithChain( Call::Perform& g, const ChainVector& chains, unsigned int i ) : _g(g), _chains(chains), _i(i)  {}
+
+	void operator()( Entry * object );
 	unsigned int index() const { return _i; }
 
     private:
-	const callFunc _f;
-	const unsigned _submodel;
+	Call::Perform& _g;
 	const ChainVector& _chains;
 	mutable unsigned int _i;
     };
@@ -112,6 +106,28 @@ public:
 	const Entry * _server_entry;
     };
     
+    class SaveServerResults {
+    public:
+	SaveServerResults( const MVASubmodel& submodel, const Server& station, const Entity& server ) : _submodel(submodel), _station(station), _server(server) {}
+	void operator()( Entry * entry ) const;
+    private:
+	const MVASubmodel& _submodel;
+	const Server& _station;			/* May be the base if replicated	*/
+	const Entity& _server;			/* The base or replica			*/
+    };
+
+    class SaveClientResults {
+    public:
+	SaveClientResults( const MVASubmodel& submodel, const Server& station, unsigned int chain, const Task& client ) : _submodel(submodel), _station(station), _k(chain), _client(client) {}
+	void operator()( Entry * entry ) const;
+    private:
+	const MVASubmodel& _submodel;
+	const Server& _station;			/* May be the base if replicated	*/
+	const unsigned int _k;
+	const Task& _client;			/* The base or replica			*/
+    };
+    
+
     struct set_real_customers {
 	set_real_customers( const MVASubmodel& submodel, const Entity * server, unsigned int k ) : _submodel(submodel), _server(server),  _k(k) {}
 	void operator()( const Entry * entry ) const;
@@ -156,10 +172,30 @@ public:
     };
     
 
+    struct sum {
+	typedef double (Entry::*funcPtr)() const;
+	sum( funcPtr f ) : _f(f) {}
+	double operator()( double l, const Entry* r ) const { return l + (r->*_f)(); }
+	double operator()( double l, const Entry& r ) const { return l + (r.*_f)(); }
+    private:
+	const funcPtr _f;
+    };
+
+    struct max
+    {
+	typedef unsigned int (Entry::*funcPtr)() const;
+	max( funcPtr f ) : _f(f) {}
+	unsigned int operator()( unsigned int l, const Entry* r ) const { return std::max( l, (r->*_f)()); }
+	unsigned int operator()( unsigned int l, const Entry& r ) const { return std::max( l, (r.*_f)()); }
+    private:
+	const funcPtr _f;
+    };
+
+
 protected:
     struct add_wait {
 	add_wait( unsigned int submodel ) : _submodel(submodel) {}
-	double operator()( double sum, const Phase& phase ) const { return sum + phase._wait[_submodel]; }
+	double operator()( double sum, const Phase& phase ) const { return sum + phase.getWaitTime( _submodel ); }
     private:
 	const unsigned int _submodel;
     };
@@ -248,15 +284,13 @@ public:
     unsigned findChildren( Call::stack&, const bool ) const;
     Entry& initCustomers( std::deque<const Task *>& stack, unsigned int customers );
     virtual Entry& initProcessor() = 0;
-    virtual Entry& initWait() = 0;
-    Entry& initThroughputBound();
     Entry& initServiceTime();
 #if PAN_REPLICATION
-    Entry& initReplication( const unsigned );	// REPL
+    Entry& setSurrogateDelaySize( size_t );
 #endif
     Entry& resetInterlock();
     Entry& createInterlock();
-    Entry& initInterlock( Interlock::CollectTable& path );
+    void initializeInterlock( Interlock::CollectTable& path );
 
     /* Instance Variable access */
 
@@ -296,7 +330,7 @@ public:
     virtual double openWait() const { return 0.; }
     LQIO::DOM::Entry* getDOM() const { return _dom; }
 #if PAN_REPLICATION
-    Entry& resetReplication();
+    Entry& clearSurrogateDelay();
 #endif
     unsigned getReplicaNumber() const { return _replica_number; }
 	
@@ -343,8 +377,8 @@ public:
 #endif
     double getProcWait( const unsigned p, int submodel )  { return _phase[p].getProcWait(submodel, 0) ;}	
 
-    double elapsedTime() const { return _total.elapsedTime(); }			/* Found through deltaWait  */
-    double elapsedTimeForPhase( const unsigned int p) const { return _phase[p].elapsedTime(); }	/* For server service times */
+    double residenceTime() const { return _total.residenceTime(); }			/* Found through deltaWait  */
+    double residenceTimeForPhase( const unsigned int p ) const { return _phase[p].residenceTime(); }	/* For server service times */
 
     double varianceForPhase( const unsigned int p ) const { return _phase[p].variance(); }
     double variance() const { return _total.variance(); }
@@ -361,6 +395,7 @@ public:
 
     void add_call( unsigned p, const LQIO::DOM::Call * dom );
     void sliceTime( const Entry& dst, Slice_Info phase_info[], double y_xj[] ) const;
+    void computeThroughputBound();
     virtual Entry& computeVariance() { return *this; }
     virtual Entry& updateWait( const Submodel&, const double ) = 0;
 #if PAN_REPLICATION
@@ -378,7 +413,7 @@ public:
     Entry& aggregateReplication( const Vector< VectorMath<double> >& );
 #endif
 
-    const Entry& callsPerform( callFunc aFunc, const unsigned submodel, const unsigned k ) const;
+    const Entry& callsPerform( Call::Perform& ) const;
 
     /* Dynamic Updates / Late Finalization */
     /* In order to integrate LQX's support for model changes we need to have a way  */
@@ -488,7 +523,6 @@ public:
     virtual Entry * clone( unsigned int replica, const AndOrForkActivityList * fork=nullptr ) const { return new TaskEntry( *this, replica ); }
 
     virtual TaskEntry& initProcessor();
-    virtual TaskEntry& initWait();
 
     virtual TaskEntry& owner( const Entity * aTask ) { _task = aTask; return *this; }
     virtual const Entity * owner() const { return _task; }

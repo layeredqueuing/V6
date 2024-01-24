@@ -11,7 +11,7 @@
  * May, 2009
  *
  * ------------------------------------------------------------------------
- * $Id: processor.h 16800 2023-08-21 19:23:24Z greg $
+ * $Id: processor.h 16805 2023-08-22 20:04:14Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -54,6 +54,7 @@ protected:
     
 public:
     /* Initialization */
+    virtual void initializeServer();
 
     virtual bool check() const;
     virtual Processor& configure( const unsigned );
@@ -78,10 +79,11 @@ public:
 
     /* Model Building. */
 
+    virtual Entity* mapToReplica( size_t ) const;
     Processor& expand();
     
     Server * makeServer( const unsigned nChains );
-    virtual double computeUtilization( const MVASubmodel& );
+    virtual double computeUtilization( const MVASubmodel&, const Server& );
 
     /* DOM insertion of results */
 

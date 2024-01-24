@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- *  $Id: jmva_document.h 16718 2023-05-12 12:25:33Z greg $
+ *  $Id: jmva_document.h 16905 2024-01-22 11:55:41Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  */
@@ -15,6 +15,7 @@
 #if HAVE_STRINGS_H
 #include <strings.h>
 #endif
+#include "bcmp_document.h"
 #include "qnio_document.h"
 
 // undef UTILIZATION_BOUNDS
@@ -132,6 +133,7 @@ namespace QNIO {
 	void setLQXProgramLineNumber( const unsigned n ) { _lqx_program_line_number = n; }
 	const unsigned getLQXProgramLineNumber() const { return _lqx_program_line_number; }
 	virtual std::vector<std::string> getUndefinedExternalVariables() const;
+	virtual unsigned getSymbolExternalVariableCount() const;
 	const std::deque<Comprehension>& whatif_statements() const { return comprehensions(); }
 
 	virtual void registerExternalSymbolsWithProgram(LQX::Program* program);
@@ -143,7 +145,7 @@ namespace QNIO {
 
 	std::ostream& print( std::ostream& ) const;
 	std::ostream& exportModel( std::ostream& ) const;
-	void plot( BCMP::Model::Result::Type, const std::string&, LQIO::GnuPlot::Format format=LQIO::GnuPlot::Format::TERMINAL );
+	void plot( BCMP::Model::Result::Type, const std::string& );
 	bool plotPopulationMix() const { return !_N1.empty() && !_N2.empty(); }
 
     private:
@@ -331,8 +333,6 @@ namespace QNIO {
 	    size_t _population;
 	    std::vector<std::pair<double,double>> _N;
 	};
-
-	bool convertToLQN( LQIO::DOM::Document& ) const;
 
 	std::ostream& printModel( std::ostream& ) const;
 	std::ostream& printSPEX(  std::ostream& ) const;

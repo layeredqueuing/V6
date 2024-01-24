@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_document.cpp 16803 2023-08-21 19:55:46Z greg $
+ *  $Id: dom_document.cpp 16887 2023-12-07 18:08:01Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -10,13 +10,14 @@
 #include <config.h>
 #endif
 #include "dom_document.h"
+#include <algorithm>
+#include <cmath>
+#include <cstdlib>
+#include <cstring>
 #include <fstream>
 #include <functional>
-#include <cstring>
-#include <cstdlib>
-#include <cmath>
-#include <algorithm>
 #include <numeric>
+#include <sstream>
 #if HAVE_SYS_UTSNAME_H
 #include <sys/utsname.h>
 #endif
@@ -38,6 +39,7 @@
 #include "dom_task.h"
 #include "filename.h"
 #include "json_document.h"
+#include "qnap2_document.h"
 #include "srvn_input.h"
 #include "srvn_output.h"
 #include "srvn_results.h"
@@ -87,7 +89,7 @@ namespace LQIO {
 #endif
 	    { InputFormat::JABA,	OutputFormat::JABA },
 	    { InputFormat::JMVA,	OutputFormat::JMVA },
-	    { InputFormat::QNAP2,	OutputFormat::QNAP2 }
+	    { InputFormat::QNAP2,	OutputFormat::TXT }
 	};
 	const std::map<const std::string,const Document::InputFormat> Document::__extensions_input = {
 	    { "in",			InputFormat::LQN },
@@ -532,6 +534,25 @@ namespace LQIO {
 	    return *this;
 	}
 
+	Document& Document::setResultDescription()
+	{
+	    _resultDescription = LQIO::io_vars.lq_toolname + " " + LQIO::io_vars.lq_version + " solution for " + __input_file_name;
+	    if ( getSymbolExternalVariableCount() > 0 ) {
+		_resultDescription += ": ";
+		std::ostringstream ss;
+		printExternalVariables( ss );
+		_resultDescription += ss.str();
+	    }
+	    _resultDescription += ".";
+	    return *this;
+	}
+
+	Document& Document::setResultDescription( const std::string& resultDescription )
+	{
+	    _resultDescription = resultDescription;
+	    return *this;
+	}
+
 	Document& Document::setResultConvergenceValue(double resultConvergenceValue)
 	{
 	    _hasResults = true;
@@ -830,6 +851,10 @@ namespace LQIO {
 		rc = JSON_Document::load( *document, input_filename, errorCode, load_results );
 		break;
 
+	    case InputFormat::QNAP2:
+		rc = QNIO::QNAP2_Document::load( *document, input_filename );
+		break;
+
 	    default:
 		rc = false;
 		break;
@@ -911,12 +936,9 @@ namespace LQIO {
 	    const std::string directory_name = LQIO::Filename::createDirectory( Filename::Filename::isFileName( output_file_name ) ? output_file_name : __input_file_name, lqx_output );
 
 	    /* Set output format from input, or if LQN and LQX then force to XML. */
-
-	    if ( output_format == OutputFormat::DEFAULT ) {
-		size_t pos = output_file_name.find_last_of( "." );
-		if ( getLQXProgram() != nullptr || (getInputFormat() != InputFormat::LQN && (output_file_name.empty() || (pos != std::string::npos && output_file_name.substr( pos ) != ".out")) ) ) {
-		    output_format = __input_to_output_format.at( getInputFormat() );
-		}
+    
+	    if ( output_format == OutputFormat::DEFAULT && (getInputFormat() != InputFormat::LQN || getLQXProgram() != nullptr) ) {
+		output_format = __input_to_output_format.at( getInputFormat() );
 	    }
 
 	    /* override is true for '-p -o filename.out when filename.in' == '-p filename.in' */
@@ -1062,6 +1084,17 @@ namespace LQIO {
 	Document::print( std::ostream& output, const OutputFormat format ) const
 	{
 	    switch ( format ) {
+	    case OutputFormat::DEFAULT:
+	    case OutputFormat::LQN: {
+		SRVN::Output srvn( *this, _entities );
+		srvn.print( output );
+		break;
+	    }
+	    case OutputFormat::PARSEABLE:{
+		SRVN::Parseable srvn( *this, _entities );
+		srvn.print( output );
+		break;
+	    }
 	    case OutputFormat::RTF: {
 		SRVN::RTF srvn( *this, _entities );
 		srvn.print( output );
@@ -1079,11 +1112,8 @@ namespace LQIO {
 		json.serializeDOM( output );
 		break;
 	    }
-	    default: {
-		SRVN::Output srvn( *this, _entities );
-		srvn.print( output );
-		break;
-	    }
+	    default:
+		abort();
 	    }
 
 	    return output;

@@ -11,7 +11,7 @@
  * July 2007
  *
  * ------------------------------------------------------------------------
- * $Id: activity.cc 16802 2023-08-21 19:51:34Z greg $
+ * $Id: activity.cc 16805 2023-08-22 20:04:14Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -391,15 +391,16 @@ Activity::collect_calls( std::deque<const Activity *>& activityStack, CallInfo::
  */
 
 void
-Activity::callsPerform( const CallExec& exec ) const
+Activity::callsPerform( Call::Perform& operation ) const
 {
-    Phase::callsPerform( exec );
+    Phase::callsPerform( operation );
 
     if ( _nextJoin ) {
-	if ( repliesTo( exec.entry() ) ) {
-	    _nextJoin->callsPerform( Phase::CallExec( exec, exec.getRate(), 2 ) );
+	if ( repliesTo( operation.entry() ) ) {
+	    Call::Perform g( operation, operation.rate(), 2 );
+	    _nextJoin->callsPerform( g );
 	} else {
-	    _nextJoin->callsPerform( exec );
+	    _nextJoin->callsPerform( operation );
 	}
     }
 }

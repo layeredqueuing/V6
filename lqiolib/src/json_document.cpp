@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: json_document.cpp 16790 2023-07-27 11:21:15Z greg $
+ * $Id: json_document.cpp 16838 2023-11-05 22:15:11Z greg $
  *
  * Read in JSON input files.
  *
@@ -697,8 +697,6 @@ namespace LQIO {
 	    { Xcoeff_of_var_sq,	    ImportEntry( &Phase::setCoeffOfVariationSquared ) },
 	    { Xdeterministic,	    ImportEntry( &Phase::setPhaseTypeFlag ) },
 	    { Xopen_arrival_rate,   ImportEntry( &Entry::setOpenArrivalRate ) },
-	    { Xpriority,	    ImportEntry( &Entry::setEntryPriority ) },
-	    { Xprob,		    ImportEntry( &Entry::setVisitProbability) },
 	    { Xservice_time,	    ImportEntry( &Phase::setServiceTime ) },
 	    { Xthink_time,	    ImportEntry( &Phase::setThinkTime ) },
 	    { Xforwarding,	    ImportEntry( &JSON_Document::handleCall, Call::Type::FORWARD ) },
@@ -3097,9 +3095,6 @@ namespace LQIO {
 	    }
 	    if ( entry.getEntryPriority() ) {
 		_output << next_attribute( Xpriority, *entry.getEntryPriority() );
-	    }
-	    if ( entry.getVisitProbability() ) {
-                _output << next_attribute( Xprob, *entry.getVisitProbability() );
 	    }
 
 	    switch ( entry.getSemaphoreFlag() ) {

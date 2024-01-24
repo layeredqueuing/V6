@@ -1,6 +1,6 @@
 /* open.cc	-- Greg Franks Tue Feb 18 2003
  *
- * $Id: open.cc 16791 2023-07-27 11:21:46Z greg $
+ * $Id: open.cc 16906 2024-01-22 12:02:11Z greg $
  */
 
 #include "lqn2ps.h"
@@ -23,7 +23,7 @@ OpenArrivalSource::OpenArrivalSource( Entry * source )
     : Task( 0, 0, 0, std::vector<Entry *>() )
 {
     _entries.push_back(source);		/* Owner of entry is orginal task, not this task */
-    myPaths = source->paths();
+    _paths = source->paths();
     assert ( source->requestType() == request_type::OPEN_ARRIVAL );
     OpenArrival * call = new OpenArrival(this,source);
     addSrcCall( call );
@@ -102,12 +102,12 @@ OpenArrivalSource::removeSrcCall( OpenArrival * call )
 bool
 OpenArrivalSource::isInOpenModel( const std::vector<Entity *>& servers ) const
 {
-    return std::any_of( servers.begin(), servers.begin(), EQ<Element>(myEntry().owner()) );
+    return std::any_of( servers.begin(), servers.end(), EQ<Element>(myEntry().owner()) );
 }
 
 
 unsigned 
-OpenArrivalSource::setChain( unsigned k, const callPredicate aFunc )
+OpenArrivalSource::setChain( unsigned k, const callPredicate aFunc ) const
 {
     std::for_each( calls().begin(), calls().end(), Exec1<GenericCall,unsigned int>( &GenericCall::setChain, k ) );
     return k;

@@ -1,7 +1,7 @@
 /* -*- C++ -*-
  * synmodel.h	-- Greg Franks
  *
- * $Id: synmodel.h 14882 2021-07-07 11:09:54Z greg $
+ * $Id: synmodel.h 16805 2023-08-22 20:04:14Z greg $
  */
 
 #ifndef _SYNMODEL_H
@@ -20,7 +20,6 @@ public:
     const char * const submodelType() const { return "Synch Submodel"; }
 
     virtual SynchSubmodel& initClients( const Model& ) { return *this; }
-    virtual SynchSubmodel& initServers( const Model& );
     virtual SynchSubmodel& initInterlock() { return *this; }
     virtual SynchSubmodel& build() { return *this; }
 		

@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: entity.h 16803 2023-08-21 19:55:46Z greg $
+ * $Id: entity.h 16805 2023-08-22 20:04:14Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -48,9 +48,8 @@ class Entity {
     friend class Generate;
 
     struct Attributes {
-	Attributes() : initialized(false), closed_server(false), closed_client(false), open_server(false), pruned(false), deterministic(false), variance(false) {}
+	Attributes() : closed_server(false), closed_client(false), open_server(false), pruned(false), deterministic(false), variance(false) {}
 
-	bool initialized;	/* Task was initialized.		*/
 	bool closed_server;	/* Stn is server in closed model.	*/
 	bool closed_client;	/* Stn is client in closed model.	*/
 	bool open_server;	/* Stn is server in open model.		*/
@@ -94,17 +93,6 @@ public:
 	bool operator()( const Entity * entity ) const { return entity->name() == _name && entity->getReplicaNumber() > 1; }
     private:
 	const std::string _name;
-    };
-
-    /*
-     * Update waiting times.
-     */
-    
-    struct update_wait {
-	update_wait( Entity& entity ) : _entity(entity) {}
-	void operator()( const Submodel* submodel ) { _entity.updateWait( *submodel, 1.0 ); }
-    private:
-	Entity& _entity;
     };
 
     struct set_chain_IL_rate {
@@ -157,6 +145,7 @@ protected:
     virtual Entity * clone( unsigned int ) = 0;
 
 private:
+    Entity( const Entity& ) = delete;
     Entity& operator=( const Entity& ) = delete;
 
 public:
@@ -165,13 +154,11 @@ public:
     virtual Entity& configure( const unsigned );
     virtual bool check() const;
     virtual unsigned findChildren( Call::stack&, const bool ) const;
-    virtual Entity& initWait();
-    Entity& initInterlock();
-    virtual Entity& initThroughputBound() { return *this; }
+    void initializeInterlock();
     virtual Entity& initJoinDelay() { return *this; }
     virtual Entity& initThreads() { return *this; }
-    virtual Entity& initServer( const Vector<Submodel *>& );
-    virtual Entity& reinitServer( const Vector<Submodel *>& );
+    virtual void initializeServer();
+    void reinitializeServer();
 	
     /* Instance Variable Access */
 	   
@@ -201,7 +188,6 @@ public:
     bool hasSecondPhase() const { return (bool)(_maxPhase > 1); }
     bool hasOpenArrivals() const;
     
-    virtual bool hasClientChain( const unsigned, const unsigned ) const { return false; }
     bool hasServerChain( const unsigned k ) const;
     virtual bool hasActivities() const { return false; }
     bool hasThreads() const { return nThreads() > 1; }
@@ -209,20 +195,14 @@ public:
     bool hasILWait() const ;
     virtual bool hasVariance() const { return _attributes.variance; }
     bool hasDeterministicPhases() const { return _attributes.deterministic; }
-    bool initialized() const { return _attributes.initialized; }
     bool isClosedModelClient() const { return _attributes.closed_client; }
     bool isClosedModelServer() const { return _attributes.closed_server; }
     bool isOpenModelServer() const   { return _attributes.open_server; }
-    bool isPruned() const		{ return _pruned; }
     Entity& setClosedModelClient( const bool yesOrNo ) { _attributes.closed_client = yesOrNo; return *this; }
     Entity& setClosedModelServer( const bool yesOrNo ) { _attributes.closed_server = yesOrNo; return *this; }
     Entity& setDeterministicPhases( const bool yesOrNo ) { _attributes.deterministic = yesOrNo; return *this; }
-    Entity& setInitialized( const bool yesOrNo ) { _attributes.initialized = yesOrNo; return *this; }
     Entity& setOpenModelServer( const bool yesOrNo )   { _attributes.open_server = yesOrNo; return *this; }
-    Entity& setPruned( bool yesOrNo ) { _attributes.pruned = yesOrNo; return *this; }
     Entity& setVarianceAttribute( const bool yesOrNo ) { _attributes.variance = yesOrNo; return *this; }
-
-    virtual bool isUsed() const { return submodel() > 0; }
 
     virtual bool isTask() const          { return false; }
     virtual bool isReferenceTask() const { return false; }
@@ -235,6 +215,9 @@ public:
     bool isMultiServer() const   	{ return copies() > 1; }
     bool isReplicated() const		{ return replicas() > 1; }
 
+    virtual bool isUsed() const { return submodel() > 0; }
+    bool isReplica() const;
+    
     const std::vector<Entry *>& entries() const { return _entries; }
     Entity& addEntry( Entry * );
     Entry * entryAt( const unsigned index ) const { return _entries.at(index); }
@@ -260,7 +243,8 @@ public:
 
     Entity& addServerChain( const unsigned k ) { _serverChains.push_back(k); return *this; }
     const ChainVector& serverChains() const { return _serverChains; }
-    Server * serverStation() const { return _station; }
+    Server* serverStation() const { return _station; }
+    virtual Entity* mapToReplica( size_t i ) const = 0;
 
     bool markovOvertaking() const;
     /* Interlock */
@@ -273,6 +257,7 @@ public:
     Probability prInterlock( const Task& ) const;
     Probability prInterlock( const Entry * aClientEntry ) const;
     Probability prInterlock( const Task& aClient, const Entry * aServerEntry, double& il_rate, bool& moreThanFour ) const;
+    void setInterlock( Submodel& ) const;
 
     bool isInterlocked() const { return _interlock.getNsources() > 0; }
     void setChainILRate(const Task& aClient, double rate) const;
@@ -287,6 +272,7 @@ private:
 public:
     virtual double prOt( const unsigned, const unsigned, const unsigned ) const { return 0.0; }
 
+    void saveServerResults( const MVASubmodel&, const Server&, double );
     Entity& updateAllWaits( const Vector<Submodel *>& );
     void setIdleTime( const double );
     virtual Entity& computeVariance();
@@ -307,8 +293,6 @@ public:
 
     Entity& clear();
     virtual Server * makeServer( const unsigned ) = 0;
-    Entity& initServerStation( MVASubmodel& );
-    virtual Entity& saveServerResults( const MVASubmodel&, double );
 
     /* Threads */
 	
@@ -320,11 +304,9 @@ protected:
     Entity& setUtilization( double );
     virtual bool schedulingIsOK() const = 0;
     virtual scheduling_type defaultScheduling() const { return SCHEDULE_FIFO; }
-    virtual double computeUtilization( const MVASubmodel& );
+    virtual double computeUtilization( const MVASubmodel&, const Server& );
 	
 private:
-    void setServiceTime( const Entry * anEntry, unsigned k ) const;
-    void setInterlock( Submodel& ) const;
     double computeIdleTime( const unsigned, const double ) const;
 
 public:
@@ -366,7 +348,7 @@ private:
     double _utilization;		/* Utilization			*/
     mutable double _lastUtilization;	/* For convergence test.	*/
     double _weight;			/* weighting interlock flow  	*/
-#if defined(BUG_393)
+#if BUG_393
     std::vector<double> _marginalQueueProbabilities;
 #endif
 
@@ -374,6 +356,6 @@ private:
 
     ChainVector _serverChains;		/* Chains for this server.	*/
     const unsigned int _replica_number;	/* > 1 if a replica		*/
-    bool _pruned;			/* True if pruned		*/
+
 };
 #endif

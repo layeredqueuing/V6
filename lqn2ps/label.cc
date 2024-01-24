@@ -1,6 +1,6 @@
 /* label.cc	-- Greg Franks Wed Jan 29 2003
  *
- * $Id: label.cc 16627 2023-04-03 22:04:21Z greg $
+ * $Id: label.cc 16888 2023-12-08 12:18:20Z greg $
  */
 
 #include "lqn2ps.h"
@@ -677,6 +677,11 @@ LabelFig::draw( std::ostream& output ) const
 
     if ( boxExtent.x() == 0 || boxExtent.y() == 0 ) return *this;
 
+    /* Shrink bounding box if it's too wide. */
+    if ( boxOrigin.x() < 0 ) {
+	boxExtent.x( boxExtent.x() + boxOrigin.x() );
+	boxOrigin.x( 0 );
+    }
     startCompound( output, boxOrigin, boxExtent );
     if ( Flags::clear_label_background ) {
 	Fig::clearBackground( output, boxOrigin, boxExtent, backgroundColour() );
@@ -1430,6 +1435,5 @@ LabelManip _sigma() { return LabelManip( &mathFunc, &Label::sigma ); }
 LabelManip _times() { return LabelManip( &mathFunc, &Label::times ); }
 LabelDoubleManip opt_pct( const double aDouble ) { return LabelDoubleManip( &opt_pct_str, aDouble ); }
 
-LabelEntryManip execution_time_of( const Entry& entry ) { return LabelEntryManip( &Entry::print_execution_time, entry ); }
 LabelEntryManip queueing_time_of( const Entry& entry ) { return LabelEntryManip( &Entry::print_queueing_time, entry ); }
 LabelEntryManip variance_of( const Entry& entry ) { return LabelEntryManip( &Entry::print_variance, entry ); }

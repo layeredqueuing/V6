@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: model.h 16800 2023-08-21 19:23:24Z greg $
+ * $Id: model.h 16805 2023-08-22 20:04:14Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -106,8 +106,8 @@ protected:
     static unsigned topologicalSort();
     virtual void addToSubmodel() = 0;
     virtual void partition() {}		// Partition disjoin chains.
-    void initStations();
-    void reinitStations();
+    void initializeSubmodels();
+    void reinitializeSubmodels();
 
     double convergenceValue() const { return _convergence_value; }	/* Cached */
     unsigned iterationLimit() const { return _iteration_limit; }

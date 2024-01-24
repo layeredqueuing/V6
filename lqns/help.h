@@ -1,7 +1,7 @@
 /* -*- C++ -*-
  * help.h	-- Greg Franks
  *
- * $Id: help.h 16444 2023-02-25 12:39:03Z greg $
+ * $Id: help.h 16805 2023-08-22 20:04:14Z greg $
  */
 
 #ifndef _HELP_H
@@ -183,7 +183,6 @@ private:
 
 public:
     std::ostream& debugActivities( std::ostream & output, bool verbose ) const;
-    std::ostream& debugAll( std::ostream & output, bool verbose ) const;
     std::ostream& debugCalls( std::ostream & output, bool verbose ) const;
     std::ostream& debugForks( std::ostream & output, bool verbose ) const;
     std::ostream& debugInterlock( std::ostream & output, bool verbose ) const;
@@ -193,6 +192,7 @@ public:
     std::ostream& debugMVA( std::ostream & output, bool verbose ) const;
     std::ostream& debugOvertaking( std::ostream & output, bool verbose ) const;
     std::ostream& debugQuorum( std::ostream & output, bool verbose ) const;
+    std::ostream& debugReplication( std::ostream & output, bool verbose ) const;
     std::ostream& printSPEX( std::ostream& output, bool verbose ) const;
     std::ostream& debugSRVN( std::ostream& output, bool verbose ) const;
     std::ostream& debugSubmodels( std::ostream & output, bool verbose ) const;

@@ -10,7 +10,7 @@
  * January 2001
  *
  * ------------------------------------------------------------------------
- * $Id: task.cc 16791 2023-07-27 11:21:46Z greg $
+ * $Id: task.cc 16906 2024-01-22 12:02:11Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -80,13 +80,13 @@ static inline SRVNTaskManip entries_of( const Task& aTask ) { return SRVNTaskMan
 
 /* -------------------------- Constructor ----------------------------- */
 
-Task::Task( const LQIO::DOM::Task* dom, const Processor * aProc, const Share * aShare, const std::vector<Entry *>& entries )
+Task::Task( const LQIO::DOM::Task* dom, const Processor * processor, const Share * share, const std::vector<Entry *>& entries )
     : Entity( dom, __tasks.size()+1 ),
       _entries(entries),
       _activities(),
       _precedences(),
       _processors(),
-      _share(aShare),
+      _share(share),
       _maxPhase(0),
       _entryWidthInPts(0),
       _key_table(),			/* Squish name - activities 	*/
@@ -94,12 +94,12 @@ Task::Task( const LQIO::DOM::Task* dom, const Processor * aProc, const Share * a
 {
     std::for_each( _entries.begin(), _entries.end(), Exec1<Entry,const Task *>( &Entry::owner, this ) );
 
-    if ( aProc ) {
-	_processors.insert(aProc);
-	ProcessorCall * aCall = new ProcessorCall(this,aProc);
+    if ( processor ) {
+	_processors.insert(processor);
+	ProcessorCall * aCall = new ProcessorCall(this,processor);
 	_calls.push_back(aCall);
-	const_cast<Processor *>(aProc)->addDstCall( aCall );
-	const_cast<Processor *>(aProc)->addTask( this );
+	const_cast<Processor *>(processor)->addDstCall( aCall );
+	const_cast<Processor *>(processor)->addTask( this );
     }
 
     _node = Node::newNode( Flags::icon_width, Flags::graphical_output_style == Output_Style::TIMEBENCH ? Flags::icon_height : Flags::entry_height );
@@ -400,10 +400,10 @@ Task&
 Task::setServerChain( unsigned k )
 {
     for ( std::vector<EntityCall *>::const_iterator call = calls().begin(); call != calls().end(); ++call ) {
-	const Processor * aProcessor = dynamic_cast<const Processor *>((*call)->dstEntity());
-	if ( aProcessor ) {
-	    if ( aProcessor->isInteresting() && aProcessor->isSelected() ) {
-		const_cast<Processor *>(aProcessor)->setServerChain( k );
+	const Processor * processor = dynamic_cast<const Processor *>((*call)->dstEntity());
+	if ( processor ) {
+	    if ( processor->isInteresting() && processor->isSelected() ) {
+		const_cast<Processor *>(processor)->setServerChain( k );
 	    }
 	    continue;
 	}
@@ -481,10 +481,10 @@ Task::findOrAddActivity( const LQIO::DOM::Activity * activity )
 Activity *
 Task::findActivity( const Activity& srcActivity, const unsigned replica )
 {
-    std::ostringstream aName;
-    aName << srcActivity.name() << "_" << replica;
+    std::ostringstream name;
+    name << srcActivity.name() << "_" << replica;
 
-    return findActivity( aName.str() );
+    return findActivity( name.str() );
 }
 
 
@@ -512,9 +512,9 @@ Task::addActivity( const Activity& srcActivity, const unsigned replica )
     
     dstActivity->isSpecified( srcActivity.isSpecified() );
     if ( srcActivity.reachable() ) {
-	std::ostringstream aName;
-	aName << srcActivity.reachedFrom()->name() << "_" << replica;
-	Activity * anActivity = findActivity( aName.str() );
+	std::ostringstream name;
+	name << srcActivity.reachedFrom()->name() << "_" << replica;
+	Activity * anActivity = findActivity( name.str() );
 	dstActivity->setReachedFrom( anActivity );
     }
 
@@ -677,7 +677,7 @@ Task::hasCalls( const callPredicate aFunc ) const
 bool
 Task::hasOpenArrivals() const
 {
-    return openArrivalRate() > 0.;
+    return std::any_of( entries().begin(), entries().end(), std::mem_fn( &Entry::hasOpenArrivalRate ) );
 }
 
 
@@ -1025,9 +1025,9 @@ bool
 Task::isInClosedModel( const std::vector<Entity *>& servers ) const
 {
     for ( std::vector<EntityCall *>::const_iterator call = calls().begin(); call != calls().end(); ++call ) {
-	const Processor * aProcessor = dynamic_cast<const Processor *>((*call)->dstEntity());
-	if ( aProcessor ) {
-	    if ( aProcessor->isInteresting() && std::any_of( servers.begin(), servers.end(), EQ<Element>(aProcessor) ) ) return true;
+	const Processor * processor = dynamic_cast<const Processor *>((*call)->dstEntity());
+	if ( processor ) {
+	    if ( processor->isInteresting() && std::any_of( servers.begin(), servers.end(), EQ<Element>(processor) ) ) return true;
 	    continue;
 	}
 	const Task * task = dynamic_cast<const Task *>((*call)->dstEntity());
@@ -1191,86 +1191,100 @@ Task::canPrune() const
 #endif
 
 
-
-/*
- * This has to be done by class.
- */
-
-void
-Task::accumulateDemand( BCMP::Model::Station& station ) const
-{
-    typedef std::pair<const std::string,BCMP::Model::Station::Class> demand_item;
-    typedef std::map<const std::string,BCMP::Model::Station::Class> demand_map;
-
-    demand_map& demands = station.classes();
-    const std::pair<demand_map::iterator,bool> result = demands.insert( demand_item( name(), BCMP::Model::Station::Class() ) );	/* null entry */
-    result.first->second.accumulate( Task::accumulate_demand( BCMP::Model::Station::Class(), this ) );
-}
-
-
-/* static */ BCMP::Model::Station::Class
-Task::accumulate_demand( const BCMP::Model::Station::Class& augend, const Task * task )
-{
-    return std::accumulate( task->entries().begin(), task->entries().end(), augend, &Entry::accumulate_demand ); 
-}
-
-
-/*
- * Normally, chains have think times.  JMVA represents this as the service time at the reference station
+/*+ BUG_323
+ * Create a chain for each client task in a submodel.  For BCMP lqn models, these will be reference tasks.
+ *
+ * Normally, chains have think times.  JMVA represents this as the service time at the reference station.  For QNAP2, we create a
+ * "terminals" station and put the think time there.  libmva (lqns) reference tasks can have a think time and a service time.  Think
+ * time for any task is always think time.  If the reference task processor is "interesting()", meaning that queueing can occur
+ * there, then the service time of the reference task belongs there and we include the processor in the queueing model.  Otherwise,
+ * it is a think time, so add it to the think time (which is likely zero in this case anyway).
  */
 
 void
 Task::create_chain::operator()( const Task * task ) const
 {
+    const LQIO::DOM::Task * dom = dynamic_cast<const LQIO::DOM::Task *>(task->getDOM());
+    const std::string& name = task->name();
+    LQX::SyntaxTreeNode * think_time = nullptr;
+
     if ( task->isInClosedModel(_servers) ) {
-	_model.insertClosedChain( task->name(),
-				  getLQXVariable( dynamic_cast<const LQIO::DOM::Task *>(task->getDOM())->getCopies(), 1. ),	/* Copies */
-				  getLQXVariable( dynamic_cast<const LQIO::DOM::Task *>(task->getDOM())->getThinkTime(), 0. ) );	/* think time */
+	if ( task->isReferenceTask() ) {
+	    think_time = getLQXVariable( dom->getThinkTime(), 0. );
+#if BUG_270
+	    if ( !task->processor()->clientsCanQueue() && Flags::prune ) {
+		think_time = addLQXExpressions( think_time, task->entries().at(0)->serviceTime() );
+	    }
+#endif
+	} else if ( Flags::have_results && task->throughput() > 0.0 ) {
+	    /* throughput / (copies - utilization) BUG 323 */
+#if 0
+	    think_time = divideLQXExpressions( subtractLQXExpressions( getLQXVariable( dom->getCopies(), 1. ), new LQX::ConstantValueExpression( task->utilization() ) ), 
+					       new LQX::ConstantValueExpression( task->throughput() ) );
+// 	    std::cerr << "Task::create_chain::operator()( " << name << " ): think_time = " << ( task->copiesValue() - task->utilization() ) / task->throughput() << std::endl;
+#endif
+	    think_time = new LQX::ConstantValueExpression( ( task->copiesValue() - task->utilization() ) / task->throughput() );
+	}
+	_model.insertClosedChain( name, getLQXVariable( dom->getCopies(), 1. ), think_time );
     }
     if ( task->isInOpenModel(_servers) ) {
-	_model.insertOpenChain( task->name(), nullptr );
+	_model.insertOpenChain( name, nullptr );
     }
-}
 
+    /* Insert the demand (think time) for this chain into the terminal station. */
+    
+    _terminals.insertClass( name, BCMP::Model::Station::Class( new LQX::ConstantValueExpression( 1. ), think_time ) );	/* One visit */
 
-/*
- * Create a terminal station.  Insert total visits into clients and
- * set service time for class if the processor has been removed.
- * Include task think time.
- */
-
-void
-Task::create_customers::operator()( const Task * task )
-{
-    /* If processor is missing, use service time here.  "class" may have to generalize to entry */
-
-    const ReferenceTask * client = dynamic_cast<const ReferenceTask *>(task);
-    LQX::SyntaxTreeNode * service_time = nullptr;
-    if ( client != nullptr ) {
-//	service_time = addExternalVariables( client->entries().front()->thinkTime(), &client->thinkTime() );
-	service_time = getLQXVariable( &client->thinkTime() );
-    }
-//	LQX::SyntaxTreeNode * think_time = new LQX::ConstantValueExpression( 0. ); 	/* !!! BUG_439 */		// temp -- find from entry
-    if ( task->processor() == nullptr ) {
-	// for all entries s += prVisit(e) * e->serviceTime ??
-	service_time = addLQXExpressions( service_time, task->entries().at(0)->serviceTime() );
-    }
-    BCMP::Model::Station::Class demand( new LQX::ConstantValueExpression( 1. ), service_time );	/* One visit */
-
-    const std::string name = task->name();
-    _terminals.insertClass( name, demand );
-
-    /* Find all observations for this chain - it will become a result_var for the termianls station */
+    /* Find all observations for this chain - it will become a result_var for the terminal station */
 
     const LQIO::Spex::obs_var_tab_t& observations = LQIO::Spex::observations();
     for ( LQIO::Spex::obs_var_tab_t::const_iterator obs = observations.begin(); obs != observations.end(); ++obs ) {
-	if ( obs->first != task->getDOM() ) continue;
+	if ( obs->first != dom ) continue;
 	switch ( obs->second.getKey() ) {
 	case KEY_THROUGHPUT:	_terminals.classAt(name).insertResultVariable( BCMP::Model::Result::Type::THROUGHPUT, obs->second.getVariableName() ); break;
 	case KEY_UTILIZATION:	_terminals.classAt(name).insertResultVariable( BCMP::Model::Result::Type::UTILIZATION, obs->second.getVariableName() ); break;
 	}
     }
 }
+
+
+
+/*
+ * This has to be done by chain.  Do visits and service time at the same time.  Service time at the servers is simply the task
+ * residence time.
+ */
+
+void
+Task::create_demand::operator()( const Task * client ) const
+{
+    const std::string& class_name = client->name();
+    const Processor * processor = client->processor();
+    std::vector<Entity *>::const_iterator server = std::find( servers().begin(), servers().end(), processor );
+
+    for ( std::vector<Entry *>::const_iterator entry = client->entries().begin(); entry != client->entries().end(); ++entry ) {
+    
+	/* Do my processor */
+
+	if ( server != servers().end() ) {
+	    processor->accumulateDemand( **entry, class_name, _model.stationAt( processor->name() ) );
+	} else {
+	    processor->accumulateResponseTime( **entry, class_name, _terminals );
+	}
+	processor->addSPEXObservations( _model.stationAt( processor->name() ), class_name );
+	
+	/* Now do everyone I call */
+       
+	for ( std::vector<Call *>::const_iterator call = (*entry)->calls().begin(); call != (*entry)->calls().end(); ++call ) {
+	    const Task * task = (*call)->dstTask();
+	    if ( std::find( servers().begin(), servers().end(), task ) != servers().end() ) {
+		(*call)->dstEntry()->accumulateDemand( class_name, _model.stationAt( task->name() ) );
+	    } else {
+		(*call)->dstEntry()->accumulateResponseTime( class_name, _terminals );
+	    }
+	}
+    }
+}
+/*- BUG_323 */
 
 /*
  * Sort activities (if any).
@@ -1308,7 +1322,8 @@ Task::topologicalSort()
 	std::deque<const Activity *> activityStack;		// For checking for cycles.
 	std::deque<const AndForkActivityList *> forkStack;	// For matching forks and joins.
 	try {
-	    maxLevel = std::max( maxLevel, anActivity->findActivityChildren( activityStack, forkStack, (*entry), 0, 1, 1.0  ) );
+	    Activity::Ancestors ancestors( *entry );
+	    maxLevel = std::max( maxLevel, anActivity->findActivityChildren( ancestors ) );
 	}
 	catch ( const Activity::cycle_error& error ) {
 	    maxLevel = std::max( maxLevel, error.depth()+1 );
@@ -1779,36 +1794,29 @@ Task::colour() const
 Task&
 Task::label()
 {
-    if ( queueing_output() ) {
-	bool print_goop = false;
-	if ( Flags::print_input_parameters() ) {
-	    labelQueueingNetwork( &Entry::labelQueueingNetworkVisits );
-	    print_goop = true;
-	}
-	if ( Flags::have_results && Flags::print[WAITING].opts.value.b ) {
-	    labelQueueingNetwork( &Entry::labelQueueingNetworkWaiting );
-	    print_goop = true;
-	}
-	if ( print_goop ) {
-	    _label->newLine();
-	}
-    }
     Entity::label();
+    if ( queueing_output() && isSelected() && Flags::print_input_parameters() ) {
+	/* Clients in queueing model won't be selected */
+	_label->newLine();
+	labelQueueingNetwork( &Entry::labelQueueingNetworkVisits, *_label );
+    }
     if ( !queueing_output() ) {
 	_label->justification( Flags::label_justification );
     }
     if ( Flags::print_input_parameters() ) {
 	if ( queueing_output() ) {
-	    if ( !isSelected() ) {
-		const double Z = Flags::have_results ? (copiesValue() - utilization()) / throughput() : 0.0;
-		if ( Z > 0.0 ) {
-		    _label->newLine() << " Z = " << Z;
-		}
+	    if ( isSelected() ) {
+		/* Clients in the queueing model will not be selected, so this is a server */
+		labelQueueingNetwork( &Entry::labelQueueingNetworkTaskResponseTime, *_label );
+	    } else if ( throughput() > 0 ) {
+		/* We have results so derive */
+		_label->newLine() << " Z=" << (copiesValue() - utilization()) / throughput();
+	    } else {
+		labelQueueingNetwork( &Entry::labelQueueingNetworkTaskServiceTime, *_label );
 	    }
-	    labelQueueingNetwork( &Entry::labelQueueingNetworkService );
 	} else {
 	    if ( Flags::aggregation() == Aggregate::ENTRIES && Flags::print[PRINT_AGGREGATE].opts.value.b ) {
-		_label->newLine() << " [" << service_time_of( *entries().front() ) << ']';
+		_label->newLine() << " [" << service_time( *entries().front() ) << ']';
 	    }
 	    if ( hasThinkTime()  ) {
 		*_label << " Z=" << dynamic_cast<ReferenceTask *>(this)->thinkTime();
@@ -1881,9 +1889,9 @@ Task::labelBCMPModel( const BCMP::Model::Station::Class::map_t& demand, const st
  */
 
 Task&
-Task::labelQueueingNetwork( entryLabelFunc aFunc )
+Task::labelQueueingNetwork( entryLabelFunc aFunc, Label& label )
 {
-    std::for_each( _entries.begin(), _entries.end(), Exec1<Entry,Label&>( aFunc, *_label ) );
+    std::for_each( _entries.begin(), _entries.end(), Exec1<Entry,Label&>( aFunc, label ) );
     return *this;
 }
 
@@ -1997,11 +2005,12 @@ Task::mergeCalls()
 	upper = merge.upper_bound( server ); 
 	LQX::SyntaxTreeNode * visits       = std::accumulate( lower, upper, static_cast<LQX::SyntaxTreeNode *>(nullptr), &Task::sum_rendezvous );
 	/* Accumlating visits appears to be correct, but service time is NOT... I need demand, then normalize to visits */
-	LQX::SyntaxTreeNode * demand 	 = std::accumulate( lower, upper, static_cast<LQX::SyntaxTreeNode *>(nullptr), &Task::sum_demand );
+	LQX::SyntaxTreeNode * demand 	   = std::accumulate( lower, upper, static_cast<LQX::SyntaxTreeNode *>(nullptr), &Task::sum_demand );
 	LQX::SyntaxTreeNode * service_time = Entity::divideLQXExpressions( demand, visits );
 #if BUG_270_DEBUG
 	size_t count = merge.count( server );
-	std::cout << "  To " << server->name() << ", count=" << count
+	std::cout << "  To " << (server->isProcessor() ? "processor" : "task") << " " << server->name()
+		  << ", count=" << count
 		  << ", visits=";
 	if ( visits != nullptr ) {
 	    std::cout << *visits;
@@ -2086,7 +2095,6 @@ Task::expand()
 	/* Get a pointer to the replicated processor */
 
 	const unsigned int proc_replica = static_cast<unsigned int>(static_cast<double>(replica-1) / static_cast<double>(procFanOut)) + 1;
-	const Processor *aProcessor = Processor::find_replica( processor->name(), proc_replica );
 
 	std::ostringstream replica_name;
 	replica_name << name() << "_" << replica;
@@ -2095,8 +2103,8 @@ Task::expand()
 	    msg += replica_name.str();
 	    throw std::runtime_error( msg );
 	}
-	Task * new_task = clone( replica, replica_name.str(), aProcessor, share() );
-	new_task->myPaths = myPaths;		// Bad hack?
+	Task * new_task = clone( replica, replica_name.str(), Processor::find_replica( processor->name(), proc_replica ), share() );
+	new_task->_paths = _paths;		// Bad hack?
 	new_task->setLevel( level() );
 	__tasks.insert( new_task );
 
@@ -2225,11 +2233,11 @@ Task::expandActivities( const Task& src, int replica )
 
 
 LQIO::DOM::Task *
-Task::cloneDOM( const std::string& aName, LQIO::DOM::Processor * dom_processor ) const
+Task::cloneDOM( const std::string& name, LQIO::DOM::Processor * dom_processor ) const
 {
     LQIO::DOM::Task * dom_task = new LQIO::DOM::Task( *dynamic_cast<const LQIO::DOM::Task*>(getDOM()) );
 
-    dom_task->setName( aName );
+    dom_task->setName( name );
     dom_task->setProcessor( dom_processor );
     const_cast<LQIO::DOM::Document *>(getDOM()->getDocument())->addTaskEntity( dom_task );	    /* Reconnect all of the dom stuff. */
     dom_processor->addTask( dom_task );
@@ -2508,20 +2516,20 @@ Task::setClientDemand( LQIO::PMIF_Document::Station& station, const std::vector<
 
 /* ------------------------- Reference Tasks -------------------------- */
 
-ReferenceTask::ReferenceTask( const LQIO::DOM::Task* dom, const Processor * aProc, const Share * aShare, const std::vector<Entry *>& entries )
-    : Task( dom, aProc, aShare, entries )
+ReferenceTask::ReferenceTask( const LQIO::DOM::Task* dom, const Processor * processor, const Share * share, const std::vector<Entry *>& entries )
+    : Task( dom, processor, share, entries )
 {
 }
 
 ReferenceTask *
-ReferenceTask::clone( unsigned int replica, const std::string& aName, const Processor * aProcessor, const Share * aShare ) const
+ReferenceTask::clone( unsigned int replica, const std::string& name, const Processor * processor, const Share * share ) const
 {
-    LQIO::DOM::Task * dom_task = cloneDOM( aName, const_cast<LQIO::DOM::Processor *>(dynamic_cast<const LQIO::DOM::Processor *>(aProcessor->getDOM()) ) );
+    LQIO::DOM::Task * dom_task = cloneDOM( name, const_cast<LQIO::DOM::Processor *>(dynamic_cast<const LQIO::DOM::Processor *>(processor->getDOM()) ) );
 
-//	.setGroup( aShare->getDOM() );
+//	.setGroup( share->getDOM() );
 
     std::vector<Entry *> entries;
-    return new ReferenceTask( dom_task, aProcessor, aShare, groupEntries( replica, entries ) );
+    return new ReferenceTask( dom_task, processor, share, groupEntries( replica, entries ) );
 }
 
 
@@ -2617,31 +2625,11 @@ ReferenceTask::relink()
     return *this;
 }
 #endif
-
-
-/*
- * This has to be done by class.
- */
-
-void
-ReferenceTask::accumulateDemand( BCMP::Model::Station& station ) const
-{
-    typedef std::pair<const std::string,BCMP::Model::Station::Class> demand_item;
-    typedef std::map<const std::string,BCMP::Model::Station::Class> demand_map;
-    BCMP::Model::Station::Class demand;
-    if ( hasThinkTime() ) {
-	demand.setServiceTime( getLQXVariable(&thinkTime()) );
-    }
-
-    demand_map& demands = const_cast<demand_map&>(station.classes());
-    const std::pair<demand_map::iterator,bool> result = demands.insert( demand_item( name(), demand ) );
-    result.first->second.accumulate( Task::accumulate_demand( BCMP::Model::Station::Class(), this ) );
-}
 
 /* --------------------------- Server Tasks --------------------------- */
 
-ServerTask::ServerTask( const LQIO::DOM::Task* dom, const Processor * aProc, const Share * aShare, const std::vector<Entry *>& entries )
-    : Task( dom, aProc, aShare, entries )
+ServerTask::ServerTask( const LQIO::DOM::Task* dom, const Processor * processor, const Share * share, const std::vector<Entry *>& entries )
+    : Task( dom, processor, share, entries )
 {
     if ( scheduling() != SCHEDULE_DELAY ) {
 	if ( isMultiServer() ) {
@@ -2661,14 +2649,14 @@ ServerTask::ServerTask( const LQIO::DOM::Task* dom, const Processor * aProc, con
 
 
 ServerTask*
-ServerTask::clone( unsigned int replica, const std::string& aName, const Processor * aProcessor, const Share * aShare ) const
+ServerTask::clone( unsigned int replica, const std::string& name, const Processor * processor, const Share * share ) const
 {
-    LQIO::DOM::Task * dom_task = cloneDOM( aName, const_cast<LQIO::DOM::Processor *>(dynamic_cast<const LQIO::DOM::Processor *>(aProcessor->getDOM()) ) );
+    LQIO::DOM::Task * dom_task = cloneDOM( name, const_cast<LQIO::DOM::Processor *>(dynamic_cast<const LQIO::DOM::Processor *>(processor->getDOM()) ) );
 
-//	.setGroup( aShare->getDOM() );
+//	.setGroup( share->getDOM() );
 
     std::vector<Entry *> entries;
-    return new ServerTask( dom_task, aProcessor, aShare, groupEntries( replica, entries ) );
+    return new ServerTask( dom_task, processor, share, groupEntries( replica, entries ) );
 }
 
 
@@ -2692,37 +2680,37 @@ ServerTask::canConvertToReferenceTask() const
 /*+ BUG_164 */
 /* -------------------------- Semaphore Tasks ------------------------- */
 
-SemaphoreTask::SemaphoreTask( const LQIO::DOM::Task* dom, const Processor * aProc, const Share * aShare, const std::vector<Entry *>& entries )
-    : Task( dom, aProc, aShare, entries )
+SemaphoreTask::SemaphoreTask( const LQIO::DOM::Task* dom, const Processor * processor, const Share * share, const std::vector<Entry *>& entries )
+    : Task( dom, processor, share, entries )
 {
 }
 
 
 SemaphoreTask*
-SemaphoreTask::clone( unsigned int replica, const std::string& aName, const Processor * aProcessor, const Share * aShare ) const
+SemaphoreTask::clone( unsigned int replica, const std::string& name, const Processor * processor, const Share * share ) const
 {
-    LQIO::DOM::Task * dom_task = cloneDOM( aName, const_cast<LQIO::DOM::Processor *>(dynamic_cast<const LQIO::DOM::Processor *>(aProcessor->getDOM()) ) );
+    LQIO::DOM::Task * dom_task = cloneDOM( name, const_cast<LQIO::DOM::Processor *>(dynamic_cast<const LQIO::DOM::Processor *>(processor->getDOM()) ) );
 
     std::vector<Entry *> entries;
-    return new SemaphoreTask( dom_task, aProcessor, aShare, groupEntries( replica, entries ) );
+    return new SemaphoreTask( dom_task, processor, share, groupEntries( replica, entries ) );
 }
 
 
 /* -------------------------- RWLOCK Tasks ------------------------- */
 
-RWLockTask::RWLockTask( const LQIO::DOM::Task* dom, const Processor * aProc, const Share * aShare, const std::vector<Entry *>& entries )
-    : Task( dom, aProc, aShare, entries )
+RWLockTask::RWLockTask( const LQIO::DOM::Task* dom, const Processor * processor, const Share * share, const std::vector<Entry *>& entries )
+    : Task( dom, processor, share, entries )
 {
 }
 
 
 RWLockTask*
-RWLockTask::clone( unsigned int replica, const std::string& aName, const Processor * aProcessor, const Share * aShare ) const
+RWLockTask::clone( unsigned int replica, const std::string& name, const Processor * processor, const Share * share ) const
 {
-    LQIO::DOM::Task * dom_task = cloneDOM( aName, const_cast<LQIO::DOM::Processor *>(dynamic_cast<const LQIO::DOM::Processor *>(aProcessor->getDOM()) ) );
+    LQIO::DOM::Task * dom_task = cloneDOM( name, const_cast<LQIO::DOM::Processor *>(dynamic_cast<const LQIO::DOM::Processor *>(processor->getDOM()) ) );
 
     std::vector<Entry *> entries;
-    return new RWLockTask( dom_task, aProcessor, aShare, groupEntries( replica, entries ) );
+    return new RWLockTask( dom_task, processor, share, groupEntries( replica, entries ) );
 }
 
 

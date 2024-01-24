@@ -11,7 +11,7 @@
  * July 2007
  *
  * ------------------------------------------------------------------------
- * $Id: activity.h 16800 2023-08-21 19:23:24Z greg $
+ * $Id: activity.h 16911 2024-01-23 20:35:04Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -191,6 +191,17 @@ public:
 	double _rate;
 	bool _replyAllowed;
     };
+
+    struct max
+    {
+	typedef unsigned int (Activity::*funcPtr)( unsigned int ) const;
+	max( funcPtr f, unsigned int arg ) : _f(f), _arg(arg) {}
+	unsigned int operator()( unsigned int l, const Activity* r ) const { return std::max( l, (r->*_f)(_arg) ); }
+	unsigned int operator()( unsigned int l, const Activity& r ) const { return std::max( l, (r.*_f)(_arg) ); }
+    private:
+	const funcPtr _f;
+	const unsigned int _arg;
+    };
     
 public:
     Activity( const Task *, const std::string& );
@@ -307,7 +318,7 @@ public:
     Collect& collect( std::deque<const Activity *>&, std::deque<Entry *>&, Collect& ) const;
     Count_If& count_if( std::deque<const Activity *>&, Count_If& ) const;
     CallInfo::Item::collect_calls& collect_calls( std::deque<const Activity *>&, CallInfo::Item::collect_calls& ) const;
-    virtual void callsPerform( const CallExec& ) const;
+    virtual void callsPerform( Call::Perform& ) const;
     unsigned concurrentThreads( unsigned ) const;
     virtual bool getInterlockedTasks( Interlock::CollectTasks& path ) const;
 

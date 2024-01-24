@@ -1,6 +1,6 @@
 /* -*- c++ -*- node.h	-- Greg Franks
  *
- * $Id: label.h 15969 2022-10-13 19:49:43Z greg $
+ * $Id: label.h 16888 2023-12-08 12:18:20Z greg $
  */
 
 #ifndef _LABEL_H
@@ -44,6 +44,7 @@ public:
 	Line& operator<<( const int i ) { _string << i; return *this; }
 	Line& operator<<( const unsigned int u ) { _string << u; return *this; }
 	size_t width() const { return _string.str().length(); }
+	bool empty() const { return _string.str().empty(); }
 	Line& setFont( const Font font ) { _font = font; return *this; }
 	Line& setColour( const Colour colour ) { _colour = colour; return *this; }
 	const std::string getStr() const { return _string.str(); }
@@ -93,6 +94,7 @@ public:
     Label& operator<<( const LQX::SyntaxTreeNode& n ) { return appendN( n ); }
 
     int size() const { return _lines.size(); }
+    bool empty() const { return _lines.size() == 0 || _lines.at(0).empty(); }
 
     virtual Label& moveTo( const double x, const double y ) { _origin.moveTo( x, y ); return *this; }
     virtual Label& moveTo( const Point& aPoint ) { _origin.moveTo( aPoint.x(), aPoint.y() ); return *this; }
@@ -503,7 +505,6 @@ LabelManip _sigma();
 LabelManip _times();
 LabelDoubleManip opt_pct( double );
 
-LabelEntryManip execution_time_of( const Entry& entry );
 LabelEntryManip queueing_time_of( const Entry& entry );
 LabelEntryManip variance_of( const Entry& entry );
 #endif

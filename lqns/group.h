@@ -9,7 +9,7 @@
  *
  * November, 2008
  *
- * $Id: group.h 16800 2023-08-21 19:23:24Z greg $
+ * $Id: group.h 16805 2023-08-22 20:04:14Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -32,6 +32,16 @@ class Group {
 private:
     Group( const Group& );
     Group& operator=( const Group& );
+
+public:
+    struct sum {
+	typedef double (Group::*funcPtr)() const;
+	sum( funcPtr f ) : _f(f) {}
+	double operator()( double l, const Group* r ) const { return l + (r->*_f)(); }
+	double operator()( double l, const Group& r ) const { return l + (r.*_f)(); }
+    private:
+	const funcPtr _f;
+    };
     
 public:
     enum class status_t { RECEIVING=-1, THROTTLE=0, CONTRIBUTING=1 };

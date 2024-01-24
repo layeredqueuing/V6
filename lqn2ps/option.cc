@@ -1,6 +1,6 @@
 /* srvn2eepic.c	-- Greg Franks Sun Jan 26 2003
  *
- * $Id: option.cc 16791 2023-07-27 11:21:46Z greg $
+ * $Id: option.cc 16888 2023-12-08 12:18:20Z greg $
  */
 
 #include "lqn2ps.h"
@@ -211,12 +211,10 @@ const std::map<const Special, const std::string> Options::special = {
     { Special::PRUNE,			    "prune" },
     { Special::PROCESSOR_SCHEDULING,	    LQIO::DOM::Pragma::_processor_scheduling_ },
     { Special::QUORUM_REPLY,		    "quorum-reply" },
-    { Special::RENAME,			    "rename" },
     { Special::SORT,			    "sort" },
     { Special::SQUISH_ENTRY_NAMES,	    "squish" },
     { Special::SPEX_HEADER,		    "no-header" },
     { Special::SUBMODEL_CONTENTS,	    "submodels" },
-    { Special::TASKS_ONLY,		    "tasks-only" },
     { Special::TASK_SCHEDULING,		    LQIO::DOM::Pragma::_task_scheduling_ }
 };
 

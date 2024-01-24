@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: phase.cc 16802 2023-08-21 19:51:34Z greg $
+ * $Id: phase.cc 16805 2023-08-22 20:04:14Z greg $
  *
  * Everything you wanted to know about an phase, but were afraid to ask.
  *
@@ -47,7 +47,6 @@
 NullPhase::NullPhase( const std::string& name )
     : _dom(nullptr),
       _name(name),
-      _phase_number(0),
       _serviceTime(0.0),
       _variance(0.0),
       _wait()
@@ -58,7 +57,6 @@ NullPhase::NullPhase( const std::string& name )
 NullPhase::NullPhase( const NullPhase& src )
     : _dom(src._dom),
       _name(src._name),
-      _phase_number(src._phase_number),
       _serviceTime(0.0),
       _variance(0.0),
       _wait()
@@ -266,6 +264,7 @@ NullPhase::insertDOMHistogram( LQIO::DOM::Histogram * histogram, const double m,
 
 Phase::Phase( const std::string& name )
     : NullPhase( name ),
+      _phase_number(0),
       _entry(nullptr),
       _calls(),
       _devices(),
@@ -280,10 +279,25 @@ Phase::Phase( const std::string& name )
 
 Phase::Phase( const Phase& src, unsigned int replica )
     : NullPhase(src),
+      _phase_number(src._phase_number),
       _entry(src._entry != nullptr ? Entry::find( src._entry->name(), replica ) : nullptr ),	/* Only phases have entries */
       _calls(),		// Done after all entries created
       _devices(),
       _prOvertaking(0.)
+{
+}
+
+
+
+Phase::Phase( const Phase& src )
+    : NullPhase(src),
+      _entry(src._entry),
+      _calls(src._calls),
+      _devices(src._devices),
+#if PAN_REPLICATION
+      _surrogateDelay(src._surrogateDelay),
+#endif
+      _prOvertaking(src._prOvertaking)
 {
 }
 
@@ -299,6 +313,15 @@ Phase::~Phase()
     std::for_each( callList().begin(), callList().end(), Delete<Call *> );
 }
 
+
+
+void
+Phase::initialize( const std::string name, unsigned int n, Entry* entry )
+{
+    setName( name );
+    setPhaseNumber( n );
+    setEntry( entry );
+}
 
 
 /*
@@ -390,6 +413,13 @@ Phase::addForwardingRendezvous( Call::stack& callStack ) const
 Phase&
 Phase::initCustomers( std::deque<const Task *>& stack, unsigned int customers )
 {
+#if BUG_433
+    if ( callList().size() == 0 ) return *this;
+    std::cerr << "Phase(\"" << name() << "\")::initCallers(" << stack.size() << "," << customers << ")" << std::endl;
+    for ( const auto& call : callList() ) {
+	std::cerr << "  " << call << ": " << call->dstEntry()->print_name() << std::endl;
+    }
+#endif
     std::for_each( callList().begin(), callList().end(), Exec2<Call,std::deque<const Task *>&,unsigned int>( &Call::initCustomers, stack, customers ) );
     return *this;
 }
@@ -403,26 +433,12 @@ Phase::initCustomers( std::deque<const Task *>& stack, unsigned int customers )
  */
 
 Phase&
-Phase::initReplication( const unsigned maxSize )
+Phase::setSurrogateDelaySize( size_t maxSize )
 {
     _surrogateDelay.resize( maxSize );
     return *this;
 }
 #endif
-
-
-
-/*
- * Initialize waiting time from lower level servers.
- */
-
-Phase&
-Phase::initWait()
-{
-    std::for_each( callList().begin(), callList().end(), std::mem_fn( &Call::initWait ) );
-    std::for_each( devices().begin(), devices().end(), &DeviceInfo::initWait );
-    return *this;
-}
 
 
 
@@ -445,9 +461,17 @@ Phase::initVariance()
  */
 
 Phase&
-Phase::resetReplication()
+Phase::clearSurrogateDelay()
 {
-    _surrogateDelay = 0.;
+    _surrogateDelay = 0.;		/* Vector clear */
+    return *this;
+}
+
+
+Phase&
+Phase::addSurrogateDelay( const VectorMath<double>& addend )
+{
+    _surrogateDelay += addend;		/* Vector add */
     return *this;
 }
 #endif
@@ -522,14 +546,13 @@ Phase::hasVariance() const
  */
 
 void
-Phase::callsPerform( const CallExec& exec ) const
+Phase::callsPerform( Call::Perform& g ) const
 {
-    std::for_each( callList().begin(), callList().end(), exec );
+    std::for_each( callList().begin(), callList().end(), g );
     for ( std::vector<DeviceInfo *>::const_iterator device = devices().begin(); device != devices().end(); ++device ) {
-	exec( (*device)->call() );
+	g( (*device)->call() );
     }
 }
-
 
 
 
@@ -767,7 +790,6 @@ Phase::numberOfSlices() const
 
 /* ------------------------------------------------------------------------ */
 
-
 /*
  * Return throughut for phase.
  */
@@ -788,7 +810,7 @@ Phase::utilization() const
 {
     const double f = throughput();
     if ( std::isfinite( f ) && f > 0.0 ) {
-	const double t = elapsedTime();
+	const double t = residenceTime();
 	return f * t;
     } else {
 	return 0.0;
@@ -799,10 +821,8 @@ Phase::utilization() const
 Phase::DeviceInfo *
 Phase::getProcessor() const
 {
-    for ( std::vector<DeviceInfo *>::const_iterator device = devices().begin(); device != devices().end(); ++device ) {
-	if ( (*device)->isHost() ) return *device;
-    }
-    return nullptr;
+    std::vector<DeviceInfo *>::const_iterator device = std::find_if( devices().begin(), devices().end(), std::mem_fn( &DeviceInfo::isHost ) );
+    return device != devices().end() ? *device : nullptr;
 }
 
 
@@ -1030,7 +1050,7 @@ Phase::cfsThinkTime( double groupRatio )
 {
 
     const double oldCFSDelay = getCFSCall()->wait();
-    double newCFSDelay = oldCFSDelay + groupRatio * elapsedTime();
+    double newCFSDelay = oldCFSDelay + groupRatio * residenceTime();
     if ( groupRatio < 0. && newCFSDelay < 0. ) {
 	newCFSDelay = oldCFSDelay / 2.0;
     }
@@ -1141,14 +1161,6 @@ Phase::updateWait( const Submodel& submodel, const double relax )
 
 
 
-Phase&
-Phase::updateVariance()
-{
-    setVariance( computeVariance() );
-    return *this;
-}
-
-
 #if PAN_REPLICATION
 double
 Phase::getReplicationProcWait( unsigned int submodel, const double relax )
@@ -1189,7 +1201,7 @@ Phase::getReplicationProcWait( unsigned int submodel, const double relax )
 double
 Phase::getReplicationTaskWait( unsigned int submodel, const double relax )
 {
-    return std::accumulate( callList().begin(), callList().end(), 0., add_using<double,Call>( &Call::wait ) );
+    return std::accumulate( callList().begin(), callList().end(), 0., Call::sum( &Call::wait ) );
 }
 #endif
 
@@ -1492,13 +1504,13 @@ Phase::insertDOMResults() const
 {
     if ( getReplicaNumber() != 1 ) return *this;		/* NOP */
 
-    getDOM()->setResultServiceTime(elapsedTime())
+    getDOM()->setResultServiceTime(residenceTime())
 	.setResultVarianceServiceTime(variance())
 	.setResultUtilization(utilization())
 	.setResultProcessorWaiting(queueingTime() + _cfs_delay);
 
     if ( getDOM()->hasHistogram() || getDOM()->hasMaxServiceTimeExceeded() ) {
-	insertDOMHistogram( const_cast<LQIO::DOM::Histogram *>(getDOM()->getHistogram()), elapsedTime(), variance() );
+	insertDOMHistogram( const_cast<LQIO::DOM::Histogram *>(getDOM()->getHistogram()), residenceTime(), variance() );
     }
 
     for ( std::set<Call *>::const_iterator call = callList().begin(); call != callList().end(); ++call ) {
@@ -1531,8 +1543,8 @@ Phase::recalculateDynamicValues()
  * Compute the variance. 
  */
 
-double
-Phase::computeVariance() const
+void
+Phase::computeVariance()
 {
     typedef double (Phase::*fptr)() const;
     static std::map<const Pragma::Variance,fptr> stochastic =
@@ -1550,14 +1562,14 @@ Phase::computeVariance() const
 	{ Pragma::Variance::MOL, 	&Phase::deterministic_phase }
     };
 
-    if ( !std::isfinite( elapsedTime() ) ) {
-	return elapsedTime();
+    if ( !std::isfinite( residenceTime() ) ) {
+	setVariance( residenceTime() );
     } else if ( phaseTypeFlag() == LQIO::DOM::Phase::Type::STOCHASTIC ) {
 	const fptr f = stochastic.at(Pragma::variance());
-	return (this->*f)();
+	setVariance( (this->*f)() );
     } else {
 	const fptr f = deterministic.at(Pragma::variance());
-	return (this->*f)();
+	setVariance( (this->*f)() );
     }
 }
 
@@ -1590,7 +1602,7 @@ Phase::stochastic_phase() const
 
 	/* first extract the properties of the delay for one call instance*/
 	const double blocking_mean = (*call)->wait(); //includes service ph 1
-	// + Positive( (*call)->dstEntry()->elapsedTime(1) );
+	// + Positive( (*call)->dstEntry()->residenceTime(1) );
 	/* mean delay for one of these calls */
 	if ( !std::isfinite( blocking_mean ) ) {
 	    return blocking_mean;
@@ -1601,7 +1613,7 @@ Phase::stochastic_phase() const
 	    return blocking_var;
 	}
 	// this includes variance due to service
-	// + square (Positive( (*call)->dstEntry()->elapsedTime(1) )) * Positive( (*call)->dstEntry()->computeCV_sqr(1) );
+	// + square (Positive( (*call)->dstEntry()->residenceTime(1) )) * Positive( (*call)->dstEntry()->computeCV_sqr(1) );
 	/*  variance of one of these calls */
 
 	/* then add up; the sum accounts for no of calls and fanout  */

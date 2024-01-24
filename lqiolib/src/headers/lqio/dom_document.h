@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- *  $Id: dom_document.h 16795 2023-08-14 13:38:32Z greg $
+ *  $Id: dom_document.h 16887 2023-12-07 18:08:01Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -32,14 +32,14 @@ namespace LQIO {
 	const char * toolname() const { return lq_toolname.c_str(); }
 	void init( const std::string& version, const std::string& toolname, void (*sa)(error_severity) );
 
-	std::string lq_toolname;                /* I:Name of tool for messages    */
-	std::string lq_version;			/* I: version number	          */
+	std::string lq_toolname;		/* I:Name of tool for messages	  */
+	std::string lq_version;			/* I: version number		  */
 	std::string lq_command_line;		/* I:Command line		  */
-	void (*severity_action)(LQIO::error_severity);	/* I:Severity action              */
+	void (*severity_action)(LQIO::error_severity);	/* I:Severity action		  */
 
-	unsigned max_error;			/* I:Maximum error ID number      */
-	mutable unsigned error_count;		/* IO:Number of errors            */
-	LQIO::error_severity severity_level;    /* I:Messages < severity_level ignored. */
+	unsigned max_error;			/* I:Maximum error ID number	  */
+	mutable unsigned error_count;		/* IO:Number of errors		  */
+	LQIO::error_severity severity_level;	/* I:Messages < severity_level ignored. */
     } io_vars;
 
     namespace DOM {
@@ -56,7 +56,7 @@ namespace LQIO {
 	class Document {
 
 	public:
-	    enum class OutputFormat { DEFAULT, LQN, XML, JABA, JMVA, JSON, RTF, PARSEABLE, QNAP2 };
+	    enum class OutputFormat { DEFAULT, LQN, XML, JABA, JMVA, JSON, RTF, PARSEABLE, QNAP2, TXT };
 	    enum class InputFormat  { AUTOMATIC, LQN, XML, JABA, JMVA, JSON, QNAP2 };
 
 	private:
@@ -122,7 +122,7 @@ namespace LQIO {
 	    void registerExternalSymbolsWithProgram(LQX::Program* program);
 	    bool instantiated() const { return _instantiated; }
 	    void setInstantiated( bool instantiated ) { _instantiated = instantiated; }
-	    
+	
 	    /* LQX Pragma Support */
 	    void addPragma(const std::string&,const std::string&);
 	    void mergePragmas(const std::map<std::string,std::string>&);
@@ -168,12 +168,15 @@ namespace LQIO {
 
 	    /* Results */
 	    Document& setMVAStatistics( const unsigned int, const unsigned long, const double, const double, const double, const double, const unsigned int );
-	    unsigned int getResultInvocationNumber() const { return _resultInvocationNumber; }
-	    Document& setResultInvocationNumber( const unsigned int resultInvocationNumber ) { _resultInvocationNumber = resultInvocationNumber; return *this; }
-	    double getResultConvergenceValue() const { return _resultConvergenceValue; }
-	    Document& setResultConvergenceValue(double resultConvergenceValue);
 	    bool getResultValid() const { return _resultValid; }
 	    Document& setResultValid(bool resultValid);
+	    unsigned int getResultInvocationNumber() const { return _resultInvocationNumber; }
+	    Document& setResultInvocationNumber( const unsigned int resultInvocationNumber ) { _resultInvocationNumber = resultInvocationNumber; return *this; }
+	    const std::string& getResultDescription() const { return _resultDescription; }
+	    Document& setResultDescription();
+	    Document& setResultDescription( const std::string& resultDescription );
+	    double getResultConvergenceValue() const { return _resultConvergenceValue; }
+	    Document& setResultConvergenceValue(double resultConvergenceValue);
 	    unsigned int getResultIterations() const { return _resultIterations; }
 	    Document& setResultIterations(unsigned int resultIterations);
 	    unsigned int getResultNumberOfBlocks() const { return _resultIterations; }
@@ -193,7 +196,7 @@ namespace LQIO {
 	    Document& setResultUserTime(double resultUserTime);
 	    long getResultMaxRSS() const { return _resultMaxRSS; }
 	    Document& setResultMaxRSS( long resultMaxRSS );
-	    
+
 
 	    const MVAStatistics& getResultMVAStatistics() const { return _mvaStatistics; }
 	    double getResultMVAStep() const { return _mvaStatistics.getNumberOfStep(); }
@@ -279,21 +282,21 @@ namespace LQIO {
 
 	    /* List of Objects */
 
-	    std::map<std::string, Processor*> _processors;    	/* processor.name -> Processor */
-	    std::map<std::string, Group*> _groups;            	/* group.name -> Group */
-	    std::map<std::string, Task*> _tasks;              	/* task.name -> Task */
-	    std::map<std::string, Entry*> _entries;           	/* entry.name -> Entry */
-	    std::map<unsigned, Entity*> _entities;            	/* entity.id -> Entity */
-	    std::map<std::string, Decision*> _decisions;    	/* decision.name -> Decision */
-	    std::map<std::string, DecisionPath*> _decisionPaths;    	/* decisionPath.name -> DecisionPath */
+	    std::map<std::string, Processor*> _processors;	/* processor.name -> Processor */
+	    std::map<std::string, Group*> _groups;		/* group.name -> Group */
+	    std::map<std::string, Task*> _tasks;		/* task.name -> Task */
+	    std::map<std::string, Entry*> _entries;		/* entry.name -> Entry */
+	    std::map<unsigned, Entity*> _entities;		/* entity.id -> Entity */
+	    std::map<std::string, Decision*> _decisions;	/* decision.name -> Decision */
+	    std::map<std::string, DecisionPath*> _decisionPaths;	/* decisionPath.name -> DecisionPath */
 
 	    /* We need to make sure all variables named the same point the same */
 	    std::map<const std::string, SymbolExternalVariable*> _variables;
 	    std::map<const std::string, const ExternalVariable*> _controlVariables;
 	    static std::map<const std::string, const double> __initialValues;
 
-	    unsigned _nextEntityId;                           	/* for sorting, see _entities 	*/
-	    const InputFormat _format;				/* input format 		*/
+	    unsigned _nextEntityId;				/* for sorting, see _entities	*/
+	    const InputFormat _format;				/* input format			*/
 
 	    /* The stored LQX program, if any */
 	    std::string _lqxProgram;
@@ -325,6 +328,7 @@ namespace LQIO {
 	    unsigned int _resultIterations;
 	    std::string _resultPlatformInformation;
 	    std::string _resultSolverInformation;
+	    std::string _resultDescription;
 	    double _resultUserTime;
 	    double _resultSysTime;
 	    double _resultElapsedTime;

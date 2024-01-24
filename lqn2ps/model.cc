@@ -1,6 +1,6 @@
 /* model.cc	-- Greg Franks Mon Feb  3 2003
  *
- * $Id: model.cc 16791 2023-07-27 11:21:46Z greg $
+ * $Id: model.cc 16906 2024-01-22 12:02:11Z greg $
  *
  * Load, slice, and dice the lqn model.
  */
@@ -33,6 +33,10 @@
 #include <lqio/srvn_results.h>
 #include <lqio/srvn_output.h>
 #include <lqio/srvn_spex.h>
+#if HAVE_EXPAT_H
+#include <lqio/jmva_document.h>
+#endif
+#include <lqio/qnap2_document.h>
 #include "model.h"
 #include "entry.h"
 #include "activity.h"
@@ -122,7 +126,7 @@ Model::Model( LQIO::DOM::Document * document, const std::string& input_file_name
     if ( graphical_output() && Flags::print[KEY].opts.value.i != 0 ) {
 	_key = new Key;
     }
-    if ( graphical_output() && (Flags::print[MODEL_COMMENT].opts.value.b || Flags::print[SOLVER_INFO].opts.value.b) ) {
+    if ( graphical_output() && (Flags::print[MODEL_COMMENT].opts.value.b || Flags::print[MODEL_DESCRIPTION].opts.value.b || Flags::print[SOLVER_INFO].opts.value.b) ) {
 	_label = Label::newLabel();
     }
 
@@ -322,7 +326,7 @@ Model::group_by_submodel()
  * Process input and save.
  */
 
-void
+int
 Model::create( const std::string& input_file_name, const LQIO::DOM::Pragma& pragmas, const std::string& output_file_name, const std::string& parse_file_name, int model_no )
 {
     /* Maps for type conversion */
@@ -374,7 +378,7 @@ Model::create( const std::string& input_file_name, const LQIO::DOM::Pragma& prag
     if ( !document ) {
 	std::cerr << LQIO::io_vars.lq_toolname << ": Input model was not loaded successfully." << std::endl;
 	LQIO::io_vars.error_count += 1;
-	return;
+	return INVALID_INPUT;
     } else if ( Flags::output_format() == File_Format::UNKNOWN ) {
 	/* generally, we figure out the output format from lqn2xxx, or -Oxxx.  For rep2flat, set based on actual input format */
 	Flags::set_output_format( dom_to_lqn2xxx.at(document->getInputFormat()) );
@@ -387,11 +391,11 @@ Model::create( const std::string& input_file_name, const LQIO::DOM::Pragma& prag
 	catch ( const std::runtime_error &error ) {
 	    std::cerr << LQIO::io_vars.lq_toolname << ": Cannot load results file " << parse_file_name << " - " << error.what() << "." << std::endl;
 	    Flags::have_results = false;
-	    if ( output_output() ) return;
+	    if ( output_output() ) return FILEIO_ERROR;
 	}
 	if ( !Flags::have_results ) {
 	    std::cerr << LQIO::io_vars.lq_toolname << ": Cannot load results file " << parse_file_name << " - " << strerror( errno ) << "." << std::endl;
-	    if ( output_output() ) return;
+	    if ( output_output() ) return FILEIO_ERROR;
 	}
     } else {
 	Flags::have_results = Flags::print_results() && document->hasResults();
@@ -452,7 +456,9 @@ Model::create( const std::string& input_file_name, const LQIO::DOM::Pragma& prag
 
     model->setModelNumber( model_no );
 
-    if ( model->process() ) {		/* This layerizes and renders the model */
+    int status = 0;
+
+    if ( model->process() ) {				/* This layerizes and renders the model */
 	LQX::Program * program = nullptr;
 
 	try {
@@ -460,8 +466,9 @@ Model::create( const std::string& input_file_name, const LQIO::DOM::Pragma& prag
 	    if ( program != nullptr && Flags::run_lqx() ) {
 		Flags::instantiate  = true;
 
-		if (program == nullptr) {
+		if ( program == nullptr ) {
 		    LQIO::runtime_error( LQIO::ERR_LQX_COMPILATION, input_file_name.c_str() );
+		    status = INVALID_INPUT;
 		} else { 
 		    /* Attempt to run the program */
 		    document->registerExternalSymbolsWithProgram(program);
@@ -477,8 +484,7 @@ Model::create( const std::string& input_file_name, const LQIO::DOM::Pragma& prag
 		    }
 		    LQIO::RegisterBindings(program->getEnvironment(), document);
 	
-		    int status = 0;
-		    FILE * output = 0;
+		    FILE * output = nullptr;
 		    if ( output_file_name.size() > 0 && output_file_name != "-" && LQIO::Filename::isRegularFile(output_file_name) ) {
 			output = fopen( output_file_name.c_str(), "w" );
 			if ( !output ) {
@@ -516,18 +522,24 @@ Model::create( const std::string& input_file_name, const LQIO::DOM::Pragma& prag
 #if !(__GNUC__ && __GNUC__ < 3)
 	catch ( const std::ios_base::failure &error ) {
 	    std::cerr << LQIO::io_vars.lq_toolname << ": " << error.what() << std::endl;
+	    status = INVALID_INPUT;
 	}
 #endif
 	catch ( const std::domain_error& error ) {
 	    std::cerr << LQIO::io_vars.lq_toolname << ": " << error.what() << std::endl;
+	    status = INVALID_INPUT;
 	}
 	catch ( const std::runtime_error &error ) {
 	    std::cerr << LQIO::io_vars.lq_toolname << ": " << error.what() << std::endl;
+	    status = INVALID_INPUT;
 	}
+    } else {
+	status = INVALID_INPUT;
     }
 
     delete document;
     delete model;
+    return status;
 }
 
 
@@ -810,15 +822,22 @@ Model::process()
 	if ( Flags::print[SOLVER_INFO].opts.value.b ) {
 	    *_label << _document->getResultSolverInformation();
 	}
+	if ( Flags::print[MODEL_DESCRIPTION].opts.value.b ) {
+	    if ( !_label->empty() ) _label->newLine();
+	    *_label << _document->getResultDescription();
+	}
 	if ( Flags::print[MODEL_COMMENT].opts.value.b ) {
-	    if ( _label->size() > 0 ) _label->newLine();
+	    if ( !_label->empty() ) _label->newLine();
 	    *_label << _document->getModelComment();
 	}
-	if ( _label != nullptr && _label->size() ) {
-	    _extent.moveBy( 0, _label->height() );
-	    _label->moveTo( _origin.x() + _extent.x()/2 , _extent.y() - _label->height() );
+	if ( _label != nullptr && !_label->empty() ) {
+//	    const double y = _extent.y();					/* top */
+	    const double h = _label->height();
+	    _extent.moveBy( 0, h * 2 );
+	    _origin.moveBy( 0, -h * 2 );					/* top */
+//	    _label->moveTo( _origin.x() + _extent.x()/2 , y + h );		/* top */
+	    _label->moveTo( _origin.x() + _extent.x()/2 , _origin.y() );	/* bottom */
 	}
-	     
 
 	/* Move the key iff necessary */
 
@@ -1022,17 +1041,31 @@ Model::getExtension()
 	{ File_Format::XML, 	    "lqnx" }
     };
 
+    /* Map any of source extensions to lqn */
+    static const std::set<std::string> source_extensions = {
+	"lqnx",
+	"xlqn",
+	"xml",
+	"json",
+	"lqxo",
+	"lqjo",
+	"jmva",
+	"qnap2",
+	"qnap",
+	"qnp"
+    };
+
     std::map<const File_Format,const std::string>::const_iterator i;
     const File_Format o = Flags::output_format();
 
-    /* Non standard files names are retained (in theory) */
     if ( Flags::output_format() == File_Format::SRVN ) {
-	std::size_t i = _inputFileName.find_last_of( '.' );
-	if ( i != std::string::npos ) {
-	    std::string ext = _inputFileName.substr( i+1 );
+	/* Non standard files names are retained (in theory) */
+	std::size_t n = _inputFileName.find_last_of( '.' );
+	if ( n != std::string::npos ) {
+	    std::string ext = _inputFileName.substr( n+1 );
 	    std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-	    if ( ext != "lqnx" && ext != "xlqn" && ext != "xml" && ext != "json" && ext != "lqxo" && ext != "lqjo"  && ext != "jmva" ) {
-		return ext;
+	    if ( source_extensions.find( ext ) == source_extensions.end() ) {
+		return ext;	/* Not in the list above, so overwrite file. */
 	    }
 	} 
 	return "lqn";
@@ -1435,14 +1468,14 @@ Model::finalScaleTranslate()
 
 #if SVG_OUTPUT
     case File_Format::SVG:
-	/* TeX's origin is lower left corner.  SVG's is upper right.  Fix and scale */
+	/* TeX's origin is lower left corner.  SVG's is upper left.  Fix and scale */
 	translateScale( SVG_SCALING );
 	break;
 #endif
 
 #if SXD_OUTPUT
     case File_Format::SXD:
-	/* TeX's origin is lower left corner.  SXD's is upper right.  Fix and scale */
+	/* TeX's origin is lower left corner.  SXD's is upper left.  Fix and scale */
 	translateScale( SXD_SCALING );
 	break;
 #endif
@@ -1620,7 +1653,7 @@ Model::print( std::ostream& output ) const
 	{ File_Format::JPEG,	    &Model::printJPG },
 #endif
 #if JMVA_OUTPUT && HAVE_EXPAT_H
-	{ File_Format::JMVA,	    &Model::printBCMP },
+	{ File_Format::JMVA,	    &Model::printJMVA },
 #endif
 	{ File_Format::JSON,	    &Model::printJSON },
 	{ File_Format::NO_OUTPUT,   &Model::printNOP },
@@ -1631,7 +1664,7 @@ Model::print( std::ostream& output ) const
 	{ File_Format::PARSEABLE,   &Model::printParseable },
 	{ File_Format::POSTSCRIPT,  &Model::printPostScript },
 #if QNAP2_OUTPUT
-	{ File_Format::QNAP2,	    &Model::printBCMP },
+	{ File_Format::QNAP2,	    &Model::printQNAP2 },
 #endif
 	{ File_Format::RTF,	    &Model::printRTF },
 #if SVG_OUTPUT
@@ -1759,15 +1792,14 @@ Model::returnReplication()
 std::ostream&
 Model::printEEPIC( std::ostream & output ) const
 {
-    output << "% Created By: " << LQIO::io_vars.lq_toolname << " Version " << VERSION << std::endl
-	   << "% Invoked as: " << command_line << ' ' << _inputFileName << std::endl
-	   << "\\setlength{\\unitlength}{" << 1.0/EEPIC_SCALING << "pt}" << std::endl
+    printModelComment( output, "% " );
+    output << "\\setlength{\\unitlength}{" << 1.0/EEPIC_SCALING << "pt}" << std::endl
 	   << "\\begin{picture}("
 	   << static_cast<int>(right()+0.5) << "," << static_cast<int>(top() + 0.5)
 	   << ")(" << static_cast<int>(bottom()+0.5)
 	   << "," << -static_cast<int>(bottom()+0.5) << ")" << std::endl;
 
-    printLayers( output );
+    draw( output );
 
     output << "\\end{picture}" << std::endl;
     return output;
@@ -1780,7 +1812,7 @@ Model::printEMF( std::ostream& output ) const
 {
     /* header start */
     EMF::init( output, right(), top(), command_line );
-    printLayers( output );
+    draw( output );
     EMF::terminate( output );
     return output;
 }
@@ -1794,7 +1826,7 @@ Model::printEMF( std::ostream& output ) const
 std::ostream&
 Model::printFIG( std::ostream& output ) const
 {
-    output << "#FIG 3.2" << std::endl
+    output << "#FIG 3.2  Produced by " << LQIO::io_vars.lq_toolname << " version " << VERSION << std::endl
 	   << "Portrait" << std::endl
 	   << "Center" << std::endl
 	   << "Inches" << std::endl
@@ -1802,10 +1834,7 @@ Model::printFIG( std::ostream& output ) const
 	   << "75.00" << std::endl
 	   << "Single" << std::endl
 	   << "-2" << std::endl;
-    output << "# Created By: " << LQIO::io_vars.lq_toolname << " Version " << VERSION << std::endl
-	   << "# Invoked as: " << command_line << ' ' << _inputFileName << std::endl
-	   << "# " << LQIO::DOM::Common_IO::svn_id() << std::endl
-	   << "# " << getDOM()->getModelComment() << std::endl;
+    printModelComment( output, "# " );
     output << "1200 2" << std::endl;
     Fig::initColours( output );
 
@@ -1824,7 +1853,7 @@ Model::printFIG( std::ostream& output ) const
 	alignment.polyline( output, points, Fig::POLYGON, Graphic::Colour::WHITE, Graphic::Colour::TRANSPARENT, (_layers.size()+1)*10 );
     }
 
-    printLayers( output );
+    draw( output );
 
     return output;
 }
@@ -1859,7 +1888,7 @@ std::ostream&
 Model::printGD( std::ostream& output, outputFuncPtr func ) const
 {
     GD::create( static_cast<int>(right()+0.5), static_cast<int>(top()+0.5) );
-    printLayers( output );
+    draw( output );
     (* func)( output );
     GD::destroy();
     return output;
@@ -1880,7 +1909,7 @@ Model::printPostScript( std::ostream& output ) const
 
     PostScript::init( output );
 
-    printLayers( output );
+    draw( output );
 
     output << "showpage" << std::endl;
     output << "restore" << std::endl;
@@ -1896,10 +1925,7 @@ Model::printSVG( std::ostream& output ) const
     output << "<?xml version=\"1.0\" standalone=\"no\"?>" << std::endl
 	   << "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 20000303 Stylable//EN\""
 	   << " \"http://www.w3.org/TR/2000/03/WD-SVG-20000303/DTD/svg-20000303-stylable.dtd\">" << std::endl;
-    output << "<!-- Title: " << _inputFileName << " -->" << std::endl;
-    output << "<!-- Creator: " << LQIO::io_vars.lq_toolname << " Version " << VERSION << " -->" << std::endl;
-    output << "<!-- Invoked as: " << command_line << ' ' << _inputFileName << " -->" << std::endl;
-    output << "<!-- " << LQIO::DOM::Common_IO::svn_id() << " -->" << std::endl;
+    printModelComment( output, "<!-- ", " -->" );
     output << "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\""
 	   << right() / (SVG_SCALING * 72.0) << "in\" height=\""
 	   << top() / (SVG_SCALING * 72.0) << "in\" viewBox=\""
@@ -1908,7 +1934,7 @@ Model::printSVG( std::ostream& output ) const
 	   << static_cast<int>(top() + 0.5) << "\">" << std::endl;
     output << "<desc>" << getDOM()->getModelComment() << "</desc>" << std::endl;
 
-    printLayers( output );
+    draw( output );
     output << "</svg>" << std::endl;
     return output;
 }
@@ -1934,11 +1960,10 @@ Model::printSXD( std::ostream& output ) const
     SXD::init( output );
 
     output << indent( +1 ) << "<office:body>" << std::endl;
-    output << indent( +1 ) << "<draw:page draw:name=\""
-	   << _inputFileName
+    output << indent( +1 ) << "<draw:page draw:name=\"" << _inputFileName
 	   << "\" draw:style-name=\"dp1\" draw:master-page-name=\"Default\">" << std::endl;
 
-    printLayers( output );
+    draw( output );
 
     output << indent( -1 ) << "</draw:page>" << std::endl;
     output << indent( -1 ) << "</office:body>" << std::endl;
@@ -1954,6 +1979,20 @@ Model::printX11( std::ostream& output ) const
     return output;
 }
 #endif
+
+
+
+std::ostream&
+Model::printModelComment( std::ostream& output, const std::string& head, const std::string& tail ) const
+{
+    output << head << LQIO::DOM::Common_IO::svn_id() << tail << std::endl
+	   << head << "Invoked as: " << command_line << ' ' << _inputFileName << tail << std::endl;
+    const std::string& description = getDOM()->getResultDescription();
+    if ( !description.empty() ) output << head << "Description: " << description << tail << std::endl;
+    const std::string& comment = getDOM()->getModelComment();
+    if ( !comment.empty() ) output << head << "Comment: " << comment << tail << std::endl;
+    return output;
+}
 
 /* ---------------------- Non-graphical output. ----------------------- */
 
@@ -1984,22 +2023,6 @@ Model::Remap::operator()( const Entity * entity )
 	_entities[_entities.size() + 1] = const_cast<LQIO::DOM::Entity *>(dynamic_cast<const LQIO::DOM::Entity *>(entity->getDOM()));	/* Our order, not the dom's */
     }
 }
-
-
-#if QNAP2_OUTPUT || JMVA_OUTPUT
-/*
- * It has to be a submodel...
- */
-
-std::ostream&
-Model::printBCMP( std::ostream& output ) const
-{
-    if ( queueing_output() ) {
-	_layers.at(Flags::queueing_model()).printBCMPQueueingNetwork( output );
-    }
-    return output;
-}
-#endif
 
 
 /*
@@ -2072,7 +2095,7 @@ Model::printTXT( std::ostream& output ) const
 	    const_cast<Layer&>(*layer).generateSubmodel().printSubmodel( output );
 	}
     } else {
-	printLayers( output );
+	draw( output );
     }
     return output;
 }
@@ -2108,14 +2131,45 @@ Model::printXML( std::ostream& output ) const
 
 
 
+#if JMVA_OUTPUT
+/*
+ * It has to be a submodel...
+ */
 
+std::ostream&
+Model::printJMVA( std::ostream& output ) const
+{
+    if ( queueing_output() ) {
+	QNIO::JMVA_Document model( _inputFileName, _layers.at(Flags::queueing_model()).getBCMPModel());
+	model.exportModel( output );
+    }
+    return output;
+}
+#endif
+
+#if QNAP2_OUTPUT
+/*
+ * It has to be a submodel...
+ */
+
+std::ostream&
+Model::printQNAP2( std::ostream& output ) const
+{
+    if ( queueing_output() ) {
+	QNIO::QNAP2_Document model( _inputFileName, _layers.at(Flags::queueing_model()).getBCMPModel() );
+	model.setComment( _document->getResultDescription() );
+	model.exportModel( output );
+    }
+    return output;
+}
+#endif
 
 /*
  * Print out one layer at at time.  Used by most graphical output routines.
  */
 
 std::ostream&
-Model::printLayers( std::ostream& output ) const
+Model::draw( std::ostream& output ) const
 {
     if ( queueing_output() ) {
 	const int submodel = Flags::queueing_model();
@@ -2144,9 +2198,9 @@ Model::printLayers( std::ostream& output ) const
 	if ( _key ) {
 	    output << *_key;
 	}
-	if ( _label ) {
-	    output << *_label;
-	}
+    }
+    if ( _label ) {
+	output << *_label;
     }
     return output;
 }

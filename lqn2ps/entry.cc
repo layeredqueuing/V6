@@ -8,7 +8,7 @@
  * January 2003
  *
  * ------------------------------------------------------------------------
- * $Id: entry.cc 16791 2023-07-27 11:21:46Z greg $
+ * $Id: entry.cc 16906 2024-01-22 12:02:11Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -22,6 +22,7 @@
 #include <cstring>
 #include <functional>
 #include <limits>
+#include <lqx/SyntaxTree.h>
 #include <lqio/error.h>
 #include <lqio/dom_extvar.h>
 #include <lqio/bcmp_to_lqn.h>
@@ -134,7 +135,7 @@ Entry::getPhase( unsigned p ) const
  */
 
 Phase&
-Entry::getPhase( unsigned p ) 
+Entry::getPhase( unsigned p )
 {
     const std::pair<std::map<unsigned,Phase>::iterator,bool> i = _phases.insert( std::pair<unsigned,Phase>(p,Phase()) );
     std::map<unsigned,Phase>::iterator j = i.first;
@@ -165,7 +166,7 @@ Entry::~Entry()
 }
 
 Entry *
-Entry::clone( unsigned int replica ) const 
+Entry::clone( unsigned int replica ) const
 {
     std::ostringstream aName;
     aName << name() << "_" << replica;
@@ -820,7 +821,7 @@ Entry::is_w_unlock_Entry() const
  */
 
 bool
-Entry::entryTypeOk( const LQIO::DOM::Entry::Type aType )
+Entry::entryTypeOk( const LQIO::DOM::Entry::Entry::Type aType )
 {
     const LQIO::DOM::Entry * dom = dynamic_cast<const LQIO::DOM::Entry *>(getDOM());
     const bool rc = const_cast<LQIO::DOM::Entry *>(dom)->entryTypeOk( aType );
@@ -1225,7 +1226,7 @@ Entry&
 Entry::aggregateService( const Activity * anActivity, const unsigned p, const double rate )
 {
     /* Aggregate the service time made by the activity to the entry.  Go to the entry dom to get the phase dom so that one can be created. */
-    
+
     const LQIO::DOM::Entry * entry = dynamic_cast<const LQIO::DOM::Entry *>(getDOM());
     LQIO::DOM::Phase * phase = const_cast<LQIO::DOM::Phase *>(getPhase(p).getDOM());
     if ( phase == nullptr ) {
@@ -1243,14 +1244,14 @@ Entry::aggregateService( const Activity * anActivity, const unsigned p, const do
     phase->setResultUtilizationVariance( entry->getResultPhasePUtilizationVariance(p) );
     phase->setResultProcessorWaiting( entry->getResultPhasePProcessorWaiting(p) );
     phase->setResultProcessorWaitingVariance( entry->getResultPhasePProcessorWaitingVariance(p) );
-    
+
     Phase::merge( *phase, *anActivity->getDOM(), rate );
 
     const std::vector<Call *>& calls = anActivity->calls();
     for ( std::vector<Call *>::const_iterator call = calls.begin(); call != calls.end(); ++call ) {
 	Entry * dstEntry = const_cast<Entry *>((*call)->dstEntry());
 	dstEntry->removeDstCall( *call );
-	
+
 	/* Aggregate the calls made by the activity to the entry */
 
 	Call * dstCall;
@@ -1294,12 +1295,12 @@ Entry::aggregatePhases()
     }
 
     /* Merge up the times. */
-    
+
     phase_1->setServiceTime(LQIO::DOM::BCMP_to_LQN::getExternalVariable(serviceTime()));		/*Sums over all phases */
     phase_1->setResultServiceTime(std::accumulate( _phases.begin(), _phases.end(), 0., &Phase::accumulate_execution ));
 
     /* Merge all calls to phase 1 */
-    
+
     std::for_each( calls().begin(), calls().end(), Exec1<Call,LQIO::DOM::Phase&>( &Call::aggregatePhases, *phase_1 ) );
 
     /* Delete old stuff */
@@ -1316,11 +1317,19 @@ Entry::aggregatePhases()
 }
 
 
-/* static */ BCMP::Model::Station::Class
-Entry::accumulate_demand( const BCMP::Model::Station::Class& augend, const Entry * entry )
+/*+ BUG_323 */
+void
+Entry::accumulateDemand( const std::string& class_name, BCMP::Model::Station& station ) const
 {
-    return std::accumulate( entry->_phases.begin(), entry->_phases.end(), augend, &Phase::accumulate_demand );
+    station.classAt(class_name) = std::accumulate( _phases.begin(), _phases.end(), BCMP::Model::Station::Class( new LQX::ConstantValueExpression( 1.0 ), nullptr ), &Phase::accumulate_demand );
 }
+
+void
+Entry::accumulateResponseTime( const std::string& class_name, BCMP::Model::Station& station ) const
+{
+    accumulateDemand( class_name, station );
+}
+/*- BUG_323 */
 
 /*
  * Chase calls looking for cycles and the depth in the call tree.
@@ -1357,10 +1366,10 @@ bool
 Entry::check() const
 {
     bool rc = true;
-    
+
     /* concordance between c, phase_flag */
 
-    if ( isActivityEntry() ) {
+    if ( startActivity() ) {
 
 	std::deque<const Activity *> activityStack;
 	unsigned next_p = 1;
@@ -1374,6 +1383,9 @@ Entry::check() const
 		rc = false;
 	    }
 	    max_phases = std::max( maxPhase(), max_phases );		/* Set global value.	*/
+	} else if ( requestType() == request_type::SEND_NO_REPLY || requestType() == request_type::OPEN_ARRIVAL ) {
+	    getDOM()->runtime_error( LQIO::ERR_INVALID_REPLY_FOR_SNR_ENTRY, name().c_str() );
+	    rc = false;
 	}
 
     } else if ( isStandardEntry() ) {
@@ -1405,7 +1417,7 @@ Entry::check() const
     if ( owner()->scheduling() != SCHEDULE_SEMAPHORE && ( (isSignalEntry() || isWaitEntry()) ) ) {
 	owner()->getDOM()->runtime_error( LQIO::ERR_NOT_SEMAPHORE_TASK, owner()->name().c_str(), (isSignalEntry() ? "signal" : "wait"), name().c_str() );
 	rc = false;
-    } else if ( owner()->scheduling() != SCHEDULE_RWLOCK 
+    } else if ( owner()->scheduling() != SCHEDULE_RWLOCK
 		&& ( (is_r_lock_Entry() || is_r_unlock_Entry() || is_w_unlock_Entry()|| is_w_lock_Entry() ) ) ) {
 	if ( is_r_lock_Entry() || is_r_unlock_Entry() ) {
 	    owner()->getDOM()->runtime_error( LQIO::ERR_NOT_RWLOCK_TASK, (is_r_lock_Entry() ? "r_lock" : "r_unlock"), name().c_str() );
@@ -1418,7 +1430,7 @@ Entry::check() const
 	getDOM()->runtime_error( LQIO::WRN_ENTRY_HAS_NO_REQUESTS );
     }
 
-    
+
     /* Forwarding probabilities o.k.? */
 
     const double sum = std::accumulate( calls().begin(), calls().end(), 0.0, sum_extvar( &Call::forward ) );
@@ -1660,10 +1672,10 @@ Entry::colour() const
 	    return colourForDifference( residenceTime() );
 	}
 	break;
-	
+
     case Colouring::CLIENTS:
-	if ( myPaths.size() ) {
-	    return (Graphic::Colour)(*myPaths.begin() % 11 + 5);		// first element is smallest
+	if ( _paths.size() ) {
+	    return (Graphic::Colour)(*_paths.begin() % 11 + 5);		// first element is smallest
 	} else {
 	    return Graphic::Colour::DEFAULT;
 	}
@@ -1903,14 +1915,14 @@ Entry::label()
 {
     *_label << name();
     if ( !startActivity() && Flags::print_input_parameters() ) {
-	_label->newLine() << '[' << service_time_of(*this)  << ']';
+	_label->newLine() << '[' << service_time(*this)  << ']';
 	if ( hasThinkTime() ) {
-	    *_label << ",Z=" << think_time_of(*this);
+	    *_label << ",Z=" << think_time(*this);
 	}
     }
     if ( Flags::have_results ) {
 	if ( Flags::print[SERVICE].opts.value.b ) {
-	    _label->newLine() << begin_math() << execution_time_of(*this) << end_math();
+	    _label->newLine() << begin_math() << residence_time(*this) << end_math();
 	}
 	if ( Flags::print[VARIANCE].opts.value.b && Model::variancePresent ) {
 	    _label->newLine() << begin_math( &Label::sigma ) << "=" << variance_of(*this) << end_math();
@@ -1941,19 +1953,41 @@ Entry::label()
 
 
 Entry&
-Entry::labelQueueingNetworkVisits( Label& aLabel )
+Entry::labelQueueingNetworkTaskServiceTime( Label& label )
+{
+    label.newLine() << name() << "[" << service_time(*this) << "]";
+    return *this;
+}
+
+
+
+Entry&
+Entry::labelQueueingNetworkProcessorServiceTime( Label& label )
+{
+//    label.newLine() << owner()->processor()->name();
+
+    label.newLine() << name() << "[" << service_time(*this) << "]";
+    
+//    label.newLine() << name() << "[" << LQIO::DOM::to_double(serviceTime(1)) << "]";
+    return *this;
+}
+
+
+
+Entry&
+Entry::labelQueueingNetworkVisits( Label& label )
 {
     for ( std::vector<GenericCall *>::const_iterator call = callers().begin(); call != callers().end(); ++call ) {
 	if ( !dynamic_cast<Call *>((*call)) ) continue;
 	if ( (*call)->hasRendezvous() ) {
-	    aLabel << (*call)->srcName() << ':' << (*call)->dstName() << " ("
-		   << print_rendezvous( *dynamic_cast<Call *>((*call)) ) << ")";
-	    aLabel.newLine();
+	    label << (*call)->srcName() << ':' << (*call)->dstName() << " ("
+		  << print_rendezvous( *dynamic_cast<Call *>((*call)) ) << ")";
+	    label.newLine();
 	}
 	if ( (*call)->hasSendNoReply() ) {
-	    aLabel << (*call)->srcName() << ':' << (*call)->dstName() << " ("
-		   << print_sendnoreply( *dynamic_cast<Call *>((*call)) ) << ")";
-	    aLabel.newLine();
+	    label << (*call)->srcName() << ':' << (*call)->dstName() << " ("
+		  << print_sendnoreply( *dynamic_cast<Call *>((*call)) ) << ")";
+	    label.newLine();
 	}
     }
 
@@ -1963,14 +1997,14 @@ Entry::labelQueueingNetworkVisits( Label& aLabel )
 
 
 Entry&
-Entry::labelQueueingNetworkWaiting( Label& aLabel )
+Entry::labelQueueingNetworkWaiting( Label& label )
 {
     for ( std::vector<GenericCall *>::const_iterator call = callers().begin(); call != callers().end(); ++call ) {
 	const Call * theCall = dynamic_cast<Call *>((*call));
 	if ( theCall ) {
-	    aLabel << theCall->srcName() << ':' << theCall->dstName() << "="
-		   << print_wait( *theCall );
-	    aLabel.newLine();
+	    label << theCall->srcName() << ':' << theCall->dstName() << "="
+		  << print_wait( *theCall );
+	    label.newLine();
 	}
     }
 
@@ -1979,12 +2013,34 @@ Entry::labelQueueingNetworkWaiting( Label& aLabel )
 
 
 
+/*
+ * Includes queueing
+ */
+
 Entry&
-Entry::labelQueueingNetworkService( Label& aLabel ) 
+Entry::labelQueueingNetworkProcessorResponseTime( Label& label )
 {
-    aLabel.newLine() << name() << "[" << service_time_of(*this) << "]";
+    label.newLine() << name() << "[" << service_time(*this) << "]";
+
+    if ( Flags::have_results ) {
+	label << " R=" << processor_response_time( *this );
+    }
     return *this;
 }
+
+
+
+Entry&
+Entry::labelQueueingNetworkTaskResponseTime( Label& label )
+{
+    label.newLine() << name() << "[" << residence_time(*this) << "]";
+
+    if ( Flags::have_results ) {
+	label << " R=" << task_response_time( *this );
+    }
+    return *this;
+}
+
 
 
 /*
@@ -2013,8 +2069,8 @@ Entry::rename()
 
 
 #if BUG_270
-/* 
- * Find all callers to this entry, then move the arc to the client.  Delete the client arc.  
+/*
+ * Find all callers to this entry, then move the arc to the client.  Delete the client arc.
  * We don't do activities (yet)
  * Async calls to inf servers?  Do supply demand on processor.
  */
@@ -2042,7 +2098,7 @@ Entry::linkToClients( const std::vector<EntityCall *>& proc )
 	    clone->updateRateFrom( *client_call, **server_call );
 
 	    /* Replace the DOM call with a clone and change the rate.   See Call.cc::rendezvous(p). */
-	    
+
 	    client_entry->addSrcCall( clone );	// copy to parent entry.  Duplicates?
 	    const Entry * entry = (*server_call)->dstEntry();
 	    const_cast<Entry *>(entry)->addDstCall( clone );
@@ -2063,7 +2119,7 @@ Entry::linkToClients( const std::vector<EntityCall *>& proc )
 		dynamic_cast<ProcessorCall *>(clone)->setSrcEntry( this );
 		clone->updateRateFrom( *client_call );
 	    }
-	    
+
 	    Task * client_task = const_cast<Task *>(client_entry->owner());
 	    clone->setSrcTask( client_task );
 	    client_task->addSrcCall( clone );	// copy to parent task.  Duplicates?
@@ -2110,7 +2166,7 @@ Entry::remove_from_dst( Call * call )
 
 #if REP2FLAT
 Entry *
-Entry::find_replica( const std::string& entry_name, const unsigned replica ) 
+Entry::find_replica( const std::string& entry_name, const unsigned replica )
 {
     std::ostringstream aName;
     aName << entry_name << "_" << replica;
@@ -2126,7 +2182,7 @@ Entry::find_replica( const std::string& entry_name, const unsigned replica )
 
 
 Entry&
-Entry::expand() 
+Entry::expand()
 {
     const unsigned replicas = owner()->replicasValue();
     for ( unsigned int replica = 1; replica <= replicas; ++replica ) {
@@ -2152,12 +2208,12 @@ Entry::expandCalls()
 
 
 Entry&
-Entry::replicateEntry( LQIO::DOM::DocumentObject ** root ) 
+Entry::replicateEntry( LQIO::DOM::DocumentObject ** root )
 {
     const static struct {
 	set_function first;
 	get_function second;
-    } entry_mean[] = { 
+    } entry_mean[] = {
 	// static std::pair<set_function,get_function> entry_mean[] = {
 	{ &LQIO::DOM::DocumentObject::setResultThroughput, &LQIO::DOM::DocumentObject::getResultThroughput },
 	{ &LQIO::DOM::DocumentObject::setResultUtilization, &LQIO::DOM::DocumentObject::getResultUtilization },
@@ -2182,7 +2238,7 @@ Entry::replicateEntry( LQIO::DOM::DocumentObject ** root )
     const static struct {
 	set_function first;
 	get_function second;
-    } entry_variance[] = { 
+    } entry_variance[] = {
 	//static std::pair<set_function,get_function> entry_variance[] = {
 	{ &LQIO::DOM::DocumentObject::setResultThroughputVariance, &LQIO::DOM::DocumentObject::getResultThroughputVariance },
 	{ &LQIO::DOM::DocumentObject::setResultUtilizationVariance, &LQIO::DOM::DocumentObject::getResultUtilizationVariance },
@@ -2231,7 +2287,7 @@ Entry::replicateEntry( LQIO::DOM::DocumentObject ** root )
 }
 
 Entry&
-Entry::replicateCall() 
+Entry::replicateCall()
 {
     unsigned int replica = 0;
     std::string root_name = baseReplicaName( replica );
@@ -2239,12 +2295,12 @@ Entry::replicateCall()
 	std::vector<Call *> old_calls = _calls;
 	_calls.clear();
 
-	/* 
+	/*
 	 * Remove Calls from DOM.  Reinsert useful calls.  A bit of a
 	 * pain since DOM calls are attached to DOM phases while
 	 * drawing calls are associated with entries
 	 */
-	
+
 	std::for_each( _phases.begin(), _phases.end(), Exec( &Phase::replicateCall ) );
 
 	Call * root = nullptr;
@@ -2270,7 +2326,7 @@ Entry::draw( std::ostream& output ) const
     if ( _startActivity ) {
 	aComment << " A " << _startActivity->name();
     } else {
-	aComment << " s [" << service_time_of( *this ) << "]";
+	aComment << " s [" << service_time( *this ) << "]";
     };
 #if defined(BUG_375)
     aComment << " span=" << span() << ", index=" << index();
@@ -2435,39 +2491,15 @@ Entry::create( LQIO::DOM::Entry* dom )
 /*		 	    Output formatting.   			*/
 /*----------------------------------------------------------------------*/
 
-static std::ostream&
-format( std::ostream& output, int p ) {
-    switch ( Flags::output_format() ) {
-    case File_Format::SRVN:
-	if ( p != 1 ) {
-	    output << ' ';
-	}
-	break;
-
-    case File_Format::OUTPUT:
-    case File_Format::PARSEABLE:
-    case File_Format::RTF:
-	output << std::setw( maxDblLen );
-	break;
-
-    default:
-	if ( p != 1 ) {
-	    output << ',';
-	}
-	break;
-    }
-    return output;
-}
-
-
-Label&
-Entry::print_execution_time( Label& label, const Entry& entry )
+std::ostream&
+Entry::print_residence_time( std::ostream& output, const Entry& entry )
 {
     for ( unsigned p = 1; p <= entry.maxPhase(); ++p ) {
-	if ( p > 1 ) label << ",";
-	label << opt_pct(entry.residenceTime(p));
+	if ( p > 1 ) output << ",";
+	output << entry.residenceTime(p);
     }
-    return label;
+    if ( difference_output() ) output << "%";
+    return output;
 }
 
 
@@ -2496,7 +2528,7 @@ std::ostream&
 Entry::print_service_time( std::ostream& output, const Entry& entry )
 {
     for ( unsigned p = 1; p <= entry.maxPhase(); ++p ) {
-	format( output, p );
+	if ( p > 1 ) output << ",";
 	if ( entry.hasServiceTime(p) ) {
 	    output << entry.serviceTime(p);
 	} else {
@@ -2511,7 +2543,7 @@ std::ostream&
 Entry::print_think_time( std::ostream& output, const Entry& entry )
 {
     for ( unsigned p = 1; p <= Entry::max_phases; ++p ) {
-	format( output, p );
+	if ( p > 1 ) output << ",";
 	if ( entry.hasThinkTime(p) ) {
 	    output << entry.thinkTime(p);
 	} else {
@@ -2520,6 +2552,42 @@ Entry::print_think_time( std::ostream& output, const Entry& entry )
     }
     return output;
 }
-
-SRVNEntryManip service_time_of( const Entry& entry ) { return SRVNEntryManip( &Entry::print_service_time, entry ); }
-SRVNEntryManip think_time_of( const Entry& entry ) { return SRVNEntryManip( &Entry::print_think_time, entry ); }
+
+
+
+/*
+ * Derive the processor response time.
+ */
+
+std::ostream&
+Entry::print_processor_response_time( std::ostream& output, const Entry& entry )
+{
+    const LQIO::DOM::Entry * dom = dynamic_cast<const LQIO::DOM::Entry *>(entry.getDOM());
+    const unsigned n = entry.maxPhase();
+
+    for ( unsigned p = 1; p <= n; ++p ) {
+	if ( p > 1 ) output << ",";
+
+	const double service_time = LQIO::DOM::to_double( entry.serviceTime(p) );
+	output << (service_time + dom->getResultPhasePProcessorWaiting(p));	// Brackets needed due to operator precedence.
+    }
+    return output;
+}
+
+/*
+ * Derive the task response time.
+ */
+
+std::ostream&
+Entry::print_task_response_time( std::ostream& output, const Entry& entry )
+{
+    const double residence_time = entry.residenceTime(1);		/* Only phase 1 residence time counts */
+    const Call * call = dynamic_cast<Call *>(entry.callers().at(0));	/* They should all be the same, so pick one */
+    const unsigned n = entry.maxPhase();
+
+    for ( unsigned p = 1; p <= n; ++p ) {
+	if ( p > 1 ) output << ",";
+	output << (residence_time + call->waiting(p));			// Brackets needed due to operator precedence.
+    }
+    return output;
+}

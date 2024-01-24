@@ -9,7 +9,7 @@
  *
  * November 2022
  *
- * $Id: qnio_document.h 16718 2023-05-12 12:25:33Z greg $
+ * $Id: qnio_document.h 16905 2024-01-22 11:55:41Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -93,6 +93,8 @@ namespace QNIO {
 
 	const BCMP::Model& model() const { return _model; }
 	BCMP::Model& model() { return _model; }
+	const std::string& getComment() const { return _comment; }
+	void setComment( const std::string& comment ) { _comment = comment; }
 	bool boundsOnly() const { return _bounds_only; }
 	void setBoundsOnly( bool value ) { _bounds_only = value; }
 	const std::string& getInputFileName() const { return _input_file_name; }
@@ -109,6 +111,7 @@ namespace QNIO {
     public:
 	virtual void registerExternalSymbolsWithProgram( LQX::Program * ) {}	/* Might hoist */
 	virtual std::vector<std::string> getUndefinedExternalVariables() const { return std::vector<std::string>(); }
+	virtual unsigned getSymbolExternalVariableCount() const { return 0; }
 	const std::map<std::string,std::string>& getPragmaList() const { return _pragmas.getList(); }
 
 	bool hasPragmas() const { return !_pragmas.empty(); }
@@ -120,11 +123,14 @@ namespace QNIO {
 	virtual void saveResults( size_t, const std::string&, size_t, const std::string&, const std::string&, const std::map<BCMP::Model::Result::Type,double>& ) {}
 	virtual void plot( BCMP::Model::Result::Type, const std::string&, LQIO::GnuPlot::Format format=LQIO::GnuPlot::Format::TERMINAL ) {}
 
+	bool convertToLQN( LQIO::DOM::Document& ) const;
+
 	virtual std::ostream& print( std::ostream& output ) const = 0;
 	virtual std::ostream& exportModel( std::ostream& output ) const = 0;
     
     private:
 	const std::string _input_file_name;
+	std::string _comment;
 	LQIO::DOM::Pragma _pragmas;
 	bool _bounds_only;
 	BCMP::Model _model;

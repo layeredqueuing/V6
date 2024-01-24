@@ -9,7 +9,7 @@
  * January 2003
  *
  * ------------------------------------------------------------------------
- * $Id: entry.h 16791 2023-07-27 11:21:46Z greg $
+ * $Id: entry.h 16888 2023-12-08 12:18:20Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -43,10 +43,12 @@ extern "C" {
 
 class Entry : public Element {
     friend class Task;
-    friend LabelEntryManip execution_time_of( const Entry& entry );
+    friend SRVNEntryManip residence_time( const Entry& entry );
     friend LabelEntryManip variance_of( const Entry& entry );
-    friend SRVNEntryManip service_time_of( const Entry& entry );
-    friend SRVNEntryManip think_time_of( const Entry& entry );
+    friend SRVNEntryManip service_time( const Entry& entry );
+    friend SRVNEntryManip think_time( const Entry& entry );
+    friend SRVNEntryManip processor_response_time( const Entry& entry );
+    friend SRVNEntryManip task_response_time( const Entry& entry );
     friend LabelEntryManip queueing_time_of( const Entry& entry );
     typedef SRVNEntryManip (* print_func_ptr)( const Entry& );
 
@@ -253,10 +255,13 @@ public:
     unsigned countArcs( const callPredicate = nullptr ) const;
     unsigned countCallers( const callPredicate = nullptr ) const;
 
-    double serviceTimeForSRVNInput( const unsigned p ) const;
     Entry& aggregateService( const Activity * anActivity, const unsigned p, const double rate );
     Entry& aggregatePhases();
-    static BCMP::Model::Station::Class accumulate_demand( const BCMP::Model::Station::Class&, const Entry * );
+    double serviceTimeForSRVNInput( const unsigned p ) const;
+    /*+ BUG_323 */
+    void accumulateDemand( const std::string&, BCMP::Model::Station& ) const;
+    void accumulateResponseTime( const std::string& class_name, BCMP::Model::Station& station ) const;
+    /*- BUG_323 */
 
     static Entry * find( const std::string& );
     static bool compare( const Entry *, const Entry * );
@@ -265,13 +270,17 @@ public:
 
     Graphic::Colour colour() const;
 
+    virtual Entry& label();
+    Entry& labelQueueingNetworkProcessorResponseTime( Label& );
+    Entry& labelQueueingNetworkProcessorServiceTime( Label& );
+    Entry& labelQueueingNetworkTaskResponseTime( Label& );
+    Entry& labelQueueingNetworkTaskServiceTime( Label& );
+    Entry& labelQueueingNetworkVisits( Label& );
+    Entry& labelQueueingNetworkWaiting( Label& );
+
     /* movement */
 
     virtual Entry& moveTo( const double x, const double y );
-    virtual Entry& label();
-    Entry& labelQueueingNetworkVisits( Label& );
-    Entry& labelQueueingNetworkService( Label& );
-    Entry& labelQueueingNetworkWaiting( Label& );
     virtual Entry& scaleBy( const double, const double );
     virtual Entry& translateY( const double );
     virtual Entry& depth( const unsigned );
@@ -310,11 +319,13 @@ private:
 #endif
 
     std::ostream& printSRVNLine( std::ostream& output, char code, print_func_ptr func ) const;
-    static Label& print_execution_time( Label&, const Entry& );
+    static std::ostream& print_residence_time( std::ostream&, const Entry& );
     static Label& print_queueing_time( Label&, const Entry& );
     static Label& print_variance( Label&, const Entry& );
     static std::ostream& print_service_time( std::ostream&, const Entry& );
     static std::ostream& print_think_time( std::ostream&, const Entry& );
+    static std::ostream& print_processor_response_time( std::ostream&, const Entry& );
+    static std::ostream& print_task_response_time( std::ostream&, const Entry& );
     
 public:
     static std::set<Entry *,LT<Entry> > __entries;
@@ -370,8 +381,12 @@ private:
 };
 
 SRVNEntryManip compute_service_time( const Entry & anEntry );
-SRVNEntryManip service_time_of( const Entry& anEntry );
-SRVNEntryManip think_time_of( const Entry& anEntry );
+
+inline SRVNEntryManip service_time( const Entry& entry ) { return SRVNEntryManip( &Entry::print_service_time, entry ); }
+inline SRVNEntryManip residence_time( const Entry& entry ) { return SRVNEntryManip( &Entry::print_residence_time, entry ); }
+inline SRVNEntryManip think_time( const Entry& entry ) { return SRVNEntryManip( &Entry::print_think_time, entry ); }
+inline SRVNEntryManip processor_response_time( const Entry& entry ) { return SRVNEntryManip( &Entry::print_processor_response_time, entry ); }
+inline SRVNEntryManip task_response_time( const Entry& entry ) { return SRVNEntryManip( &Entry::print_task_response_time, entry ); }
 
 bool map_entry_names( const char * from_entry_name, Entry * & fromEntry, const char * to_entry_name, Entry * & toEntry,  err_func_t err_func );
 #endif
