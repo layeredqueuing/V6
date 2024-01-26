@@ -2,7 +2,7 @@
 # Copyright (C) 2005 Greg Franks <greg@sce.carleton.ca>
 #
 # ------------------------------------------------------------------------
-# $Id: Makefile.am 16488 2023-03-07 02:14:11Z greg $
+# $Id: Makefile.am 16948 2024-01-26 14:40:09Z greg $
 # ------------------------------------------------------------------------
 
 SRVN=	../lqsim
@@ -65,8 +65,7 @@ SEMA =	60-semaphore.lqxo \
 SIM=	71-fair.lqxo \
 	72-fair.lqxo \
 	75-distributions.lqxo \
-	76-distributions.lqxo \
-	77-semaphore.lqxo
+	76-distributions.lqxo
 FAIR=	71-fair.lqxo \
 	72-fair.lqxo 
 SYNC=	80-sync.lqxo \
