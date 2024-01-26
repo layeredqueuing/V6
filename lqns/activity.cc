@@ -11,7 +11,7 @@
  * July 2007
  *
  * ------------------------------------------------------------------------
- * $Id: activity.cc 16805 2023-08-22 20:04:14Z greg $
+ * $Id: activity.cc 16945 2024-01-26 13:02:36Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -243,32 +243,28 @@ Activity::repliesTo( const Entry * entry ) const
  */
 
 unsigned
-Activity::findChildren( Children& path ) const
+Activity::findChildren( Ancestors& ancestors ) const
 {
     _reachable = true;
 
-    if ( path.find( this ) ) {
-	throw activity_cycle( this, path.getActivityStack() );
+    if ( ancestors.find( this ) ) {
+	throw activity_cycle( this, ancestors.getActivityStack() );
     }
 
-    unsigned max_depth = Phase::findChildren( path.getCallStack(), path.isDirectPath() );
+    unsigned max_depth = Phase::findChildren( ancestors.getCallStack(), ancestors.isDirectPath() );
     if ( nextJoin() ) {
-	path.push_activity( this );
-	max_depth = std::max( max_depth, nextJoin()->findChildren( path ) );
-	path.pop_activity();
+	ancestors.push_activity( this );
+	max_depth = std::max( max_depth, nextJoin()->findChildren( ancestors ) );
+	ancestors.pop_activity();
     }
     return max_depth;
 }
 
 
 const Activity&
-Activity::backtrack( Backtrack& data ) const
+Activity::backtrack( Backtrack::State& data ) const
 {
-    if ( prevFork() != nullptr ) {
-	prevFork()->backtrack( data );
-    } else {
-	data.setStartActivity( this );
-    }
+    if ( prevFork() != nullptr ) prevFork()->backtrack( data );
     return *this;
 }
 
@@ -780,7 +776,6 @@ Activity::getLevelMeansAndNumberOfCalls(double & level1Mean,
 					double & avgNumCallsToLevel2Tasks )
 {
     bool anError = false;
-    double relax = 1;
     unsigned int currentSubmodel = owner()->submodel();
     currentSubmodel++; //As a client the actual submodel is submodel++.
     if (flags.trace_quorum) {
@@ -789,12 +784,12 @@ Activity::getLevelMeansAndNumberOfCalls(double & level1Mean,
 
 #if PAN_REPLICATION
     if (owner()->replicas() > 1) {
-	level1Mean = getReplicationProcWait(currentSubmodel,relax) ;
+	level1Mean = getReplicationProcWait(currentSubmodel);
 	// std::cout <<"\ngetReplicationProcWait=" <<
 	//getReplicationProcWait(currentSubmodel,relax) << std::endl ;
     } else {
 #endif
-	level1Mean = getProcWait( currentSubmodel,relax);
+	level1Mean = getProcWait( currentSubmodel );
 #if PAN_REPLICATION
     }
 #endif
@@ -804,12 +799,12 @@ Activity::getLevelMeansAndNumberOfCalls(double & level1Mean,
 
 #if PAN_REPLICATION
     if (owner()->replicas() > 1) {
-	level2Mean =  getReplicationTaskWait(currentSubmodel,relax);
+	level2Mean =  getReplicationTaskWait();
 	// std::cout <<"\ngetReplicationTaskWait=" <<
 	//getReplicationTaskWait(currentSubmodel,relax) << std::endl ;
     } else {
 #endif
-	level2Mean = getTaskWait(currentSubmodel, relax);
+	level2Mean = getTaskWait( currentSubmodel );
 #if PAN_REPLICATION
     }
 #endif
@@ -819,12 +814,12 @@ Activity::getLevelMeansAndNumberOfCalls(double & level1Mean,
 
 #if PAN_REPLICATION
     if (owner()->replicas() > 1) {
-	avgNumCallsToLevel2Tasks =getReplicationRendezvous(currentSubmodel,relax);
+	avgNumCallsToLevel2Tasks =getReplicationRendezvous( currentSubmodel );
 	//std::cout <<"\ngetReplicationRendezvous=" <<
 	//getReplicationRendezvous(currentSubmodel,relax) << std::endl ;
     } else {
 #endif
-	avgNumCallsToLevel2Tasks = getRendezvous(currentSubmodel, relax);
+	avgNumCallsToLevel2Tasks = getRendezvous(currentSubmodel );
 #if PAN_REPLICATION
     }
 #endif
@@ -922,6 +917,7 @@ Activity::collectServiceTime( Entry * entry, const Activity::Collect& data ) con
 {
     entry->addServiceTime( data.phase(), serviceTime() );
 }
+
 
 /*+ BUG_425 */
 void

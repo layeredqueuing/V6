@@ -10,7 +10,7 @@
  * November, 1994
  * March, 2004
  *
- * $Id: call.h 16805 2023-08-22 20:04:14Z greg $
+ * $Id: call.h 16945 2024-01-26 13:02:36Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -28,7 +28,7 @@ class Activity;
 class Call;
 class Entity;
 class Entry;
-class Entry;
+class Entity;
 class EntryPath;
 class MVASubmodel;
 class Path;
@@ -155,6 +155,20 @@ public:
 	bool operator()( const Call * call ) const { return call->dstEntry() == _e && call->isForwardedCall(); }
     private:
 	const Entry * _e;
+    };
+    
+    struct is_called_by {
+	is_called_by( const Entry * e ) : _e(e) {}
+	bool operator()( const Call * call ) const { return call->isCalledBy( _e ); }
+    private:
+	const Entry * _e;
+    };
+    
+    struct has_chain {
+	has_chain( unsigned int k ) : _k(k) {}
+	bool operator()( const Call * call ) const { return call->hasChain( _k ); }
+    private:
+	const unsigned int _k;
     };
     
     struct sum {
@@ -298,8 +312,8 @@ public:
     
     virtual const std::string& srcName() const;
     const Task * srcTask() const;
-    virtual const Entry * srcEntry() const = 0;
-
+    virtual const Entry * srcEntry() const { return nullptr; }
+    
     const std::string& dstName() const;
     unsigned submodel() const;	/* Proxy */
 
@@ -367,9 +381,7 @@ private:
     const LQIO::DOM::Call* _dom;	/* Input */
     const Phase* _source;		/* Calling Phase/activity.	*/
     const Entry* _destination;		/* to whom I am referring to	*/
-#if PAN_REPLICATION
     unsigned _chainNumber;
-#endif
     double _wait;			/* Waiting time.		*/
     double _interlockedFlow;   		/* >0.0: interlocked flow 	*/
     					/* =0.0: is along the Path of an interlocked flow. */
@@ -388,7 +400,6 @@ public:
     virtual NullCall * clone( unsigned int, unsigned int ) { abort(); return nullptr; }
 
     virtual const std::string& srcName() const { static const std::string null("NULL"); return null; }
-    virtual Entry * srcEntry() const { return nullptr; }
     virtual bool isCalledBy( const Entry * ) const { return false; }
 };
 
@@ -433,7 +444,6 @@ private:
 class FromActivity : virtual protected Call {
 public:
     FromActivity() {}
-    const Entry * srcEntry() const;
 };
 
 class ActivityCall : virtual public Call, protected FromActivity {

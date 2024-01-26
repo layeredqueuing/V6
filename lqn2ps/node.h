@@ -1,7 +1,7 @@
 /* -*- c++ -*-  
  * node.h	-- Greg Franks
  *
- * $Id: node.h 15180 2021-12-08 20:56:48Z greg $
+ * $Id: node.h 16945 2024-01-26 13:02:36Z greg $
  */
 
 #ifndef _NODE_H

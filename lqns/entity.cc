@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: entity.cc 16805 2023-08-22 20:04:14Z greg $
+ * $Id: entity.cc 16945 2024-01-26 13:02:36Z greg $
  *
  * Everything you wanted to know about a task or processor, but were
  * afraid to ask.
@@ -35,7 +35,6 @@
 #include "pragma.h"
 #include "processor.h"
 #include "submodel.h"
-#include "task.h"
 #include "task.h"
 #include "variance.h"
 
@@ -137,7 +136,7 @@ Entity::~Entity()
 Entity&
 Entity::configure( const unsigned nSubmodels )
 {
-    std::for_each( entries().begin(), entries().end(), Exec1<Entry,unsigned>( &Entry::configure, nSubmodels ) );
+    for ( auto& entry : entries() ) entry->configure( nSubmodels );
     if ( std::any_of( entries().begin(), entries().end(), std::mem_fn( &Entry::hasDeterministicPhases ) ) ) setDeterministicPhases( true );
     if ( !Pragma::variance(Pragma::Variance::NONE)
 	 && ((nEntries() > 1 && Pragma::entry_variance())
@@ -460,9 +459,7 @@ Entity::insertDOMResults() const
     return *this;
 }
 
-/************************************************************************/
-/*			      Interlock					*/
-/************************************************************************/
+/* -------------------------- Interlock ------------------------------- */
 
 /*
  * Return in probability of interlocking.
@@ -528,7 +525,7 @@ void Entity::set_chain_IL_rate::operator()( unsigned int k ) { if ( _serverChain
 bool
 Entity::hasILWait() const
 {
-    return std::any_of( entries().begin(), entries().end(), Predicate1<Entry,unsigned>( &Entry::hasILWait, submodel() ) );
+    return std::any_of( entries().begin(), entries().end(), Entry::has_IL_wait( submodel() ) );
 }
 
 
@@ -553,7 +550,7 @@ Entity::initWeights( MVASubmodel& submodel )
 
 
 
-const Entity&
+void
 Entity::setMaxCustomers( const MVASubmodel& submodel ) const
 {
     Server * aStation = serverStation();
@@ -569,8 +566,7 @@ Entity::setMaxCustomers( const MVASubmodel& submodel ) const
 	const ChainVector& chain = (*client)->clientChains( submodel.number() );
 
 	for ( unsigned ix = 2; ix <= chain.size(); ++ix ) {
-	    const unsigned k = chain[ix];
-	    for_each ( entries().begin(), entries().end(), ConstExec1<const Entry,unsigned int>( &Entry::setMaxCustomersForChain, k ) );
+	    std::for_each( entries().begin(), entries().end(), Entry::exec( &Entry::setMaxCustomersForChain, chain[ix] ) );
 	}
     }
 
@@ -608,12 +604,11 @@ Entity::setMaxCustomers( const MVASubmodel& submodel ) const
 
     /* save the total number of possible customer to the server */
     aStation->setMaxCustomers( 0, 0, totalCustomers );
-    return *this;
 }
 
 
 
-const Entity&
+void
 Entity::setInterlock( const MVASubmodel& submodel ) const
 {
 #if THROUGHPUT_INTERLOCK
@@ -643,7 +638,6 @@ Entity::setInterlock( const MVASubmodel& submodel ) const
 	std::for_each( clients.begin(), clients.end(), Task::set_interlock_PrUpper( submodel, this ) );
     }
 #endif
-    return *this;
 }
 
 
@@ -652,7 +646,7 @@ Entity::setInterlock( const MVASubmodel& submodel ) const
  * set interlocking relationship between client chains.
  */
 
-const Entity&
+void
 Entity::setInterlockRelation( const MVASubmodel& submodel ) const
 {
     Server * station = serverStation();
@@ -687,7 +681,6 @@ Entity::setInterlockRelation( const MVASubmodel& submodel ) const
 	    }
 	}
     }
-    return *this;
 }
 
 
@@ -904,7 +897,7 @@ Entity::output_type( std::ostream& output, const Entity& entity )
     } else if ( entity.isInfinite() ) {
 	buf = "inf";
     } else if ( n > 1 ) {
-	buf = std::string( "mult(" + std::to_string( n ) + ")" );
+	buf = std::string( "mult(" ) + std::to_string( n ) + ")";
     } else {
 	buf = "serv";
     }

@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: vector.h 15827 2022-08-14 15:20:00Z greg $
+ * $Id: vector.h 16945 2024-01-26 13:02:36Z greg $
  *
  * Vector.  Range checked from 1..n (and not from 0..n-1).
  * VectorMath.  Adds the operators +, -, *, /, square, sum (so only use on numbers).

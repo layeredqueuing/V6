@@ -10,7 +10,7 @@
  * November, 1994
  * May 2009.
  *
- * $Id: task.h 16805 2023-08-22 20:04:14Z greg $
+ * $Id: task.h 16945 2024-01-26 13:02:36Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -110,6 +110,13 @@ public:
 	const Entity * _server;
     };
 
+    struct is_interlocked_from {
+	is_interlocked_from( const Entry * from ) : _from(from) {}
+	bool operator()( const Task * client ) const;
+    private:
+	const Entry * _from;
+    };
+
 public:
     static Task* create( LQIO::DOM::Task* domTask, const std::vector<Entry *>& entries );
     static Task * find( const std::string&, unsigned int=1 );
@@ -204,15 +211,17 @@ public:
     void saveClientResults( const MVASubmodel&, const Server&, unsigned int chain );
     const Task& closedCallsPerform( Call::Perform ) const;	// Copy arg.
     const Task& openCallsPerform( Call::Perform ) const;	// Copy arg.
-    const Task& setChains( MVASubmodel& submodel ) const;
 
+    /*+ interlock */
     void saveILWait(const unsigned );
     bool isViaTask() const { return _isViaTask;}
     void setViaTask() { _isViaTask=true;}
+    void setChains( const MVASubmodel& submodel ) const;
+    /*- interlock */
 
     /* Computation */
 	
-    virtual Task& recalculateDynamicValues();
+    virtual void recalculateDynamicValues();
 
     void computeThroughputBound();
     virtual Task& computeVariance();
@@ -223,9 +232,8 @@ public:
 
     /* Interlock */
     
-    virtual bool isSendingTaskTo( const Entry * ) const;
     const Task& modifyParentClientServiceTime( const MVASubmodel& submodel, const Entity * aServer ) const;
-    const Task& setMaxCustomers( const MVASubmodel& submodel ) const;
+    void setMaxCustomers( const MVASubmodel& submodel ) const;
     const Task& setRealCustomers( const MVASubmodel& submodel, const Entity * server ) const;
     void setInterlockedFlow( const MVASubmodel& submodel ) const;
     
@@ -353,7 +361,7 @@ public:
     virtual void reinitializeClient();
 
     virtual bool check() const;
-    virtual ReferenceTask& recalculateDynamicValues();
+    virtual void recalculateDynamicValues();
     virtual unsigned findChildren( Call::stack&, const bool ) const;
 
     virtual bool isReferenceTask() const { return true; }
@@ -362,7 +370,6 @@ public:
     virtual root_level_t rootLevel() const { return root_level_t::IS_REFERENCE; }
 
     Server * makeServer( const unsigned );
-    bool hasPath(const Task * aTask);
 
     virtual const Task& sanityCheck() const;
     

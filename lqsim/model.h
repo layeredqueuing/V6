@@ -10,7 +10,7 @@
 /*
  * Global vars for simulation.
  *
- * $Id: model.h 15358 2022-01-05 00:27:52Z greg $
+ * $Id: model.h 16945 2024-01-26 13:02:36Z greg $
  */
 
 #ifndef LQSIM_MODEL_H

@@ -1,5 +1,5 @@
 /*
- *  $Id: bcmp_bindings.cpp 16391 2023-02-03 17:35:34Z greg $
+ *  $Id: bcmp_bindings.cpp 16945 2024-01-26 13:02:36Z greg $
  *
  *  Created by Martin Mroz on 16/04/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.

@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
-<!-- $Id: 51-replication.lqnx 16717 2023-05-12 12:24:43Z greg $ -->
-<lqn-model name="51-replication" description="$Id: 51-replication.lqnx 16717 2023-05-12 12:24:43Z greg $" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="/usr/local/share/lqns/lqn.xsd">
+<!-- $Id: 51-replication.lqnx 16945 2024-01-26 13:02:36Z greg $ -->
+<lqn-model name="51-replication" description="$Id: 51-replication.lqnx 16945 2024-01-26 13:02:36Z greg $" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="/usr/local/share/lqns/lqn.xsd">
    <solver-params comment="Replicated model from Pan thesis." conv_val="1e-05" it_limit="500" underrelax_coeff="0.9" print_int="10">
       <pragma param="replication" value="prune"/>
    </solver-params>

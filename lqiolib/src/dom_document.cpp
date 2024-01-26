@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_document.cpp 16887 2023-12-07 18:08:01Z greg $
+ *  $Id: dom_document.cpp 16945 2024-01-26 13:02:36Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -570,8 +570,8 @@ namespace LQIO {
 	Document& Document::setResultPlatformInformation(const std::string& resultPlatformInformation)
 	{
 	    _hasResults = true;
-		_resultPlatformInformation = resultPlatformInformation;
-		return *this;
+	    _resultPlatformInformation = resultPlatformInformation;
+	    return *this;
 	}
 
 	Document& Document::setResultPlatformInformation()
@@ -936,9 +936,12 @@ namespace LQIO {
 	    const std::string directory_name = LQIO::Filename::createDirectory( Filename::Filename::isFileName( output_file_name ) ? output_file_name : __input_file_name, lqx_output );
 
 	    /* Set output format from input, or if LQN and LQX then force to XML. */
-    
-	    if ( output_format == OutputFormat::DEFAULT && (getInputFormat() != InputFormat::LQN || getLQXProgram() != nullptr) ) {
-		output_format = __input_to_output_format.at( getInputFormat() );
+
+	    if ( output_format == OutputFormat::DEFAULT ) {
+		size_t pos = output_file_name.find_last_of( "." );
+		if ( getLQXProgram() != nullptr || (getInputFormat() != InputFormat::LQN && (output_file_name.empty() || (pos != std::string::npos && output_file_name.substr( pos ) != ".out")) ) ) {
+		    output_format = __input_to_output_format.at( getInputFormat() );
+		}
 	    }
 
 	    /* override is true for '-p -o filename.out when filename.in' == '-p filename.in' */
@@ -1084,17 +1087,6 @@ namespace LQIO {
 	Document::print( std::ostream& output, const OutputFormat format ) const
 	{
 	    switch ( format ) {
-	    case OutputFormat::DEFAULT:
-	    case OutputFormat::LQN: {
-		SRVN::Output srvn( *this, _entities );
-		srvn.print( output );
-		break;
-	    }
-	    case OutputFormat::PARSEABLE:{
-		SRVN::Parseable srvn( *this, _entities );
-		srvn.print( output );
-		break;
-	    }
 	    case OutputFormat::RTF: {
 		SRVN::RTF srvn( *this, _entities );
 		srvn.print( output );
@@ -1112,8 +1104,11 @@ namespace LQIO {
 		json.serializeDOM( output );
 		break;
 	    }
-	    default:
-		abort();
+	    default: {
+		SRVN::Output srvn( *this, _entities );
+		srvn.print( output );
+		break;
+	    }
 	    }
 
 	    return output;

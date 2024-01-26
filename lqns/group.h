@@ -9,7 +9,7 @@
  *
  * November, 2008
  *
- * $Id: group.h 16805 2023-08-22 20:04:14Z greg $
+ * $Id: group.h 16945 2024-01-26 13:02:36Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -53,15 +53,13 @@ public:
     /*  */
 
     bool check() const;
-    /*  virtual void configure( const unsigned );
-     */
-    /* addTask is perform after this task is added. */
+
     Group& addTask( Task * task ) { _tasks.insert(task); return *this; }
     Group& removeTask( Task * task )  { _tasks.erase(task); return *this; }
-    Group& recalculateDynamicValues();
+    void recalculateDynamicValues();
     void initialize();
     void reinitialize();
-    Group& reset();
+    void reset();
     Group& initGroupTask();
     unsigned getReplicaNumber() const { return _replica_number; }
 

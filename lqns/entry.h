@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: entry.h 16911 2024-01-23 20:35:04Z greg $
+ * $Id: entry.h 16945 2024-01-26 13:02:36Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -156,22 +156,6 @@ public:
     };
     /*- interlock -*/
 
-
-    /*
-     * Compare two entries by their name and replica number.  The
-     * default replica is one, and will only not be one if replicated
-     * entries are expanded to individual entries.
-     */
-    
-    struct equals {
-	equals( const std::string& name, unsigned int replica=1 ) : _name(name), _replica(replica) {}
-	bool operator()( const Entry * entry ) const;
-    private:
-	const std::string _name;
-	const unsigned int _replica;
-    };
-    
-
     struct sum {
 	typedef double (Entry::*funcPtr)() const;
 	sum( funcPtr f ) : _f(f) {}
@@ -191,6 +175,17 @@ public:
 	const funcPtr _f;
     };
 
+    struct max_depth
+    {
+	typedef unsigned int (Phase::*funcPtr)( Call::stack&, bool ) const;
+	max_depth( funcPtr f, Call::stack& arg1, bool arg2 ) : _f(f), _arg1(arg1), _arg2(arg2) {}
+	unsigned int operator()( unsigned int l, const Phase* r ) const { return std::max( l, (r->*_f)(_arg1,_arg2) ); }
+	unsigned int operator()( unsigned int l, const Phase& r ) const { return std::max( l, (r.*_f)(_arg1,_arg2) ); }
+    private:
+	const funcPtr _f;
+	Call::stack& _arg1;
+	bool _arg2;
+    };
 
 protected:
     struct add_wait {
@@ -250,7 +245,41 @@ private:
 	const MVASubmodel& _submodel;
 	const Entry * _serverEntry;
     };
+
+public:
+    struct has_IL_wait {
+	has_IL_wait( unsigned int submodel ) : _submodel( submodel ) {}
+	bool operator()( const Entry * entry ) { return entry->_total._interlockedWait[_submodel] > 0.0; } 
+    private:
+	unsigned int _submodel;
+    };
+
+    struct is_interlocked_from
+    {
+	is_interlocked_from( const Entry * from ) : _from(from) {}
+	bool operator()( const Entry * entry ) const { return _from->isInterlocked(entry); }
+    private:
+	const Entry *_from;
+    };
+
+    struct exec {
+	typedef void (Entry::*funcPtr)( unsigned int ) const;
+	exec( const funcPtr f, unsigned int k ) : _f(f), _k(k) {}
+	void operator()( const Entry * e ) { (e->*_f)( _k ); }
+    private:
+	const funcPtr _f;
+	const unsigned int _k;
+    };
     /*- interlock -*/
+
+    struct computeCFSDelay {
+	computeCFSDelay(double ratio1, double ratio2) : _ratio1(ratio1), _ratio2(ratio2) {}
+	void operator()( const Entry * entry );
+    private:
+	double _ratio1;
+	double _ratio2;
+    };
+    
 
 public:
     static bool joinsPresent;
@@ -262,7 +291,8 @@ public:
     static Entry * find( const std::string&, unsigned int=1 );
     static Entry * create( LQIO::DOM::Entry* domEntry, unsigned int );
     static bool max_phase( const Entry * e1, const Entry * e2 ) { return e1->maxPhase() < e2->maxPhase(); }
-	
+    static double add_visit_probability( double sum, const Entry* entry ) { return sum + entry->prVisit(); }
+
 protected:
     /* Instance creation */
 
@@ -355,7 +385,6 @@ public:
     bool isSignalEntry() const { return _semaphoreType == LQIO::DOM::Entry::Semaphore::SIGNAL; }
     bool isWaitEntry() const { return _semaphoreType == LQIO::DOM::Entry::Semaphore::WAIT; }
     bool isInterlocked( const Entry * dstEntry) const { return _interlock[dstEntry->entryId()].all > 0.0; }
-    bool isInterlockedFrom( const Entry * srcEntry ) const { return srcEntry->isInterlocked(this); }
 	
     bool hasDeterministicPhases() const { return getDOM()->hasDeterministicPhases(); }
     bool hasNonExponentialPhases() const { return getDOM()->hasNonExponentialPhases(); }
@@ -364,6 +393,7 @@ public:
     bool hasStartActivity() const { return _startActivity != nullptr; }
     bool hasOpenArrivals() const { return getDOM()->hasOpenArrivalRate(); }
     bool hasOvertaking() const { return maxPhase() > 1 /*&&( !(owner()->isReferenceTask()))*/; }
+    bool hasVisitProbability() const { return getDOM()->hasVisitProbability(); }
 		
     bool entryTypeOk( const LQIO::DOM::Entry::Type );
     bool entrySemaphoreTypeOk( const LQIO::DOM::Entry::Semaphore aType );
@@ -375,7 +405,8 @@ public:
 #if PAN_REPLICATION
     virtual double waitExceptChain( const unsigned, const unsigned, const unsigned ) const; //REP N-R
 #endif
-    double getProcWait( const unsigned p, int submodel )  { return _phase[p].getProcWait(submodel, 0) ;}	
+//    double waitTime( unsigned int submodel ) { return _total.getWaitTimey(submodel); }
+    double getProcWait( const unsigned p, int submodel )  { return _phase[p].getProcWait( submodel ); }	
 
     double residenceTime() const { return _total.residenceTime(); }			/* Found through deltaWait  */
     double residenceTimeForPhase( const unsigned int p ) const { return _phase[p].residenceTime(); }	/* For server service times */
@@ -419,10 +450,9 @@ public:
     /* In order to integrate LQX's support for model changes we need to have a way  */
     /* of re-calculating what used to be static for all dynamically editable values */
 	
-    Entry& recalculateDynamicValues();
+    void recalculateDynamicValues();
 	
     /* DPS */
-    Entry& computeCFSDelay(double ratio1, double ratio2);
     double getCFSDelay() const;
     Entry& reset_lowerbound();
 
@@ -434,10 +464,9 @@ public:
     double ILWait() const;
     double rateOfUtil() const;
 
-    Entry& updateILWait( const Submodel& aSubmodel, const double relax );
+    Entry& updateILWait( const Submodel& aSubtasmodel, const double relax );
     Entry& setInterlockedFlow( const MVASubmodel& );
     double getInterlockPr( const MVASubmodel&, const Entity * ) const;
-    bool hasILWait(const unsigned submodel) const { return _total._interlockedWait[submodel] > 0.0; } 
     double getILWait(unsigned submodel) const;
     double getILWait(unsigned submodel, const unsigned p) const;
     double getILQueueLength() const;
@@ -445,13 +474,14 @@ public:
     Call* getCall(const unsigned k ) const;
 
 //    double getPhase2(const Entry * serverEntry) const;
-    bool hasPath(const Entry * dstEntry) const { return _interlock[dstEntry->entryId()]>0.0;}
 
+    /*+ interlock */
     void saveMaxCustomers(double, bool); 
     void setMaxCustomers(double nCusts) { _maxCusts = nCusts; }
-    const Entry& setMaxCustomersForChain( unsigned int ) const;
+    void setMaxCustomersForChain( unsigned int ) const;
     double getMaxCustomers() const { return _maxCusts;}
     double setInterlock( const MVASubmodel&, const Task * client, unsigned k ) const;
+    /*- interlock */
 
     /* Sanity checks */
 
@@ -501,6 +531,7 @@ private:
     RequestType _calledBy;			/* true if entry referenced.	*/
     double _throughput;				/* Computed throughput.		*/
     double _throughputBound;			/* Type 1 throughput bound.	*/
+    Probability _visitProbability;		/* Computed visit probability	*/
 	
     std::set<Call *> _callerList;		/* Who calls me.		*/
 

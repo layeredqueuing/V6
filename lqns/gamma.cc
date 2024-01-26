@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: gamma.cc 15092 2021-10-22 17:07:35Z greg $
+ * $Id: gamma.cc 16945 2024-01-26 13:02:36Z greg $
  *
  * Gamma distribution.
  *

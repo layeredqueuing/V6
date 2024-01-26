@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: entity.h 16805 2023-08-22 20:04:14Z greg $
+ * $Id: entity.h 16945 2024-01-26 13:02:36Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -27,12 +27,12 @@
 
 class Entity;
 class Entry;
-class Group;
 class Interlock;
 class MVASubmodel;
-class ReferenceTask;
 class Model;
 class Processor;
+class Processor;
+class ReferenceTask;
 class Server;
 class Submodel;
 class Task;
@@ -74,6 +74,15 @@ protected:
     };
 
 public:
+    template<class Type> struct exec {
+	typedef void (Type::*funcPtr)( const MVASubmodel& ) const;
+	exec<Type>( const funcPtr f, MVASubmodel& submodel ) : _f(f), _submodel(submodel) {}
+	void operator()( const Type * client ) const { (client->*_f)( _submodel ); }
+    private:
+	const funcPtr _f;
+	const MVASubmodel& _submodel;
+    };
+
     struct sum_square {
 	typedef double (Entity::*funcPtr)() const;
 	sum_square( funcPtr f ) : _f(f) {}
@@ -247,12 +256,12 @@ public:
     virtual Entity* mapToReplica( size_t i ) const = 0;
 
     bool markovOvertaking() const;
+
     /* Interlock */
-	
     Entity& initWeights( MVASubmodel& submodel );
-    const Entity& setMaxCustomers( const MVASubmodel& ) const;
-    const Entity& setInterlock( const MVASubmodel& ) const;
-    const Entity& setInterlockRelation( const MVASubmodel& ) const;
+    void setMaxCustomers( const MVASubmodel& ) const;
+    void setInterlock( const MVASubmodel& ) const;
+    void setInterlockRelation( const MVASubmodel& ) const;
 
     Probability prInterlock( const Task& ) const;
     Probability prInterlock( const Entry * aClientEntry ) const;
@@ -306,9 +315,6 @@ protected:
     virtual scheduling_type defaultScheduling() const { return SCHEDULE_FIFO; }
     virtual double computeUtilization( const MVASubmodel&, const Server& );
 	
-private:
-    double computeIdleTime( const unsigned, const double ) const;
-
 public:
     virtual const Entity& insertDOMResults() const;
 

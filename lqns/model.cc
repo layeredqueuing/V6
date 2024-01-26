@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: model.cc 16805 2023-08-22 20:04:14Z greg $
+ * $Id: model.cc 16945 2024-01-26 13:02:36Z greg $
  *
  * Layer-ization of model.  The basic concept is from the reference
  * below.  However, model partioning is more complex than task vs device.
@@ -64,7 +64,6 @@
 #include "generate.h"
 #include "group.h"
 #include "interlock.h"
-#include "flags.h"
 #include "model.h"
 #include "option.h"
 #include "overtake.h"
@@ -105,14 +104,15 @@ Model::solve( solve_using solve_function, const std::string& inputFileName, cons
 
     /* Make sure we got a document */
 
-    if ( LQIO::io_vars.anError() ) {
+    if ( document == nullptr  ) {
+	return INVALID_INPUT;
+    } else if ( LQIO::io_vars.anError() ) {
 	delete document;
 	return INVALID_INPUT;
-    } else if ( document == nullptr  ) {
-	return INVALID_INPUT;
     }
+    document->setResultDescription();			/* Wipe out any description and replace with generic. */
 
-    document->mergePragmas( pragmas.getList() );       /* Save pragmas -- prepare will process */
+    document->mergePragmas( pragmas.getList() );	/* Save pragmas -- prepare will process */
     if ( Model::prepare(document) == false ) {
 	delete document;
 	return INVALID_INPUT;
@@ -156,6 +156,7 @@ Model::solve( solve_using solve_function, const std::string& inputFileName, cons
 		}
 	    }
 	    catch ( const std::domain_error& e ) {
+		std::cerr << LQIO::io_vars.lq_toolname << ": domain error - " << e.what() << std::endl;
 		status = INVALID_INPUT;
 	    }
 	    catch ( const std::range_error& e ) {
@@ -562,7 +563,7 @@ Model::initialize()
 	}
 
 	if ( Options::Debug::submodels() ) {	/* Print out layers... 		*/
-	    std::for_each( _submodels.begin(), _submodels.end(), ConstPrint<Submodel>( &Submodel::print, std::cout ) );
+	    for ( const auto& submodel : _submodels ) submodel->print( std::cout );
 	}
 
     } else {
@@ -718,8 +719,8 @@ void
 Model::configure()
 {
     _MVAStats.resize( nSubmodels() );	/* MVA statistics by level.	*/
-    std::for_each( __task.begin(), __task.end(), Exec1<Entity,unsigned>( &Entity::configure, nSubmodels() ) );
-    std::for_each( __processor.begin(), __processor.end(), Exec1<Entity,unsigned>( &Entity::configure, nSubmodels() ) );
+    for ( auto& task : __task ) task->configure( nSubmodels() );
+    for ( auto& processor : __processor ) processor->configure( nSubmodels() );
     if ( __think_server ) {
 	__think_server->configure( nSubmodels() );
     }
@@ -987,12 +988,9 @@ Model::printSubmodelWait( std::ostream& output ) const
     output.setf( std::ios::left, std::ios::adjustfield );
 
     output << std::setw(8) <<  "Submodel    ";
-    for ( unsigned i = 1; i <= nSubmodels(); ++i ) {
-	output << std::setw(8) << i;
-    }
+    for ( unsigned i = 1; i <= nSubmodels(); ++i ) output << std::setw(8) << i;
     output << std::endl;
-
-    std::for_each( __task.begin(), __task.end(), ConstPrint<Task>( &Task::printSubmodelWait, output ) );
+    for ( const auto& task : __task ) task->printSubmodelWait( output );
 
     output.setf( flags );
     output.precision( precision );

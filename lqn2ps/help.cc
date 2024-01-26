@@ -1,6 +1,6 @@
 /* help.cc	-- Greg Franks Thu Mar 27 2003
  *
- * $Id: help.cc 16888 2023-12-08 12:18:20Z greg $
+ * $Id: help.cc 16945 2024-01-26 13:02:36Z greg $
  */
 
 #include "lqn2ps.h"
@@ -151,7 +151,7 @@ man()
 	      << ".TH lqn2ps 1 \"" << date << "\"  \"" << VERSION << "\"" << std::endl;
 
 
-    std::cout << comm << " $Id: help.cc 16888 2023-12-08 12:18:20Z greg $" << std::endl
+    std::cout << comm << " $Id: help.cc 16945 2024-01-26 13:02:36Z greg $" << std::endl
 	      << comm << std::endl
 	      << comm << " --------------------------------" << std::endl;
 

@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!-- $Id: 56-replication.lqnx 16717 2023-05-12 12:24:43Z greg $ -->
+<!-- $Id: 56-replication.lqnx 16945 2024-01-26 13:02:36Z greg $ -->
 <!-- Test case "table1, set5" from  -->
 <!-- @Article{perf:heidelberger-83, -->
 <!--   author =       "Heidelberger, Philip and Trivedi, Kishor S.", -->
@@ -11,7 +11,7 @@
 <!--   pages =        "73-82", -->
 <!--   month =        jan, -->
 <!-- Replicated version. -->
-<lqn-model name="56-replication" description="$Id: 56-replication.lqnx 16717 2023-05-12 12:24:43Z greg $" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="/usr/local/share/lqns/lqn.xsd">
+<lqn-model name="56-replication" description="$Id: 56-replication.lqnx 16945 2024-01-26 13:02:36Z greg $" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="/usr/local/share/lqns/lqn.xsd">
    <solver-params comment="Table 1, Set 5, Prune Replication" conv_val="1e-06" it_limit="50" underrelax_coeff="0.9" print_int="5">
       <pragma param="replication" value="pan"/>
    </solver-params>

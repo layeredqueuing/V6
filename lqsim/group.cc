@@ -9,7 +9,7 @@
 /*
  * Input output processing.
  *
- * $Id: group.cc 16752 2023-06-19 19:18:17Z greg $
+ * $Id: group.cc 16945 2024-01-26 13:02:36Z greg $
  */
 
 #include "lqsim.h"
@@ -144,10 +144,11 @@ Group::add( const std::pair<std::string,LQIO::DOM::Group*>& p )
     }
 
     /* Extract variables from the DOM */
-    const std::string& processor_name = dom->getProcessor()->getName();
+    const char * processor_name = dom->getProcessor()->getName().c_str();
+
     const Processor* processor = Processor::find(processor_name);
     if ( !processor ) {
-	dom->input_error( LQIO::ERR_NOT_DEFINED, processor_name.c_str() );
+	LQIO::input_error( LQIO::ERR_NOT_DEFINED, processor_name );
 	return;
     } else if ( processor->discipline() != SCHEDULE_CFS ) {
 	dom->getProcessor()->input_error( LQIO::WRN_NON_CFS_PROCESSOR );

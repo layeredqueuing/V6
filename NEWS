@@ -1,3 +1,14 @@
+* Bugs fixed in 6.2.29
+442 	LQN Solv 	Merge V5 to V6 
+441     lqiolib         Null model comment.
+443     lqiolib         Export/Import the schema "description" field.
+445     lqiolib         if ( va_list ) {}
+384     lqn2xxx         Join is permitted in loop 
+436     lqn2xxx         Model::format() -- bounding box is position sensitive. 
+438     lqn2xxx         Queueing model output is not generated.
+434     qnsolver        Bounds solution aborts if no whatif found in the input file.
+446     qnsolver        Segmentation fault: in `LQX::ObjectPropertyReadNode::invoke() at SyntaxTree.cpp:2096:41
+
 * Bugs fixed in 6.2.28
 297 	lqiolib 	Gnuplot and result enhancements
 343 	qnsolver 	Improve compatibility with Java Modelling Tools 

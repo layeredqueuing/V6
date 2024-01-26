@@ -10,7 +10,7 @@
  * November, 1994
  *
  * ------------------------------------------------------------------------
- * $Id: task.cc 16911 2024-01-23 20:35:04Z greg $
+ * $Id: task.cc 16945 2024-01-26 13:02:36Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -73,7 +73,7 @@ Task::Task( LQIO::DOM::Task* dom, const Processor * aProc, const Group * aGroup,
       _has_syncs(false),
       _has_quorum(false)
 {
-    std::for_each( entries.begin(), entries.end(), Exec1<Entry,const Entity *>( &Entry::owner, this ) );
+    for ( auto& entry : entries ) entry->owner( this );
 }
 
 
@@ -260,8 +260,8 @@ Task::configure( const unsigned nSubmodels )
     _clientStation.resize( nSubmodels, 0 );	/* Prepare client cltn		*/
 
     if ( hasActivities() ) {
-	std::for_each( activities().begin(), activities().end(), Exec1<Activity,unsigned>( &Activity::configure, nSubmodels ) );
-	std::for_each( _precedences.begin(), _precedences.end(), Exec1<ActivityList,unsigned>( &ActivityList::configure, nSubmodels ) );
+	for ( auto& activity : activities() ) activity->configure( nSubmodels );
+	for ( auto& precedence : precedences() ) precedence->configure( nSubmodels );
     }
     Entity::configure( nSubmodels );
 
@@ -308,16 +308,16 @@ Task::find_max_depth::operator()( unsigned int depth, const Entry * entry )
 Task&
 Task::linkForkToJoin()
 {
-    _has_forks = std::any_of( _precedences.begin(), _precedences.end(), std::mem_fn(&ActivityList::isFork) );
-    _has_syncs = std::any_of( _precedences.begin(), _precedences.end(), std::mem_fn(&ActivityList::isSync) );
-    _has_quorum = std::any_of( _precedences.begin(), _precedences.end(), std::mem_fn(&ActivityList::hasQuorum) );
+    _has_forks = std::any_of( precedences().begin(), precedences().end(), std::mem_fn(&ActivityList::isFork) );
+    _has_syncs = std::any_of( precedences().begin(), precedences().end(), std::mem_fn(&ActivityList::isSync) );
+    _has_quorum = std::any_of( precedences().begin(), precedences().end(), std::mem_fn(&ActivityList::hasQuorum) );
 
     Call::stack callStack;
-    Activity::Children path( callStack, true, false );
+    Activity::Ancestors ancestors( callStack, true, false );
     for ( std::vector<Activity *>::const_iterator activity = activities().begin(); activity != activities().end(); ++activity ) {
 	if ( !(*activity)->isStartActivity() ) continue;
 	try {
-	    (*activity)->findChildren( path );
+	    (*activity)->findChildren( ancestors );
 	}
 	catch ( const bad_external_join& error ) {
 	    error.getDOM()->runtime_error( LQIO::ERR_BAD_PATH_TO_JOIN, (*activity)->name().c_str() );
@@ -398,7 +398,7 @@ Task::initCustomers( std::deque<const Task *>& stack, unsigned int customers )
 	    customers = std::min( customers, copies() );
 	}
 	_customers[stack.front()] = customers;
-	std::for_each( entries().begin(), entries().end(), Exec2<Entry,std::deque<const Task *>&,unsigned int>( &Entry::initCustomers, stack, customers ) );
+	for ( auto& entry : entries() ) entry->initCustomers( stack, customers );
 #if BUG_425
 	std::cerr << std::setw( stack.size() * 2 ) << " " << print_name() << " pop." << std::endl;
 #endif
@@ -450,9 +450,9 @@ Task::initProcessor()
 Task&
 Task::setSurrogateDelaySize( size_t n_chains )
 {
-    std::for_each( entries().begin(), entries().end(), Exec1<Entry,size_t>( &Entry::setSurrogateDelaySize, n_chains ) );
-    std::for_each( activities().begin(), activities().end(), Exec1<Phase,size_t>( &Phase::setSurrogateDelaySize, n_chains ) );
-    std::for_each( precedences().begin(), precedences().end(), Exec1<ActivityList,size_t>( &ActivityList::setSurrogateDelaySize, n_chains ) );
+    for ( auto& entry : entries() ) entry->setSurrogateDelaySize( n_chains );
+    for ( auto& activity : activities() ) activity->setSurrogateDelaySize( n_chains );
+    for ( auto& precedence : precedences() ) precedence->setSurrogateDelaySize( n_chains );
     return *this;
 }
 #endif
@@ -584,7 +584,7 @@ Task::fanOut( const Entity * aServer ) const
 Activity *
 Task::findActivity( const std::string& name ) const
 {
-    const std::vector<Activity *>::const_iterator activity = std::find_if( activities().begin(), activities().end(), EQStr<Activity>( name ) );
+    const std::vector<Activity *>::const_iterator activity = std::find_if( activities().begin(), activities().end(), Activity::has_name( name ) );
     return activity != activities().end() ? *activity : nullptr;
 }
 
@@ -805,7 +805,7 @@ Task&
 Task::resetCFSDelay()
 {
     if ( !getProcessor()->isCFSserver() || getGroup() == nullptr ) return *this;
-    for_each( entries().begin(), entries().end(), Exec2<Entry,double,double>( &Entry::computeCFSDelay, 0., 0. ) );
+    std::for_each( entries().begin(), entries().end(), Entry::computeCFSDelay( 0., 0. ) );
     return *this;
 }
 
@@ -833,7 +833,7 @@ Task::computeCFSDelay()
 	ratio2 = getGroup()->getRatio2();
     }
     
-    for_each( entries().begin(), entries().end(), Exec2<Entry,double,double>( &Entry::computeCFSDelay, ratio1, ratio2 ) );
+    std::for_each( entries().begin(), entries().end(), Entry::computeCFSDelay( ratio1, ratio2 ) );
     return *this;
 }
 
@@ -919,17 +919,15 @@ Task::makeClient( const unsigned n_chains, const unsigned submodel )
 }
 
 
-const Task&
-Task::setChains( MVASubmodel& submodel ) const
+
+void
+Task::setChains( const MVASubmodel& submodel ) const
 {
     closedCallsPerform( Call::Perform( &Call::Perform::setChain, submodel ) );
     if ( nThreads() > 1 ) {
 	submodel.setChains( clientChains( submodel.number() ) );
-    }
-    return *this;
+     }
 }
-
-
 
 /*
  * Check results for sanity.
@@ -1005,16 +1003,16 @@ Task::updateWait( const Submodel& submodel, const double relax )
 {
     /* Do updateWait for each activity first. */
 
-    std::for_each( activities().begin(), activities().end(), Exec2<Phase,const Submodel&,double>( &Phase::updateWait, submodel, relax ) );
+    for ( auto& activity : activities() ) activity->updateWait( submodel, relax );
 
     /* Entry updateWait for activity entries will update waiting times. */
 
-    std::for_each( entries().begin(), entries().end(), Exec2<Entry,const Submodel&,double>( &Entry::updateWait, submodel, relax ) );
+    for ( auto& entry : entries() ) entry->updateWait( submodel, relax );
 //    for_each( entries().begin(), entries().end(), Exec2<Entry,const Submodel&,double>( &Entry::updateILWait, submodel, relax ) );
 
     /* Now recompute thread idle times */
 
-    std::for_each( std::next(threads().begin()), threads().end(), Exec1<Thread,double>( &Thread::setIdleTime, relax ) );
+    for ( Vector<Thread *>::const_iterator thread = std::next(threads().begin()); thread != threads().end(); ++thread ) (*thread)->setIdleTime( relax );
     return *this;
 }
 
@@ -1028,14 +1026,16 @@ Task::updateWait( const Submodel& submodel, const double relax )
 double
 Task::updateWaitReplication( const Submodel& submodel, unsigned & n_delta )
 {
+    double delta = 0.0;
+
     /* Do updateWait for each activity first. */
 
-    double delta = std::for_each( activities().begin(), activities().end(), ExecSum1<Activity,double,const Submodel&>( &Activity::updateWaitReplication, submodel ) ).sum();
+    for ( auto& activity : activities() ) delta += activity->updateWaitReplication( submodel );
     n_delta += activities().size();
 
     /* Entry updateWait for activity entries will update waiting times. */
 
-    delta += std::for_each( entries().begin(), entries().end(), ExecSum2<Entry,double,const Submodel&,unsigned&>( &Entry::updateWaitReplication, submodel, n_delta ) ).sum();
+    for ( auto& entry : entries() ) delta += entry->updateWaitReplication( submodel, n_delta );
 
     return delta;
 }
@@ -1049,11 +1049,10 @@ Task::updateWaitReplication( const Submodel& submodel, unsigned & n_delta )
  * dynamically editable values
  */
 
-Task&
+void
 Task::recalculateDynamicValues()
 {
     std::for_each( entries().begin(), entries().end(), std::mem_fn( &Entry::recalculateDynamicValues ) );
-    return *this;
 }
 
 
@@ -1067,25 +1066,26 @@ Task::bottleneckStrength() const
 /* -------------------------------------------------------------------- */
 /*			      Interlock					*/
 /* -------------------------------------------------------------------- */
+
 bool
-Task::isSendingTaskTo( const Entry * entry ) const
+Task::is_interlocked_from::operator()( const Task * client ) const
 {
-    if ( entry->owner() == this ) return false;
-    return std::any_of( entries().begin(), entries().end(), Predicate1<Entry,const Entry *>( &Entry::isInterlockedFrom, entry ) );
+    const std::vector<Entry *>& entries = client->entries();
+    return _from->owner() != client && std::any_of( entries.begin(), entries.end(), Entry::is_interlocked_from( _from ) );
 }
 
 
-const Task&
+void
 Task::setMaxCustomers( const MVASubmodel& submodel ) const
 {
-    if ( !isClosedModelClient() ) return *this;
+    if ( !isClosedModelClient() ) return;
     
     const ChainVector& chain = clientChains( submodel.number() );
     Server * station = clientStation( submodel.number() );
 
     for ( unsigned ix = 1; ix <= chain.size(); ++ix ) {
 	const unsigned k = chain[ix];
-	for ( std::vector<Entry *>::const_iterator entry = entries().begin(); entry  != entries().end(); ++entry  ) {
+	for ( std::vector<Entry *>::const_iterator entry = entries().begin(); entry != entries().end(); ++entry  ) {
 	    if ( isReferenceTask() || hasOpenArrivals() ) {
 		const_cast<Entry *>(*entry)->saveMaxCustomers( population(), true );
 		station->setMaxCustomers( (*entry)->index(), k, population());
@@ -1094,7 +1094,6 @@ Task::setMaxCustomers( const MVASubmodel& submodel ) const
 	    }
 	}
     }
-    return *this;
 }
 
 
@@ -1120,7 +1119,7 @@ Task::setRealCustomers(	const MVASubmodel& submodel, const Entity * server ) con
 void
 Task::setInterlockedFlow( const MVASubmodel& submodel ) const
 {
-    std::for_each( entries().begin(), entries().end(), Exec1<Entry,const MVASubmodel&>( &Entry::setInterlockedFlow, submodel ) );
+    for ( auto entry : entries() ) entry->setInterlockedFlow( submodel );
 }
 
 
@@ -1702,11 +1701,11 @@ Task::insertDOMResults(void) const
 std::ostream&
 Task::printSubmodelWait( std::ostream& output ) const
 {
-    std::for_each ( entries().begin(), entries().end(), ConstPrint1<Entry,unsigned>( &Entry::printSubmodelWait, output, 0 ) );
+    for ( const auto& entry : entries() ) entry->printSubmodelWait( output, 0 );
     if ( flags.trace_virtual_entry ) {
-	std::for_each ( _precedences.begin(), _precedences.end(), ConstPrint1<ActivityList,unsigned>( &ActivityList::printSubmodelWait, output, 2 ) );
+	for ( const auto& precedence : precedences() ) precedence->printSubmodelWait( output, 2 );
     } else {
-	std::for_each ( std::next(threads().begin()), threads().end(), ConstPrint1<Entry,unsigned>( &Entry::printSubmodelWait, output, 0 ) );
+	for ( Vector<Thread *>::const_iterator thread = std::next(threads().begin()); thread != threads().end(); ++thread ) (*thread)->printSubmodelWait( output, 0 );
     }
     return output;
 }
@@ -1773,7 +1772,7 @@ Task::printOverlapTable( std::ostream& output, const ChainVector& chain, const V
 std::ostream&
 Task::printJoinDelay( std::ostream& output ) const
 {
-    std::for_each( _precedences.begin(), _precedences.end(), ConstPrint<ActivityList>(&ActivityList::printJoinDelay, output ) );
+    for ( const auto& precedence : precedences() ) precedence->printJoinDelay( output );
     return output;
 }
 
@@ -1843,7 +1842,7 @@ ReferenceTask::reinitializeClient()
  * dynamically editable values
  */
 
-ReferenceTask&
+void
 ReferenceTask::recalculateDynamicValues()
 {
     Task::recalculateDynamicValues();
@@ -1854,7 +1853,6 @@ ReferenceTask::recalculateDynamicValues()
     catch ( const std::domain_error& e ) {
 	getDOM()->throw_invalid_parameter( "think time", e.what() );
     }
-    return *this;
 }
 
 
@@ -1873,6 +1871,10 @@ ReferenceTask::check() const
     }
     if ( getDOM()->hasQueueLength() ) {
 	getDOM()->runtime_error( LQIO::ERR_NOT_SUPPORTED, "queue length" );
+    }
+    double sum = std::accumulate( entries().begin(), entries().end(), 0.0, Entry::add_visit_probability );
+    if ( sum < 1.0 - EPSILON || 1.0 + EPSILON < sum ) {
+	getDOM()->runtime_error( LQIO::ERR_INVALID_VISIT_PROBABILITY, sum );
     }
 
     return true;
@@ -1923,19 +1925,6 @@ ReferenceTask::sanityCheck() const
     }
     return *this;
 }
-
-
-
-bool
-ReferenceTask::hasPath(const Task * dst_task){
-    if (dst_task->isReferenceTask()) return false;
-
-    const std::vector<Entry *>& dst_entries = dst_task->entries();
-    for ( std::vector<Entry *>::const_iterator dst_entry = dst_entries.begin(); dst_entry != dst_entries.end(); ++dst_entry ) {
-	if ( std::any_of( entries().begin(), entries().end(), Predicate1<const Entry,const Entry *>( &Entry::hasPath, *dst_entry ) ) ) return true;
-    }
-    return false;
-}
 
 /* -------------------------- Simple Servers. ------------------------- */
 
@@ -1967,7 +1956,9 @@ ServerTask::check() const
 	getDOM()->runtime_error( LQIO::WRN_INFINITE_MULTI_SERVER, copies() );
 	getDOM()->setCopiesValue(1);
     }
-
+    if ( std::any_of( entries().begin(), entries().end(), std::mem_fn( &Entry::hasVisitProbability ) ) ) {
+	getDOM()->runtime_error( LQIO::WRN_TASK_HAS_VISIT_PROBABILITY );
+    }
     if ( isInfinite() && (std::any_of( entries().begin(), entries().end(), std::mem_fn( &Entry::isCalledUsingSendNoReply ) )
 			  || std::any_of( entries().begin(), entries().end(), std::mem_fn( &Entry::isCalledUsingOpenArrival ) ) ) ) {
 	getDOM()->runtime_error( LQIO::WRN_INFINITE_SERVER_OPEN_ARRIVALS );

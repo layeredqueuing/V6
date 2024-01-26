@@ -1,6 +1,6 @@
 /* group.cc	-- Greg Franks Thu Mar 24 2005
  *
- * $Id: group.cc 16627 2023-04-03 22:04:21Z greg $
+ * $Id: group.cc 16945 2024-01-26 13:02:36Z greg $
  */
 
 #include <algorithm>

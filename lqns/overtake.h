@@ -1,7 +1,7 @@
 /*  -*- c++ -*-
  * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/overtake.h $ -- Greg Franks
  *
- * $Id: overtake.h 14882 2021-07-07 11:09:54Z greg $
+ * $Id: overtake.h 16945 2024-01-26 13:02:36Z greg $
  */
 
 #ifndef _OVERTAKE_H
@@ -24,6 +24,19 @@ private:
      */
 
     class ijInfo {
+    private:
+	struct accumulate
+	{
+	    typedef const Entry& (Entry::*funcPtr)( const Entity* x, VectorMath<double>& y ) const;
+	    accumulate( const funcPtr f, const Entity * x, VectorMath<double>& y ) : _f(f), _x(x), _y(y) {}
+	    void operator()( const Entry* object ) const { (object->*_f)( _x, _y ); }
+	    void operator()( const Entry& object ) const { (object.*_f)( _x, _y ); }
+	private:
+	    const funcPtr _f;
+	    const Entity* _x;
+	    VectorMath<double>& _y;
+	};
+
     public:
 	ijInfo();
 

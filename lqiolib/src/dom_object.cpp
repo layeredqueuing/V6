@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_object.cpp 16838 2023-11-05 22:15:11Z greg $
+ *  $Id: dom_object.cpp 16945 2024-01-26 13:02:36Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -52,7 +52,7 @@ namespace LQIO {
 	std::map<unsigned, LQIO::error_message_type> DocumentObject::__error_messages = {
 	    { LQIO::ADV_MESSAGES_DROPPED,		{ LQIO::error_severity::ADVISORY, "dropped messages for open-class queues" } },
 	    { LQIO::ERR_ASYNC_REQUEST_TO_WAIT,		{ LQIO::error_severity::ERROR,    "(wait) cannot accept send-no-reply requests" } },
-	    { LQIO::ERR_BAD_PATH_TO_JOIN,		{ LQIO::error_severity::ERROR,    "activity %s is not reachable" } },
+	    { LQIO::ERR_BAD_PATH_TO_JOIN,		{ LQIO::error_severity::ERROR,    "activity \"%s\" is not reachable" } },
 	    { LQIO::ERR_CYCLE_IN_ACTIVITY_GRAPH,	{ LQIO::error_severity::ERROR, 	  "has a cycle in activity graph.  Backtrace is \"%s\"" } },
 	    { LQIO::ERR_CYCLE_IN_CALL_GRAPH,		{ LQIO::error_severity::ERROR,    "has a cycle in call graph,  backtrace is \"%s\"" } },
 	    { LQIO::ERR_DUPLICATE_ACTIVITY_LVALUE,	{ LQIO::error_severity::ERROR,    "previously used in the join at line %d" } },
@@ -62,13 +62,14 @@ namespace LQIO {
 	    { LQIO::ERR_DUPLICATE_SYMBOL,		{ LQIO::error_severity::ERROR,    "previously defined" } },
 	    { LQIO::ERR_FORK_JOIN_MISMATCH,		{ LQIO::error_severity::ERROR,    "does not match %s \"%s\" at line %d" } },
 	    { LQIO::ERR_INFINITE_SERVER, 		{ LQIO::error_severity::ERROR, 	  "cannot be an infinite server" } },
-	    { LQIO::ERR_INVALID_FORWARDING_PROBABILITY,	{ LQIO::error_severity::ERROR,    "has invalid forwarding probability of %g" } },
+	    { LQIO::ERR_INVALID_FORWARDING_PROBABILITY,	{ LQIO::error_severity::ERROR,    "has a total forwarding probability of %g" } },
 	    { LQIO::ERR_INVALID_GROUP_SHARE, 		{ LQIO::error_severity::ERROR, 	  "using fair share scheduling has invalid group share of %g." } },
 	    { LQIO::ERR_INVALID_OR_BRANCH_PROBABILITY,	{ LQIO::error_severity::ERROR,    "activity \"%s\" has invalid probability of %g" } },
 	    { LQIO::ERR_INVALID_PARAMETER,		{ LQIO::error_severity::ERROR,    "invalid %s: %s" } },
 	    { LQIO::ERR_INVALID_REPLY_DUPLICATE,	{ LQIO::error_severity::ERROR,    "makes a duplicate reply for entry \"%s\"" } },
 	    { LQIO::ERR_INVALID_REPLY_FOR_SNR_ENTRY,	{ LQIO::error_severity::ERROR,    "makes an invalid reply for entry \"%s\" which does not accept rendezvous requests" } },
 	    { LQIO::ERR_INVALID_REPLY_FROM_BRANCH,	{ LQIO::error_severity::ERROR,    "makes an invalid reply from a branch for entry \"%s\"" } },
+	    { LQIO::ERR_INVALID_VISIT_PROBABILITY,	{ LQIO::error_severity::ERROR,    "has a total visit probability of %g (it should be 1.0)" } },
 	    { LQIO::ERR_IS_START_ACTIVITY,		{ LQIO::error_severity::ERROR,    "is a start activity" } },
 	    { LQIO::ERR_MIXED_ENTRY_TYPES,		{ LQIO::error_severity::ERROR,    "is specified using both activity and phase methods" } },
 	    { LQIO::ERR_MIXED_RWLOCK_ENTRY_TYPES,	{ LQIO::error_severity::ERROR,    "is specified as both a lock and a unlock" } },
@@ -105,6 +106,7 @@ namespace LQIO {
 	    { LQIO::WRN_PROCESSOR_HAS_NO_TASKS,		{ LQIO::error_severity::WARNING,  "has no tasks" } },
 	    { LQIO::WRN_QUANTUM_SCHEDULING,		{ LQIO::error_severity::WARNING,  "using \"%s\" scheduling has a non-zero quantum specified" } },
 	    { LQIO::WRN_SCHEDULING_NOT_SUPPORTED,	{ LQIO::error_severity::WARNING,  "with %s scheduling is not supported" } },
+	    { LQIO::WRN_TASK_HAS_VISIT_PROBABILITY,	{ LQIO::error_severity::WARNING,  "is not a reference task; visit probabilities for entries are ignored." } },
 	    { LQIO::WRN_XXXX_TIME_DEFINED_BUT_ZERO,	{ LQIO::error_severity::WARNING,  "has %s time defined, but its value is zero" } },
 	};
 	

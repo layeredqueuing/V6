@@ -1,6 +1,6 @@
 /* open.cc	-- Greg Franks Tue Feb 18 2003
  *
- * $Id: open.cc 16906 2024-01-22 12:02:11Z greg $
+ * $Id: open.cc 16945 2024-01-26 13:02:36Z greg $
  */
 
 #include "lqn2ps.h"

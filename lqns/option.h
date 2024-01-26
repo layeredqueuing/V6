@@ -1,7 +1,7 @@
 /* -*- C++ -*-
  * option.h	-- Greg Franks
  *
- * $Id: option.h 16805 2023-08-22 20:04:14Z greg $
+ * $Id: option.h 16945 2024-01-26 13:02:36Z greg $
  */
 
 #ifndef _OPTION_H

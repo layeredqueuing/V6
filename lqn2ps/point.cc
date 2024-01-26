@@ -1,6 +1,6 @@
 /* point.cc	-- Greg Franks Wed Jan 29 2003
  *
- * $Id: point.cc 14882 2021-07-07 11:09:54Z greg $
+ * $Id: point.cc 16945 2024-01-26 13:02:36Z greg $
  */
 
 #include "point.h"

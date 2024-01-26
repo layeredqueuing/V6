@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: open.cc 15605 2022-05-27 19:55:44Z greg $
+ * $Id: open.cc 16945 2024-01-26 13:02:36Z greg $
  *
  * Open Network solver.
  *
@@ -7,7 +7,7 @@
  * Department of Systems and Computer Engineering,
  * Carleton University, Ottawa, Ontario, Canada. K1S 5B6
  *
- * $Date: 2022-05-27 15:55:44 -0400 (Fri, 27 May 2022) $
+ * $Date: 2024-01-26 08:02:36 -0500 (Fri, 26 Jan 2024) $
  * ----------------------------------------------------------------------
  * Conventions:
  *    E - (scalar) number of entries for a given station.

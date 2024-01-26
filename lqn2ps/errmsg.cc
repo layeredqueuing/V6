@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: errmsg.cc 15969 2022-10-13 19:49:43Z greg $
+ * $Id: errmsg.cc 16945 2024-01-26 13:02:36Z greg $
  *
  * Error messages.
  *

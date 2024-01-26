@@ -1,6 +1,6 @@
 /* option.cc -- Greg Franks Wed Oct 12 2005
  *
- * $Id: option.cc 16805 2023-08-22 20:04:14Z greg $
+ * $Id: option.cc 16945 2024-01-26 13:02:36Z greg $
  */
 
 #include "lqns.h"

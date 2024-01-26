@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: call.cc 16910 2024-01-23 20:30:04Z greg $
+ * $Id: call.cc 16945 2024-01-26 13:02:36Z greg $
  *
  * Everything you wanted to know about a call to an entry, but were afraid to ask.
  *
@@ -27,6 +27,7 @@
 #include "entry.h"
 #include "errmsg.h"
 #include "flags.h"
+#include "interlock.h"
 #include "option.h"
 #include "pragma.h"
 #include "submodel.h"
@@ -1076,24 +1077,6 @@ ForwardedCall::insertDOMResults() const
 ProcessorCall::ProcessorCall( const Phase * fromPhase, const Entry * toEntry )
     : Call( fromPhase, toEntry )
 {
-}
-
-/*----------------------------------------------------------------------*/
-/*                            Activity Calls                            */
-/*----------------------------------------------------------------------*/
-
-/* 
- * This is a little more complicated.
- */
-const Entry *
-FromActivity::srcEntry() const
-{
-    std::deque<const Activity *> activityStack;
-    std::deque<const AndOrForkActivityList *> forkStack;
-    std::set<const AndOrForkActivityList *> branchSet;
-    Activity::Backtrack data( activityStack, forkStack, branchSet );
-    dynamic_cast<const Activity *>(getSource())->backtrack( data );		/* look for start activity */
-    return data.getStartActivity()->entry();	/* return the entry */
 }
 
 /*----------------------------------------------------------------------*/

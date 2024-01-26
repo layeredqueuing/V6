@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: phase.h 16907 2024-01-23 18:08:39Z greg $
+ * $Id: phase.h 16945 2024-01-26 13:02:36Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -93,7 +93,7 @@ public:
     double getWaitTime( unsigned int submodel ) const { return _wait[submodel];}
     size_t getWaitSize() const { return _wait.size(); }
 
-    virtual NullPhase& recalculateDynamicValues() { return *this; }
+    virtual void recalculateDynamicValues() {}
 
     static void insertDOMHistogram( LQIO::DOM::Histogram * histogram, const double m, const double v );
 
@@ -175,7 +175,7 @@ private:
 	bool isCFSDelay() const { return _type == Type::CFS_DELAY; }
 	ProcessorCall * call() const { return _call; }
 	DeviceEntry * entry() const { return _entry; }
-	DeviceInfo& recalculateDynamicValues();
+	void recalculateDynamicValues();
 
     private:
 	double service_time() const { return _phase.serviceTime(); }
@@ -220,7 +220,15 @@ private:
     };
 
 public:
-public:
+    struct computeCFSDelay
+    {
+	computeCFSDelay(double rate, double groupratio) : _ratio1(rate), _ratio2(groupratio) {}
+	void operator()( const Phase& );
+    private:
+	double _ratio1;
+	double _ratio2;
+    };
+    
     Phase( const std::string& = "" );
     Phase( const Phase&, unsigned int );
     Phase( const Phase& );		/* For _phase.resize() */
@@ -305,33 +313,30 @@ public:
     /* computation */
 	
     virtual double waitExcept( const unsigned ) const;
-#if PAN_REPLICATION
-    double waitExceptChain( const unsigned, const unsigned k );
-#endif
     Phase& updateWait( const Submodel&, const double );
     void computeVariance();	 			/* Computed variance.		*/
-    double getProcWait( unsigned int submodel, const double relax ); // tomari quorum
-    double getTaskWait( unsigned int submodel, const double relax );
-    double getRendezvous( unsigned int submodel, const double relax );
+    double getProcWait( unsigned int submodel ); // tomari quorum
+    double getTaskWait( unsigned int submodel );
+    double getRendezvous( unsigned int submodel );
 #if PAN_REPLICATION
+    double waitExceptChain( const unsigned, const unsigned k );
     double updateWaitReplication( const Submodel& );
-    double getReplicationProcWait( unsigned int submodel, const double relax );
-    double getReplicationTaskWait( unsigned int submodel, const double relax ); //tomari quorum
-    double getReplicationRendezvous( unsigned int submodel, const double relax );
+    double getReplicationProcWait( unsigned int submodel );
+    double getReplicationTaskWait(); //tomari quorum
+    double getReplicationRendezvous( unsigned int submodel );
 #endif
     virtual bool getInterlockedTasks( Interlock::CollectTasks& path ) const;
     Phase& updateInterlockedWait( const Submodel& aSubmodel, const double relax );
 
     /* recalculation of dynamic values */
 	
-    virtual Phase& recalculateDynamicValues();
+    virtual void recalculateDynamicValues();
 //    void cfsRecalculateDynamicValues(double ratio1, double newthinktime);
 
     /*+ DPS +*/
     Phase::DeviceInfo * getCFSDelayServer() const;
     ProcessorCall * getCFSCall() const;
     DeviceEntry * getCFSEntry() const;
-    Phase& computeCFSDelay(double rate, double groupratio);
     double getCFSDelay() const { return _cfs_delay; }
     Phase& reset_lowerbound() { if ( _cfs_delay > 0. ) _cfs_delay_lowerbound = 0.; return *this; }
 
@@ -359,7 +364,7 @@ private:
     double random_phase() const;
     double square_phase() const { return square( residenceTime() ); }
 
-    double cfsThinkTime( double groupRatio );
+    double cfsThinkTime( double groupRatio ) const;
 
 private:
     unsigned int _phase_number;		/* phase of entry (if phase)		*/

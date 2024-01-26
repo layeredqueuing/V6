@@ -1,7 +1,7 @@
 /* -*- c++ -*-
  * graphic.h	-- Greg Franks
  *
- * $Id: graphic.h 15615 2022-06-01 12:27:08Z greg $
+ * $Id: graphic.h 16945 2024-01-26 13:02:36Z greg $
  */
 
 #ifndef _GRAPHIC_H

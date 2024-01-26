@@ -12,7 +12,7 @@
  * July 2007.
  *
  * ------------------------------------------------------------------------
- * $Id: entry.cc 16907 2024-01-23 18:08:39Z greg $
+ * $Id: entry.cc 16945 2024-01-26 13:02:36Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -61,6 +61,7 @@ Entry::Entry( LQIO::DOM::Entry* dom, unsigned int index, bool global )
       _calledBy(RequestType::NOT_CALLED),
       _throughput(0.0),
       _throughputBound(0.0),
+      _visitProbability(0.0),
       _callerList(),
       _interlock(),
       _replica_number(1)		/* This object is not a replica	*/
@@ -242,7 +243,7 @@ Entry::check() const
 Entry&
 Entry::configure( const unsigned nSubmodels )
 {
-    std::for_each( _phase.begin(), _phase.end(), Exec1<NullPhase,const unsigned>( &NullPhase::configure, nSubmodels ) );
+    for ( auto& phase : _phase ) phase.configure( nSubmodels );
     _total.configure( nSubmodels );
 
     const unsigned n_e = Model::__entry.size() + 1;
@@ -302,8 +303,8 @@ Entry::findChildren( Call::stack& callStack, const bool directPath ) const
     if ( isActivityEntry() ) {
 	max_depth = std::max( max_depth, _phase[1].findChildren( callStack, directPath ) );    /* Always check because we may have forwarding */
 	try {
-	    Activity::Children path( callStack, directPath, true );
-	    max_depth = std::max( max_depth, getStartActivity()->findChildren( path ) );
+	    Activity::Ancestors ancestors( callStack, directPath, true );
+	    max_depth = std::max( max_depth, getStartActivity()->findChildren( ancestors ) );
 	}
 	catch ( const activity_cycle& error ) {
 	    getDOM()->runtime_error( LQIO::ERR_CYCLE_IN_ACTIVITY_GRAPH, error.what() );
@@ -312,7 +313,7 @@ Entry::findChildren( Call::stack& callStack, const bool directPath ) const
 	    abort();
 	}
     } else {
-	max_depth = std::accumulate( _phase.begin(), _phase.end(), 0, max_two_args<Phase,Call::stack&,bool>( &Phase::findChildren, callStack, directPath ) );
+	max_depth = std::accumulate( _phase.begin(), _phase.end(), max_depth, Entry::max_depth( &Phase::findChildren, callStack, directPath ) );
     }
 
     return max_depth;
@@ -339,7 +340,7 @@ Entry::initCustomers( std::deque<const Task *>& stack, unsigned int customers )
 	Activity::Collect collect( &Activity::collectCustomers, stack, customers );
 	getStartActivity()->collect( activityStack, entryStack, collect );
     } else {
-	std::for_each( _phase.begin(), _phase.end(), Exec2<Phase,std::deque<const Task *>&,unsigned int>( &Phase::initCustomers, stack, customers ) );
+	for ( auto& phase : _phase ) phase.initCustomers( stack, customers );
     }
     return *this;
 }
@@ -376,7 +377,7 @@ Entry::initServiceTime()
 Entry&
 Entry::setSurrogateDelaySize( size_t n_chains )
 {
-    std::for_each( _phase.begin(), _phase.end(), Exec1<Phase,size_t>( &Phase::setSurrogateDelaySize, n_chains ) );
+    for ( auto& phase : _phase ) phase.setSurrogateDelaySize( n_chains );
     return *this;
 }
 #endif
@@ -520,7 +521,6 @@ Entry::setMaxPhase( const unsigned ph )
 
 
 
-
 /*
  * Return 1 if the entry has think time and zero othewise.
  */
@@ -600,7 +600,6 @@ Entry::checkDroppedCalls() const
     }
     return rc;
 }
-
 
 
 
@@ -807,7 +806,7 @@ Entry::computeCV_sqr() const
  * `p'.  If this is an activity entry, we have to return the chain k
  * component of waiting time.  Note that if submodel == 0, we return
  * the residenceTime().  For servers in a submodel, submodel == 0; for
- * clients in a submodel, submodel == aSubmodel.number().
+ * clients in a submodel, submodel == submodel.number().
  */
 
 /* As a client (submodel != 0) -- don't count join delays! */
@@ -873,7 +872,9 @@ Entry::utilization() const
 Probability
 Entry::prVisit() const
 {
-    if ( owner()->isReferenceTask() || owner()->throughput() == 0.0 ) {
+    if ( owner()->isReferenceTask() && getDOM()->hasVisitProbability() ) {
+	return getDOM()->getVisitProbabilityValue();
+    } else if ( owner()->isReferenceTask() || owner()->throughput() == 0.0 ) {
 	return Probability( 1.0 / owner()->nEntries() );
     } else {
 	return Probability( throughput() / owner()->throughput() );
@@ -902,64 +903,18 @@ Entry::sliceTime( const Entry& dst, Slice_Info slice[], double y_xj[] ) const
 	y_xj[0] += y_xj[p];
     }
 }
-
-
-/*
- * After we have finished recalculating we need to make sure once again that any of the dynamic
- * parameters/late-bound parameters are still sane. The ones that could have changed are
- * checked in the following order:
- *
- *   1. Entry Priority (No Constraints)
- *   2. Open Arrival Rate
- */
-
-Entry&
-Entry::sanityCheckParameters()
-{
-    /* Make sure the open arrival rate is sane for the setup */
-    if ( _dom && _dom->hasOpenArrivalRate() && owner()->isReferenceTask() ) {
-	LQIO::input_error( LQIO::ERR_REFERENCE_TASK_OPEN_ARRIVALS, owner()->name().c_str(), name().c_str() );
-    }
-    return *this;
-}
 
 
 
-Entry&
+void
 Entry::recalculateDynamicValues()
 {
     std::for_each( _phase.begin(), _phase.end(), std::mem_fn( &Phase::recalculateDynamicValues ) );
     _total.setServiceTime( std::accumulate( _phase.begin(), _phase.end(), 0., Phase::sum( &Phase::serviceTime ) ) );
-    return *this;
-}
-
-/*+ DPS +*/
-double
-Entry::getCFSDelay() const
-{
-    if ( isProcessorEntry() ) return 0.;
-    return std::accumulate( _phase.begin(), _phase.end(), 0., Phase::sum( &Phase::getCFSDelay ) );
 }
 
 
 
-Entry&
-Entry::reset_lowerbound()
-{
-    std::for_each (_phase.begin(), _phase.end(), std::mem_fn( &Phase::reset_lowerbound ) );
-    return *this;
-}
-
-
-Entry&
-Entry::computeCFSDelay( double ratio1, double ratio2 )
-{
-    if ( !isTaskEntry() ) return *this;
-    std::for_each( _phase.begin(),_phase.end(), Exec2<Phase,double,double>( &Phase::computeCFSDelay, ratio1, ratio2 ) );
-    return *this;
-}
-/*- DPS -*/
-
 const Entry&
 Entry::insertDOMResults(double *phaseUtils) const
 {
@@ -1095,6 +1050,27 @@ Entry::output_name( std::ostream& output, const Entry& entry )
     }
     return output;
 }
+
+
+
+/*
+ * After we have finished recalculating we need to make sure once again that any of the dynamic
+ * parameters/late-bound parameters are still sane. The ones that could have changed are
+ * checked in the following order:
+ *
+ *   1. Entry Priority (No Constraints)
+ *   2. Open Arrival Rate
+ */
+
+Entry&
+Entry::sanityCheckParameters()
+{
+    /* Make sure the open arrival rate is sane for the setup */
+    if ( _dom && _dom->hasOpenArrivalRate() && owner()->isReferenceTask() ) {
+	LQIO::input_error( LQIO::ERR_REFERENCE_TASK_OPEN_ARRIVALS, owner()->name().c_str(), name().c_str() );
+    }
+    return *this;
+}
 
 /* ------------------------------ Results ----------------------------- */
 
@@ -1147,9 +1123,34 @@ Entry::SaveServerResults::operator()( Entry * entry ) const
     entry->saveThroughput( lambda );
 }
 
-/* -------------------------------------------------------------------- */
-/*			      Interlock					*/
-/* -------------------------------------------------------------------- */
+/*+ DPS +*/
+double
+Entry::getCFSDelay() const
+{
+    if ( isProcessorEntry() ) return 0.;
+    return std::accumulate( _phase.begin(), _phase.end(), 0., Phase::sum( &Phase::getCFSDelay ) );
+}
+
+
+
+Entry&
+Entry::reset_lowerbound()
+{
+    std::for_each (_phase.begin(), _phase.end(), std::mem_fn( &Phase::reset_lowerbound ) );
+    return *this;
+}
+
+
+void
+Entry::computeCFSDelay::operator()( const Entry * entry )
+{
+    if( entry->isTaskEntry() ) {
+	std::for_each( entry->_phase.begin(), entry->_phase.end(), Phase::computeCFSDelay( _ratio1, _ratio2 ) );
+    }
+}
+/*- DPS -*/
+
+/* -------------------------- Interlock ------------------------------- */
 
 /*
  * Set up interlocking tables and set up paths for locating remote
@@ -1160,7 +1161,7 @@ const Entry&
 Entry::followInterlock( Interlock::CollectTable& path ) const
 {
     if ( isActivityEntry() ) {
-	_startActivity->followInterlock( path );
+	getStartActivity()->followInterlock( path );
     } else {
 	for ( unsigned p = 1; p <= maxPhase(); ++p ) {
 	    Interlock::CollectTable branch( path, p > 1 );
@@ -1209,7 +1210,7 @@ Entry::getInterlockedTasks( Interlock::CollectTasks& path ) const
 	    if ( _phase[p].getInterlockedTasks( path ) ) found = true;
 	}
     } else if ( isActivityEntry() ) {
-	found = _startActivity->getInterlockedTasks( path );
+	found = getStartActivity()->getInterlockedTasks( path );
     }
     path.pop_back();
 
@@ -1229,7 +1230,7 @@ Entry::getInterlockedTasks( Interlock::CollectTasks& path ) const
 bool
 Entry::isCalledBy(const Entry * src_entry ) const
 {
-    return std::any_of( callerList().begin(), callerList().end(), Predicate1<Call,const Entry *>( &Call::isCalledBy, src_entry ) );
+    return std::any_of( callerList().begin(), callerList().end(), Call::is_called_by( src_entry ) );
 }
 
 
@@ -1285,7 +1286,7 @@ Entry::updateILWait( const Submodel& submodel, const double relax )
 Entry&
 Entry::setInterlockedFlow( const MVASubmodel& submodel )
 {
-    std::for_each( _phase.begin(), _phase.end(), Exec1<Phase,const MVASubmodel&>( &Phase::setInterlockedFlow, submodel ) );
+    for ( auto& phase : _phase ) phase.setInterlockedFlow( submodel );
     return *this;
 }
 
@@ -1319,7 +1320,7 @@ bool
 Entry::isSendingTask( const MVASubmodel& submodel ) const
 {
     const std::set<Task *>& clients = submodel.getClients();
-    return std::any_of( clients.begin(), clients.end(), Predicate1<Task,const Entry *>(&Task::isSendingTaskTo,this) );
+    return std::any_of( clients.begin(), clients.end(), Task::is_interlocked_from( this ) );
 }
 
 
@@ -1395,7 +1396,7 @@ Entry::fractionUtilizationTo(const Entry * dst_entry ) const
 Call*
 Entry::getCall( const unsigned k ) const
 {
-    std::set<Call *>::const_iterator call = std::find_if( callerList().begin(), callerList().end(), Predicate1<Call,unsigned>( &Call::hasChain, k ) );
+    std::set<Call *>::const_iterator call = std::find_if( callerList().begin(), callerList().end(), Call::has_chain( k ) );
     if ( call != callerList().end() ) {
 	return *call; // call may be not unique
     } else {
@@ -1433,11 +1434,11 @@ Entry::saveMaxCustomers(double nCusts, bool isRefOrServerEntry)
 
 
 
-const Entry&
+void
 Entry::setMaxCustomersForChain( unsigned int k ) const
 {
     Call * call = getCall(k);
-    if ( !call ) return *this;
+    if ( !call ) return;;
 	
     Server * station = owner()->serverStation();
     if ( dynamic_cast<ActivityCall *>(call) ){
@@ -1445,7 +1446,6 @@ Entry::setMaxCustomersForChain( unsigned int k ) const
     } else {
 	station->setMaxCustomers( index(), k, std::min( call->getMaxCustomers(), static_cast<double>(call->srcTask()->population()) ));
     }
-    return *this;
 }
 
 
@@ -1691,7 +1691,7 @@ TaskEntry::computeVariance()
 {
     _total.setVariance( 0.0 );
     if ( isActivityEntry() ) {
-	std::for_each( _phase.begin(), _phase.end(), Exec1<NullPhase,double>( &Phase::setVariance, 0.0 ) );
+	for ( auto& phase : _phase ) phase.setVariance( 0.0 );
 	std::deque<const Activity *> activityStack;
 	std::deque<Entry *> entryStack; //( dynamic_cast<const Task *>(owner())->activities().size() );
 	entryStack.push_back( this );
@@ -1730,9 +1730,9 @@ Entry::set( const Entry * src, const Activity::Collect& data )
         setThroughput( src->throughput() * data.rate() );
     } else if ( f == &Activity::collectWait ) {
 	if ( submodel == 0 ) {
-	    std::for_each( _phase.begin(), _phase.end(), Exec1<NullPhase,double>( &Phase::setVariance, 0.0 ) );
+	    for ( auto& phase : _phase ) phase.setVariance( 0.0 );
 	} else {
-	    std::for_each( _phase.begin(), _phase.end(), Exec2<NullPhase,unsigned int,double>( &Phase::setWaitTime, submodel, 0.0 ) );
+	    for ( auto& phase : _phase ) phase.setWaitTime( submodel, 0.0 );
 	}
 #if PAN_REPLICATION
     } else if ( f == &Activity::collectReplication ) {
@@ -1758,7 +1758,6 @@ TaskEntry&
 TaskEntry::updateWait( const Submodel& submodel, const double relax )
 {
     const unsigned n = submodel.number();
-    // cout<<"in taskentry("<<name()<<")::updatewait(): submodel ="<<submodel<< endl;
     if ( n == 0 ) throw std::logic_error( "TaskEntry::updateWait" );
 
     /* Open arrivals first... */
@@ -1773,7 +1772,7 @@ TaskEntry::updateWait( const Submodel& submodel, const double relax )
 
     if ( isActivityEntry() ) {
 
-	std::for_each( _phase.begin(), _phase.end(), Exec2<NullPhase,unsigned int,double>( &Phase::setWaitTime, n, 0.0 ) );
+	for ( auto& phase : _phase ) phase.setWaitTime( n, 0.0 );
 
 	if ( flags.trace_activities ) {
 	    std::cout << "--- AggreateWait for entry " << name() << " ---" << std::endl;
@@ -1797,7 +1796,7 @@ TaskEntry::updateWait( const Submodel& submodel, const double relax )
 
     } else {
 
-	std::for_each( _phase.begin(), _phase.end(), Exec2<Phase,const Submodel&,double>( &Phase::updateWait, submodel, relax ) );
+	for ( auto& phase : _phase ) phase.updateWait( submodel, relax );
 
     }
 
@@ -1862,7 +1861,7 @@ TaskEntry::updateWaitReplication( const Submodel& submodel, unsigned & n_delta )
 	entryStack.pop_back();
 
     } else {
-	delta = std::for_each( _phase.begin(), _phase.end(), ExecSum1<Phase,double,const Submodel&>( &Phase::updateWaitReplication, submodel )).sum();
+	for ( auto& phase : _phase ) delta += phase.updateWaitReplication( submodel );
 	n_delta += _phase.size();
     }
     return delta;
@@ -2166,7 +2165,7 @@ Entry::create(LQIO::DOM::Entry* dom, unsigned int index )
 	Model::__entry.insert( entry );
 
 	/* Make sure that the entry type is set properly for all entries */
-	if (entry->entryTypeOk(dom->getEntryType()) == false) {
+	if ( entry->entryTypeOk( dom->getEntryType() ) == false ) {
 	    dom->runtime_error( LQIO::ERR_MIXED_ENTRY_TYPES );
 	}
 
@@ -2232,13 +2231,6 @@ set_start_activity (Task* task, LQIO::DOM::Entry* entry_DOM)
 }
 
 /* ---------------------------------------------------------------------- */
-
-bool
-Entry::equals::operator()( const Entry * entry ) const
-{
-    return entry->name() == _name && entry->getReplicaNumber() == _replica;
-}
-
 
 /*
  * Find the entry and return it.

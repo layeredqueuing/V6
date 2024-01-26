@@ -1,6 +1,6 @@
 /* node.cc	-- Greg Franks Wed Jan 29 2003
  *
- * $Id: node.cc 15615 2022-06-01 12:27:08Z greg $
+ * $Id: node.cc 16945 2024-01-26 13:02:36Z greg $
  */
 
 #include "lqn2ps.h"

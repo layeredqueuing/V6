@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: errmsg.h 15760 2022-07-25 14:36:17Z greg $
+ * $Id: errmsg.h 16945 2024-01-26 13:02:36Z greg $
  *
  * Copyright the Real-Time and Distributed Systems Group,
  * Department of Systems and Computer Engineering,

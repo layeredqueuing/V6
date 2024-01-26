@@ -11,7 +11,7 @@
  * July 2007
  *
  * ------------------------------------------------------------------------
- * $Id: activity.h 16911 2024-01-23 20:35:04Z greg $
+ * $Id: activity.h 16945 2024-01-26 13:02:36Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -64,31 +64,87 @@ class Activity : public Phase
 public:
     class Count_If;
     class Collect;
+    class State;
     
     typedef bool (Activity::*Predicate)( Count_If& ) const;
     
-    class Backtrack
-    {
+    /*
+     * Support for backtracking up the precedence graph to find forks associated with joins.
+     */
+    
+    class Backtrack {
     public:
-	Backtrack( const std::deque<const Activity *>& activityStack, const std::deque<const AndOrForkActivityList *>& forkStack, std::set<const AndOrForkActivityList *>& forkSet ) :
-	    _activityStack(activityStack), _forkStack(forkStack), _forkSet(forkSet), _joinSet(), _startActivity(nullptr) {}
+	class State
+	{
+	public:
+	    State( const std::deque<const Activity *>& activityStack, const std::deque<const AndOrForkActivityList *>& forkStack, std::set<const AndOrForkActivityList *>& forkSet ) :
+		_activityStack(activityStack), _forkStack(forkStack), _forkSet(forkSet), _joinSet() {}
+	    State( const State& src ) : _activityStack(src._activityStack), _forkStack(src._forkStack), _forkSet(src._forkSet), _joinSet(src._joinSet) {}
+	private:
+	    State& operator=( const State& src ) = delete;
+	public:
+	    const std::deque<const Activity *>& getActivityStack() const { return _activityStack; }	// For error handling only.
+	    bool find_fork( const AndOrForkActivityList * fork ) const { return std::find( _forkSet.begin(), _forkSet.end(), fork ) != _forkSet.end(); }
+	    bool find_join( const AndOrJoinActivityList * join ) const { return std::find( _joinSet.begin(), _joinSet.end(), join ) != _joinSet.end(); }
+	    void insert_fork( const AndOrForkActivityList * fork ) { if ( std::find( _forkStack.begin(), _forkStack.end(), fork ) != _forkStack.end() ) _forkSet.insert( fork ); }
+	    void insert_join( const AndOrJoinActivityList * join ) { _joinSet.insert( join ); }
+	private:
+	    const std::deque<const Activity *>& _activityStack;
+	    const std::deque<const AndOrForkActivityList *>& _forkStack;
+	    std::set<const AndOrForkActivityList *>& _forkSet;
+	    std::set<const AndOrJoinActivityList *> _joinSet;
+	};
+    public:
+	Backtrack( const State& state ) : _state(state) {}
+	Backtrack( const Backtrack& src ) : _state(src._state) {}
+    private:
+	Backtrack& operator=( const Backtrack& ) = delete;
+    public:
+	void operator()( const Activity* activity ) { activity->backtrack(_state); }
+	void operator()( const Activity& activity ) { activity.backtrack(_state); }
+    private:
+	State _state;
+    };
+    
+    /*
+     * Support for collecting stuff (like waiting times) when traversing the precedence graph.
+     */
+    
+    class Collect {
+    public:
+	typedef void (Activity::*Function)( Entry *, const Collect& ) const;
+	
+	Collect() : _f(nullptr), _submodel(0), _p(0), _rate(1), _taskStack(nullptr), _customers(0) {}
+	Collect( Function f, unsigned int submodel=0 ) : _f(f), _submodel(submodel), _p(1), _rate(1), _taskStack(nullptr), _customers(0) {}
+	Collect( Function f, std::deque<const Task *>& stack, unsigned int customers ) : _f(f), _submodel(0), _p(0), _rate(1), _taskStack(&stack), _customers(customers) {}
+	Collect( const Collect& ) = default;
 
-	const std::deque<const Activity *>& getActivityStack() const { return _activityStack; }	// For error handling only.
-	bool find_fork( const AndOrForkActivityList * fork ) const { return std::find( _forkSet.begin(), _forkSet.end(), fork ) != _forkSet.end(); }
-	bool find_join( const AndOrJoinActivityList * join ) const { return std::find( _joinSet.begin(), _joinSet.end(), join ) != _joinSet.end(); }
-	void insert_fork( const AndOrForkActivityList * fork ) { if ( std::find( _forkStack.begin(), _forkStack.end(), fork ) != _forkStack.end() ) _forkSet.insert( fork ); }
-	void insert_join( const AndOrJoinActivityList * join ) { _joinSet.insert( join ); }
-	void setStartActivity( const Activity * activity ) { _startActivity = activity; }
-	const Activity * getStartActivity() const { return _startActivity; }
+    private:
+	Collect& operator=( const Collect& ) = delete;
+	
+    public:
+	Function collect() const { return _f; }
+	unsigned int submodel() const { return _submodel; }
+	unsigned int phase() const { return _p; }
+	double rate() const { return _rate; }
+	void setRate( double rate ) { _rate = rate; }
+	void setPhase( unsigned int p ) { _p = p; }
+	std::deque<const Task *>& taskStack() { return *_taskStack; }
+	unsigned int customers() const { return _customers; }
 	
     private:
-	const std::deque<const Activity *>& _activityStack;
-	const std::deque<const AndOrForkActivityList *>& _forkStack;
-	std::set<const AndOrForkActivityList *>& _forkSet;
-	std::set<const AndOrJoinActivityList *> _joinSet;
-	const Activity * _startActivity;
+	Function _f;
+	unsigned int _submodel;
+	unsigned int _p;
+	double _rate;
+	std::deque<const Task *>* _taskStack;	/* BUG_425 */
+	unsigned int _customers;		/* BUG_425 */
     };
 
+    /*
+     * Add to count if the predicate returns true
+     */
+    
     class Count_If {
     public:
 	Count_If() : _e(nullptr), _f(nullptr), _p(0), _replyAllowed(true), _rate(0.0), _sum(0.0) {}
@@ -122,44 +178,13 @@ public:
 	double _sum;
     };
 
-    class Collect {
+    class Ancestors {
     public:
-	typedef void (Activity::*Function)( Entry *, const Collect& ) const;
-	
-	Collect() : _f(nullptr), _submodel(0), _p(0), _rate(1), _taskStack(nullptr), _customers(0) {}
-	Collect( Function f, unsigned int submodel=0 ) : _f(f), _submodel(submodel), _p(1), _rate(1), _taskStack(nullptr), _customers(0) {}
-	Collect( Function f, std::deque<const Task *>& stack, unsigned int customers ) : _f(f), _submodel(0), _p(0), _rate(1), _taskStack(&stack), _customers(customers) {}
-	Collect( const Collect& ) = default;
-
-    private:
-	Collect& operator=( const Collect& ) = delete;
-	
-    public:
-	Function collect() const { return _f; }
-	unsigned int submodel() const { return _submodel; }
-	unsigned int phase() const { return _p; }
-	double rate() const { return _rate; }
-	void setRate( double rate ) { _rate = rate; }
-	void setPhase( unsigned int p ) { _p = p; }
-	std::deque<const Task *>& taskStack() { return *_taskStack; }
-	unsigned int customers() const { return _customers; }
-	
-    private:
-	Function _f;
-	unsigned int _submodel;
-	unsigned int _p;
-	double _rate;
-	std::deque<const Task *>* _taskStack;	/* BUG_425 */
-	unsigned int _customers;		/* BUG_425 */
-    };
-
-    class Children {
-    public:
-	Children( Call::stack& callStack, bool directPath, bool followCalls ) : _callStack(callStack), _directPath(directPath), _follow_calls(followCalls), _activityStack(), _forkStack(), _rate(1.), _replyAllowed(true) {}
-	Children( const Children& src ) : _callStack(src._callStack), _directPath(src._directPath), _follow_calls(src._follow_calls), _activityStack(src._activityStack), _forkStack(src._forkStack), _rate(src._rate), _replyAllowed(src._replyAllowed) {}
-	Children( const Children& src, double rate ) : _callStack(src._callStack), _directPath(src._directPath), _follow_calls(src._follow_calls), _activityStack(src._activityStack), _forkStack(src._forkStack), _rate(src._rate * rate), _replyAllowed(false) {}
-	Children( const Children& src, std::deque<const AndOrForkActivityList *>& forkStack ) : _callStack(src._callStack), _directPath(src._directPath), _follow_calls(src._follow_calls), _activityStack(src._activityStack), _forkStack(forkStack), _rate(src._rate), _replyAllowed(src._replyAllowed) {}
-	Children( const Children& src, std::deque<const AndOrForkActivityList *>& forkStack, double rate ) : _callStack(src._callStack), _directPath(src._directPath), _follow_calls(src._follow_calls), _activityStack(src._activityStack), _forkStack(forkStack), _rate(src._rate * rate), _replyAllowed(false) {}
+	Ancestors( Call::stack& callStack, bool directPath, bool followCalls ) : _callStack(callStack), _directPath(directPath), _follow_calls(followCalls), _activityStack(), _forkStack(), _rate(1.), _replyAllowed(true) {}
+	Ancestors( const Ancestors& src ) : _callStack(src._callStack), _directPath(src._directPath), _follow_calls(src._follow_calls), _activityStack(src._activityStack), _forkStack(src._forkStack), _rate(src._rate), _replyAllowed(src._replyAllowed) {}
+	Ancestors( const Ancestors& src, double rate ) : _callStack(src._callStack), _directPath(src._directPath), _follow_calls(src._follow_calls), _activityStack(src._activityStack), _forkStack(src._forkStack), _rate(src._rate * rate), _replyAllowed(false) {}
+	Ancestors( const Ancestors& src, std::deque<const AndOrForkActivityList *>& forkStack ) : _callStack(src._callStack), _directPath(src._directPath), _follow_calls(src._follow_calls), _activityStack(src._activityStack), _forkStack(forkStack), _rate(src._rate), _replyAllowed(src._replyAllowed) {}
+	Ancestors( const Ancestors& src, std::deque<const AndOrForkActivityList *>& forkStack, double rate ) : _callStack(src._callStack), _directPath(src._directPath), _follow_calls(src._follow_calls), _activityStack(src._activityStack), _forkStack(forkStack), _rate(src._rate * rate), _replyAllowed(false) {}
 
 	Call::stack& getCallStack() { return _callStack; }
 	unsigned depth() const { return _callStack.depth(); }
@@ -192,17 +217,23 @@ public:
 	bool _replyAllowed;
     };
 
-    struct max
+    struct has_name
     {
-	typedef unsigned int (Activity::*funcPtr)( unsigned int ) const;
-	max( funcPtr f, unsigned int arg ) : _f(f), _arg(arg) {}
-	unsigned int operator()( unsigned int l, const Activity* r ) const { return std::max( l, (r->*_f)(_arg) ); }
-	unsigned int operator()( unsigned int l, const Activity& r ) const { return std::max( l, (r.*_f)(_arg) ); }
+	has_name( const std::string & s ) : _s(s) {}
+	bool operator()(const Activity * a ) const { return a->name() == _s; }
     private:
-	const funcPtr _f;
-	const unsigned int _arg;
+	const std::string & _s;
     };
-    
+
+    struct max_threads
+    {
+	max_threads( unsigned int n ) : _n(n) {}
+	unsigned int operator()( unsigned int l, const Activity* r ) const { return std::max( l, r->concurrentThreads(_n) ); }
+    private:
+	const unsigned int _n;
+    };
+
+/* ------------------------------------------------------------------------ */
 public:
     Activity( const Task *, const std::string& );
     Activity( const Activity&, const Task *, unsigned int replica );
@@ -312,16 +343,15 @@ public:
 				       double &  avgNumCallsToLevel2Tasks);
 
     /* Thread manipulation */
-    unsigned findChildren( Children& ) const;
-    const Activity& backtrack( Backtrack& data ) const;
+    unsigned findChildren( Ancestors& ) const;
+    const Activity& backtrack( Backtrack::State& data ) const;
     virtual const Activity& followInterlock( Interlock::CollectTable& ) const;
     Collect& collect( std::deque<const Activity *>&, std::deque<Entry *>&, Collect& ) const;
     Count_If& count_if( std::deque<const Activity *>&, Count_If& ) const;
     CallInfo::Item::collect_calls& collect_calls( std::deque<const Activity *>&, CallInfo::Item::collect_calls& ) const;
     virtual void callsPerform( Call::Perform& ) const;
-    unsigned concurrentThreads( unsigned ) const;
     virtual bool getInterlockedTasks( Interlock::CollectTasks& path ) const;
-
+    unsigned concurrentThreads( unsigned ) const;
 
     /* XML output */
     const Activity& insertDOMResults() const;

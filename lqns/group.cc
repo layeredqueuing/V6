@@ -10,7 +10,7 @@
  * November, 2008
  *
  * ------------------------------------------------------------------------
- * $Id: group.cc 16908 2024-01-23 20:11:48Z greg $
+ * $Id: group.cc 16945 2024-01-26 13:02:36Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -82,13 +82,11 @@ Group::initialize()
 }
 
 
-
-Group&
+void
 Group::recalculateDynamicValues()
 {
     _share = getOriginalShare();    /* read group share from lqx;  */
     initialize();
-    return *this;
 }
 
 
@@ -145,7 +143,7 @@ Group::wouldReceive()
 }
 
 
-Group&
+void
 Group::reset()
 {
     _share = getOriginalShare();
@@ -160,7 +158,6 @@ Group::reset()
     if ( groupdelay > 0. ) {
 	std::cerr <<"group "<<name()<<" has a nonzero group delay ("<<groupdelay<<") after reseting..."<< std::endl;
     }
-    return *this;
 }
 
 

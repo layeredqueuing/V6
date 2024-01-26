@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- *  $Id: common_io.h 15943 2022-10-04 22:24:49Z greg $
+ *  $Id: common_io.h 16945 2024-01-26 13:02:36Z greg $
  *
  *  Greg Franks
  */
@@ -122,7 +122,7 @@ namespace LQIO {
 
 	public:
 	    static bool is_default_value( const LQIO::DOM::ExternalVariable *, double );
-	    static SimpleManip svn_id() { return SimpleManip( &printSVNId ); }
+	    static const std::string& svn_id() { static const std::string __SVNId = std::string("$") + "Id" + "$"; return __SVNId; }
 
 	protected:
 	    double invert( const double ) const;
@@ -133,10 +133,6 @@ namespace LQIO {
 	    const ConfidenceIntervals _conf_99;
 
 	    static std::map<const std::string,const scheduling_type> scheduling_table;
-
-	private:
-	    static std::ostream& printSVNId( std::ostream& output ) { output << "$" << "Id" << "$"; return output; }
-	    
 	};
 
 

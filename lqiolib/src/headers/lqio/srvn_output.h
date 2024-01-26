@@ -8,7 +8,7 @@
 /************************************************************************/
 
 /*
- * $Id: srvn_output.h 16838 2023-11-05 22:15:11Z greg $
+ * $Id: srvn_output.h 16945 2024-01-26 13:02:36Z greg $
  *
  * This class is used to hide the methods used to output to the Xerces DOM.
  */
@@ -764,7 +764,7 @@ namespace LQIO {
 
 	public:
 	    PhaseInput( std::ostream& output, voidPhaseFunc f ) : ObjectInput(output), _func(f), _p(1) {}
-	    virtual void operator()( const std::pair<unsigned,DOM::Phase *>& ) const;
+	    void operator()( const std::pair<unsigned,DOM::Phase *>& ) const;
 
 	    void printCoefficientOfVariation( const DOM::Phase& ) const;
 	    void printMaxServiceTimeExceeded( const DOM::Phase& ) const;
@@ -784,7 +784,7 @@ namespace LQIO {
 
 	public:
 	    ActivityInput( std::ostream& output, voidActivityFunc f ) : PhaseInput(output), _func(f) {}
-	    virtual void operator()( const std::pair<std::string,DOM::Activity *>& ) const;
+	    void operator()( const std::pair<std::string,DOM::Activity *>& ) const;
 
 	    void print( const DOM::Activity& a ) const;
 

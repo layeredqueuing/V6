@@ -1,4 +1,4 @@
-# $Id: Makefile.am 16444 2023-02-25 12:39:03Z greg $
+# $Id: Makefile.am 16945 2024-01-26 13:02:36Z greg $
 # Binaries that need to be produced
 SUBDIRS = headers/lqx
 lib_LTLIBRARIES = liblqx.la
@@ -11,7 +11,7 @@ liblqx_la_CFLAGS = -Wno-unused-parameter
 liblqx_la_CXXFLAGS = -std=c++11 -Iheaders/lqx -W -Wall -Wno-sign-compare -Wno-unused -Wno-unknown-pragmas -Wno-unused-parameter -fPIC
 
 Parser_pre.cpp: Parser_pre.ypp 
-	../preprocessing/lemon Parser_pre.ypp
+	../preprocessing/lemon -T../preprocessing/lempar.c Parser_pre.ypp
 	mv Parser_pre.c Parser_pre.cpp
 
 Scanner_pre.cpp: Scanner_pre.lpp 

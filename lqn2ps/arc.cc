@@ -1,6 +1,6 @@
 /* arc.cc	-- Greg Franks Thu Jan 30 2003
  *
- * $Id: arc.cc 16627 2023-04-03 22:04:21Z greg $
+ * $Id: arc.cc 16945 2024-01-26 13:02:36Z greg $
  */
 
 #include "lqn2ps.h"

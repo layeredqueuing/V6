@@ -1,5 +1,5 @@
 /* overtake.C	-- Greg Franks Mon Mar 17 1997
- * $Id: overtake.cc 16805 2023-08-22 20:04:14Z greg $
+ * $Id: overtake.cc 16945 2024-01-26 13:02:36Z greg $
  * 
  * Overtaking calculation.  See also slice.[Ch].
  * See
@@ -342,5 +342,5 @@ Overtaking::ijInfo::initialize( const Task * srcTask, const Entity * dstTask )
 {
     _rendezvous = 0.0;
     const std::vector<Entry *>& entries = srcTask->entries();
-    std::for_each( entries.begin(), entries.end(), ConstExec2<Entry,const Entity *,VectorMath<double>&>( &Entry::rendezvous, dstTask, _rendezvous ) );
+    std::for_each( entries.begin(), entries.end(), accumulate( &Entry::rendezvous, dstTask, _rendezvous ) );
 }

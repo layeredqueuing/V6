@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_extvar.cpp 15969 2022-10-13 19:49:43Z greg $
+ *  $Id: dom_extvar.cpp 16945 2024-01-26 13:02:36Z greg $
  *
  *  Created by Martin Mroz on 02/03/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -228,6 +228,7 @@ namespace LQIO {
 	{
 	    return _variableType != Type::UNASSIGNED;
 	}
+
 
 	std::ostream& ConstantExternalVariable::print( std::ostream& output ) const
 	{

@@ -11,7 +11,7 @@
  * May, 2009
  *
  * ------------------------------------------------------------------------
- * $Id: processor.h 16805 2023-08-22 20:04:14Z greg $
+ * $Id: processor.h 16945 2024-01-26 13:02:36Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -58,7 +58,7 @@ public:
 
     virtual bool check() const;
     virtual Processor& configure( const unsigned );
-    virtual Processor& recalculateDynamicValues() { return *this; }
+    virtual void recalculateDynamicValues() {}
 
     /* Instance Variable access */
 

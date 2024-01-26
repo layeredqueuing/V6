@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_actlist.cpp 15884 2022-09-21 14:04:35Z greg $
+ *  $Id: dom_actlist.cpp 16945 2024-01-26 13:02:36Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -65,7 +65,7 @@ namespace LQIO {
 	    std::string buf = LQIO::DOM::Document::__input_file_name + ":" + std::to_string(srvnlineno)
 		+ ": " + severity_table.at(error.severity)
 		+ ": Task \"" + getTask()->getName() + "\", "
-		+ getListTypeName() + " \"" + getListName() + "\" "
+		+ getListTypeName() + " \"" + getListName() + "\", "
 		+ error.message + ".\n";
 	    return buf;
 	}
@@ -80,7 +80,7 @@ namespace LQIO {
 	    std::string buf = LQIO::DOM::Document::__input_file_name + ":" + std::to_string(getLineNumber())
 		+ ": " + severity_table.at(error.severity)
 		+ ": Task \"" + getTask()->getName() + "\", "
-		+ getListTypeName() + " \"" + getListName() + "\" "
+		+ getListTypeName() + " \"" + getListName() + "\", "
 		+ error.message + ".\n";
 	    return buf;
 	}
