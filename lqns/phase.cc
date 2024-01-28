@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: phase.cc 16945 2024-01-26 13:02:36Z greg $
+ * $Id: phase.cc 16965 2024-01-28 19:30:13Z greg $
  *
  * Everything you wanted to know about an phase, but were afraid to ask.
  *
@@ -432,7 +432,7 @@ Phase::initCustomers( std::deque<const Task *>& stack, unsigned int customers )
 #if BUG_433
     if ( callList().size() == 0 ) return *this;
     std::cerr << "Phase(\"" << name() << "\")::initCallers(" << stack.size() << "," << customers << ")" << std::endl;
-    for ( const auto& call : callList() ) {
+    for ( const auto call : callList() ) {
 	std::cerr << "  " << call << ": " << call->dstEntry()->print_name() << std::endl;
     }
 #endif
@@ -949,6 +949,8 @@ Phase::getRendezvous( unsigned int submodel ) //tomari : quorum
 {
     return std::accumulate( callList().begin(), callList().end(), 0.0, Call::add_submodel_rendezvous( submodel ) );
 }
+
+
 /*
  * Calculate total wait for a particular submodel and save.  Return
  * the difference between this pass and the previous.
@@ -1392,23 +1394,16 @@ Phase::getReplicationProcWait( unsigned int submodel )
     if ( processorCall() && processorCall()->submodel() == submodel ) {
 
 	int k = processorCall()->getChain();
-	//procWait += waitExceptChain( submodel, k );	
 	if ( processorCall()->dstTask()->hasServerChain(k) ) {
-	    // newWait +=  _surrogateDelay[k];
-
 	    if (flags.trace_quorum) {
 		std::cout << "\nPhase::getReplicationProcWait(): Call " << this->name() << ", Submodel=" <<  processorCall()->submodel()
-		     << ", _surrogateDelay[" <<k<<"]="<<_surrogateDelay[k] << std::endl;
+			  << ", _surrogateDelay[" <<k<<"]="<<_surrogateDelay[k] << std::endl;
 		fflush(stdout);
 	    }
 	}
 
 	newWait += processorCall()->wait();// * processorCall()->fanOut();
     }
-
-    /* Now update waiting values */
-    // under_relax( _wait[submodel], newWait, relax );
-
     return newWait;
 }
 
@@ -1421,7 +1416,7 @@ Phase::getReplicationProcWait( unsigned int submodel )
 double
 Phase::getReplicationTaskWait()
 {
-    return std::accumulate( callList().begin(), callList().end(), 0., Call::sum( &Call::wait ) );
+    return std::accumulate( callList().begin(), callList().end(), 0., []( double l, const Call * r ){ return l + r->wait(); } );
 }
 
 
@@ -1523,6 +1518,7 @@ Phase::updateWaitReplication( const Submodel& aSubmodel )
     return delta;
 }
 #endif
+
 /*----------------------------------------------------------------------*/
 /*                       Variance Calculation                           */
 /*----------------------------------------------------------------------*/
@@ -1552,7 +1548,7 @@ Phase::computeVariance()
 
     if ( !std::isfinite( residenceTime() ) ) {
 	setVariance( residenceTime() );
-    } else if ( phaseTypeFlag() == LQIO::DOM::Phase::Type::STOCHASTIC ) {
+    } else if ( phaseTypeFlag() == LQIO::DOM::Phase::STOCHASTIC ) {
 	const fptr f = stochastic.at(Pragma::variance());
 	setVariance( (this->*f)() );
     } else {
@@ -1590,7 +1586,7 @@ Phase::stochastic_phase() const
 
 	/* first extract the properties of the delay for one call instance*/
 	const double blocking_mean = (*call)->wait(); //includes service ph 1
-	// + Positive( (*call)->dstEntry()->residenceTime(1) );
+	// + Positive( (*call)->dstEntry()->elapsedTime(1) );
 	/* mean delay for one of these calls */
 	if ( !std::isfinite( blocking_mean ) ) {
 	    return blocking_mean;
@@ -1601,7 +1597,7 @@ Phase::stochastic_phase() const
 	    return blocking_var;
 	}
 	// this includes variance due to service
-	// + square (Positive( (*call)->dstEntry()->residenceTime(1) )) * Positive( (*call)->dstEntry()->computeCV_sqr(1) );
+	// + square (Positive( (*call)->dstEntry()->elapsedTime(1) )) * Positive( (*call)->dstEntry()->computeCV_sqr(1) );
 	/*  variance of one of these calls */
 
 	/* then add up; the sum accounts for no of calls and fanout  */
@@ -1664,7 +1660,7 @@ Phase::mol_phase() const
 #else
 	    /* Use variance of phase, not of phase+arc */
 	    SP_Model.addStage( prVisit, (*call)->wait(),
-			       Positive( (*call)->dstEntry()->computeCV_sqr() ) );		/* !!! Phase 1 only in V5 !!! */
+			       Positive( (*call)->dstEntry()->computeCV_sqr() ) );
 #endif
 	}
     }
@@ -1762,7 +1758,7 @@ Phase::expandCalls()
 {
 //    std::for_each( callList().begin(), callList().end(), std::mem_fn( &Call::expand ) );
     const std::set<Call *> calls = callList();	/* Create a copy as the list is changed */
-    for ( auto& call : calls ) {
+    for ( auto call : calls ) {
 	call->expand();
     }
     return *this;
@@ -1851,7 +1847,6 @@ Phase::DeviceInfo::DeviceInfo( const Phase& phase, const std::string& name, Type
 	visits = new LQIO::DOM::ConstantExternalVariable( n_processor_calls() );
 	break;
     }
-
     assert( Model::__entry.insert( _entry ).second == true );
 		
     /*

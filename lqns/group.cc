@@ -10,7 +10,7 @@
  * November, 2008
  *
  * ------------------------------------------------------------------------
- * $Id: group.cc 16945 2024-01-26 13:02:36Z greg $
+ * $Id: group.cc 16965 2024-01-28 19:30:13Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -95,9 +95,9 @@ double
 Group::utilization() const
 {
     if ( Pragma::disableProcessorCFS() ) {
-	return std::accumulate( tasks().begin(), tasks().end(), 0., Task::sum( &Task::processorUtilization ) );
+	return std::accumulate( tasks().begin(), tasks().end(), 0., []( double l, const Task * r ){ return l + r->processorUtilization(); } );
     } else {
-	return std::accumulate( tasks().begin(), tasks().end(), 0., Task::sum( &Task::getGroupUtilization ) );
+	return std::accumulate( tasks().begin(), tasks().end(), 0., []( double l, const Task * r ){ return l + r->getGroupUtilization(); } );
     }
 }
 
@@ -219,7 +219,7 @@ Group::setSpareStatus()
 double 
 Group::getCFSDelay() const
 {
-    return std::accumulate( tasks().begin(), tasks().end(), 0., Task::sum( &Task::getCFSDelay ) );
+    return std::accumulate( tasks().begin(), tasks().end(), 0., []( double l, const Task * r ){ return l + r->getCFSDelay(); } );
 }
 
 

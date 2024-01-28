@@ -11,7 +11,7 @@
  * July 2007
  *
  * ------------------------------------------------------------------------
- * $Id: activity.h 16945 2024-01-26 13:02:36Z greg $
+ * $Id: activity.h 16965 2024-01-28 19:30:13Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -215,22 +215,6 @@ public:
 	std::deque<const AndOrForkActivityList *> _forkStack; 	// For matching forks/joins.
 	double _rate;
 	bool _replyAllowed;
-    };
-
-    struct has_name
-    {
-	has_name( const std::string & s ) : _s(s) {}
-	bool operator()(const Activity * a ) const { return a->name() == _s; }
-    private:
-	const std::string & _s;
-    };
-
-    struct max_threads
-    {
-	max_threads( unsigned int n ) : _n(n) {}
-	unsigned int operator()( unsigned int l, const Activity* r ) const { return std::max( l, r->concurrentThreads(_n) ); }
-    private:
-	const unsigned int _n;
     };
 
 /* ------------------------------------------------------------------------ */

@@ -1,6 +1,6 @@
 /* model.cc	-- Greg Franks Mon Feb  3 2003
  *
- * $Id: model.cc 16945 2024-01-26 13:02:36Z greg $
+ * $Id: model.cc 16966 2024-01-28 19:34:15Z greg $
  *
  * Load, slice, and dice the lqn model.
  */
@@ -1262,9 +1262,9 @@ Model::rename()
 Model&
 Model::squish()
 {
-    std::for_each( Processor::__processors.begin(), Processor::__processors.end(), ::Exec2<Element,std::map<std::string,unsigned>&,std::map<std::string,std::string>&>( &Element::squish, Processor::__key_table, Processor::__symbol_table ) );
-    std::for_each( Task::__tasks.begin(), Task::__tasks.end(), ::Exec2<Element,std::map<std::string,unsigned>&,std::map<std::string,std::string>&>( &Element::squish, Task::__key_table, Task::__symbol_table ) );
-    std::for_each( Entry::__entries.begin(), Entry::__entries.end(), ::Exec2<Element,std::map<std::string,unsigned>&,std::map<std::string,std::string>&>( &Element::squish, Entry::__key_table, Entry::__symbol_table ) );
+    std::for_each( Processor::__processors.begin(), Processor::__processors.end(), []( Processor * p ){ p->squish ( Processor::__key_table, Processor::__symbol_table ); } );
+    std::for_each( Task::__tasks.begin(), Task::__tasks.end(), []( Task * t ) { t->squish( Task::__key_table, Task::__symbol_table ); } );
+    std::for_each( Entry::__entries.begin(), Entry::__entries.end(), []( Entry * e ) { e->squish( Entry::__key_table, Entry::__symbol_table ); } );
     return *this;
 }
 

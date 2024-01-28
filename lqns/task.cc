@@ -10,7 +10,7 @@
  * November, 1994
  *
  * ------------------------------------------------------------------------
- * $Id: task.cc 16945 2024-01-26 13:02:36Z greg $
+ * $Id: task.cc 16965 2024-01-28 19:30:13Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -73,7 +73,7 @@ Task::Task( LQIO::DOM::Task* dom, const Processor * aProc, const Group * aGroup,
       _has_syncs(false),
       _has_quorum(false)
 {
-    for ( auto& entry : entries ) entry->owner( this );
+    for ( auto entry : entries ) entry->owner( this );
 }
 
 
@@ -260,8 +260,8 @@ Task::configure( const unsigned nSubmodels )
     _clientStation.resize( nSubmodels, 0 );	/* Prepare client cltn		*/
 
     if ( hasActivities() ) {
-	for ( auto& activity : activities() ) activity->configure( nSubmodels );
-	for ( auto& precedence : precedences() ) precedence->configure( nSubmodels );
+	for ( auto activity : activities() ) activity->configure( nSubmodels );
+	for ( auto precedence : precedences() ) precedence->configure( nSubmodels );
     }
     Entity::configure( nSubmodels );
 
@@ -398,7 +398,7 @@ Task::initCustomers( std::deque<const Task *>& stack, unsigned int customers )
 	    customers = std::min( customers, copies() );
 	}
 	_customers[stack.front()] = customers;
-	for ( auto& entry : entries() ) entry->initCustomers( stack, customers );
+	for ( auto entry : entries() ) entry->initCustomers( stack, customers );
 #if BUG_425
 	std::cerr << std::setw( stack.size() * 2 ) << " " << print_name() << " pop." << std::endl;
 #endif
@@ -450,9 +450,9 @@ Task::initProcessor()
 Task&
 Task::setSurrogateDelaySize( size_t n_chains )
 {
-    for ( auto& entry : entries() ) entry->setSurrogateDelaySize( n_chains );
-    for ( auto& activity : activities() ) activity->setSurrogateDelaySize( n_chains );
-    for ( auto& precedence : precedences() ) precedence->setSurrogateDelaySize( n_chains );
+    for ( auto entry : entries() ) entry->setSurrogateDelaySize( n_chains );
+    for ( auto activity : activities() ) activity->setSurrogateDelaySize( n_chains );
+    for ( auto precedence : precedences() ) precedence->setSurrogateDelaySize( n_chains );
     return *this;
 }
 #endif
@@ -584,7 +584,7 @@ Task::fanOut( const Entity * aServer ) const
 Activity *
 Task::findActivity( const std::string& name ) const
 {
-    const std::vector<Activity *>::const_iterator activity = std::find_if( activities().begin(), activities().end(), Activity::has_name( name ) );
+    const std::vector<Activity *>::const_iterator activity = std::find_if( activities().begin(), activities().end(), [=]( const Activity * a ){ return a->name() == name; } );
     return activity != activities().end() ? *activity : nullptr;
 }
 
@@ -1003,11 +1003,11 @@ Task::updateWait( const Submodel& submodel, const double relax )
 {
     /* Do updateWait for each activity first. */
 
-    for ( auto& activity : activities() ) activity->updateWait( submodel, relax );
+    for ( auto activity : activities() ) activity->updateWait( submodel, relax );
 
     /* Entry updateWait for activity entries will update waiting times. */
 
-    for ( auto& entry : entries() ) entry->updateWait( submodel, relax );
+    for ( auto entry : entries() ) entry->updateWait( submodel, relax );
 //    for_each( entries().begin(), entries().end(), Exec2<Entry,const Submodel&,double>( &Entry::updateILWait, submodel, relax ) );
 
     /* Now recompute thread idle times */
@@ -1030,12 +1030,12 @@ Task::updateWaitReplication( const Submodel& submodel, unsigned & n_delta )
 
     /* Do updateWait for each activity first. */
 
-    for ( auto& activity : activities() ) delta += activity->updateWaitReplication( submodel );
+    for ( auto activity : activities() ) delta += activity->updateWaitReplication( submodel );
     n_delta += activities().size();
 
     /* Entry updateWait for activity entries will update waiting times. */
 
-    for ( auto& entry : entries() ) delta += entry->updateWaitReplication( submodel, n_delta );
+    for ( auto entry : entries() ) delta += entry->updateWaitReplication( submodel, n_delta );
 
     return delta;
 }
@@ -1701,9 +1701,9 @@ Task::insertDOMResults(void) const
 std::ostream&
 Task::printSubmodelWait( std::ostream& output ) const
 {
-    for ( const auto& entry : entries() ) entry->printSubmodelWait( output, 0 );
+    for ( const auto entry : entries() ) entry->printSubmodelWait( output, 0 );
     if ( flags.trace_virtual_entry ) {
-	for ( const auto& precedence : precedences() ) precedence->printSubmodelWait( output, 2 );
+	for ( const auto precedence : precedences() ) precedence->printSubmodelWait( output, 2 );
     } else {
 	for ( Vector<Thread *>::const_iterator thread = std::next(threads().begin()); thread != threads().end(); ++thread ) (*thread)->printSubmodelWait( output, 0 );
     }
@@ -1772,7 +1772,7 @@ Task::printOverlapTable( std::ostream& output, const ChainVector& chain, const V
 std::ostream&
 Task::printJoinDelay( std::ostream& output ) const
 {
-    for ( const auto& precedence : precedences() ) precedence->printJoinDelay( output );
+    for ( const auto precedence : precedences() ) precedence->printJoinDelay( output );
     return output;
 }
 

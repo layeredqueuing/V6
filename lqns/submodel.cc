@@ -1,6 +1,6 @@
 /* -*- c++ -*-
  * submodel.C	-- Greg Franks Wed Dec 11 1996
- * $Id: submodel.cc 16945 2024-01-26 13:02:36Z greg $
+ * $Id: submodel.cc 16965 2024-01-28 19:30:13Z greg $
  *
  * MVA submodel creation and solution.  This class is the interface
  * between the input model consisting of processors, tasks, and entries,
@@ -366,14 +366,14 @@ MVASubmodel::build()
 #if PAN_REPLICATION
     if ( usePanReplication() ) {
 	unsigned not_used = 0;
-	for ( auto& client : _clients ) client->updateWaitReplication( *this, not_used );
+	for ( auto client : _clients ) client->updateWaitReplication( *this, not_used );
     }
 #endif
-    std::for_each( _clients.begin(), _clients.end(), Entity::exec<Task>(&Task::setMaxCustomers,*this) );
-    std::for_each( _servers.begin(), _servers.end(), Entity::exec<Entity>(&Entity::setMaxCustomers,*this) );
+    std::for_each( _clients.begin(), _clients.end(), [&]( const Task * t ){ t->setMaxCustomers( *this ); } );
+    std::for_each( _servers.begin(), _servers.end(), [&]( const Entity * e ){ e->setMaxCustomers( *this ); } );
     if ( Pragma::interlock() ) {
-	std::for_each( _servers.begin(), _servers.end(), Entity::exec<Entity>(&Entity::setInterlock,*this) );
-	std::for_each( _servers.begin(), _servers.end(), Entity::exec<Entity>(&Entity::setInterlockRelation,*this) );
+	std::for_each( _servers.begin(), _servers.end(), [&]( const Entity * e ){ e->setInterlock( *this ); } );
+	std::for_each( _servers.begin(), _servers.end(), [&]( const Entity * e ){ e->setInterlockRelation( *this ); } );
     }
 
     if (flags.trace_customers ) {
@@ -424,11 +424,11 @@ MVASubmodel::rebuild()
 	delete oldStation;
     }
 
-    std::for_each( _clients.begin(), _clients.end(), Entity::exec<Task>(&Task::setMaxCustomers, *this) );
-    std::for_each( _servers.begin(), _servers.end(), Entity::exec<Entity>(&Entity::setMaxCustomers,*this) );
+    std::for_each( _clients.begin(), _clients.end(), [&]( const Task * t ){ t->setMaxCustomers( *this ); } );
+    std::for_each( _servers.begin(), _servers.end(), [&]( const Entity * e ){ e->setMaxCustomers( *this ); } );
 
     if ( Pragma::interlock() ) {
-	std::for_each( _servers.begin(), _servers.end(), Entity::exec<Entity>(&Entity::setInterlockRelation,*this) );
+	std::for_each( _servers.begin(), _servers.end(), [&]( const Entity * e ){ e->setInterlockRelation( *this ); } );
     }
 
     if (flags.trace_customers ) {
@@ -553,7 +553,9 @@ Submodel::replicaGroups( const std::set<Task *>& a, const std::set<Task *>& b ) 
 {
     std::set<Task *> dst = b;	/* Copy for erasure */
     for ( std::set<Task *>::const_iterator src = a.begin(); src != a.end(); ++src ) {
-	std::set<Task *>::iterator item = std::find_if( dst.begin(), dst.end(), Entity::matches( (*src)->name() ) );
+	const std::string& name = (*src)->name();
+	std::set<Task *>::iterator item = std::find_if( dst.begin(), dst.end(), [&]( const Task * t ) { return t->name() == name && t->getReplicaNumber() > 1; } );
+
 	if ( item == dst.end() ) return false;
 	dst.erase( item );
     }
@@ -613,7 +615,7 @@ MVASubmodel::makeChains()
 
 		/* add chain to all servers of this client */
 
-		for ( auto& server : clientsServers ) server->addServerChain( k );
+		for ( auto server : clientsServers ) server->addServerChain( k );
 	    }
 
 #if PAN_REPLICATION
@@ -1059,7 +1061,7 @@ MVASubmodel::solve( long iterations, MVACount& MVAStats, const double relax )
 	deltaRep = 0.0;
 	if ( usePanReplication() ) {
 	    unsigned n_deltaRep = 0;
-	    for ( auto& client : _clients ) deltaRep += client->updateWaitReplication( *this, n_deltaRep );
+	    for ( auto client : _clients ) deltaRep += client->updateWaitReplication( *this, n_deltaRep );
 	    if ( n_deltaRep ) {
 		deltaRep = sqrt( deltaRep / n_deltaRep );	/* Take RMS value over all phases */
 	    }
@@ -1074,7 +1076,7 @@ MVASubmodel::solve( long iterations, MVACount& MVAStats, const double relax )
 	if ( flags.trace_interlock ) {
 	    std::cout << "------ update interlocked Wait for submodel " << number() << ", iteration " << iterations << " ------" << std::endl;
 	}
-	for ( auto& client : _clients ) client->updateWait( *this, relax );
+	for ( auto client : _clients ) client->updateWait( *this, relax );
 
 	if ( !check_fp_ok() ) {
 	    throw floating_point_error( __FILE__, __LINE__ );
@@ -1265,8 +1267,8 @@ MVASubmodel::print( std::ostream& output ) const
     }
 
     output << std::endl << "Calls: " << std::endl;
-    for ( const auto& entry : Model::__entry ) entry->printCalls( output, number() );
-    for ( const auto& processor : Model::__processor ) processor->printTasks( output, number() );
+    for ( const auto entry : Model::__entry ) entry->printCalls( output, number() );
+    for ( const auto processor : Model::__processor ) processor->printTasks( output, number() );
     output << std::endl;
 
     return output;
@@ -1492,7 +1494,7 @@ CFSSubmodel::redistribute::operator()( Entity * server )
 
 		// need to change group task share as well;
 		const std::set<Task *>& tasks = (*group)->tasks();
-		std::for_each( tasks.begin(), tasks.end(), std::bind2nd( std::mem_fn( &Task::changeShare ), ratio ) );
+		std::for_each( tasks.begin(), tasks.end(), [=]( Task * t ){ t->changeShare( ratio ); } );
 		std::for_each( tasks.begin(), tasks.end(), std::mem_fn( &Task::reset_lowerbound ) );
 
 		//delta += (*group)->adjustGroupRatio();

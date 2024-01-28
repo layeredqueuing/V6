@@ -10,7 +10,7 @@
  * February 1997
  *
  * ------------------------------------------------------------------------
- * $Id: actlist.cc 16945 2024-01-26 13:02:36Z greg $
+ * $Id: actlist.cc 16965 2024-01-28 19:30:13Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -511,7 +511,7 @@ AndOrForkActivityList::~AndOrForkActivityList()
 AndOrForkActivityList&
 AndOrForkActivityList::configure( const unsigned n )
 {
-    for ( auto& entry : entries() ) entry->configure( n );
+    for ( auto entry : entries() ) entry->configure( n );
     return *this;
 }
 
@@ -520,7 +520,7 @@ AndOrForkActivityList::configure( const unsigned n )
 ActivityList&
 AndOrForkActivityList::setSurrogateDelaySize( size_t size )
 {
-    for ( auto& entry : entries() ) entry->setSurrogateDelaySize( size );
+    for ( auto entry : entries() ) entry->setSurrogateDelaySize( size );
     return *this;
 }
 #endif
@@ -600,7 +600,7 @@ AndOrForkActivityList::followInterlock( Interlock::CollectTable& path ) const
 bool
 AndOrForkActivityList::getInterlockedTasks( Interlock::CollectTasks& path ) const
 {
-    bool found = std::count_if( activities().begin(), activities().end(), test( &Activity::getInterlockedTasks, path ) ) > 0;
+    bool found = std::count_if( activities().begin(), activities().end(), [&]( const Activity * a ){ return a->getInterlockedTasks( path ); } ) > 0;
     if ( hasNextFork() && getNextFork()->getInterlockedTasks( path ) ) found = true;
 
     return found;
@@ -631,7 +631,7 @@ AndOrForkActivityList::collectToEntry( const Activity * activity, VirtualEntry *
 std::ostream&
 AndOrForkActivityList::printSubmodelWait( std::ostream& output, unsigned offset ) const
 {
-    for ( const auto& entry : entries() ) entry->printSubmodelWait( output, offset );
+    for ( const auto entry : entries() ) entry->printSubmodelWait( output, offset );
     return output;
 }
 
@@ -910,7 +910,7 @@ OrForkActivityList::callsPerform( Call::Perform& operation ) const
 unsigned
 OrForkActivityList::concurrentThreads( unsigned int n ) const
 {
-    n = std::accumulate( activities().begin(), activities().end(), n, Activity::max_threads( n ) );
+    n = std::accumulate( activities().begin(), activities().end(), n, [=](unsigned int l, const Activity* r){ return std::max( l, r->concurrentThreads(n) ); } );
     return hasNextFork() ? getNextFork()->concurrentThreads( n ) : n;
 }
 
@@ -1985,7 +1985,7 @@ RepeatActivityList::add( Activity * activity )
 RepeatActivityList&
 RepeatActivityList::configure( const unsigned n )
 {
-    for ( auto& entry : entries() ) entry->configure( n );
+    for ( auto entry : entries() ) entry->configure( n );
     return *this;
 }
 
@@ -1995,7 +1995,7 @@ RepeatActivityList::configure( const unsigned n )
 ActivityList&
 RepeatActivityList::setSurrogateDelaySize( size_t size )
 {
-    for ( auto& entry : entries() ) entry->setSurrogateDelaySize( size );
+    for ( auto entry : entries() ) entry->setSurrogateDelaySize( size );
     return *this;
 }
 #endif
@@ -2061,7 +2061,7 @@ RepeatActivityList::followInterlock( Interlock::CollectTable& path ) const
 bool
 RepeatActivityList::getInterlockedTasks( Interlock::CollectTasks& path ) const
 {
-    bool found = std::count_if( activities().begin(), activities().end(), test( &Activity::getInterlockedTasks, path ) ) > 0;
+    bool found = std::count_if( activities().begin(), activities().end(), [&]( const Activity * a ){ return a->getInterlockedTasks( path ); } ) > 0;
     if ( ForkActivityList::getInterlockedTasks( path ) ) found = true;
 
     return found;
@@ -2181,7 +2181,8 @@ RepeatActivityList::collect_calls( std::deque<const Activity *>& stack, CallInfo
 unsigned
 RepeatActivityList::concurrentThreads( unsigned n ) const
 {
-    return ForkActivityList::concurrentThreads( std::accumulate( activities().begin(), activities().end(), n, Activity::max_threads( n ) ) );
+    return ForkActivityList::concurrentThreads( std::accumulate( activities().begin(), activities().end(), n,
+								 [=](unsigned int l, const Activity* r){ return std::max( l, r->concurrentThreads(n) ); } ) );
 }
 
 
@@ -2189,7 +2190,7 @@ RepeatActivityList::concurrentThreads( unsigned n ) const
 std::ostream&
 RepeatActivityList::printSubmodelWait( std::ostream& output, unsigned offset ) const
 {
-    for ( const auto& entry : entries() ) entry->printSubmodelWait( output, offset );
+    for ( const auto entry : entries() ) entry->printSubmodelWait( output, offset );
     return output;
 }
 

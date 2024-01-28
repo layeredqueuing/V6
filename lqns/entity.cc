@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: entity.cc 16945 2024-01-26 13:02:36Z greg $
+ * $Id: entity.cc 16965 2024-01-28 19:30:13Z greg $
  *
  * Everything you wanted to know about a task or processor, but were
  * afraid to ask.
@@ -136,7 +136,7 @@ Entity::~Entity()
 Entity&
 Entity::configure( const unsigned nSubmodels )
 {
-    for ( auto& entry : entries() ) entry->configure( nSubmodels );
+    for ( auto entry : entries() ) entry->configure( nSubmodels );
     if ( std::any_of( entries().begin(), entries().end(), std::mem_fn( &Entry::hasDeterministicPhases ) ) ) setDeterministicPhases( true );
     if ( !Pragma::variance(Pragma::Variance::NONE)
 	 && ((nEntries() > 1 && Pragma::entry_variance())
@@ -409,7 +409,6 @@ Entity::clear()
 }
 
 
-
 /*
  * Check results for sanity.
  * Note -- make sure all errors are advisories, or no output will be generated.
@@ -547,8 +546,8 @@ Entity::initWeights( MVASubmodel& submodel )
 
     return *this;
 }
-
-
+
+/* -------------------------- Interlock ------------------------------- */
 
 void
 Entity::setMaxCustomers( const MVASubmodel& submodel ) const

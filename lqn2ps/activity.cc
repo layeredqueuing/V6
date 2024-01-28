@@ -1,6 +1,6 @@
 /* activity.cc	-- Greg Franks Thu Apr  3 2003
  *
- * $Id: activity.cc 16945 2024-01-26 13:02:36Z greg $
+ * $Id: activity.cc 16966 2024-01-28 19:34:15Z greg $
  */
 
 #include "activity.h"
@@ -446,19 +446,13 @@ Activity::findActivityChildren( Ancestors& ancestors ) const
  * Search backwards up activity list looking for a match on forkStack
  */
 
-const Activity&
-Activity::backtrack( const std::deque<const AndForkActivityList *>& forkStack, std::set<const AndForkActivityList *>& forkSet, std::set<const AndOrJoinActivityList *>& joinSet ) const
+void
+Activity::backtrack( const std::deque<const AndOrForkActivityList *>& forkStack, std::set<const AndOrForkActivityList *>& forkSet, std::set<const AndOrJoinActivityList *>& joinSet ) const
 {
     ActivityList * fork_list = inputFrom();
     if ( fork_list != nullptr ) {
-	RepeatActivityList * loop_list = dynamic_cast<RepeatActivityList *>(fork_list);
-	if ( loop_list != nullptr ) {
-	    throw ActivityList::path_error( static_cast<const LQIO::DOM::Activity *>(getDOM()) );
-	} else {
-	    fork_list->backtrack( forkStack, forkSet, joinSet );
-	}
+	fork_list->backtrack( forkStack, forkSet, joinSet );
     }
-    return *this;
 }
 
 
@@ -1181,7 +1175,7 @@ Activity::draw( std::ostream & output ) const
     _node->penColour( colour() == Graphic::Colour::GREY_10 ? Graphic::Colour::BLACK : colour() ).fillColour( colour() );
     _node->rectangle( output );
 
-    std::for_each( calls().begin(), calls().end(), ConstExec1<GenericCall,std::ostream&>( &GenericCall::draw, output ) );
+    std::for_each( calls().begin(), calls().end(), [&]( const GenericCall * call ) { call->draw( output ); } );
 
     _label->backgroundColour( colour() );
     output << *_label;

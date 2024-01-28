@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: entity.h 16945 2024-01-26 13:02:36Z greg $
+ * $Id: entity.h 16965 2024-01-28 19:30:13Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -58,52 +58,7 @@ class Entity {
  	bool variance;		/* an entry has Cv_sqn != 1.		*/
     };
 
-protected:
-    /*
-     * Compare two entities by their name and replica number.  The
-     * default replica is one, and will only not be one if replicas
-     * are expanded to individual tasks.
-     */
-    
-    struct equals {
-	equals( const std::string& name, unsigned int replica=1 ) : _name(name), _replica(replica) {}
-	bool operator()( const Entity * entity ) const { return entity->name() == _name && entity->getReplicaNumber() == _replica; }
-    private:
-	const std::string _name;
-	const unsigned int _replica;
-    };
-
 public:
-    template<class Type> struct exec {
-	typedef void (Type::*funcPtr)( const MVASubmodel& ) const;
-	exec<Type>( const funcPtr f, MVASubmodel& submodel ) : _f(f), _submodel(submodel) {}
-	void operator()( const Type * client ) const { (client->*_f)( _submodel ); }
-    private:
-	const funcPtr _f;
-	const MVASubmodel& _submodel;
-    };
-
-    struct sum_square {
-	typedef double (Entity::*funcPtr)() const;
-	sum_square( funcPtr f ) : _f(f) {}
-	double operator()( double addend, const Entity* object ) { return addend + square( (object->*_f)() ); }
-	double operator()( double addend, const Entity& object ) { return addend + square( (object.*_f)() ); }
-    private:
-	const funcPtr _f;
-    };
-
-    /*
-     * Compare two entities by their name, but not replica number
-     * except that entity must be a replica.
-     */
-
-    struct matches {
-	matches( const std::string& name ) : _name(name) {}
-	bool operator()( const Entity * entity ) const { return entity->name() == _name && entity->getReplicaNumber() > 1; }
-    private:
-	const std::string _name;
-    };
-
     struct set_chain_IL_rate {
 	set_chain_IL_rate( const Entity& entity, double rate ) : _station(entity._station), _serverChains(entity._serverChains), _rate(rate) {}
 	void operator()( unsigned int k );

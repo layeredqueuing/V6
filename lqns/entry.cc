@@ -12,7 +12,7 @@
  * July 2007.
  *
  * ------------------------------------------------------------------------
- * $Id: entry.cc 16945 2024-01-26 13:02:36Z greg $
+ * $Id: entry.cc 16965 2024-01-28 19:30:13Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -718,7 +718,7 @@ double
 Entry::sumOfSendNoReply( const unsigned p ) const
 {
     const std::set<Call *>& callList = _phase[p].callList();
-    return std::accumulate( callList.begin(), callList.end(), 0., Call::sum( &Call::sendNoReply ) );
+    return std::accumulate( callList.begin(), callList.end(), 0., []( double l, const Call * r ){ return l + r->sendNoReply(); } );
 }
 
 
@@ -1800,7 +1800,7 @@ TaskEntry::updateWait( const Submodel& submodel, const double relax )
 
     }
 
-    _total.setWaitTime( n, std::accumulate( _phase.begin(), _phase.end(), 0.0, add_wait( n ) ) );
+    _total.setWaitTime( n, std::accumulate( _phase.begin(), _phase.end(), 0.0, [=]( double l, const Phase& r ){ return l + r.getWaitTime( n ); } ) );
 
     return *this;
 }

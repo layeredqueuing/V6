@@ -8,7 +8,7 @@
  * January 2003
  *
  * ------------------------------------------------------------------------
- * $Id: entry.cc 16945 2024-01-26 13:02:36Z greg $
+ * $Id: entry.cc 16966 2024-01-28 19:34:15Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -2404,7 +2404,7 @@ Entry::draw( std::ostream& output ) const
 
     /* Draw reply arcs here for PostScript layering */
 
-    std::for_each( _activityCallers.begin(), _activityCallers.end(), ConstExec1<GenericCall,std::ostream&>(&GenericCall::draw, output) );
+    std::for_each( _activityCallers.begin(), _activityCallers.end(), [&]( const GenericCall * call ){ call->draw( output ); } );
     return *this;
 }
 
