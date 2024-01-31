@@ -3,7 +3,7 @@
  *
  * $URL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/qnsolver/runlqx.h $
  * ------------------------------------------------------------------------
- * $Id: runlqx.h 16945 2024-01-26 13:02:36Z greg $
+ * $Id: runlqx.h 16978 2024-01-29 21:31:31Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -15,6 +15,9 @@
 #include "model.h"
 
 class Model;
+namespace QNIO {
+    class Document;
+}
 
 namespace SolverInterface {
 
@@ -33,12 +36,14 @@ namespace SolverInterface {
 	static bool solveCallViaLQX;
 	static bool implicitSolve;
 	static std::string customSuffix;
-	
+    private:
+	QNIO::Document& input() const;
+	bool compute( size_t invocationCount ) const;
+
     private:
 	Model& _model;
 
 	static size_t invocationCount;
     };
-	
 }
 #endif 

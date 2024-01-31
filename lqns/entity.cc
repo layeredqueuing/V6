@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: entity.cc 16965 2024-01-28 19:30:13Z greg $
+ * $Id: entity.cc 16978 2024-01-29 21:31:31Z greg $
  *
  * Everything you wanted to know about a task or processor, but were
  * afraid to ask.
@@ -293,7 +293,7 @@ Entity::addEntry( Entry * anEntry )
 double
 Entity::throughput() const
 {
-    return std::accumulate( entries().begin(), entries().end(), 0., Entry::sum( &Entry::throughput ) );
+    return std::accumulate( entries().begin(), entries().end(), 0., []( double l, Entry * r ){ return l + r->throughput(); } );
 }
 
 
@@ -365,7 +365,7 @@ Entity::markovOvertaking() const
 double
 Entity::computeUtilization( const MVASubmodel& submodel, const Server& )
 {
-    return std::accumulate( entries().begin(), entries().end(), 0., Entry::sum( &Entry::utilization ) );
+    return std::accumulate( entries().begin(), entries().end(), 0., []( double l, Entry * r ){ return l + r->utilization(); } );
 }
 
 

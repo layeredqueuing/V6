@@ -1,10 +1,10 @@
 #----------------------------------------------------------------------
-# $Id: Makefile.am 16171 2022-12-11 02:36:33Z greg $
+# $Id: Makefile.am 16990 2024-01-31 11:58:42Z greg $
 #----------------------------------------------------------------------
 
 AM_CPPFLAGS	= -I..
 AM_YFLAGS	= -d -t -v
-srvndiff_CXXFLAGS = -std=c++11 -Wall -Wno-format -Wno-format-security
+srvndiff_CXXFLAGS = -std=c++17 -Wall -Wno-format -Wno-format-security
 bin_PROGRAMS 	= srvndiff
 srvndiff_SOURCES = srvndiff.cc symtbl.cc getopt2.cc srvn_result_scan.l srvn_result_gram.y commandline.cc confidence_intervals.cc error.cc srvn_results.cc getsbopt.cc parseable.cc json_document.cc
 noinst_HEADERS  = confidence_intervals.h commandline.h error.h expat_document.h getopt2.h getsbopt.h srvndiff.h srvn_result_gram.h srvn_results.h symtbl.h parseable.h json_document.h

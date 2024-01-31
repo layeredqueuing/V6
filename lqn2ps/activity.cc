@@ -1,6 +1,6 @@
 /* activity.cc	-- Greg Franks Thu Apr  3 2003
  *
- * $Id: activity.cc 16966 2024-01-28 19:34:15Z greg $
+ * $Id: activity.cc 16978 2024-01-29 21:31:31Z greg $
  */
 
 #include "activity.h"
@@ -972,8 +972,8 @@ Activity&
 Activity::scaleBy( const double sx, const double sy )
 {
     Element::scaleBy( sx, sy );
-    std::for_each( calls().begin(), calls().end(), ExecXY<GenericCall>( &GenericCall::scaleBy, sx, sy ) );
-    std::for_each( replyArcs().begin(), replyArcs().end(), ExecReplyXY( &GenericCall::scaleBy, sx, sy ) );
+    std::for_each( calls().begin(), calls().end(), [=]( Call * call ){ call->scaleBy( sx, sy ); } );
+    std::for_each( replyArcs().begin(), replyArcs().end(), [=]( const std::pair<Entry *,Reply *>& reply ){ reply.second->scaleBy( sx, sy ); } );
     return *this;
 }
 
@@ -983,8 +983,8 @@ Activity&
 Activity::translateY( const double dy )
 {
     Element::translateY( dy );
-    std::for_each( calls().begin(), calls().end(), Exec1<GenericCall,double>( &GenericCall::translateY, dy ) );
-    std::for_each( replyArcs().begin(), replyArcs().end(), ExecX<GenericCall,std::pair<Entry *,Reply *>,double>( &GenericCall::translateY, dy ) );
+    std::for_each( calls().begin(), calls().end(), [=]( Call * call ){ call->translateY( dy ); } );
+    std::for_each( replyArcs().begin(), replyArcs().end(), [=]( const std::pair<Entry *,Reply *>& reply ){ reply.second->translateY( dy ); } );
     return *this;
 }
 
@@ -994,8 +994,8 @@ Activity&
 Activity::depth( const unsigned depth  )
 {
     Element::depth( depth-3 );
-    std::for_each( calls().begin(), calls().end(), Exec1<GenericCall,unsigned int>( &GenericCall::depth, depth-2 ) );
-    std::for_each( replyArcs().begin(), replyArcs().end(), ExecX<GenericCall,std::pair<Entry *,Reply *>,unsigned>( &GenericCall::depth, depth-1 ) );
+    std::for_each( calls().begin(), calls().end(), [=]( Call * call ){ call->depth( depth-2 ); } );
+    std::for_each( replyArcs().begin(), replyArcs().end(), [=]( const std::pair<Entry *,Reply *>& reply ){ reply.second->depth( depth-1 ); } );
     return *this;
 }
 
@@ -1151,10 +1151,9 @@ Activity::replicateCall()
     Phase::replicateCall();		/* Reset DOM calls */
     
     Call * root = nullptr;
-    std::for_each( old_calls.begin(), old_calls.end(), Exec2<Call, std::vector<Call *>&, Call **>( &Call::replicateCall, _calls, &root ) );
+    std::for_each( old_calls.begin(), old_calls.end(), [&]( Call * call ){ call->replicateCall( _calls, &root ); } );
     return *this;
 }
-
 #endif
 
 /* ------------------------------------------------------------------------ */

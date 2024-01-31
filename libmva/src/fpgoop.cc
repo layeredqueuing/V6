@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: fpgoop.cc 16945 2024-01-26 13:02:36Z greg $
+ * $Id: fpgoop.cc 16974 2024-01-29 20:12:36Z greg $
  *
  * Floating point exception handling.  It is all different on all machines.
  * See:

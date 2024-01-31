@@ -1,9 +1,9 @@
 #----------------------------------------------------------------------
-# $Id: Makefile.am 16945 2024-01-26 13:02:36Z greg $
+# $Id: Makefile.am 16990 2024-01-31 11:58:42Z greg $
 #----------------------------------------------------------------------
 
 AM_CPPFLAGS	= -I..  -I../lqiolib/src/headers -I../lqx/libsrc/headers
-lqn2csv_CXXFLAGS = -std=c++11 -Wall -Wno-unknown-pragmas
+lqn2csv_CXXFLAGS = -std=c++17 -Wall -Wno-unknown-pragmas
 bin_PROGRAMS 	= lqn2csv
 lqn2csv_SOURCES = gnuplot.cc lqn2csv.cc model.cc
 noinst_HEADERS  = gnuplot.h lqn2csv.h model.h

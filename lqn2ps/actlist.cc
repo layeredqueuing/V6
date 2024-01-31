@@ -4,7 +4,7 @@
  * this is all the stuff printed after the ':'.  For xml output, this
  * is all of the precendence stuff.
  * 
- * $Id: actlist.cc 16966 2024-01-28 19:34:15Z greg $
+ * $Id: actlist.cc 16982 2024-01-30 01:12:30Z greg $
  */
 
 
@@ -20,29 +20,6 @@
 #include "label.h"
 #include "task.h"
 #include <string>
-
-template <> struct ExecXY<Arc>
-{
-    typedef Arc& (Arc::*funcPtrXY)( double x, double y );
-    ExecXY<Arc>( funcPtrXY f, double x, double y ) : _f(f), _x(x), _y(y) {};
-    void operator()( const std::pair<Activity *,Arc *>& object ) const { (object.second->*_f)( _x, _y ); }
-private:
-    funcPtrXY _f;
-    double _x;
-    double _y;
-};
-
-template <> struct ExecXY<Label>
-{
-    typedef Label& (Label::*funcPtrXY)( double x, double y );
-    ExecXY<Label>( funcPtrXY f, double x, double y ) : _f(f), _x(x), _y(y) {};
-    void operator()( const std::pair<Activity *,Label *>& object ) const { (object.second->*_f)( _x, _y ); }
-private:
-    funcPtrXY _f;
-    double _x;
-    double _y;
-};
-
 
 class ActivityListManip {
 public:
@@ -227,7 +204,7 @@ SequentialActivityList::draw( std::ostream& output ) const
 
 ForkActivityList::ForkActivityList( const Task * owner, const LQIO::DOM::ActivityList * dom_activitylist ) 
     : SequentialActivityList( owner, dom_activitylist ), 
-      prevLink(0) 
+      _prev(0) 
 {
 }
 
@@ -528,7 +505,7 @@ ForkJoinActivityList::add( Activity * activity )
 ForkJoinActivityList& 
 ForkJoinActivityList::scaleBy( const double sx, const double sy )
 {
-    std::for_each( _arcs.begin(), _arcs.end(), ExecXY<Arc>( &Arc::scaleBy, sx, sy ) );
+    std::for_each( _arcs.begin(), _arcs.end(), [=]( const std::pair<Activity *,Arc *>& arc ){ arc.second->scaleBy( sx, sy ); } );
     _node->scaleBy( sx, sy );
     return *this;
 }
@@ -538,7 +515,7 @@ ForkJoinActivityList::scaleBy( const double sx, const double sy )
 ForkJoinActivityList& 
 ForkJoinActivityList::translateY( const double dy )
 {
-    std::for_each( _arcs.begin(), _arcs.end(), ExecX<Arc,std::pair<Activity *,Arc *>,double>( &Arc::translateY, dy ) );
+    std::for_each( _arcs.begin(), _arcs.end(), [=]( const std::pair<Activity *,Arc *>& arc ){ arc.second->translateY( dy ); } );
     _node->translateY( dy );
     return *this;
 }
@@ -548,7 +525,7 @@ ForkJoinActivityList::translateY( const double dy )
 ForkJoinActivityList& 
 ForkJoinActivityList::depth( unsigned depth )
 {
-    std::for_each( _arcs.begin(), _arcs.end(), ExecX<Graphic,std::pair<Activity *, Arc *>,unsigned>( &Graphic::depth, depth ) );
+    std::for_each( _arcs.begin(), _arcs.end(), [=]( const std::pair<Activity *,Arc *>& arc ){ arc.second->depth( depth ); } );
     _node->depth( depth-2 );
     return *this;
 }
@@ -582,7 +559,7 @@ const ForkJoinActivityList&
 ForkJoinActivityList::draw( std::ostream& output ) const
 {
     const Graphic::Colour pen_colour = colour() == Graphic::Colour::GREY_10 ? Graphic::Colour::BLACK : colour();
-    std::for_each( _arcs.begin(), _arcs.end(), ExecX<Graphic,std::pair<Activity *, Arc *>,Graphic::Colour>( &Graphic::penColour, pen_colour ) );
+    std::for_each( _arcs.begin(), _arcs.end(), [=]( const std::pair<Activity *, Arc *>& arc ){ arc.second->penColour( pen_colour ); } );
     const Point ctr( _node->center() );
     _node->penColour( pen_colour ).fillColour( colour() );
     _node->circle( output, ctr, radius() );
@@ -626,7 +603,7 @@ ForkJoinActivityList::getName() const
 
 AndOrForkActivityList::AndOrForkActivityList( const Task * owner, const LQIO::DOM::ActivityList * dom_activitylist ) 
     : ForkJoinActivityList( owner, dom_activitylist ), 
-      prevLink(0) 
+      _prev(0) 
 {
 }
 
@@ -911,7 +888,7 @@ OrForkActivityList&
 OrForkActivityList::translateY( const double dy )
 {
     ForkJoinActivityList::translateY( dy );
-    std::for_each( _labels.begin(), _labels.end(), ExecX<Label,std::pair<Activity *,Label *>,double>( &Label::translateY, dy ) );
+    std::for_each( _labels.begin(), _labels.end(), [=]( const std::pair<Activity *,Label *>& label ){ label.second->translateY( dy ); } );
     return *this;
 }
 
@@ -920,7 +897,7 @@ OrForkActivityList&
 OrForkActivityList::scaleBy( const double sx, const double sy )
 {
     ForkJoinActivityList::scaleBy( sx, sy );
-    std::for_each( _labels.begin(), _labels.end(), ExecXY<Label>( &Label::scaleBy, sx, sy ) );
+    std::for_each( _labels.begin(), _labels.end(), [=]( const std::pair<Activity *,Label *>& label ){ label.second->scaleBy( sx, sy ); } );
     return *this;
 }
 
@@ -1553,7 +1530,7 @@ AndJoinActivityList::draw( std::ostream& output ) const
 
 RepeatActivityList::RepeatActivityList( const Task * owner, const LQIO::DOM::ActivityList * dom_activitylist ) 
     : ForkActivityList( owner, dom_activitylist ), 
-      prevLink(0)
+      _prev(0)
 {
     _node = Node::newNode( 12.0, 12.0 );
 }
@@ -1642,10 +1619,8 @@ RepeatActivityList::setChain( std::deque<const Activity *>& activityStack, unsig
 RepeatActivityList&
 RepeatActivityList::add( Activity * activity )
 {
-    const LQIO::DOM::Activity * dom = dynamic_cast<const LQIO::DOM::Activity *>(activity->getDOM());
-    if ( dom ) {
-//	const LQIO::DOM::ExternalVariable * arg = getDOM()->getParameter(dom);
-
+    const LQIO::DOM::ExternalVariable * arg = getDOM()->getParameter(dynamic_cast<const LQIO::DOM::Activity *>(activity->getDOM()));
+    if ( arg ) {
 	_activities.push_back(activity);
 
 	Label * label = Label::newLabel();
@@ -1663,7 +1638,6 @@ RepeatActivityList::add( Activity * activity )
     } else {
 
 	/* End of list */
-
 	ForkActivityList::add( activity );
     }
 
@@ -1721,8 +1695,8 @@ RepeatActivityList&
 RepeatActivityList::scaleBy( const double sx, const double sy )
 {
     _arc->scaleBy( sx, sy );
-    std::for_each( _arcs.begin(), _arcs.end(), ExecXY<Arc>( &Arc::scaleBy, sx, sy ) );
-    std::for_each( _labels.begin(), _labels.end(), ExecXY<Label>( &Label::scaleBy, sx, sy ) );
+    std::for_each( _arcs.begin(), _arcs.end(), [=]( const std::pair<Activity *,Arc *>& arc ){ arc.second->scaleBy( sx, sy ); } );
+    std::for_each( _labels.begin(), _labels.end(), [=]( const std::pair<Activity *,Label *>& label ){ label.second->scaleBy( sx, sy ); } );
     if ( activityList().size() ) {
 	_node->scaleBy( sx, sy );
     }
@@ -1735,8 +1709,8 @@ RepeatActivityList&
 RepeatActivityList::translateY( const double dy )
 {
     _arc->translateY( dy );
-    std::for_each( _arcs.begin(), _arcs.end(), ExecX<Arc,std::pair<Activity *,Arc *>,double>( &Arc::translateY, dy ) );
-    std::for_each( _labels.begin(), _labels.end(), ExecX<Label,std::pair<Activity *,Label *>,double>( &Label::translateY, dy ) );
+    std::for_each( _arcs.begin(), _arcs.end(), [=]( const std::pair<Activity *,Arc *>& arc ){ arc.second->translateY( dy ); } );
+    std::for_each( _labels.begin(), _labels.end(), [=]( const std::pair<Activity *,Label *>& label ){ label.second->translateY( dy ); } );
     if ( activityList().size() ) {
 	_node->translateY( dy );
     }
@@ -1749,8 +1723,8 @@ RepeatActivityList&
 RepeatActivityList::depth( unsigned depth )
 {
     _arc->depth( depth );
-    std::for_each( _arcs.begin(), _arcs.end(), ExecX<Graphic,std::pair<Activity *, Arc *>,unsigned>( &Graphic::depth, depth ) );
-    std::for_each( _labels.begin(), _labels.end(), ExecX<Graphic,std::pair<Activity *,Label *>,unsigned>( &Graphic::depth, depth ) );
+    std::for_each( _arcs.begin(), _arcs.end(), [=]( const std::pair<Activity *,Arc *>& arc ){ arc.second->depth( depth ); } );
+		   std::for_each( _labels.begin(), _labels.end(), [=]( const std::pair<Activity *,Label *>& label ){ label.second->depth( depth ); } );
     if ( activityList().size() ) {
 	_node->depth( depth );
     }
@@ -1832,12 +1806,11 @@ const RepeatActivityList&
 RepeatActivityList::draw( std::ostream& output ) const
 {
     const Graphic::Colour pen_colour = colour() == Graphic::Colour::GREY_10 ? Graphic::Colour::BLACK : colour();
-    std::for_each( _arcs.begin(), _arcs.end(), ExecX<Graphic,std::pair<Activity *, Arc *>,Graphic::Colour>( &Graphic::penColour, pen_colour ) );
+    std::for_each( _arcs.begin(), _arcs.end(), [=]( const std::pair<Activity *, Arc *>& arc ){ arc.second->penColour( pen_colour ); } );
 
     ForkActivityList::draw( output );
     std::for_each( _arcs.begin(), _arcs.end(), [&]( const std::pair<Activity *,Arc *>& arc ){ arc.second->draw( output ); } );
     std::for_each( _labels.begin(), _labels.end(), [&]( const std::pair<Activity *,Label *>& label ){ label.second->draw( output ); } );
-
     const Point ctr( _node->center() );
     _node->penColour( pen_colour ).fillColour( colour() );
     _node->circle( output, ctr, radius() );

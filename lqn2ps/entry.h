@@ -9,7 +9,7 @@
  * January 2003
  *
  * ------------------------------------------------------------------------
- * $Id: entry.h 16945 2024-01-26 13:02:36Z greg $
+ * $Id: entry.h 16978 2024-01-29 21:31:31Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -53,24 +53,6 @@ class Entry : public Element {
     typedef SRVNEntryManip (* print_func_ptr)( const Entry& );
 
 private:
-    struct Exec
-    {
-	typedef Phase& (Phase::*funcPtr)();
-	Exec( funcPtr f ) : _f(f) {};
-	void operator()( const std::pair<unsigned,Phase>& phase ) const { (const_cast<Phase&>(phase.second).*_f)(); }
-    private:
-	funcPtr _f;
-    };
-    
-    struct sum {
-	typedef double (Phase::*funcPtr)() const;
-	sum( funcPtr f ) : _f(f) {}
-	double operator()( double addend, const std::pair<unsigned int, Phase>& phase ) { return addend + (phase.second.*_f)(); }
-    private:
-	funcPtr _f;
-    };
-	
-
     struct sum_extvar
     {
 	typedef const LQIO::DOM::ExternalVariable& (Call::*funcPtr)() const;

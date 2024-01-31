@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: lqn2csv.cc 16945 2024-01-26 13:02:36Z greg $
+ * $Id: lqn2csv.cc 16978 2024-01-29 21:31:31Z greg $
  *
  * Command line processing.
  *
@@ -233,7 +233,7 @@ main( int argc, char *argv[] )
     extern int optind;
     static char copyrightDate[20];
 
-    sscanf( "$Date: 2024-01-26 08:02:36 -0500 (Fri, 26 Jan 2024) $", "%*s %s %*s", copyrightDate );
+    sscanf( "$Date: 2024-01-29 16:31:31 -0500 (Mon, 29 Jan 2024) $", "%*s %s %*s", copyrightDate );
 
     toolname = basename( argv[0] );
     opts = makeopts( longopts );	/* Convert to regular options */

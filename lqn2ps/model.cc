@@ -1,6 +1,6 @@
 /* model.cc	-- Greg Franks Mon Feb  3 2003
  *
- * $Id: model.cc 16966 2024-01-28 19:34:15Z greg $
+ * $Id: model.cc 16978 2024-01-29 21:31:31Z greg $
  *
  * Load, slice, and dice the lqn model.
  */
@@ -208,14 +208,14 @@ Model::~Model()
 Model&
 Model::operator*=( const double s )
 {
-    std::for_each( _layers.begin(), _layers.end(), ::ExecXY<Layer>( &Layer::scaleBy, s, s ) );
+    std::for_each( _layers.begin(), _layers.end(), [=]( Layer& layer ){ layer.scaleBy( s, s ); } );
     if ( _key ) {
 	_key->scaleBy( s, s );
     }
     if ( _label ) {
 	_label->scaleBy( s, s );
     }
-    std::for_each( Group::__groups.begin(), Group::__groups.end(), ::ExecXY<Group>( &Group::scaleBy, s, s ) );
+    std::for_each( Group::__groups.begin(), Group::__groups.end(), [=]( Group* group ){ group->scaleBy( s, s ); } );
 
     _origin  *= s;
     _extent  *= s;
@@ -228,14 +228,14 @@ Model::operator*=( const double s )
 Model&
 Model::translateScale( const double s ) 
 {
-    std::for_each( _layers.begin(), _layers.end(), Exec1<Layer,double>( &Layer::translateY, top() ) );
+    std::for_each( _layers.begin(), _layers.end(), [=]( Layer& layer ){ layer.translateY( top() ); } );
     if ( _key ) {
 	_key->translateY( top() );
     }
     if ( _label ) {
 	_label->translateY( top() );
     }
-    std::for_each( Group::__groups.begin(), Group::__groups.end(), Exec1<Group,double>( &Group::translateY, top() ) );
+    std::for_each( Group::__groups.begin(), Group::__groups.end(), [=]( Group* group ){ group->translateY( top() ); } );
     *this *= s;
 
     return *this;
@@ -245,14 +245,14 @@ Model::translateScale( const double s )
 Model&
 Model::moveBy( const double dx, const double dy ) 
 {
-    std::for_each( _layers.begin(), _layers.end(), ::ExecXY<Layer>( &Layer::moveBy, dx, dy ) );
+    std::for_each( _layers.begin(), _layers.end(), [=]( Layer& layer ){ layer.moveBy( dx, dy ); } );
     if ( _key ) {
 	_key->moveBy( dx, dy );
     }
     if ( _label ) {
 	_label->moveBy( dx, dy );
     }
-    std::for_each( Group::__groups.begin(), Group::__groups.end(), ::ExecXY<Group>( &Group::moveBy, dx, dy ) );
+    std::for_each( Group::__groups.begin(), Group::__groups.end(), [=]( Group* group ){ group->moveBy( dx, dy ); } );
     _origin.moveBy( dx, dy );
 
     return *this;
@@ -1359,7 +1359,7 @@ Model::format( Layer& serverLayer )
 Model&
 Model::justify()
 {
-    std::for_each( _layers.begin(), _layers.end(), Exec1<Layer,double>( &Layer::justify, right() ) );
+    std::for_each( _layers.begin(), _layers.end(), [=]( Layer& layer ){ layer.justify( right() ); } );
     return *this;
 }
 
@@ -1424,14 +1424,14 @@ Model::finalScaleTranslate()
     const double x_offset = offset - left();
     const double y_offset = offset - bottom();		/* Shift to origin */
     _origin.moveTo( 0, 0 );
-    std::for_each( _layers.begin(), _layers.end(), ::ExecXY<Layer>( &Layer::moveBy, x_offset, y_offset ) );
+    std::for_each( _layers.begin(), _layers.end(), [=]( Layer& layer ){ layer.moveBy( x_offset, y_offset ); } );
     if ( _key ) {
 	_key->moveBy( x_offset, y_offset );
     }
     if ( _label ) {
 	_label->moveBy( x_offset, y_offset );
     }
-    std::for_each( Group::__groups.begin(), Group::__groups.end(), ::ExecXY<Group>( &Group::moveBy, x_offset, y_offset ) );
+    std::for_each( Group::__groups.begin(), Group::__groups.end(), [=]( Group* group ){ group->moveBy( x_offset, y_offset ); } );
     _extent.moveBy( 2.0 * offset, 2.0 * offset );
 
     /* Rescale for output format. */
@@ -1503,17 +1503,17 @@ Model::label()
 
 
 unsigned
-Model::count( const taskPredicate aFunc ) const
+Model::count( const taskPredicate f ) const
 {
-    return std::for_each( _layers.begin(), _layers.end(), ::Count<Layer,taskPredicate>( &Layer::count, aFunc ) ).count();
+    return std::accumulate( _layers.begin(), _layers.end(), static_cast<unsigned int>(0), [=]( unsigned int l, const Layer& r ){ return l + r.count( f ); } );
 }
 
 
 
 unsigned
-Model::count( const callPredicate aFunc ) const
+Model::count( const callPredicate f ) const
 {
-    return std::for_each( _layers.begin(), _layers.end(), ::Count<Layer,callPredicate>( &Layer::count, aFunc ) ).count();
+    return std::accumulate( _layers.begin(), _layers.end(), static_cast<unsigned int>(0), [=]( unsigned int l, const Layer& r ){ return l + r.count( f ); } );
 }
 
 
@@ -1773,11 +1773,11 @@ Model::returnReplication()
     _document->clearAllMaps();
 
     LQIO::DOM::DocumentObject * root = nullptr;
-    std::for_each( old_processor.begin(), old_processor.end(), Exec1<Processor,LQIO::DOM::DocumentObject **>( &Processor::replicateProcessor, &root ) );
+    std::for_each( old_processor.begin(), old_processor.end(), [&]( Processor * processor){ processor->replicateProcessor( &root ); } ); // 
     std::for_each( old_entry.begin(), old_entry.end(), std::mem_fn( &Entry::replicateCall ) );	/* do before entry */
     std::for_each( old_task.begin(), old_task.end(), std::mem_fn( &Task::replicateCall ) );		/* do before task */
-    std::for_each( old_entry.begin(), old_entry.end(), Exec1<Entry,LQIO::DOM::DocumentObject **>( &Entry::replicateEntry, &root ) );
-    std::for_each( old_task.begin(), old_task.end(), Exec1<Task,LQIO::DOM::DocumentObject **>( &Task::replicateTask, &root ) );
+    std::for_each( old_entry.begin(), old_entry.end(), [&]( Entry * entry ){ entry->replicateEntry( &root ); } );
+    std::for_each( old_task.begin(), old_task.end(), [&]( Task * task ){ task->replicateTask( &root ); } );
     Task::updateFanInOut();
     return *this;
 }

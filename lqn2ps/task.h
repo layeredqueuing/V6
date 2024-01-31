@@ -10,7 +10,7 @@
  * April 2010.
  *
  * ------------------------------------------------------------------------
- * $Id: task.h 16945 2024-01-26 13:02:36Z greg $
+ * $Id: task.h 16978 2024-01-29 21:31:31Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -116,7 +116,7 @@ public:
     Activity * findActivity( const std::string& name ) const;
     Activity * findOrAddActivity( const LQIO::DOM::Activity * );
 #if REP2FLAT
-    Activity * addActivity( const Activity&, const unsigned );
+    Activity * addActivity( const Activity *, const unsigned );
     Activity * findActivity( const Activity&, const unsigned );
 #endif
     Task& removeActivity( Activity * );
@@ -355,18 +355,5 @@ public:
     virtual bool isServerTask() const   { return true; }
 
 private:
-};
-
-/*
- * Compare a task name to a string.  Used by the find_if (and other algorithm type things.
- */
-
-struct eqTaskStr 
-{
-    eqTaskStr( const std::string& s ) : _s(s) {}
-    bool operator()(const Task * p1 ) const { return p1->name() == _s; }
-
-private:
-    const std::string & _s;
 };
 #endif

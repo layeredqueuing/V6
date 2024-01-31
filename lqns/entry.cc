@@ -12,7 +12,7 @@
  * July 2007.
  *
  * ------------------------------------------------------------------------
- * $Id: entry.cc 16965 2024-01-28 19:30:13Z greg $
+ * $Id: entry.cc 16978 2024-01-29 21:31:31Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -659,7 +659,7 @@ Entry::rendezvous( Entry * toEntry, const unsigned p, const LQIO::DOM::Call* cal
 double
 Entry::rendezvous( const Entry * entry ) const
 {
-    return std::accumulate( _phase.begin(), _phase.end(), 0., add_calls( &Phase::rendezvous, entry ) );
+    return std::accumulate( _phase.begin(), _phase.end(), 0., [=]( double l, const Phase& r ){ return l + r.rendezvous( entry ); } );
 }
 
 
@@ -705,7 +705,7 @@ Entry::sendNoReply( Entry * toEntry, const unsigned p, const LQIO::DOM::Call* ca
 double
 Entry::sendNoReply( const Entry * entry ) const
 {
-    return std::accumulate( _phase.begin(), _phase.end(), 0., add_calls( &Phase::sendNoReply, entry ) );
+    return std::accumulate( _phase.begin(), _phase.end(), 0., [=]( double l, const Phase& r ){ return l + r.sendNoReply( entry ); } );
 }
 
 

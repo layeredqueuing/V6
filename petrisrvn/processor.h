@@ -50,6 +50,7 @@ public:
     unsigned int ref_count() const;
 
     bool is_single_place_processor() const;
+    bool is_ps_processor() const;		/* BUG 415 */
 
     void remove_netobj() { PX = nullptr; }
     void initialize();
