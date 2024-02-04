@@ -7,7 +7,7 @@
  *
  * June 2007
  *
- * $Id: submodel.h 16965 2024-01-28 19:30:13Z greg $
+ * $Id: submodel.h 17027 2024-02-04 15:24:18Z greg $
  */
 
 #ifndef _SUBMODEL_H
@@ -38,14 +38,6 @@ protected:
     typedef std::pair< std::set<Task *>, std::set<Entity*> > submodel_group_t;
 
 private:
-    class InitializeWait {
-    public:
-	InitializeWait( const Submodel& submodel ) : _submodel(submodel) {}
-	void operator()( Task* client ) const;
-    private:
-	const Submodel& _submodel;
-    };
-
     class SubmodelManip {
     public:
 	SubmodelManip( std::ostream& (*ff)(std::ostream&, const Submodel&, const unsigned long ),
@@ -100,7 +92,7 @@ public:
     bool hasClient( const Task * client ) const { return _clients.find(const_cast<Task *>(client)) != _clients.end(); }
     bool hasServer( const Entity * server ) const { return _servers.find(const_cast<Entity *>(server)) != _servers.end(); }
 
-    const std::set<Task *>& getClients() const { return _clients; }		/* Table of clients 		*/
+    const std::set<Task *>& clients() const { return _clients; }		/* Table of clients 		*/
     virtual const char * const submodelType() const = 0;
     unsigned number() const { return _submodel_number; }
 
@@ -134,6 +126,8 @@ protected:
     SubmodelTraceManip print_trace_header( const std::string& str ) { return SubmodelTraceManip( &Submodel::submodel_trace_header_str, str ); }
 
 private:
+    void initializeWait( Task * ) const;
+
     void addToGroup( Task *, submodel_group_t& group ) const;
     bool replicaGroups( const std::set<Task *>&, const std::set<Task *>& ) const;
 		
@@ -178,14 +172,6 @@ class MVASubmodel : public Submodel {
     };
 #endif
 
-    class InitializeChains {
-    public:
-	InitializeChains( MVASubmodel& submodel ) : _submodel(submodel) {}
-	void operator()( Task* client ) const;
-    private:
-	MVASubmodel& _submodel;
-    };
-
     struct InitializeServerStation {
 	InitializeServerStation( MVASubmodel& submodel ) : _submodel(submodel) {}
 	void operator()( Entity* entity );
@@ -198,6 +184,7 @@ class MVASubmodel : public Submodel {
 	};
 
 	void setServiceTimeAndVariance( Server * station, const Entry * entry, unsigned k ) const;
+	const std::set<Task *>& clients() const { return _submodel.clients(); }			/* Table of clients 		*/
     private:
 	MVASubmodel& _submodel;
     };
@@ -232,7 +219,7 @@ public:
     MVASubmodel( const unsigned );
     virtual ~MVASubmodel();
 	
-    const std::set<Task *>& getClients() const { return _clients; }			/* Table of clients 		*/
+    const std::set<Task *>& clients() const { return _clients; }			/* Table of clients 		*/
     const char * const submodelType() const { return "Submodel"; }
 
     virtual void initializeInterlock();
@@ -274,6 +261,8 @@ private:
     bool hasThreads() const { return _hasThreads; }
     bool hasSynchs() const { return _hasSynchs; }
     bool hasReplicas() const { return _hasReplicas; }
+
+    void initializeChains( Task* client ) const;
 
 public:
 #if PAN_REPLICATION
@@ -344,11 +333,4 @@ private:
     const Model& _model;
     bool _redistributed;
 };
-
-
-/* -------------------------------------------------------------------- */
-/* Funky Formatting functions for inline with <<.			*/
-/* -------------------------------------------------------------------- */
-
-SubModelManip print_submodel_header( const Submodel &, const unsigned long );
 #endif

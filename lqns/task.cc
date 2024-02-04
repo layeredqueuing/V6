@@ -10,7 +10,7 @@
  * November, 1994
  *
  * ------------------------------------------------------------------------
- * $Id: task.cc 16978 2024-01-29 21:31:31Z greg $
+ * $Id: task.cc 17027 2024-02-04 15:24:18Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -1110,7 +1110,7 @@ Task::setRealCustomers(	const MVASubmodel& submodel, const Entity * server ) con
 	for ( unsigned int e = 0; e <= server->nEntries(); ++e ) {
 	    station->setRealCustomers( e, k, 0. );
         }
-	std::for_each( entries().begin(), entries().end(), Entry::set_real_customers( submodel, server, k ) );
+	std::for_each( entries().begin(), entries().end(), [&]( Entry * entry ){ entry->setRealCustomers( submodel, server, k ); } );
     }
     return *this;
 }
@@ -1167,7 +1167,7 @@ Task::modifyParentClientServiceTime( const MVASubmodel& submodel, const Entity *
 
     Server * station = clientStation( submodel.number() );
     const ChainVector& chain = clientChains( submodel.number() );
-    const std::set<Task *>& clients = submodel.getClients();
+    const std::set<Task *>& clients = submodel.clients();
 
     /* key points: 1. for each client entry:
      * if this entry is a common entry to the server(server)

@@ -12,7 +12,7 @@
  * July 2007.
  *
  * ------------------------------------------------------------------------
- * $Id: entry.cc 16978 2024-01-29 21:31:31Z greg $
+ * $Id: entry.cc 17027 2024-02-04 15:24:18Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -1319,7 +1319,7 @@ Entry::getInterlockPr( const MVASubmodel& submodel, const Entity * server ) cons
 bool
 Entry::isSendingTask( const MVASubmodel& submodel ) const
 {
-    const std::set<Task *>& clients = submodel.getClients();
+    const std::set<Task *>& clients = submodel.clients();
     return std::any_of( clients.begin(), clients.end(), Task::is_interlocked_from( this ) );
 }
 
@@ -1451,23 +1451,23 @@ Entry::setMaxCustomersForChain( unsigned int k ) const
 
 
 void
-Entry::set_real_customers::operator()( const Entry * entry ) const
+Entry::setRealCustomers( const MVASubmodel& submodel, const Entity * server, unsigned int k ) const
 {
-    Server * station = _server->serverStation();
+    Server * station = server->serverStation();
 
     double sum = 0;
-    for ( Vector<Phase>::const_iterator phase = entry->_phase.begin(); phase != entry->_phase.end(); ++phase ) {
+    for ( Vector<Phase>::const_iterator phase = _phase.begin(); phase != _phase.end(); ++phase ) {
 	const std::set<Call *>& calls = phase->callList();
-	double rcustomers = std::accumulate( calls.begin(), calls.end(), 0.0, Call::add_real_customers( _submodel, _server, _k ) );
+	double rcustomers = std::accumulate( calls.begin(), calls.end(), 0.0, Call::add_real_customers( submodel, server, k ) );
 	const Call * call = phase->processorCall();
 	if ( call ) {
-	    rcustomers += call->addRealCustomers( _submodel, _server, _k );
+	    rcustomers += call->addRealCustomers( submodel, server, k );
 	}
 	sum += rcustomers;
     }
 
     if ( sum > 0. ) {
-	station->setRealCustomers( 0, _k, std::min( sum, entry->getMaxCustomers() ) );
+	station->setRealCustomers( 0, k, std::min( sum, getMaxCustomers() ) );
     }
 }
 

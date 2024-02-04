@@ -1,5 +1,5 @@
 #                                               -*- Autoconf -*-
-# $Id: configure.ac 16233 2023-01-01 22:25:15Z greg $
+# $Id: configure.ac 17010 2024-02-01 17:55:26Z greg $
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
@@ -25,7 +25,6 @@ AC_CHECK_HEADERS([sys/errno.h sys/mman.h sys/resource.h sys/time.h sys/times.h s
 AC_CHECK_HEADERS([windows.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
-AC_HEADER_SYS_WAIT
 AC_HEADER_STAT
 AC_HEADER_STDBOOL
 

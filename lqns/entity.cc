@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: entity.cc 16978 2024-01-29 21:31:31Z greg $
+ * $Id: entity.cc 17027 2024-02-04 15:24:18Z greg $
  *
  * Everything you wanted to know about a task or processor, but were
  * afraid to ask.
@@ -553,7 +553,7 @@ void
 Entity::setMaxCustomers( const MVASubmodel& submodel ) const
 {
     Server * aStation = serverStation();
-    const std::set<Task *>& clients = submodel.getClients();
+    const std::set<Task *>& clients = submodel.clients();
 
     /* find out the total number of possible customer to each server entry*/
     for ( std::vector<Entry *>::const_iterator server_entry = entries().begin(); server_entry != entries().end(); ++server_entry  ) {
@@ -612,7 +612,7 @@ Entity::setInterlock( const MVASubmodel& submodel ) const
 {
 #if THROUGHPUT_INTERLOCK
     Server * station = serverStation();
-    const std::set<Task *>& clients = submodel.getClients();
+    const std::set<Task *>& clients = submodel.clients();
 
     for ( std::set<Task *>::const_iterator client = clients.begin(); client != clients.end(); ++client ) {
 	if ( (*client)->throughput() == 0.0 ) continue;
@@ -630,7 +630,7 @@ Entity::setInterlock( const MVASubmodel& submodel ) const
 	}
     }
 #else
-    const std::set<Task *>& clients = submodel.getClients();
+    const std::set<Task *>& clients = submodel.clients();
     if ( isInterlocked() ) {
 	std::for_each( clients.begin(), clients.end(), Task::set_interlock( submodel, this ) );
     } else {

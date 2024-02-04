@@ -10,7 +10,7 @@
  * November, 1994
  *
  * ------------------------------------------------------------------------
- * $Id: processor.cc 16965 2024-01-28 19:30:13Z greg $
+ * $Id: processor.cc 17027 2024-02-04 15:24:18Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -631,7 +631,7 @@ CFS_Processor::saveServerResults( const MVASubmodel& submodel, double relax )
     const Server * station = serverStation();
     Processor::saveServerResults( submodel, *station, relax );
 
-    const std::set<Task *>& clients = submodel.getClients();
+    const std::set<Task *>& clients = submodel.clients();
     const unsigned int n = submodel.number();
     
     for ( std::set<Task *>::const_iterator client = clients.begin(); client != clients.end(); ++client ) {

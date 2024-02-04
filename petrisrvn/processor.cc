@@ -15,7 +15,6 @@
  */
 
 #include <algorithm>
-#include <numeric>
 #include <lqio/glblerr.h>
 #include <lqio/dom_activity.h>
 #include <lqio/dom_processor.h>
@@ -49,7 +48,7 @@ std::vector<Processor *> __processor;
 
 Processor::Processor( LQIO::DOM::Entity * dom )
     : Place( dom ),
-      PX(nullptr)
+      PX(0)
 {
     clear();
 }
@@ -85,12 +84,22 @@ void Processor::create( const std::pair<std::string,LQIO::DOM::Processor*>& p )
 
 
 /*
+ * Suppress warning for processor scheduling if there is only one
+ * thread on this __processor.  Processor::create is executed before
+ * Task::create and we need to know if the task has threads or copies.
  */
 
 void
 Processor::initialize()
 {
     check();
+
+    if ( get_scheduling() == SCHEDULE_PS ) {
+	if ( n_tasks() > 1 || _tasks[0]->multiplicity() > 1 || _tasks[0]->n_threads() > 1 ) {
+	    get_dom()->runtime_error( LQIO::WRN_SCHEDULING_NOT_SUPPORTED, scheduling_label.at(get_scheduling()).str.c_str() );
+	    const_cast<LQIO::DOM::Entity *>(get_dom())->setSchedulingType( SCHEDULE_FIFO );
+	}
+    }
 }
 
 
@@ -104,7 +113,7 @@ Processor::find( const std::string& name  )
     if ( name.size() == 0 ) return 0;
     vector<Processor *>::const_iterator nextProcessor = find_if( ::__processor.begin(), ::__processor.end(), eqProcStr( name ) );
     if ( nextProcessor == __processor.end() ) {
-	return nullptr;
+	return 0;
     } else {
 	return *nextProcessor;
     }
@@ -128,17 +137,23 @@ double Processor::rate() const
 
 unsigned int Processor::ref_count() const
 {
-    return std::accumulate( _tasks.begin(), _tasks.end(), static_cast<unsigned int>(0), []( unsigned int l, const Task * r ){ return l + r->ref_count() * r->n_threads(); } );
+    unsigned int count = 0;
+    for ( vector<Task *>::const_iterator t = _tasks.begin(); t != _tasks.end(); ++t ) {
+	count += (*t)->ref_count() * (*t)->n_threads();
+    }
+    return count;
 }
+
 
 bool Processor::is_single_place_processor() const
 {
-    return get_scheduling() == SCHEDULE_RAND
-	|| get_scheduling() == SCHEDULE_DELAY
+    return get_scheduling() == SCHEDULE_DELAY
 	|| get_scheduling() == SCHEDULE_PS
+	|| get_scheduling() == SCHEDULE_RAND
 	|| ref_count() == 1
 	|| is_infinite();
 }
+
 
 bool Processor::is_ps_processor() const
 {
@@ -152,8 +167,8 @@ bool Processor::scheduling_is_ok() const
 	|| multiplicity() == 1 && ( get_scheduling() == SCHEDULE_HOL
 				    || get_scheduling() == SCHEDULE_PPR )
 	|| get_scheduling() == SCHEDULE_FIFO
-	|| get_scheduling() == SCHEDULE_RAND
-	|| get_scheduling() == SCHEDULE_PS;
+	|| get_scheduling() == SCHEDULE_PS
+	|| get_scheduling() == SCHEDULE_RAND;
 }
 
 
@@ -226,17 +241,11 @@ Processor::transmorgrify( unsigned max_count )
     double y_pos = get_y_pos();
     const unsigned int copies = multiplicity();		/* Check for validity before is_single_place... */
 
-    if ( is_ps_processor() ) {
+    if ( is_single_place_processor() ) {
 
-	PX = create_place( x_pos, y_pos, PROC_LAYER, copies, "P%s", name() );
-
-	for ( unsigned i = 0; i < n_tasks(); ++i ) {
-	    /* need to create two transitions for the tasks */
-	}
-
-    } else if ( is_single_place_processor() ) {
-
-        if ( !simplify_network || is_infinite() ) {
+	if ( is_ps_processor() ) {		/* BUG 415 */
+	    PX = create_place( x_pos, y_pos, PROC_LAYER, 0, "P%s", name() );
+	} else if ( !simplify_network || is_infinite() ) {
 	    if ( ref_count() ) {
 		PX = create_place( x_pos, y_pos, PROC_LAYER, ref_count(), "P%s", name() );
 	    } else {
@@ -245,6 +254,7 @@ Processor::transmorgrify( unsigned max_count )
 	}
 
     } else {
+	unsigned i;			/* Task index.		*/
 	unsigned j;
 	unsigned k;			/* An index.		*/
 	unsigned prio_count = 0;	/* */
@@ -259,7 +269,7 @@ Processor::transmorgrify( unsigned max_count )
 
 	/* Create Queue state places for each priority (allow for instances of tasks) */
 
-	for ( unsigned i = 0; i < n_tasks(); i = j ) {
+	for ( i = 0; i < n_tasks(); i = j ) {
 	    int start_prio = _history[i].task->priority();
 	    unsigned count = 0;
 	    struct place_object * prio_place = 0;

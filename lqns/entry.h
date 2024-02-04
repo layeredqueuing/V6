@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: entry.h 16978 2024-01-29 21:31:31Z greg $
+ * $Id: entry.h 17019 2024-02-02 22:42:28Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -127,16 +127,6 @@ public:
 	const Task& _client;			/* The base or replica			*/
     };
     
-
-    struct set_real_customers {
-	set_real_customers( const MVASubmodel& submodel, const Entity * server, unsigned int k ) : _submodel(submodel), _server(server),  _k(k) {}
-	void operator()( const Entry * entry ) const;
-    private:
-	const MVASubmodel& _submodel;
-	const Entity * _server;
-	const unsigned int _k;
-    };
-
     struct add_interlock {
 	add_interlock( const MVASubmodel& submodel, const Task * client, unsigned int k ) : _submodel(submodel), _client(client), _k(k) {}
 	double operator()( double sum, const Entry * entry ) const { return sum + entry->setInterlock( _submodel, _client, _k ); }
@@ -279,6 +269,7 @@ public:
 #if PAN_REPLICATION
     Entry& setSurrogateDelaySize( size_t );
 #endif
+    void setRealCustomers( const MVASubmodel& submodel, const Entity * server, unsigned int k ) const;
     Entry& resetInterlock();
     Entry& createInterlock();
     void initializeInterlock( Interlock::CollectTable& path );

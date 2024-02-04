@@ -1,6 +1,6 @@
 /* -*- c++ -*-
  * submodel.C	-- Greg Franks Wed Dec 11 1996
- * $Id: submodel.cc 16965 2024-01-28 19:30:13Z greg $
+ * $Id: submodel.cc 17027 2024-02-04 15:24:18Z greg $
  *
  * MVA submodel creation and solution.  This class is the interface
  * between the input model consisting of processors, tasks, and entries,
@@ -107,7 +107,7 @@ Submodel::initializeSubmodel()
 {
     std::for_each( _servers.begin(), _servers.end(), std::mem_fn( &Entity::initializeServer ) );
     std::for_each( _clients.begin(), _clients.end(), std::mem_fn( &Task::initializeClient ) );
-    std::for_each( _clients.begin(), _clients.end(), InitializeWait( *this ) );
+    std::for_each( _clients.begin(), _clients.end(), [this]( Task * client ){ this->initializeWait( client ); } );
     std::for_each( _clients.begin(), _clients.end(), std::mem_fn( &Task::computeThroughputBound ) );
 }
 
@@ -121,7 +121,7 @@ Submodel::reinitializeSubmodel()
 {
     std::for_each( _servers.begin(), _servers.end(), std::mem_fn( &Entity::reinitializeServer ) );
     std::for_each( _clients.begin(), _clients.end(), std::mem_fn( &Task::reinitializeClient ) );
-    std::for_each( _clients.begin(), _clients.end(), InitializeWait( *this ) );
+    std::for_each( _clients.begin(), _clients.end(), [this]( Task * client ){ this->initializeWait( client ); } );
     std::for_each( _clients.begin(), _clients.end(), std::mem_fn( &Task::computeThroughputBound ) );
 }
 
@@ -133,15 +133,15 @@ Submodel::reinitializeSubmodel()
  */
 
 void
-Submodel::InitializeWait::operator()( Task * client ) const
+Submodel::initializeWait( Task * client ) const
 {
-    client->initializeWait( _submodel );
+    client->initializeWait( *this );
 
     if ( !client->isReplicated() || Pragma::replication() != Pragma::Replication::PRUNE ) return;
     for ( size_t i = 2; i <= client->replicas(); ++i ) {
 	client = client->mapToReplica( i );
-	if ( _submodel.hasClient( client ) ) break;
-	client->initializeWait( _submodel );
+	if ( hasClient( client ) ) break;
+	client->initializeWait( *this );
     }
 }
 /*- BUG_433 */
@@ -362,7 +362,7 @@ MVASubmodel::build()
 	_closedModel = (*solver)( _closedStation, _customers, _thinkTime, _priority, _overlapFactor );
     }
 
-    std::for_each( _clients.begin(), _clients.end(), InitializeChains( *this ) );
+    std::for_each( _clients.begin(), _clients.end(), [this]( Task * client ){ initializeChains( client ); } );
 #if PAN_REPLICATION
     if ( usePanReplication() ) {
 	unsigned not_used = 0;
@@ -733,13 +733,14 @@ MVASubmodel::initializeInterlock()
 
 
 void
-MVASubmodel::InitializeChains::operator()( Task* client ) const
+MVASubmodel::initializeChains( Task* client ) const
 {
-    client->closedCallsPerform( Call::Perform( &Call::Perform::setChain, _submodel ) );
+    client->closedCallsPerform( Call::Perform( &Call::Perform::setChain, *this ) );
     if ( client->nThreads() > 1 ) {
-	_submodel.setChains( client->clientChains( _submodel.number() ) );
+	setChains( client->clientChains( number() ) );
     }
 }
+
 
 
 /*
@@ -763,8 +764,16 @@ MVASubmodel::InitializeClientStation::operator()( Task* client )
 		    station->setService( e, *k, p, (*entry)->waitExcept( n, *k, p ) );
 		}
 		station->setVisits( e, *k, 1, (*entry)->prVisit() );	// As client, called-by phase does not matter.
-	    }
 
+		/*+ BUG 310 */
+		if ( client->isReferenceTask() ) {
+		    station->setRealCustomers( e, *k, client->population() );
+		} else {
+		    station->setRealCustomers( e, *k, (*entry)->utilization() );
+		}
+		/*- BUG_310 */
+	    }
+	    
 	    /* Set idle times for stations. */
 	    _submodel.setThinkTime( *k, client->thinkTime( n, *k ) );
 	}
@@ -830,7 +839,7 @@ MVASubmodel::InitializeServerStation::operator()( Entity * server )
     /* Overtaking -- compute for MARKOV overtaking only. */
 
     if ( server->markovOvertaking() ) {
-	const std::set<Task *>& clients = _submodel.getClients();
+	const std::set<Task *>& clients = _submodel.clients();
 	std::for_each( clients.begin(), clients.end(), ComputeOvertaking( server ) );
     }
 
@@ -839,6 +848,10 @@ MVASubmodel::InitializeServerStation::operator()( Entity * server )
     if ( server->isClosedModelServer() && Pragma::interlock() ) {
 	server->setInterlock( _submodel );
     }
+
+    /*+ BUG_310 */
+    std::for_each( clients().begin(), clients().end(), [=]( Task * task ){ task->setRealCustomers( _submodel, server ); } );
+    /*- BUG_310 */
 
     if ( server->hasSynchs() && !Pragma::threads(Pragma::Threads::NONE) ) {
 	server->joinOverlapFactor( _submodel );
