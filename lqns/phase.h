@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: phase.h 16945 2024-01-26 13:02:36Z greg $
+ * $Id: phase.h 17060 2024-02-08 15:53:49Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -123,25 +123,6 @@ public:
 	void operator()( const Phase* phase ) const;
     private:
 	std::set<Entity *>& _servers;
-    };
-
-    struct sum {
-	typedef double (Phase::*funcPtr)() const;
-	sum( funcPtr f ) : _f(f) {}
-	double operator()( double l, const Phase* r ) const { return l + (r->*_f)(); }
-	double operator()( double l, const Phase& r ) const { return l + (r.*_f)(); }
-    private:
-	const funcPtr _f;
-    };
-
-    struct sum_submodel {
-	typedef double (Phase::*funcPtr)( unsigned int ) const;
-	sum_submodel( funcPtr f, unsigned int submodel ) : _f(f), _submodel(submodel) {}
-	double operator()( double l, const Phase* r ) const { return l + (r->*_f)(_submodel); }
-	double operator()( double l, const Phase& r ) const { return l + (r.*_f)(_submodel); }
-    private:
-	const funcPtr _f;
-	const unsigned int _submodel;
     };
 
     struct add_utilization_to {

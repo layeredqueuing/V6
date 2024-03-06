@@ -9,7 +9,7 @@
  *
  * November 2022
  *
- * $Id: qnio_document.h 16905 2024-01-22 11:55:41Z greg $
+ * $Id: qnio_document.h 17105 2024-03-05 21:28:11Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -87,6 +87,7 @@ namespace QNIO {
 	enum class InputFormat { JMVA, QNAP };
 	
 	Document( const std::string& input_file_name, const BCMP::Model& model );
+	Document( const BCMP::Model& model );
 	virtual ~Document();
 
 	virtual bool load() = 0;

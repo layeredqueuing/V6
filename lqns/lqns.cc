@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: lqns.cc 16945 2024-01-26 13:02:36Z greg $
+ * $Id: lqns.cc 17096 2024-03-04 14:40:54Z greg $
  *
  * Command line processing.
  *
@@ -144,7 +144,7 @@ int main (int argc, char *argv[])
     
     command_line = LQIO::io_vars.lq_toolname;
 
-    sscanf( "$Date: 2024-01-26 08:02:36 -0500 (Fri, 26 Jan 2024) $", "%*s %s %*s", copyrightDate );
+    sscanf( "$Date: 2024-03-04 09:40:54 -0500 (Mon, 04 Mar 2024) $", "%*s %s %*s", copyrightDate );
 
     matherr_disposition = fp_exception_reporting::DEFERRED_ABORT;
 
@@ -447,19 +447,8 @@ int main (int argc, char *argv[])
     }
     LQIO::io_vars.lq_command_line = command_line.c_str();
 
-    if ( flags.generate ) {
-	if ( flags.no_execute ) {
-	    std::cerr << LQIO::io_vars.lq_toolname << ": -n is incompatible with -zgenerate.  -zgenerate ignored." << std::endl;
-	} else if ( access( Generate::__directory_name.c_str(), R_OK|W_OK|X_OK ) < 0 && ENOENT ) {
-#if defined(__WINNT__)
-	    int rc = mkdir( Generate::__directory_name.c_str() );
-#else
-	    int rc = mkdir( Generate::__directory_name.c_str(), S_IRUSR|S_IWUSR|S_IXUSR|S_IRGRP|S_IWGRP|S_IXGRP|S_IWOTH|S_IROTH|S_IXOTH );
-#endif
-	    if ( rc < 0 ) {
-		std::cerr << LQIO::io_vars.lq_toolname << ": Cannot create directory " << Generate::__directory_name << ": " << strerror( errno ) << "." << std::endl;
-	    }
-	}
+    if ( Generate::__mode != Generate::Output::NONE && flags.no_execute ) {
+	std::cerr << LQIO::io_vars.lq_toolname << ": -n is incompatible with -zgenerate.  -zgenerate ignored." << std::endl;
     }
 
     /* Process all command line arguments.  If none specified, then     */
@@ -511,7 +500,6 @@ void init_flags()
     flags.no_execute            = false;
     flags.bounds_only           = false;
     flags.rtf_output            = false;
-    flags.generate              = false;
     flags.reset_mva		= false;
     flags.print_overtaking      = false;
     flags.single_step           = false;

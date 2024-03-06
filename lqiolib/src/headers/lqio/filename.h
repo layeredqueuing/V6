@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: filename.h 16627 2023-04-03 22:04:21Z greg $
+ * $Id: filename.h 17096 2024-03-04 14:40:54Z greg $
  *
  * MVA solvers: Exact, Bard-Schweitzer, Linearizer and Linearizer2.
  * Abstract superclass does no operation by itself.
@@ -15,14 +15,7 @@
 #ifndef LQIOLIB_FILENAME_H
 #define	LQIOLIB_FILENAME_H
 
-#if HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <string>
-#include <stdexcept>
-
-/* Autconf botches inline sometimes. */
 
 namespace LQIO {
 
@@ -48,10 +41,8 @@ namespace LQIO {
 	unsigned find( const std::string& s ) const;
 	Filename& insert( unsigned pos, const char * s );
 
-	static int isRegularFile( const std::string& file_name );
-	static int isRegularFile( int fileno );
-	static int isDirectory( const std::string& file_name );
-	static int isWriteableFile( int fileno );
+	static bool isRegularFile( const std::string& file_name );
+	static bool isDirectory( const std::string& file_name );
 	static void backup( const std::string& file_name );
 	static std::string createDirectory( const std::string& file_name, bool lqx_output );
 	static inline bool isFileName( const std::string& name ) { return !name.empty() && name != "-"; }

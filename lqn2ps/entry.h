@@ -9,7 +9,7 @@
  * January 2003
  *
  * ------------------------------------------------------------------------
- * $Id: entry.h 16978 2024-01-29 21:31:31Z greg $
+ * $Id: entry.h 17075 2024-02-28 21:20:08Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -169,6 +169,7 @@ public:
     double residenceTime( const unsigned p ) const;
     double residenceTime() const;
     double openWait() const;
+    double openDropProbability() const;
     double processorUtilization() const;
     double queueingTime( const unsigned p ) const;
     double serviceExceeded( const unsigned p ) const;

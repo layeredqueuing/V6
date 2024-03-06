@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: lqn2csv.cc 16978 2024-01-29 21:31:31Z greg $
+ * $Id: lqn2csv.cc 17075 2024-02-28 21:20:08Z greg $
  *
  * Command line processing.
  *
@@ -233,7 +233,7 @@ main( int argc, char *argv[] )
     extern int optind;
     static char copyrightDate[20];
 
-    sscanf( "$Date: 2024-01-29 16:31:31 -0500 (Mon, 29 Jan 2024) $", "%*s %s %*s", copyrightDate );
+    sscanf( "$Date: 2024-02-28 16:20:08 -0500 (Wed, 28 Feb 2024) $", "%*s %s %*s", copyrightDate );
 
     toolname = basename( argv[0] );
     opts = makeopts( longopts );	/* Convert to regular options */
@@ -402,7 +402,6 @@ static bool
 is_directory( const char * filename )
 {
     struct stat stat_buf;
-    extern int errno;
     if ( stat( filename, &stat_buf ) < 0 ) {
 	std::cerr << toolname << ": cannot stat " << filename << ", " << strerror( errno ) << std::endl;
 	return false;

@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: expat_document.cc 16978 2024-01-29 21:31:31Z greg $
+ * $Id: expat_document.cc 17075 2024-02-28 21:20:08Z greg $
  *
  * Read in XML input files.
  *
@@ -1057,6 +1057,7 @@ namespace LQIO {
 	    entry_tab[pass][e].open_arrivals = hasAttribute( attributes, Xopen_wait_time );
 	    if ( entry_tab[pass][e].open_arrivals ) {
 		entry_tab[pass][e].open_waiting = getDoubleAttribute( attributes, Xopen_wait_time, 0.0 );
+		entry_tab[pass][e].drop_probability = getDoubleAttribute( attributes, Xloss_probability, 0.0 );
 	    }
 	    entry_tab[pass][e].throughput = getDoubleAttribute( attributes, Xthroughput, 0.0 );
 	    entry_tab[pass][e].bounds = hasAttribute( attributes, Xthroughput_bound );
@@ -1232,6 +1233,7 @@ namespace LQIO {
 	    const double wait_time_conf = getDoubleAttribute( attributes, Xopen_wait_time, 0.0 );
 	    if ( wait_time_conf > 0.0 ) {
 		entry_tab[pass][e].open_wait_conf = wait_time_conf;
+		entry_tab[pass][e].drop_probability_conf = getDoubleAttribute( attributes, Xloss_probability, 0.0 );
 	    }
 
 	    entry_tab[pass][e].throughput_conf = getDoubleAttribute( attributes, Xthroughput, 0.0 );

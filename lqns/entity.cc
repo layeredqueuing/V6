@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: entity.cc 17027 2024-02-04 15:24:18Z greg $
+ * $Id: entity.cc 17105 2024-03-05 21:28:11Z greg $
  *
  * Everything you wanted to know about a task or processor, but were
  * afraid to ask.
@@ -626,6 +626,7 @@ Entity::setInterlock( const MVASubmodel& submodel ) const
 		for ( std::vector<Entry *>::const_iterator entry = entries().begin(); entry != entries().end(); ++entry ) {
 		    station->setInterlock( (*entry)->index(), *k, PrIL );
 		}
+		setInterlockedFlows( true );
 	    }
 	}
     }

@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: filename.cpp 16124 2022-11-18 11:26:13Z greg $
+ * $Id: filename.cpp 17096 2024-03-04 14:40:54Z greg $
  *
  * File name generation.
  *
@@ -13,12 +13,10 @@
  */
 
 #include <config.h>
+#include <filesystem>
 #include <iostream>
 #include <cstdio>
 #include <cstring>
-#if HAVE_UNISTD_H
-#include <unistd.h>
-#endif
 #include <sys/stat.h>
 #include <sys/types.h>
 #include "filename.h"
@@ -142,29 +140,10 @@ namespace LQIO {
      * other wierd item, such as /dev/null.
      */
 
-    int
+    bool
     Filename::isRegularFile( const std::string& fileName )
     {
-	struct stat statbuf;
-
-	if ( stat( fileName.c_str(), &statbuf ) != 0 ) {
-	    return -1;
-	} else {
-	    return S_ISREG(statbuf.st_mode);
-	}
-    }
-
-
-    int
-    Filename::isRegularFile( int fileno )
-    {
-	struct stat statbuf;
-
-	if ( fstat( fileno, &statbuf ) != 0 ) {
-	    return -1;
-	} else {
-	    return S_ISREG(statbuf.st_mode);
-	}
+	return std::filesystem::is_regular_file( fileName );
     }
 
 
@@ -173,41 +152,11 @@ namespace LQIO {
      * be accessed using stat(1), and zero otherwise.
      */
 
-    int
+    bool
     Filename::isDirectory( const std::string& fileName )
     {
-	struct stat statbuf;
-
-	if ( stat( fileName.c_str(), &statbuf ) != 0 ) {
-	    return -1;
-	} else {
-	    return S_ISDIR(statbuf.st_mode);
-	}
+	return std::filesystem::is_directory( fileName );
     }
-
-
-    /*
-     * Return non-zero if fileName is a regular file, -1 if the file cannot
-     * be accessed using stat(1), and zero if the file is a directory or
-     * other wierd item, such as /dev/null.
-     */
-
-    int
-    Filename::isWriteableFile( int fileno )
-    {
-	struct stat statbuf;
-
-	if ( fstat( fileno, &statbuf ) != 0 ) {
-	    return -1;
-	} else {
-#if defined(S_ISSOCK)
-	    return S_ISREG(statbuf.st_mode) || S_ISFIFO(statbuf.st_mode) || S_ISSOCK(statbuf.st_mode);  
-#else
-	    return S_ISREG(statbuf.st_mode) || S_ISFIFO(statbuf.st_mode);
-#endif
-	}
-    }
-
 
 
     /*
@@ -257,7 +206,7 @@ namespace LQIO {
     void
     Filename::backup( const std::string& filename )
     {
-	if ( isRegularFile( filename ) > 0 ) {
+	if ( isRegularFile( filename ) ) {
 	    std::string backup = filename;
 	    backup += "~";
 	    rename( filename.c_str(), backup.c_str() );
@@ -280,18 +229,11 @@ namespace LQIO {
 	}
 
 	if ( !directory_name.empty() ) {
-	    int rc = access( directory_name.c_str(), R_OK|W_OK|X_OK );
-	    if ( rc < 0 ) {
-		if ( errno == ENOENT ) {
-#if defined(__WINNT__)
-		    rc = mkdir( directory_name.c_str() );
-#else
-		    rc = mkdir( directory_name.c_str(), S_IRUSR|S_IWUSR|S_IXUSR|S_IRGRP|S_IWGRP|S_IXGRP|S_IWOTH|S_IROTH|S_IXOTH );
-#endif
-		}
-		if ( rc < 0 ) {
-		    runtime_error( LQIO::ERR_CANT_OPEN_DIRECTORY, directory_name.c_str(), strerror( errno ) );
-		}
+	    try {
+		std::filesystem::create_directory( directory_name );
+	    }
+	    catch( const std::filesystem::filesystem_error& e ) {
+		runtime_error( LQIO::ERR_CANT_OPEN_DIRECTORY, directory_name.c_str(), e.what() );
 	    }
 	}
 	return directory_name;

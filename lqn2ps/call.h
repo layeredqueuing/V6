@@ -10,7 +10,7 @@
  * May 2010
  *
  * ------------------------------------------------------------------------
- * $Id: call.h 16945 2024-01-26 13:02:36Z greg $
+ * $Id: call.h 17075 2024-02-28 21:20:08Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -627,6 +627,9 @@ public:
     virtual OpenArrival& label();
     virtual std::ostream& print( std::ostream& output ) const { return output; }
 
+private:
+    bool hasDropProbability() const;
+    
 protected:
     virtual void dump() const;
 

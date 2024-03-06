@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: lqn2ps.cc 16945 2024-01-26 13:02:36Z greg $
+ * $Id: lqn2ps.cc 17096 2024-03-04 14:40:54Z greg $
  *
  * Command line processing.
  *
@@ -21,6 +21,8 @@
 #include <stdexcept>
 #include <errno.h>
 #include <libgen.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #if HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -218,7 +220,7 @@ main(int argc, char *argv[])
     char * options;
     std::string output_file_name = "";
 
-    sscanf( "$Date: 2024-01-26 08:02:36 -0500 (Fri, 26 Jan 2024) $", "%*s %s %*s", copyrightDate );
+    sscanf( "$Date: 2024-03-04 09:40:54 -0500 (Mon, 04 Mar 2024) $", "%*s %s %*s", copyrightDate );
 
     static std::string opts = "";
 #if HAVE_GETOPT_H
@@ -713,7 +715,11 @@ main(int argc, char *argv[])
 	Flags::surrogates = false;					/* Never add surrogates */
     }
 
-    if ( (Flags::output_format() == File_Format::QNAP2 || Flags::output_format() == File_Format::JMVA) ) {
+    if ( Flags::output_format() == File_Format::QNAP2 
+#if JMVA_OUTPUT && HAVE_EXPAT_H
+	  || Flags::output_format() == File_Format::JMVA
+#endif
+	) {
 	if ( submodel_output() && !queueing_output() ) {
 	    Flags::set_queueing_model( submodel_output() );		/* Silently fix. */
 	    Flags::set_submodel( 0 );
@@ -836,17 +842,25 @@ main(int argc, char *argv[])
 
     /* If stdout is not a terminal For pipelines.	*/
 
+    struct stat statbuf;
+
 #if !defined(__WINNT__) && !defined(MSDOS)
-    if ( output_file_name == "" && LQIO::Filename::isWriteableFile( fileno( stdout ) ) > 0 ) {
+    if ( output_file_name == "" && fstat( fileno( stdout ), &statbuf )
+	 && ( S_ISREG(statbuf.st_mode) || S_ISFIFO(statbuf.st_mode)
+#if defined(S_ISSOCK)
+	      || S_ISSOCK(statbuf.st_mode)
+#endif
+	     ) ) {
 	output_file_name = "-";
     }
 #endif
 
     if ( output_file_name == "-" ) {
+
 	switch( Flags::output_format() ) {
 #if EMF_OUTPUT
 	case File_Format::EMF:
-	    if ( LQIO::Filename::isRegularFile( fileno( stdout ) ) == 0 ) {
+	    if ( fstat( fileno( stdout ), &statbuf ) != 0 || !S_ISREG(statbuf.st_mode) ) {
 		std::cerr << LQIO::io_vars.lq_toolname << ": Cannot write "
 			  << Options::file_format.at(Flags::output_format())
 			  << " to stdout - stdout is not a regular file."  << std::endl;

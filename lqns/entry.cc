@@ -12,7 +12,7 @@
  * July 2007.
  *
  * ------------------------------------------------------------------------
- * $Id: entry.cc 17027 2024-02-04 15:24:18Z greg $
+ * $Id: entry.cc 17060 2024-02-08 15:53:49Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -363,7 +363,7 @@ Entry::initServiceTime()
 	entryStack.pop_back();
     }
 
-    _total.setServiceTime( std::accumulate( _phase.begin(), _phase.end(), 0., Phase::sum( &Phase::serviceTime ) ) );
+    _total.setServiceTime( std::accumulate( _phase.begin(), _phase.end(), 0., []( double sum, const Phase& phase ){ return sum + phase.serviceTime(); } ) );
     return *this;
 }
 
@@ -473,7 +473,7 @@ Entry::addServiceTime( const unsigned p, const double value )
 
     setMaxPhase( p );
     _phase[p].addServiceTime( value );
-    _total.setServiceTime( std::accumulate( _phase.begin(), _phase.end(), 0., Phase::sum( &Phase::serviceTime ) ) );
+    _total.setServiceTime( std::accumulate( _phase.begin(), _phase.end(), 0., []( double sum, const Phase& phase ){ return sum + phase.serviceTime(); } ) );
     return *this;
 }
 
@@ -760,7 +760,7 @@ Entry::setStartActivity( Activity * anActivity )
 double
 Entry::processorCalls() const
 {
-    return std::accumulate( _phase.begin(), _phase.end(), 0., Phase::sum( &Phase::processorCalls ) );
+    return std::accumulate( _phase.begin(), _phase.end(), 0., []( double sum, const Phase& phase ){ return sum + phase.processorCalls(); } );
 }
 
 
@@ -787,12 +787,12 @@ Entry::clearSurrogateDelay()
 double
 Entry::computeCV_sqr() const
 {
-    const double sum_S = std::accumulate( _phase.begin(), _phase.end(), 0., Phase::sum( &Phase::residenceTime ) );
+    const double sum_S = std::accumulate( _phase.begin(), _phase.end(), 0., []( double sum, const Phase& phase ){ return sum + phase.residenceTime(); } );
 
     if ( !std::isfinite( sum_S ) ) {
 	return sum_S;
     } else if ( sum_S > 0.0 ) {
-	const double sum_V = std::accumulate( _phase.begin(), _phase.end(), 0., Phase::sum( &Phase::variance ) );
+	const double sum_V = std::accumulate( _phase.begin(), _phase.end(), 0., []( double sum, const Phase& phase ){ return sum + phase.variance(); } );
 	return sum_V / square(sum_S);
     } else {
 	return 0.0;
@@ -860,7 +860,7 @@ Entry::waitExceptChain( const unsigned submodel, const unsigned k, const unsigne
 double
 Entry::utilization() const
 {
-    return std::accumulate( _phase.begin(), _phase.end(), 0., Phase::sum( &Phase::utilization ) );
+    return std::accumulate( _phase.begin(), _phase.end(), 0., []( double sum, const Phase& phase ){ return sum + phase.utilization(); } );
 }
 
 
@@ -910,7 +910,7 @@ void
 Entry::recalculateDynamicValues()
 {
     std::for_each( _phase.begin(), _phase.end(), std::mem_fn( &Phase::recalculateDynamicValues ) );
-    _total.setServiceTime( std::accumulate( _phase.begin(), _phase.end(), 0., Phase::sum( &Phase::serviceTime ) ) );
+    _total.setServiceTime( std::accumulate( _phase.begin(), _phase.end(), 0., []( double sum, const Phase& phase ){ return sum + phase.serviceTime(); } ) );
 }
 
 
@@ -1128,7 +1128,7 @@ double
 Entry::getCFSDelay() const
 {
     if ( isProcessorEntry() ) return 0.;
-    return std::accumulate( _phase.begin(), _phase.end(), 0., Phase::sum( &Phase::getCFSDelay ) );
+    return std::accumulate( _phase.begin(), _phase.end(), 0., []( double sum, const Phase& phase ){ return sum + phase.getCFSDelay(); } );
 }
 
 
@@ -1272,7 +1272,7 @@ Entry::updateILWait( const Submodel& submodel, const double relax )
 	std::cout << "the new IL wait of phases are:  " << std::endl;
     }
 
-    _total._interlockedWait[n] = std::accumulate( _phase.begin(), _phase.end(), 0.0, Phase::sum_submodel( &Phase::getILWait, n ) );
+    _total._interlockedWait[n] = std::accumulate( _phase.begin(), _phase.end(), 0.0, [&]( double sum, const Phase& phase ){ return sum + phase.getILWait( n ); } );
 
     if ( flags.trace_interlock ) {
 	std::cout << "the new total interlocked wait of the entry "<< _total._interlockedWait[n]<< std::endl;
@@ -1327,9 +1327,9 @@ Entry::isSendingTask( const MVASubmodel& submodel ) const
 double
 Entry::getILWait(unsigned submodel) const
 {
-    const double sum = std::accumulate( _phase.begin(), _phase.end(), 0., Phase::sum_submodel( &Phase::waitExcept, submodel ) );
+    const double sum = std::accumulate( _phase.begin(), _phase.end(), 0., [&]( double sum, const Phase& phase ){ return sum + phase.waitExcept( submodel ); } );
     if ( sum <= 0.0 ) return 0.0;
-    return std::min( std::accumulate( _phase.begin(), _phase.end(), 0., Phase::sum_submodel( &Phase::getILWait, submodel ) ) / sum, 1.0 );
+    return std::min( std::accumulate( _phase.begin(), _phase.end(), 0., [&]( double sum, const Phase& phase ){ return sum + phase.getILWait( submodel ); } ) / sum, 1.0 );
 }
 
 
@@ -1647,7 +1647,7 @@ double
 TaskEntry::processorUtilization() const
 {
     if ( !isStandardEntry() ) return 0.0;
-    return std::accumulate( _phase.begin(), _phase.end(), 0.0, Phase::sum( &Phase::processorUtilization ) );
+    return std::accumulate( _phase.begin(), _phase.end(), 0.0, []( double sum, const Phase& phase ){ return sum + phase.processorUtilization(); } );
 }
 
 
@@ -1701,7 +1701,7 @@ TaskEntry::computeVariance()
     } else {
 	std::for_each( _phase.begin(), _phase.end(), std::mem_fn( &Phase::computeVariance ) );
     }
-    _total.addVariance( std::accumulate( _phase.begin(), _phase.end(), 0., Phase::sum( &Phase::variance ) ) );
+    _total.addVariance( std::accumulate( _phase.begin(), _phase.end(), 0., []( double sum, const Phase& phase ){ return sum + phase.variance() ; } ) );
     if ( flags.trace_variance != 0 && (dynamic_cast<TaskEntry *>(this) != nullptr) ) {
 	std::cout << "Variance(" << name() << ",p) ";
 	for ( Vector<Phase>::const_iterator phase = _phase.begin(); phase != _phase.end(); ++phase ) {

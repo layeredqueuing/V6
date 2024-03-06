@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: entity.h 16965 2024-01-28 19:30:13Z greg $
+ * $Id: entity.h 17111 2024-03-05 21:43:09Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -48,7 +48,11 @@ class Entity {
     friend class Generate;
 
     struct Attributes {
-	Attributes() : closed_server(false), closed_client(false), open_server(false), pruned(false), deterministic(false), variance(false) {}
+	Attributes() : closed_server(false), closed_client(false), open_server(false), pruned(false), deterministic(false), variance(false)
+#if THROUGHPUT_INTERLOCK
+		     , interlocked(false)
+#endif
+	    {}
 
 	bool closed_server;	/* Stn is server in closed model.	*/
 	bool closed_client;	/* Stn is client in closed model.	*/
@@ -56,6 +60,9 @@ class Entity {
 	bool pruned;		/* Stn can be pruned			*/
 	bool deterministic;	/* an entry has det. phase.		*/
  	bool variance;		/* an entry has Cv_sqn != 1.		*/
+#if THROUGHPUT_INTERLOCK
+	bool interlocked;	/* Server has interlocked flow.		*/
+#endif
     };
 
 public:
@@ -70,7 +77,6 @@ public:
 
     static std::set<Task *>& add_clients( std::set<Task *>& clients, const Entity * entity ) { return entity->getClients( clients ); }
 
-private:
     class SRVNManip {
     public:
 	SRVNManip( std::ostream& (*f)( std::ostream&, const Entity& ), const Entity& entity ) : _f(f), _entity(entity) {}
@@ -161,10 +167,14 @@ public:
     bool hasDeterministicPhases() const { return _attributes.deterministic; }
     bool isClosedModelClient() const { return _attributes.closed_client; }
     bool isClosedModelServer() const { return _attributes.closed_server; }
+    bool isInterlocked() const { return _interlock.getNsources() > 0; }
     bool isOpenModelServer() const   { return _attributes.open_server; }
     Entity& setClosedModelClient( const bool yesOrNo ) { _attributes.closed_client = yesOrNo; return *this; }
     Entity& setClosedModelServer( const bool yesOrNo ) { _attributes.closed_server = yesOrNo; return *this; }
     Entity& setDeterministicPhases( const bool yesOrNo ) { _attributes.deterministic = yesOrNo; return *this; }
+#if THROUGHPUT_INTERLOCK
+    Entity& setInterlockedFlows( const bool yesOrNo )  { _attributes.interlocked = yesOrNo; return *this; }
+#endif
     Entity& setOpenModelServer( const bool yesOrNo )   { _attributes.open_server = yesOrNo; return *this; }
     Entity& setVarianceAttribute( const bool yesOrNo ) { _attributes.variance = yesOrNo; return *this; }
 
@@ -221,9 +231,7 @@ public:
     Probability prInterlock( const Task& ) const;
     Probability prInterlock( const Entry * aClientEntry ) const;
     Probability prInterlock( const Task& aClient, const Entry * aServerEntry, double& il_rate, bool& moreThanFour ) const;
-    void setInterlock( Submodel& ) const;
 
-    bool isInterlocked() const { return _interlock.getNsources() > 0; }
     void setChainILRate(const Task& aClient, double rate) const;
     void setChainILRate(const Task& aClient, const Entry& viaTaskEntry, double rate) const;
     double getWeight() const { return _weight;}

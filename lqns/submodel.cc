@@ -1,6 +1,6 @@
 /* -*- c++ -*-
  * submodel.C	-- Greg Franks Wed Dec 11 1996
- * $Id: submodel.cc 17027 2024-02-04 15:24:18Z greg $
+ * $Id: submodel.cc 17096 2024-03-04 14:40:54Z greg $
  *
  * MVA submodel creation and solution.  This class is the interface
  * between the input model consisting of processors, tasks, and entries,
@@ -59,7 +59,6 @@
 #include "call.h"
 #include "entry.h"
 #include "errmsg.h"
-#include "generate.h"
 #include "group.h"
 #include "interlock.h"
 #include "flags.h"
@@ -978,10 +977,6 @@ MVASubmodel::solve( long iterations, MVACount& MVAStats, const double relax )
 	    std::for_each( _clients.begin(), _clients.end(), ModifyClientServiceTime( *this ) );
 	}
 #endif
-
-	if ( flags.generate ) {			// Print out MVA model as C++ source file.
-	    Generate::program( *this );
-	}
 
 	if ( trace ) {
 	    if ( _openModel != nullptr ) {

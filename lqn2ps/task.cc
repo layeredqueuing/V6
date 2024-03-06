@@ -10,7 +10,7 @@
  * January 2001
  *
  * ------------------------------------------------------------------------
- * $Id: task.cc 16978 2024-01-29 21:31:31Z greg $
+ * $Id: task.cc 17063 2024-02-08 18:50:23Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -2200,6 +2200,7 @@ Task::expandActivities( const Task& src, int replica )
 		post_act_list = dynamic_cast<const ForkJoinActivityList *>(dstPrecedence)->activityList();
 	    } else if (dynamic_cast<const RepeatActivityList *>(dstPrecedence)) {
 		post_act_list = dynamic_cast<const RepeatActivityList *>(dstPrecedence)->activityList();
+		post_act_list.push_back(dynamic_cast<const RepeatActivityList *>(dstPrecedence)->getMyActivity());
 	    } else if (dynamic_cast<const SequentialActivityList *>(dstPrecedence)) {
 		post_act_list.push_back(dynamic_cast<const SequentialActivityList *>(dstPrecedence)->getMyActivity());
 	    }
@@ -2385,6 +2386,7 @@ Task::draw( std::ostream& output ) const
 	{ SCHEDULE_HOL,	        'h' },
 	{ SCHEDULE_POLL,        'P' },
 	{ SCHEDULE_PPR,	        'p' },
+	{ SCHEDULE_RAND,	'r' },
 	{ SCHEDULE_RWLOCK,      'W' },
 	{ SCHEDULE_UNIFORM,     'u' }
     };
@@ -2763,6 +2765,7 @@ Task::create( const LQIO::DOM::Task* task_dom, std::vector<Entry *>& entries )
     case SCHEDULE_FIFO:
     case SCHEDULE_PPR:
     case SCHEDULE_HOL:
+    case SCHEDULE_RAND:
     case SCHEDULE_DELAY:
 	task = new ServerTask( task_dom, processor, share, entries );
 	break;

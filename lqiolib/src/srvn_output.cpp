@@ -1,5 +1,5 @@
 /*
- *  $Id: srvn_output.cpp 16945 2024-01-26 13:02:36Z greg $
+ *  $Id: srvn_output.cpp 17096 2024-03-04 14:40:54Z greg $
  *
  * Copyright the Real-Time and Distributed Systems Group,
  * Department of Systems and Computer Engineering,
@@ -17,12 +17,6 @@
 #include <iostream>
 #include <limits>
 #include <sstream>
-#if HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#if HAVE_PWD_H
-#include <pwd.h>
-#endif
 #include <lqx/SyntaxTree.h>
 #include "common_io.h"
 #include "dom_activity.h"
@@ -409,6 +403,11 @@ namespace LQIO {
         if ( getDOM().hasOpenArrivals() ) {
             output << task_header( open_wait_str ) << std::setw(ObjectOutput::__maxDblLen) << "Lambda" << std::setw(ObjectOutput::__maxDblLen) << "Waiting time" << newline;
             std::for_each( _entities.begin(), _entities.end(), EntryOutput( output, &EntryOutput::printOpenQueueWait ) );
+
+	    if ( std::any_of( _entities.begin(), _entities.end(), Predicate( &DOM::Entry::hasResultDropProbability ) ) ) {
+		output << task_header( loss_probability_str ) << std::setw(ObjectOutput::__maxDblLen) << "Drop Probability" << newline;
+		std::for_each( _entities.begin(), _entities.end(), EntryOutput( output, &EntryOutput::printOpenQueueDropProbability ) );
+	    }
         }
 
         /* Processor utilization and waiting */
@@ -913,6 +912,13 @@ namespace LQIO {
             output << "R " << count << std::endl;
             std::for_each( _entities.begin(), _entities.end(), EntryOutput( output, &EntryOutput::printOpenQueueWait ) );
             output << "-1"  << std::endl << std::endl;
+
+	    count = std::count_if( _entities.begin(), _entities.end(), Predicate( &DOM::Entry::hasResultDropProbability ) );
+#if 0
+            output << "R " << count << std::endl;
+            std::for_each( _entities.begin(), _entities.end(), EntryOutput( output, &EntryOutput::printOpenQueueWait ) );
+            output << "-1"  << std::endl << std::endl;
+#endif
         }
 
         /* Processor utilization and waiting */
@@ -2532,6 +2538,24 @@ namespace LQIO {
                     << std::setw(__maxDblLen) << " "
                     << std::setw(__maxDblLen-1) << (*__conf99)(entry.getResultWaitingTimeVariance()) << newline;
         }
+    }
+
+    void
+    SRVN::EntryOutput::printOpenQueueDropProbability( const DOM::Entry &entry, const DOM::Entity &entity, bool& print ) const
+    {
+        if ( !entry.hasOpenArrivalRate() || !entry.hasResultDropProbability() ) return;
+
+        _output << entity_name( entity, print )
+                << entry_name( entry )
+                << std::setw(__maxDblLen-1) << entry.getResultDropProbability() << newline;
+        if ( __conf95 ) {
+            _output << conf_level( __maxStrLen * 2, ConfidenceIntervals::CONF_95 )
+                    << std::setw(__maxDblLen-1) << (*__conf95)(entry.getResultDropProbabilityVariance()) << newline;
+	}
+        if ( __conf99 ) {
+            _output << conf_level( __maxStrLen * 2, ConfidenceIntervals::CONF_99 )
+                    << std::setw(__maxDblLen-1) << (*__conf99)(entry.getResultDropProbabilityVariance()) << newline;
+	}
     }
 
     void

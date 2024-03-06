@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: call.cc 16945 2024-01-26 13:02:36Z greg $
+ * $Id: call.cc 17075 2024-02-28 21:20:08Z greg $
  *
  * Everything you wanted to know about a call to an entry, but were afraid to ask.
  *
@@ -2309,6 +2309,14 @@ OpenArrival::openWait() const
     return _destination->openWait();
 }
 
+
+bool
+OpenArrival::hasDropProbability() const
+{
+    return _destination->openDropProbability() > 0.;
+}
+
+
 OpenArrival&
 OpenArrival::setChain( const unsigned k )
 {
@@ -2358,8 +2366,11 @@ OpenArrival::label()
 	 && Flags::have_results
 	 && Flags::print[OPEN_WAIT].opts.value.b ) {
 	if ( print ) _label->newLine();
-	Graphic::Colour c = std::isfinite( _destination->openWait() ) ? Graphic::Colour::DEFAULT : Graphic::Colour::RED;
+	Graphic::Colour c = (std::isfinite( _destination->openWait() ) && !hasDropProbability()) ? Graphic::Colour::DEFAULT : Graphic::Colour::RED;
 	_label->colour(c) << begin_math() << _destination->openWait() << end_math();
+	if ( Flags::print[LOSS_PROBABILITY].opts.value.b && hasDropProbability() ) {
+	    _label->newLine().colour(c) << begin_math( &Label::epsilon ) << "=" << _destination->openDropProbability() << end_math();
+	}
 	print = true;
     }
     return *this;
@@ -2555,11 +2566,14 @@ static Label&
 drop_probability_of_str( Label& label, const Call& call )
 {
     for ( unsigned p = 1; p <= call.maxPhase(); ++p ) {
-	if ( !call.hasDropProbability( p ) ) break;
 	if ( p != 1 ) {
 	    label << ',';
 	}
-	label << opt_pct(call.dropProbability(p));
+	if ( call.hasDropProbability( p )  ) {
+	    label << opt_pct(call.dropProbability(p));
+	} else {
+	    label << 0;
+	}
     }
     return label;
 }

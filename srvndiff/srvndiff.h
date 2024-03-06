@@ -10,7 +10,7 @@
 /************************************************************************/
 
 /*
- * $Id: srvndiff.h 16945 2024-01-26 13:02:36Z greg $
+ * $Id: srvndiff.h 17075 2024-02-28 21:20:08Z greg $
  */
 
 #if	!defined(SRVNDIFF_H)
@@ -51,6 +51,7 @@ typedef enum {
     P_JOIN,
     P_JOIN_VAR,
     P_MVA_WAITS,
+    P_OPEN_DROP,
     P_OPEN_WAIT,
     P_OVERTAKING,
     P_PHASE_UTIL,
@@ -155,7 +156,7 @@ struct activity_info
 
 struct entry_info
 {
-    entry_info() : open_arrivals(false), bounds(false), open_waiting(0.0), open_wait_conf(0.0),
+    entry_info() : open_arrivals(false), bounds(false), drop_probability(0.0), drop_probability_conf(0.0), open_waiting(0.0), open_wait_conf(0.0),
 		   fwd_to(), phase(MAX_PHASES),
 		   throughput(0.0), throughput_conf(0.0), throughput_bound(0.0), utilization(0.0), utilization_conf(0.0),
 		   processor_utilization(0.0), processor_utilization_conf(0.0)
@@ -164,6 +165,8 @@ struct entry_info
 
     bool open_arrivals;
     bool bounds;
+    double drop_probability;
+    double drop_probability_conf;
     double open_waiting;
     double open_wait_conf;
     std::map<int,call_info> fwd_to;

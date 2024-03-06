@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- * $Id: expat_document.cpp 16964 2024-01-28 11:59:07Z greg $
+ * $Id: expat_document.cpp 17075 2024-02-28 21:20:08Z greg $
  *
  * Read in XML input files.
  *
@@ -1800,6 +1800,7 @@ namespace LQIO {
 		Xpriority,
 		Xprob,
 		Xopen_arrival_rate,
+		Xloss_probability,
 		Xsemaphore,
 		Xrwlock
 	    };
@@ -3044,10 +3045,13 @@ namespace LQIO {
 		    }
                     if ( entry.hasResultsForOpenWait() ) {
                         output << XML::attribute( Xopen_wait_time, entry.getResultWaitingTime() );
+			if ( entry.hasResultDropProbability() ) {
+			    output << XML::attribute( Xloss_probability, entry.getResultDropProbability() );
+			}
                     }
 
                     /* Results for activity entries. */
-                    if ( entry.getStartActivity() != 0 ) {
+                    if ( entry.getStartActivity() != nullptr ) {
                         output << entry_phase_results( entry, XphaseP_service_time, &Entry::getResultPhasePServiceTime )
                                << entry_phase_results( entry, XphaseP_service_time_variance, &Entry::getResultPhasePVarianceServiceTime )
                                << entry_phase_results( entry, XphaseP_proc_waiting, &Entry::getResultPhasePProcessorWaiting )
@@ -3066,6 +3070,9 @@ namespace LQIO {
 			}
                         if ( entry.hasResultsForOpenWait() ) {
                             output << XML::attribute( Xopen_wait_time, _conf_95( entry.getResultWaitingTimeVariance() ) );
+			    if ( entry.hasResultDropProbability() ) {
+				output << XML::attribute( Xloss_probability, _conf_95( entry.getResultDropProbabilityVariance() ) );
+			    }
                         }
 
                         /* Results for activity entries. */
@@ -3086,6 +3093,9 @@ namespace LQIO {
 			}
                         if ( entry.hasResultsForOpenWait() ) {
                             output << XML::attribute( Xopen_wait_time, _conf_99( entry.getResultWaitingTimeVariance() ) );
+			    if ( entry.hasResultDropProbability() ) {
+				output << XML::attribute( Xloss_probability, _conf_99( entry.getResultDropProbabilityVariance() ) );
+			    }
                         }
 
                         /* Results for activity entries. */

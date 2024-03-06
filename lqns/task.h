@@ -10,7 +10,7 @@
  * November, 1994
  * May 2009.
  *
- * $Id: task.h 16965 2024-01-28 19:30:13Z greg $
+ * $Id: task.h 17105 2024-03-05 21:28:11Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -50,8 +50,10 @@ private:
     };
     
     struct add_customers {
-	unsigned int operator()( unsigned int addend, const std::pair<const Task *,unsigned int>& augend ) const;
-	unsigned int operator()( unsigned int addend, const Entity * augend ) const;	// BUG_425 deprecate
+	unsigned int operator()( unsigned int addend, const std::pair<const Task *,unsigned int>& augend ) const { return add( addend, augend.second ); }
+	unsigned int operator()( unsigned int addend, const Entity * augend ) const { return add( addend, augend->population() ); }	// BUG_425 deprecate
+    private:
+	unsigned int add( unsigned int addend, unsigned int augend ) const;
     };
 
     class SRVNManip {
@@ -171,13 +173,14 @@ public:
 
     virtual bool isTask() const { return true; }
     bool isCalled() const;
-    virtual bool hasInfinitePopulation() const { return false; }
-
     virtual bool hasActivities() const { return _activities.size() != 0 ? true : false; }
-    bool hasThinkTime() const;
+    bool hasClientChain( unsigned int n, unsigned int k ) const;
     bool hasForks() const { return _has_forks; }
-    bool hasSyncs() const { return _has_syncs; }
+    virtual bool hasInfinitePopulation() const { return false; }
     bool hasQuorum() const { return _has_quorum; }
+    bool hasSyncs() const { return _has_syncs; }
+    bool hasThinkTime() const;
+
     double  processorUtilization() const;
 
     virtual unsigned nClients() const;		// # Calling tasks

@@ -13,7 +13,7 @@
 #include <lqio/input.h>
 
 /*
- * $Id: petrisrvn.h 10943 2012-06-13 20:21:13Z greg $
+ * $Id: place.h 17075 2024-02-28 21:20:08Z greg $
  *
  * Solve LQN using petrinets.
  */

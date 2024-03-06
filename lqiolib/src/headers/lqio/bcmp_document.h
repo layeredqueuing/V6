@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- *  $Id: bcmp_document.h 16905 2024-01-22 11:55:41Z greg $
+ *  $Id: bcmp_document.h 17096 2024-03-04 14:40:54Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  */
@@ -403,6 +403,7 @@ namespace BCMP {
 	static bool isDefault( LQX::SyntaxTreeNode * var, double default_value=0.0 );
 
 	static double getDoubleValue( LQX::SyntaxTreeNode * );
+	static LQX::SyntaxTreeNode * constant( double );
 	static LQX::SyntaxTreeNode * add( LQX::SyntaxTreeNode *, LQX::SyntaxTreeNode * );
 	static LQX::SyntaxTreeNode * subtract( LQX::SyntaxTreeNode *, LQX::SyntaxTreeNode * );
 	static LQX::SyntaxTreeNode * max( LQX::SyntaxTreeNode *, LQX::SyntaxTreeNode * );

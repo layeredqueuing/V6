@@ -1,6 +1,6 @@
 /* help.cc	-- Greg Franks Wed Oct 12 2005
  *
- * $Id: help.cc 16945 2024-01-26 13:02:36Z greg $
+ * $Id: help.cc 17105 2024-03-05 21:28:11Z greg $
  */
 
 #include "lqns.h"
@@ -1321,13 +1321,6 @@ Help::specialPrintInterval( std::ostream & output, bool verbose ) const
 }
 
 std::ostream&
-Help::specialOvertaking( std::ostream & output, bool verbose ) const
-{
-    output << "Print out overtaking probabilities." << std::endl;
-    return output;
-}
-
-std::ostream&
 Help::specialSingleStep( std::ostream & output, bool verbose ) const
 {
     output << "Stop after each MVA submodel is solved." << std::endl;
@@ -1338,9 +1331,31 @@ Help::specialSingleStep( std::ostream & output, bool verbose ) const
 }
 
 std::ostream&
+Help::specialGenerateJMVAOutput( std::ostream & output, bool verbose ) const
+{
+    output << "This option is used to generate a JMVA queueing model (if possible) for solver in the directory " << emph( *this, "arg" ) << "." << std::endl;
+    if ( verbose ) {
+	output << "A directory named " << emph( *this, "arg" )
+	       << " will be created model files for input to the JMVA solver or to qnsolver."  << std::endl;
+    }
+    return output;
+}
+
+std::ostream&
+Help::specialGenerateQNAPOutput( std::ostream & output, bool verbose ) const
+{
+    output << "This option is used to generate a QNAP queueing model (if possible) for solver in the directory " << emph( *this, "arg" ) << "." << std::endl;
+    if ( verbose ) {
+	output << "A directory named " << emph( *this, "arg" )
+	       << " will be created model files for input to the QNAP2 solver or to qnsolver."  << std::endl;
+    }
+    return output;
+}
+
+std::ostream&
 Help::specialGenerateQueueingModel( std::ostream & output, bool verbose ) const
 {
-    output << "This option is used to generate a queueing model for solver in the directory " << emph( *this, "arg" ) << "." << std::endl;
+    output << "This option is used to generate a queueing model for the LQN MVA solver in C++ in the directory " << emph( *this, "arg" ) << "." << std::endl;
     if ( verbose ) {
 	output << "A directory named " << emph( *this, "arg" )
 	       << " will be created containing source code for invoking the MVA solver directly."  << std::endl;
@@ -2293,7 +2308,7 @@ HelpTroff::preamble( std::ostream& output ) const
     output << __comment << " t -*- nroff -*-" << std::endl
 	   << ".TH lqns 1 \"" << date << "\" \"" << VERSION << "\"" << std::endl;
 
-    output << __comment << " $Id: help.cc 16945 2024-01-26 13:02:36Z greg $" << std::endl
+    output << __comment << " $Id: help.cc 17105 2024-03-05 21:28:11Z greg $" << std::endl
 	   << __comment << std::endl
 	   << __comment << " --------------------------------" << std::endl;
 
@@ -2592,7 +2607,7 @@ HelpLaTeX::preamble( std::ostream& output ) const
 	   << __comment << " Created:             " << date << std::endl
 	   << __comment << "" << std::endl
 	   << __comment << " ----------------------------------------------------------------------" << std::endl
-	   << __comment << " $Id: help.cc 16945 2024-01-26 13:02:36Z greg $" << std::endl
+	   << __comment << " $Id: help.cc 17105 2024-03-05 21:28:11Z greg $" << std::endl
 	   << __comment << " ----------------------------------------------------------------------" << std::endl << std::endl;
 
     output << "\\chapter{Invoking the Analytic Solver ``lqns''}" << std::endl

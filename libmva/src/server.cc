@@ -1,5 +1,5 @@
 /*  -*- C++ -*-
- * $Id: server.cc 16974 2024-01-29 20:12:36Z greg $
+ * $Id: server.cc 17096 2024-03-04 14:40:54Z greg $
  *
  * Copyright the Real-Time and Distributed Systems Group,
  * Department of Systems and Computer Engineering,
@@ -1579,11 +1579,11 @@ HVFCFS_Server::~HVFCFS_Server()
 {
     for ( unsigned e = 1; e <= E; ++e ) {
 	for ( unsigned k = 0; k <= K; ++k ) {
-	    delete [] myVariance[e][k];
+	    delete [] _variance[e][k];
 	}
-	delete [] myVariance[e];
+	delete [] _variance[e];
     }
-    delete [] myVariance;
+    delete [] _variance;
 }
 
 
@@ -1595,17 +1595,16 @@ HVFCFS_Server::~HVFCFS_Server()
 void
 HVFCFS_Server::initialize()
 {
-    myVariance = new double ** [E+1];
-    //cout<<"HVFCFS initialize()"<<endl;
-    myVariance[0] = 0;
+    _variance = new double ** [E+1];
+    _variance[0] = 0;
     for ( unsigned e = 1; e <= E; ++e ) {
 
-	myVariance[e] = new double *[K+1];
+	_variance[e] = new double *[K+1];
 	for ( unsigned k = 0; k <= K; ++k ) {
-	    myVariance[e][k] = new double [P+1];
+	    _variance[e][k] = new double [P+1];
 
 	    for ( unsigned p = 0; p <= P; ++p ) {
-		myVariance[e][k][p] = 0.0;
+		_variance[e][k][p] = 0.0;
 	    }
 	}
     }
@@ -1625,7 +1624,7 @@ HVFCFS_Server::clear()
     for ( unsigned e = 1; e <= E; ++e ) {
 	for ( unsigned k = 0; k <= K; ++k ) {
 	    for ( unsigned p = 0; p <= P; ++p ) {
-		myVariance[e][k][p] = 0.0;
+		_variance[e][k][p] = 0.0;
 	    }
 	}
     }
@@ -1643,13 +1642,20 @@ HVFCFS_Server::setVariance( const unsigned e, const unsigned k, const unsigned p
     assert( k <= K && 0 < e && e <= E && p <= P );
 
     if ( p == 0 ) {
-	myVariance[e][k][0] = value;
+	_variance[e][k][0] = value;
     } else {
-	setAndTotal( myVariance[e][k], p, value );
+	setAndTotal( _variance[e][k], p, value );
     }
     return *this;
 }
 
+
+double
+HVFCFS_Server::getVariance( const unsigned e, const unsigned k, const unsigned p ) const
+{
+    assert( k <= K && 0 < e && e <= E && p <= P );
+    return _variance[e][k][p];
+}
 
 
 
@@ -1672,7 +1678,7 @@ HVFCFS_Server::r( const unsigned e, const unsigned k, const unsigned p ) const
 	return service;
 
     } else {
-	return ( service + myVariance[e][k][p] / service ) / 2.0;
+	return ( service + _variance[e][k][p] / service ) / 2.0;
     }
 }
 
@@ -1760,7 +1766,7 @@ HVFCFS_Server::MG1( const unsigned e ) const
     if ( sum == 0 ) {
 	return 0.0;		/* No service time, so no queue. */
     } else if ( rho() < 1.0 ) {
-	return rho() * ( sum + myVariance[e][0][0] / sum ) / (2.0 * (1.0 - rho()));
+	return rho() * ( sum + _variance[e][0][0] / sum ) / (2.0 * (1.0 - rho()));
     } else {
 	return std::numeric_limits<double>::infinity();
     }
@@ -1805,7 +1811,7 @@ HVFCFS_Server::printInput( std::ostream& output, const unsigned e, const unsigne
 
     for ( p = 1; p <= P; ++p ) {
 	if ( p > 1 ) output << ", ";
-	output << myVariance[e][k][p];
+	output << _variance[e][k][p];
     }
     output << std::endl;
     return output;
