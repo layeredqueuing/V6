@@ -1,5 +1,5 @@
 /*
- *  $Id: srvn_spex.cpp 16945 2024-01-26 13:02:36Z greg $
+ *  $Id: srvn_spex.cpp 17192 2024-04-30 21:20:30Z greg $
  *
  *  Created by Greg Franks on 2012/05/03.
  *  Copyright 2012 __MyCompanyName__. All rights reserved.
@@ -576,7 +576,9 @@ namespace LQIO {
 	
     expr_list * Spex::solve_failure( expr_list * result ) const
     {
-	return make_list( new LQX::FilePrintStatementNode( make_list( new LQX::ConstantValueExpression( "solver failed: $0=" ), new LQX::VariableExpression( "_0", false ), nullptr ), true, false ), nullptr );
+	expr_list * block = make_list( new LQX::FilePrintStatementNode( make_list( new LQX::ConstantValueExpression( "solver failed: $0=" ), new LQX::VariableExpression( "_0", false ), nullptr ), true, false ), nullptr );
+	block->push_back( new LQX::BreakStatementNode() );
+	return block;
     }
 
     /*

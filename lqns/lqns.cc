@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: lqns.cc 17096 2024-03-04 14:40:54Z greg $
+ * $Id: lqns.cc 17200 2024-05-05 23:54:01Z greg $
  *
  * Command line processing.
  *
@@ -144,7 +144,7 @@ int main (int argc, char *argv[])
     
     command_line = LQIO::io_vars.lq_toolname;
 
-    sscanf( "$Date: 2024-03-04 09:40:54 -0500 (Mon, 04 Mar 2024) $", "%*s %s %*s", copyrightDate );
+    sscanf( "$Date: 2024-05-05 19:54:01 -0400 (Sun, 05 May 2024) $", "%*s %s %*s", copyrightDate );
 
     matherr_disposition = fp_exception_reporting::DEFERRED_ABORT;
 
@@ -510,7 +510,7 @@ void init_flags()
     flags.trace_convergence     = false;
     flags.trace_customers	= false;
     flags.trace_forks           = false;
-    flags.trace_idle_time       = false;
+    flags.trace_think_time      = false;
     flags.trace_interlock       = false;
     flags.trace_intermediate    = false;
     flags.trace_overtaking      = false;

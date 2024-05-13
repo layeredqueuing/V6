@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_document.cpp 17105 2024-03-05 21:28:11Z greg $
+ *  $Id: dom_document.cpp 17179 2024-04-10 10:55:30Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -932,7 +932,7 @@ namespace LQIO {
 	Document::print( const std::string& output_file_name, const std::string& suffix, OutputFormat output_format, bool rtf_output ) const
 	{
 	    const bool lqx_output = getResultInvocationNumber() > 0;
-	    const std::string directory_name = LQIO::Filename::createDirectory( Filename::Filename::isFileName( output_file_name ) ? output_file_name : __input_file_name, lqx_output );
+	    const std::string directory_name = LQIO::Filename::createDirectory( Filename::isFileName( output_file_name ) ? output_file_name : __input_file_name, lqx_output );
 
 	    /* Set output format from input, or if LQN and LQX then force to XML. */
 
@@ -946,7 +946,7 @@ namespace LQIO {
 	    /* override is true for '-p -o filename.out when filename.in' == '-p filename.in' */
 
 	    bool override = false;
-	    if ( Filename::isFileName( output_file_name ) && LQIO::Filename::isRegularFile( output_file_name ) > 0 ) {
+	    if ( Filename::isFileName( output_file_name ) ) {
 		LQIO::Filename filename( __input_file_name, rtf_output ? "rtf" : "out" );
 		override = filename() == output_file_name;
 	    }

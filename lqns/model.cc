@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: model.cc 17096 2024-03-04 14:40:54Z greg $
+ * $Id: model.cc 17211 2024-05-13 22:13:11Z greg $
  *
  * Layer-ization of model.  The basic concept is from the reference
  * below.  However, model partioning is more complex than task vs device.
@@ -191,7 +191,7 @@ Model::solve( solve_using solve_function, const std::string& inputFileName, cons
 	LQIO::RegisterBindings(environment, document);
 
 	FILE * output = nullptr;
-	if ( !outputFileName.empty() && outputFileName != "-" && LQIO::Filename::isRegularFile(outputFileName.c_str()) ) {
+	if ( !outputFileName.empty() && outputFileName != "-" ) {
 	    output = fopen( outputFileName.c_str(), "w" );
 	    if ( !output ) {
 		LQIO::runtime_error( LQIO::ERR_CANT_OPEN_FILE, outputFileName.c_str(), strerror( errno ) );
@@ -550,9 +550,9 @@ Model::initialize()
      _runDPS = false;
     if ( !_model_initialized ) {
 	/* Expand replicas and add think server. */
-	extend();			/* Do this before Task::initProcessor() */
+	extend();			/* Do this before Task::initializeProcessor() */
 
-	std::for_each( __task.begin(), __task.end(), std::mem_fn( &Task::initProcessor ) );	/* Set Processor Service times.	*/
+	std::for_each( __task.begin(), __task.end(), std::mem_fn( &Task::initializeProcessor ) );	/* Set Processor Service times.	*/
 
 	if ( Options::Trace::verbose() ) std::cerr << "Generate... " << std::endl;
 	if ( generate( assignSubmodel() ) ) {
@@ -643,9 +643,8 @@ Model::check()
 
     if ( LQIO::io_vars.anError() ) return false;	/* Don't bother */
 
-    bool rc = true;
-    rc = std::all_of( __processor.begin(), __processor.end(), std::mem_fn( &Processor::check ) ) && rc;
-    rc = std::all_of( __task.begin(), __task.end(), std::mem_fn( &Task::check ) ) && rc;
+    bool rc = std::all_of( __processor.begin(), __processor.end(), std::mem_fn( &Processor::check ) )
+	&& std::all_of( __task.begin(), __task.end(), std::mem_fn( &Task::check ) );
 
     if ( std::none_of( __task.begin(), __task.end(), std::mem_fn( &Task::isReferenceTask ) )
 	 && std::none_of( __task.begin(), __task.end(), std::mem_fn( &Task::hasOpenArrivals ) ) ) {

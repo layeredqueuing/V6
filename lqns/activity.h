@@ -11,7 +11,7 @@
  * July 2007
  *
  * ------------------------------------------------------------------------
- * $Id: activity.h 16965 2024-01-28 19:30:13Z greg $
+ * $Id: activity.h 17211 2024-05-13 22:13:11Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -270,7 +270,6 @@ public:
     virtual bool repliesTo( const Entry * ) const;
     virtual bool isActivity() const { return true; }
     bool isReachable() const { return _reachable; }
-    bool isNotReachable() const;
     Activity& isSpecified( const bool yesOrNo ) { _specified = yesOrNo; return *this; }
     bool isSpecified() const { return _specified; }
     bool isStartActivity() const { return entry() != nullptr; }
@@ -390,7 +389,7 @@ public:
     PsuedoActivity( const Task * aTask, const std::string& aName ) : Activity( aTask, aName ) {}
     virtual ~PsuedoActivity() {}
 
-    virtual bool isPseudo() const { return true; }	/* Allow Phase::initProcessor to create proc entry. */
+    virtual bool isPseudo() const { return true; }	/* Allow Phase::initializeProcessor to create proc entry. */
 };
 
 class activity_cycle : public std::runtime_error

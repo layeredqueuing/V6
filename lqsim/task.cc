@@ -10,7 +10,7 @@
 /*
  * Input output processing.
  *
- * $Id: task.cc 16945 2024-01-26 13:02:36Z greg $
+ * $Id: task.cc 17192 2024-04-30 21:20:30Z greg $
  */
 
 #include <iostream>
@@ -133,7 +133,7 @@ Task::configure()
 
     for ( std::vector<Activity *>::const_iterator ap = _activity.begin(); ap != _activity.end(); ++ap ) {
 	if ( !(*ap)->is_reachable() ) {
-	    (*ap)->getDOM()->runtime_error( LQIO::WRN_NOT_USED, "Activity", (*ap)->name().c_str() );
+	    (*ap)->getDOM()->runtime_error( LQIO::WRN_NOT_USED );
 	} else if ( !(*ap)->is_specified() ) {
 	    (*ap)->getDOM()->runtime_error( LQIO::ERR_NOT_SPECIFIED );
 	}

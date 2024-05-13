@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- * $Id: expat_document.cpp 17075 2024-02-28 21:20:08Z greg $
+ * $Id: expat_document.cpp 17194 2024-05-02 00:01:33Z greg $
  *
  * Read in XML input files.
  *
@@ -1898,17 +1898,19 @@ namespace LQIO {
             const XML_Char * activity_name = XML::getStringAttribute(attributes,Xname);
             Activity * activity = dynamic_cast<Task *>(task)->getActivity(activity_name, _createObjects);
             if ( activity ) {
-		if ( _createObjects && activity->isSpecified() ) {
-		    throw duplicate_symbol( activity_name );
-		}
-                activity->setIsSpecified(true);
+		if ( _createObjects ) {
+		    if ( activity->isSpecified() ) {
+			throw duplicate_symbol( activity_name );
+		    }
+		    activity->setIsSpecified(true);
 
-                const XML_Char * entry_name = XML::getStringAttribute(attributes,Xbound_to_entry,"");
-                if ( strlen(entry_name) > 0 ) {
-                    Entry* entry = _document.getEntryByName(entry_name);
-                    _document.db_check_set_entry(entry, Entry::Type::ACTIVITY);
-                    entry->setStartActivity(activity);
-                }
+		    const XML_Char * entry_name = XML::getStringAttribute(attributes,Xbound_to_entry,"");
+		    if ( strlen(entry_name) > 0 ) {
+			Entry* entry = _document.getEntryByName(entry_name);
+			_document.db_check_set_entry(entry, Entry::Type::ACTIVITY);
+			entry->setStartActivity(activity);
+		    }
+		}
 
                 handleActivity( activity, attributes );
             } else {
@@ -1936,9 +1938,15 @@ namespace LQIO {
 	    checkAttributes( Xactivity, attributes, activity_table );
             if ( _createObjects ) {
 		phase->setServiceTime( getVariableAttribute(attributes,Xhost_demand_mean,"0.0" ) );
-		phase->setCoeffOfVariationSquared( getOptionalAttribute(attributes,Xhost_demand_cvsq) );
-		phase->setThinkTime( getOptionalAttribute(attributes,Xthink_time) );
-                const double max_service = XML::getDoubleAttribute(attributes,Xmax_service_time,0.0);
+		LQIO::DOM::ExternalVariable * cv_sqr = getOptionalAttribute( attributes, Xhost_demand_cvsq );
+		if ( !is_default_value( cv_sqr, 1.0 ) ) {
+		    phase->setCoeffOfVariationSquared( cv_sqr );
+		}
+		LQIO::DOM::ExternalVariable * think_time = getOptionalAttribute( attributes, Xthink_time );
+		if ( !is_default_value( think_time, 0. ) ) {
+		    phase->setThinkTime( think_time );
+		}
+                const double max_service = XML::getDoubleAttribute( attributes, Xmax_service_time, 0.0 );
                 if ( max_service > 0 ) {
                     findOrAddHistogram( phase, LQIO::DOM::Histogram::Type::CONTINUOUS, 0, max_service, max_service );
                 }

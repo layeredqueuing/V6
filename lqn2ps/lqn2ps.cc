@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: lqn2ps.cc 17096 2024-03-04 14:40:54Z greg $
+ * $Id: lqn2ps.cc 17184 2024-04-29 11:01:37Z greg $
  *
  * Command line processing.
  *
@@ -110,7 +110,7 @@ std::vector<Options::Type> Flags::print = {
     { "task-service-time", 512+'P', nullptr,               {&Options::none,         0},                 "Print task service times (for --tasks-only)." },
     { "run-lqx",         0x200+'l', nullptr,               {&Options::none,         0},                 "\"Run\" the LQX program instantiating variables and generating model files." },
     { "reload-lqx",      0x200+'r', nullptr,               {&Options::none,         0},                 "\"Run\" the LQX program reloading results generated earlier." },
-    { "output-lqx",      0x200+'o', nullptr,               {&Options::none,         0},                 "Convert SPEX to LQX for XML output." },
+    { "spex-to-lqx",     0x200+'o', nullptr,               {&Options::none,         0},                 "Convert SPEX to LQX for XML output." },
     { "include-only",    0x200+'I', "regexp",              {&Options::string,       static_cast<std::regex *>(nullptr)},       "Include only objects with name matching <regexp>" },
 
     /* -- below here is not stored in flag_values enumeration -- */
@@ -220,7 +220,7 @@ main(int argc, char *argv[])
     char * options;
     std::string output_file_name = "";
 
-    sscanf( "$Date: 2024-03-04 09:40:54 -0500 (Mon, 04 Mar 2024) $", "%*s %s %*s", copyrightDate );
+    sscanf( "$Date: 2024-04-29 07:01:37 -0400 (Mon, 29 Apr 2024) $", "%*s %s %*s", copyrightDate );
 
     static std::string opts = "";
 #if HAVE_GETOPT_H

@@ -10,7 +10,7 @@
  * November, 1994
  *
  * ------------------------------------------------------------------------
- * $Id: task.cc 17105 2024-03-05 21:28:11Z greg $
+ * $Id: task.cc 17211 2024-05-13 22:13:11Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -219,11 +219,13 @@ Task::check() const
     for ( const auto& dst : getDOM()->getFanOuts() ) {
 	if ( document->getTaskByName( dst.first ) == nullptr ) {
 	    LQIO::runtime_error( LQIO::ERR_NOT_DEFINED, dst.first.c_str() );
+	    rc = false;
 	}
     }
     for ( const auto& src : getDOM()->getFanIns() ) {
 	if ( document->getTaskByName( src.first ) == nullptr ) {
 	    LQIO::runtime_error( LQIO::ERR_NOT_DEFINED, src.first.c_str() );
+	    rc = false;
 	}
     }
 
@@ -235,16 +237,16 @@ Task::check() const
     }
 
     rc = std::all_of( entries().begin(),entries().end(), std::mem_fn( &Entry::check ) ) && rc;
-    if ( hasActivities() && std::none_of( entries().begin(),entries().end(), std::mem_fn( &Entry::isActivityEntry ) ) ) {
-	getDOM()->runtime_error( LQIO::ERR_NO_START_ACTIVITIES );
-    } else {
-	rc = std::all_of( activities().begin(), activities().end(), std::mem_fn( &Phase::check ) ) && rc;
-	rc = std::all_of( precedences().begin(), precedences().end(), std::mem_fn( &ActivityList::check ) ) && rc;
+    if ( hasActivities() ) {
+	if ( std::none_of( entries().begin(),entries().end(), std::mem_fn( &Entry::isActivityEntry ) ) ) {
+	    getDOM()->runtime_error( LQIO::ERR_NO_START_ACTIVITIES );
+	    rc = false;
+	} else {
+	    rc = std::all_of( activities().begin(), activities().end(), std::mem_fn( &Activity::check ) )
+		&&  std::all_of( precedences().begin(), precedences().end(), std::mem_fn( &ActivityList::check ) )
+		&& rc;
+	}
     }
-
-    /* Check reachability */
-    
-    rc = std::none_of( activities().begin(), activities().end(), std::mem_fn( &Activity::isNotReachable ) ) && rc;
 
     return rc;
 }
@@ -276,10 +278,6 @@ Task::configure( const unsigned nSubmodels )
     if ( hasOpenArrivals() ) {
 	setOpenModelServer( true );
     }
-    if ( Pragma::forceMultiserver( Pragma::ForceMultiserver::TASKS ) ) {
-	setVarianceAttribute( false );
-    }
-
     return *this;
 }
 
@@ -438,10 +436,10 @@ Task::initializeWait( const Submodel& submodel )
  */
 
 Task&
-Task::initProcessor()
+Task::initializeProcessor()
 {
-    std::for_each( entries().begin(), entries().end(), std::mem_fn( &Entry::initProcessor ) );
-    std::for_each( activities().begin(), activities().end(), std::mem_fn( &Phase::initProcessor ) );
+    std::for_each( entries().begin(), entries().end(), std::mem_fn( &Entry::initializeProcessor ) );
+    std::for_each( activities().begin(), activities().end(), std::mem_fn( &Phase::initializeProcessor ) );
     return *this;
 }
 
@@ -1010,7 +1008,7 @@ Task::updateWait( const Submodel& submodel, const double relax )
 
     /* Now recompute thread idle times */
 
-    for ( Vector<Thread *>::const_iterator thread = std::next(threads().begin()); thread != threads().end(); ++thread ) (*thread)->setIdleTime( relax );
+    for ( Vector<Thread *>::const_iterator thread = std::next(threads().begin()); thread != threads().end(); ++thread ) (*thread)->setSubmodelThinkTime( relax );
     return *this;
 }
 
@@ -1948,7 +1946,7 @@ ServerTask::queueLength() const
 bool
 ServerTask::check() const
 {
-    Task::check();
+    bool rc = Task::check();
 
     if ( scheduling() == SCHEDULE_DELAY && copies() != 1 ) {
 	getDOM()->runtime_error( LQIO::WRN_INFINITE_MULTI_SERVER, copies() );
@@ -1962,7 +1960,7 @@ ServerTask::check() const
 	getDOM()->runtime_error( LQIO::WRN_INFINITE_SERVER_OPEN_ARRIVALS );
     }
 
-    return true;
+    return rc;
 }
 
 
@@ -1985,7 +1983,10 @@ ServerTask::hasInfinitePopulation() const
 bool
 ServerTask::hasVariance() const
 {
-    return !isInfinite() && !isMultiServer() && Entity::hasVariance();
+    return !isInfinite()
+	&& !isMultiServer()
+	&& !Pragma::forceMultiserver( Pragma::ForceMultiserver::TASKS )
+	&& Entity::hasVariance();
 }
 
 

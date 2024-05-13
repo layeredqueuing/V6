@@ -8,12 +8,11 @@
  * January 2003
  *
  * ------------------------------------------------------------------------
- * $Id: entry.cc 17075 2024-02-28 21:20:08Z greg $
+ * $Id: entry.cc 17192 2024-04-30 21:20:30Z greg $
  * ------------------------------------------------------------------------
  */
 
 #include "lqn2ps.h"
-#include <algorithm>
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -1405,7 +1404,7 @@ Entry::check() const
 	if ( !hasServiceTime ) {
 	    const_cast<Entry *>(this)->getPhase( 1 );	/* force phase presence. */
 	    if ( !owner()->hasThinkTime() ) {
-		getDOM()->runtime_error( LQIO::WRN_XXXX_TIME_DEFINED_BUT_ZERO, "service" );
+		getDOM()->runtime_error( LQIO::WRN_XXXX_DEFINED_BUT_ZERO, "service time" );
 	    }
 	}
 

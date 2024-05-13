@@ -10,7 +10,7 @@
  * November, 1994
  *
  * ------------------------------------------------------------------------
- * $Id: processor.cc 17027 2024-02-04 15:24:18Z greg $
+ * $Id: processor.cc 17211 2024-05-13 22:13:11Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -133,10 +133,6 @@ Processor::configure( const unsigned nSubmodels )
 	LQIO::runtime_error( ADV_SERVICE_TIME_RANGE, getDOM()->getTypeName(), name().c_str(), minS, maxS );
     }
     Entity::configure( nSubmodels );
-    if ( Pragma::forceMultiserver( Pragma::ForceMultiserver::PROCESSORS ) ) {
-	setVarianceAttribute(false);
-    }
-    
     return *this;
 }
 
@@ -217,6 +213,7 @@ Processor::hasVariance() const
 {
     if ( Pragma::variance(Pragma::Variance::NONE)
 	 || !Pragma::defaultProcessorScheduling()
+	 || Pragma::forceMultiserver( Pragma::ForceMultiserver::PROCESSORS )
 	 || scheduling() == SCHEDULE_PS
 	 || isMultiServer()
 	 || isInfinite() ) {
@@ -225,8 +222,7 @@ Processor::hasVariance() const
 	return std::any_of( entries().begin(), entries().end(), std::mem_fn( &Entry::hasVariance ) );
     }
 }
-
-
+    
 
 /*
  * Return true if this processor can schedule tasks with priority.

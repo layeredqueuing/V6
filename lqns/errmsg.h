@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: errmsg.h 17105 2024-03-05 21:28:11Z greg $
+ * $Id: errmsg.h 17211 2024-05-13 22:13:11Z greg $
  *
  * Copyright the Real-Time and Distributed Systems Group,
  * Department of Systems and Computer Engineering,
@@ -28,7 +28,6 @@
 
 enum {
     ERR_BOGUS_COPIES=LQIO::LSTGBLERRMSG+1,
-    WRN_COEFFICIENT_OF_VARIATION,
     WRN_MULTI_PHASE_INFINITE_SERVER,
     WRN_NO_REQUESTS_MADE,
     ADV_BCMP_NOT_SUPPORTED,

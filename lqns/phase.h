@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: phase.h 17060 2024-02-08 15:53:49Z greg $
+ * $Id: phase.h 17211 2024-05-13 22:13:11Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -162,7 +162,7 @@ private:
 	double service_time() const { return _phase.serviceTime(); }
 	double think_time() const { return _phase.thinkTime(); }
 	double n_calls() const { return _phase.numberOfSlices(); }
-	double cv_sqr() const { return _phase.CV_sqr(); }
+	double CV_sqr() const { return _phase.CV_sqr(); }
 	double n_processor_calls() const { return service_time() > 0. ? n_calls() : 0.0; }	// zero if no service. BUG 315.
 
 	static std::set<Entity *>& add_server( std::set<Entity *>&, const DeviceInfo * );
@@ -229,7 +229,7 @@ public:
 #endif
 
     Phase& expandCalls();
-    virtual Phase& initProcessor();
+    virtual Phase& initializeProcessor();
     void initCFSProcessor();
     Phase& initCustomers( std::deque<const Task *>& stack, unsigned int customers );
     Phase& initVariance();

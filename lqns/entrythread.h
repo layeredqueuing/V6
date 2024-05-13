@@ -8,7 +8,7 @@
  * January, 2005
  *
  *
- * $Id: entrythread.h 16945 2024-01-26 13:02:36Z greg $
+ * $Id: entrythread.h 17200 2024-05-05 23:54:01Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -38,7 +38,7 @@ public:
 
     /* Instance variable access */
 
-    Thread& setIdleTime( const double );
+    Thread& setSubmodelThinkTime( const double );
     Exponential startTime() const;
     Thread& startTime( const unsigned, const double );
     virtual double getStartTime() const { return _start_time.sum(); }

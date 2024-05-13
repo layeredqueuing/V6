@@ -10,7 +10,7 @@
  * November, 1994
  * May 2009.
  *
- * $Id: task.h 17105 2024-03-05 21:28:11Z greg $
+ * $Id: task.h 17211 2024-05-13 22:13:11Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -134,7 +134,8 @@ public:
     virtual bool check() const;
     virtual Task& configure( const unsigned );
     virtual unsigned findChildren( Call::stack&, const bool ) const;
-    Task& initProcessor();
+    Task& initializeProcessor();
+    Task& reinitializeProcessor();
     virtual void initializeClient();
     virtual void reinitializeClient();
     Task& initCustomers( std::deque<const Task *>& stack, unsigned int customers );

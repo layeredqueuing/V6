@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: entity.h 17111 2024-03-05 21:43:09Z greg $
+ * $Id: entity.h 17211 2024-05-13 22:13:11Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -48,7 +48,7 @@ class Entity {
     friend class Generate;
 
     struct Attributes {
-	Attributes() : closed_server(false), closed_client(false), open_server(false), pruned(false), deterministic(false), variance(false)
+	Attributes() : closed_server(false), closed_client(false), open_server(false), pruned(false), deterministic(false)
 #if THROUGHPUT_INTERLOCK
 		     , interlocked(false)
 #endif
@@ -59,7 +59,6 @@ class Entity {
 	bool open_server;	/* Stn is server in open model.		*/
 	bool pruned;		/* Stn can be pruned			*/
 	bool deterministic;	/* an entry has det. phase.		*/
- 	bool variance;		/* an entry has Cv_sqn != 1.		*/
 #if THROUGHPUT_INTERLOCK
 	bool interlocked;	/* Server has interlocked flow.		*/
 #endif
@@ -89,16 +88,6 @@ public:
 
 private:
 
-#if 0
-    struct set_max_customers {
-	set_max_customers( const Entry * server_entry, unsigned int k ) : _server_entry(server_entry), _k {}
-	void operator()( const Task * client ) const { client->setMaxCustomers( _submodel, _server_entry ); }
-    private:
-	const MVASubmodel& _submodel;
-	const Entry * _server_entry;
-    };
-#endif
-    
     struct add_weight {
 	add_weight( const MVASubmodel& submodel ) : _submodel(submodel) {}
 	double operator()( double sum, Call * call ) const { return sum + call->computeWeight( _submodel ); }
@@ -163,7 +152,7 @@ public:
     bool hasThreads() const { return nThreads() > 1; }
     virtual bool hasSynchs() const { return false; }
     bool hasILWait() const ;
-    virtual bool hasVariance() const { return _attributes.variance; }
+    virtual bool hasVariance() const;
     bool hasDeterministicPhases() const { return _attributes.deterministic; }
     bool isClosedModelClient() const { return _attributes.closed_client; }
     bool isClosedModelServer() const { return _attributes.closed_server; }
@@ -176,7 +165,6 @@ public:
     Entity& setInterlockedFlows( const bool yesOrNo )  { _attributes.interlocked = yesOrNo; return *this; }
 #endif
     Entity& setOpenModelServer( const bool yesOrNo )   { _attributes.open_server = yesOrNo; return *this; }
-    Entity& setVarianceAttribute( const bool yesOrNo ) { _attributes.variance = yesOrNo; return *this; }
 
     virtual bool isTask() const          { return false; }
     virtual bool isReferenceTask() const { return false; }
@@ -246,7 +234,7 @@ public:
 
     void saveServerResults( const MVASubmodel&, const Server&, double );
     Entity& updateAllWaits( const Vector<Submodel *>& );
-    void setIdleTime( const double );
+    void setSubmodelThinkTime( const double );
     virtual Entity& computeVariance();
     void setOvertaking( const unsigned, const std::set<Task *>& );
     virtual Entity& updateWait( const Submodel&, const double ) { return *this; }	/* NOP */

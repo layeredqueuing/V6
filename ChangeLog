@@ -1,4 +1,18 @@
-2024-01-26  Gregory Franks  <greg@Gregs-Retina-iMac.local>
+2024-04-30  Gregory Franks  <greg@Gregs-Retina-iMac.local>
+
+	* lqiolib
+	- stop executing spex on any solver error.
+
+2024-04-07  Gregory Franks  <greg@Gregs-ARM-MacBook-Pro.local>
+
+	* lqiolib
+	- queueing model updates.
+	- Add drop probability for open arrivals to schema.
+	* qnsolver
+	- add --no-bounds to suppress bounds output.
+	- change --plot-xxxx to --xxxx.
+
+2024-01-09  Gregory Franks  <greg@Gregs-Retina-iMac.local>
 
 	* V5.29 merged to V6.2.
 
@@ -606,4 +620,4 @@
 	* parasrvn:
 	- Peter Maly added service time distributions.  See '-H' option.
 
-$Id: ChangeLog 16946 2024-01-26 14:15:37Z greg $
+$Id: ChangeLog 17192 2024-04-30 21:20:30Z greg $

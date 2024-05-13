@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: entity.cc 17105 2024-03-05 21:28:11Z greg $
+ * $Id: entity.cc 17211 2024-05-13 22:13:11Z greg $
  *
  * Everything you wanted to know about a task or processor, but were
  * afraid to ask.
@@ -138,9 +138,6 @@ Entity::configure( const unsigned nSubmodels )
 {
     for ( auto entry : entries() ) entry->configure( nSubmodels );
     if ( std::any_of( entries().begin(), entries().end(), std::mem_fn( &Entry::hasDeterministicPhases ) ) ) setDeterministicPhases( true );
-    if ( !Pragma::variance(Pragma::Variance::NONE)
-	 && ((nEntries() > 1 && Pragma::entry_variance())
-	     || std::any_of( entries().begin(), entries().end(), std::mem_fn( &Entry::hasVariance ) )) ) setVarianceAttribute( true );
     _maxPhase = (*std::max_element( entries().begin(), entries().end(), Entry::max_phase ))->maxPhase();
     return *this;
 }
@@ -330,6 +327,19 @@ bool
 Entity::hasOpenArrivals() const
 {
     return std::any_of( entries().begin(), entries().end(), std::mem_fn( &Entry::hasOpenArrivals ) );
+}
+
+
+/*
+ * Return true if any entry has variance.
+ */
+
+bool
+Entity::hasVariance() const
+{    
+    return !Pragma::variance(Pragma::Variance::NONE)
+	&& ((nEntries() > 1 && Pragma::entry_variance())
+	    || std::any_of( entries().begin(), entries().end(), std::mem_fn( &Entry::hasVariance ) ));
 }
 
 
@@ -784,7 +794,7 @@ Entity::saveServerResults( const MVASubmodel& submodel, const Server& station, d
 #endif
 
     setUtilization( computeUtilization( submodel, station ) );
-    setIdleTime( relaxation );
+    setSubmodelThinkTime( relaxation );
 }
 
 
@@ -810,7 +820,7 @@ Entity::setUtilization( double utilization )
  */
 
 void
-Entity::setIdleTime( const double relax )
+Entity::setSubmodelThinkTime( const double relax )
 {
     if ( population() == std::numeric_limits<unsigned int>::max() ) {
 	_thinkTime = 0.0;
@@ -821,8 +831,8 @@ Entity::setIdleTime( const double relax )
     } else {
 	_thinkTime = std::numeric_limits<double>::infinity();
     }
-    if ( flags.trace_idle_time ) {
-	std::cout << "Entity(" << name() << ")::setIdleTime()   thinkTime=" << _thinkTime << std::endl;
+    if ( flags.trace_think_time ) {
+	std::cout << "Entity(" << name() << ")::setSubmodelThinkTime()   thinkTime=" << _thinkTime << std::endl;
     }
 }
 

@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: jmva_document.cpp 17147 2024-03-25 13:39:23Z greg $
+ * $Id: jmva_document.cpp 17179 2024-04-10 10:55:30Z greg $
  *
  * Read in XML input files.
  *
@@ -86,7 +86,7 @@ namespace QNIO {
 	_whatif_body(), _independent_variables(), _result_variables(), _station_index(),
 	_think_time_vars(), _population_vars(), _arrival_rate_vars(), _multiplicity_vars(), _service_time_vars(), _visit_vars(),
 	_results(),
-	_N1(), _N2(), _n_labels(0), _x_max(nullptr), _y_max(nullptr)
+	_plot_type(BCMP::Model::Result::Type::NONE), _no_bounds(false), _gnuplot(), _N1(), _N2(), _n_labels(0), _x_max(nullptr), _y_max(nullptr)
     {
     }
 
@@ -97,7 +97,7 @@ namespace QNIO {
 	_whatif_body(), _independent_variables(), _result_variables(), _station_index(),
 	_think_time_vars(), _population_vars(), _arrival_rate_vars(), _multiplicity_vars(), _service_time_vars(), _visit_vars(),
 	_results(),
-	_N1(), _N2(), _n_labels(0), _x_max(nullptr), _y_max(nullptr)
+	_plot_type(BCMP::Model::Result::Type::NONE), _no_bounds(false), _gnuplot(), _N1(), _N2(), _n_labels(0), _x_max(nullptr), _y_max(nullptr)
     {
     }
 
@@ -1023,7 +1023,7 @@ namespace QNIO {
 	{ XNumber_of_Customers, { Document::Comprehension::Type::CUSTOMERS,	&JMVA_Document::setCustomers, 	  &JMVA_Document::setAllCustomers } },	// New. BUG 458
 	{ XNumber_of_Servers, 	{ Document::Comprehension::Type::SERVERS,	&JMVA_Document::setMultiplicity,  nullptr } },
 	{ XPopulation_Mix,	{ Document::Comprehension::Type::SCALE,		&JMVA_Document::setPopulationMix, nullptr } },
-	{ XService_Demands, 	{ Document::Comprehension::Type::DEMANDS,	&JMVA_Document::setDemand, 	  nullptr } }
+	{ XService_Demands, 	{ Document::Comprehension::Type::DEMANDS,	&JMVA_Document::setDemand, 	  &JMVA_Document::setAllDemands } }
     };
 
     void
@@ -1043,7 +1043,7 @@ namespace QNIO {
 	    const std::string x_var = (this->*(f))( stationName, className );	/* Create a variable */
 
 	    _independent_variables.emplace_back( x_var );
-	    appendResultVariable( x_var, new LQX::VariableExpression( x_var, false ) );
+	    appendResultVariable( x_var, BCMP::Model::Result::Type::NONE, new LQX::VariableExpression( x_var, false ) );
 
 	    const Comprehension comprehension( x_var, independent_var_type, XML::getStringAttribute( attributes, Xvalues ) );
 	    if ( comprehension.begin() != comprehension.end() ) {
@@ -1057,13 +1057,13 @@ namespace QNIO {
 	    /* Changing all classes */
 
 	    _independent_variables.emplace_back( __Beta );
-	    appendResultVariable( __Beta, new LQX::VariableExpression( __Beta, false ) );
+	    appendResultVariable( __Beta, BCMP::Model::Result::Type::NONE, new LQX::VariableExpression( __Beta, false ) );
 	    
 	    const JMVA_Document::setIndependentVariable f = independent_var->second.all_class;
 	    for ( BCMP::Model::Chain::map_t::const_iterator k = chains().begin(); k != chains().end(); ++k ) {
 		const std::string x_var = (this->*(f))( stationName, k->first );	/* Create a variable */
 		_independent_variables.emplace_back( x_var );
-		appendResultVariable( x_var, new LQX::VariableExpression( x_var, false ) );
+		appendResultVariable( x_var, BCMP::Model::Result::Type::NONE, new LQX::VariableExpression( x_var, false ) );
 	    }
 
 	    const Comprehension comprehension( __Beta, Comprehension::Type::SCALE, XML::getStringAttribute( attributes, Xvalues ) );
@@ -1233,6 +1233,26 @@ namespace QNIO {
 								  new LQX::MethodInvocationExpression( "round", function_args ) ) );
 	return var_name;
     }
+
+    std::string
+    JMVA_Document::setAllDemands( const std::string& stationName, const std::string& className )
+    {
+	const BCMP::Model::Station& m = stations().at(stationName);
+	const std::string var_name = "S_" + stationName;
+	if ( m.hasClass( className ) ) {
+	    BCMP::Model::Station::Class& k = const_cast<BCMP::Model::Station::Class&>(m.classAt(className));
+	    const std::string const_name = "_S_" + stationName;
+	    const bool is_external = false;
+	    const std::map<const std::string,LQX::SyntaxTreeNode*>::iterator var = insertInputVariable( var_name, k.service_time() );
+	    k.setServiceTime( new LQX::VariableExpression( var_name, is_external ) );
+	    _program.push_back( new LQX::AssignmentStatementNode( new LQX::VariableExpression( const_name, false ), var->second ) );
+	    _whatif_body.push_back( new LQX::AssignmentStatementNode( new LQX::VariableExpression( var_name, is_external ),
+								      new LQX::MathExpression( LQX::MathOperation::MULTIPLY, new LQX::VariableExpression( const_name, false ),
+											       new LQX::VariableExpression( __Beta, false ) ) ) );
+	}
+
+	return var_name;
+    }
 
     /*
      * Common logic for LQX setup.
@@ -1373,8 +1393,8 @@ namespace QNIO {
 	    const_cast<BCMP::Model::Station::Class *>(k)->insertResultVariable( type, name );
 
 	}
-	appendResultVariable( name, new LQX::AssignmentStatementNode( new LQX::VariableExpression( name, false ),
-								      new LQX::ObjectPropertyReadNode( object, __lqx_function_table.at(type) ) ) );
+	appendResultVariable( name, type, new LQX::AssignmentStatementNode( new LQX::VariableExpression( name, false ),
+									    new LQX::ObjectPropertyReadNode( object, __lqx_function_table.at(type) ) ) );
 	return object;
     }
 
@@ -1394,8 +1414,8 @@ namespace QNIO {
 
 	const_cast<BCMP::Model::Chain&>(k->second).insertResultVariable( type, name );
 
-	appendResultVariable( name, new LQX::AssignmentStatementNode( new LQX::VariableExpression( name, false ),
-								      new LQX::ObjectPropertyReadNode( object, __lqx_function_table.at(type) ) ) );
+	appendResultVariable( name, type, new LQX::AssignmentStatementNode( new LQX::VariableExpression( name, false ),
+									    new LQX::ObjectPropertyReadNode( object, __lqx_function_table.at(type) ) ) );
 	return object;
     }
 
@@ -1432,11 +1452,10 @@ namespace QNIO {
      */
 
     void
-    JMVA_Document::appendResultVariable( const std::string& name, LQX::SyntaxTreeNode * expression )
+    JMVA_Document::appendResultVariable( const std::string& name, BCMP::Model::Result::Type type, LQX::SyntaxTreeNode * expression )
     {
 	if ( name.empty() ) return;
-	_result_variables.emplace_back( var_name_and_expr( name, expression ) );
-	_result_index.emplace( name, _result_variables.size() );
+	_result_variables.emplace_back( var_name_and_expr( name, type, expression ) );
     }
 }
 
@@ -1446,8 +1465,15 @@ namespace QNIO {
      */
 
     void
-    JMVA_Document::plot( BCMP::Model::Result::Type type, const std::string& arg )
+    JMVA_Document::plot( BCMP::Model::Result::Type type, const std::string& arg, bool no_bounds, LQIO::GnuPlot::Format format )
     {
+	_plot_type = type;
+	_no_bounds = no_bounds;
+	for ( auto& var : _result_variables ) {
+	    if ( var.type() != BCMP::Model::Result::Type::NONE && var.type() != _plot_type ) continue;
+	    _result_index.emplace( var.name(), _result_index.size() + 1 );
+	}
+	
 	_gnuplot.push_back( LQIO::GnuPlot::print_node( "set title \"" + model().comment() + "\"" ) );
 	_gnuplot.push_back( LQIO::GnuPlot::print_node( "#set output \"" + LQIO::Filename( getInputFileName(), "svg" )() + "\"" ) );
 	_gnuplot.push_back( LQIO::GnuPlot::print_node( "#set terminal svg" ) );
@@ -1608,7 +1634,9 @@ namespace QNIO {
 	    title += "MVA";
 	    plot << "\"$DATA\" using 1:" << get_gnuplot_index(k->second.resultVariables().at(type)) << " with linespoints" << " title \"" << title << "\"";
 
-	    plot_one_class_bounds( plot, type, k->first );
+	    if ( !_no_bounds ) {
+		plot_one_class_bounds( plot, type, k->first );
+	    }
 
 	    BCMP::Model::Bound bounds( *k, stations() );
 	    switch ( type ) {
@@ -1616,7 +1644,9 @@ namespace QNIO {
 		_y_max = BCMP::Model::max( _y_max, BCMP::Model::reciprocal( bounds.D_max() ) );
 		break;
 	    case BCMP::Model::Result::Type::RESPONSE_TIME:
-		_y_max = BCMP::Model::max( _y_max, BCMP::Model::subtract( BCMP::Model::multiply( _x_max, bounds.D_max() ), bounds.Z_sum() ) );
+		_y_max = BCMP::Model::max( _y_max,
+					   BCMP::Model::max( BCMP::Model::multiply( bounds.D_sum(), _x_max ),	// minimium Response time a limit 
+							     BCMP::Model::subtract( BCMP::Model::multiply( _x_max, bounds.D_max() ), bounds.Z_sum() ) ) );
 		break;
 	    default:
 		break;
@@ -1728,6 +1758,16 @@ namespace QNIO {
 	/* Now plot the bounds. */
 	std::string title1 = name + " ";
 	std::string title2 = name + " ";
+#if 0
+	std::cerr << "Bounds for class " << name << std::endl;
+	for ( auto& i : stations() ) {
+	    std::cerr << "    station " << i.first << " demand " << BCMP::Model::getDoubleValue( i.second.demand(i.second.classAt(name)) ) << std::endl;
+	}
+	std::cerr << "  _x_max=" << *_x_max << ", Dmax=" << *bounds.D_max() << ", Dsum=" << *bounds.D_sum() << ", Zsum=" << *bounds.Z_sum() << std::endl;
+#endif
+	
+	/* Compute N_star (used to scale X-axis if boundsOnly() */
+	
 	LQX::SyntaxTreeNode * nStar = bounds.N_star();
 	LQX::SyntaxTreeNode * bound1 = nullptr;
 	if ( dynamic_cast<LQX::ConstantValueExpression*>(nStar) == nullptr ) return plot;		/* Not resolved -- can't plot */
@@ -2441,9 +2481,9 @@ namespace QNIO {
     JMVA_Document::fold( const std::string& s1, const var_name_and_expr& v2 )
     {
 	if ( !s1.empty() ) {
-	    return s1 + ";" + v2.first;
+	    return s1 + ";" + v2.name();
 	} else {
-	    return v2.first;
+	    return v2.name();
 	}
     }
 }
@@ -2463,7 +2503,14 @@ namespace QNIO
 	/* insert the actual program (the loops) */
 
 	if ( !_gnuplot.empty() ) {
-	    LQIO::GnuPlot::insert_header( &_program, model().comment(), _result_variables );
+	    std::vector<std::pair<const std::string,LQX::SyntaxTreeNode *>> variables;
+	    for ( auto& var : _result_variables ) {
+		if ( var.type() != BCMP::Model::Result::Type::NONE && var.type() != _plot_type ) continue;
+		variables.emplace_back( var.name(), var.expression() );
+	    }
+//	    std::transform( _result_variables.begin(), _result_variables.end(), std::back_inserter( variables.begin() ),
+//			    []( const var_name_and_expr& var ){ return std::pair<const std::string,LQX::SyntaxTreeNode *>( var.name(), var.expression() ); } );
+	    LQIO::GnuPlot::insert_header( &_program, model().comment(), variables );
 	} else {
 	    _program.push_back( print_csv_header() );
 	}
@@ -2530,8 +2577,8 @@ namespace QNIO
 	/* Insert all functions to extract results. */
 
 	for ( std::vector<var_name_and_expr>::const_iterator result = _result_variables.begin(); result != _result_variables.end(); ++result ) {
-	    if ( dynamic_cast<LQX::AssignmentStatementNode *>( result->second ) == nullptr ) continue;
-	    block->push_back( result->second );
+	    if ( dynamic_cast<LQX::AssignmentStatementNode *>( result->expression() ) == nullptr ) continue;
+	    block->push_back( result->expression() );
 	}
 
 	std::vector<std::vector<LQX::SyntaxTreeNode *>*> print_arguments;
@@ -2540,7 +2587,7 @@ namespace QNIO
 	    /* No WhatIf and default output */
 	    std::map<const std::string,const std::string>::const_iterator current_station = _station_index.end();
 	    for ( std::vector<var_name_and_expr>::const_iterator result = _result_variables.begin(); result != _result_variables.end(); ++result ) {
-		const std::map<const std::string,const std::string>::const_iterator next_station = _station_index.find( result->first );
+		const std::map<const std::string,const std::string>::const_iterator next_station = _station_index.find( result->name() );
 		if ( next_station == _station_index.end() ) break;
 		if ( next_station->second != current_station->second ) {
 		    /* Station name changed so start a new output line */
@@ -2549,14 +2596,15 @@ namespace QNIO
 		    print_arguments.back()->push_back( new LQX::ConstantValueExpression( ", " ) );			/* CSV. */
 		    print_arguments.back()->push_back( new LQX::ConstantValueExpression( current_station->second ) );	/* Station name */
 		}
-		print_arguments.back()->push_back( new LQX::VariableExpression( result->first, false ) );		/* Add result. */
+		print_arguments.back()->push_back( new LQX::VariableExpression( result->name(), false ) );		/* Add result. */
 	    }
 
 	} else {
 	    print_arguments.push_back( new std::vector<LQX::SyntaxTreeNode *> );
 	    print_arguments.back()->push_back( new LQX::ConstantValueExpression( ", " ) );				/* CSV. */
 	    for ( std::vector<var_name_and_expr>::const_iterator result = _result_variables.begin(); result != _result_variables.end(); ++result ) {
-		print_arguments.back()->push_back( new LQX::VariableExpression( result->first, false ) );		/* Print out results */
+		if ( result->type() != BCMP::Model::Result::Type::NONE && result->type() != _plot_type ) continue;	/* Filter dreck. */
+		print_arguments.back()->push_back( new LQX::VariableExpression( result->name(), false ) );		/* Print out results */
 	    }
 	}
 
@@ -2598,7 +2646,7 @@ namespace QNIO
 	    std::for_each( JMVA_Document::__result_name_table.begin(), JMVA_Document::__result_name_table.end(), csv_heading( list, chains() ) );
 	} else {
 	    for ( std::vector<var_name_and_expr>::const_iterator var = _result_variables.begin(); var != _result_variables.end(); ++var ) {
-		list->push_back( new LQX::ConstantValueExpression( var->first ) );	/* Variable name */
+		list->push_back( new LQX::ConstantValueExpression( var->name() ) );	/* Variable name */
 	    }
 	}
 	return new LQX::FilePrintStatementNode( list, true, true );		/* Println spaced, with first arg being ", " (or: output, ","). */

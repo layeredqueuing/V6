@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_object.cpp 16945 2024-01-26 13:02:36Z greg $
+ *  $Id: dom_object.cpp 17184 2024-04-29 11:01:37Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -107,7 +107,7 @@ namespace LQIO {
 	    { LQIO::WRN_QUANTUM_SCHEDULING,		{ LQIO::error_severity::WARNING,  "using \"%s\" scheduling has a non-zero quantum specified" } },
 	    { LQIO::WRN_SCHEDULING_NOT_SUPPORTED,	{ LQIO::error_severity::WARNING,  "with %s scheduling is not supported" } },
 	    { LQIO::WRN_TASK_HAS_VISIT_PROBABILITY,	{ LQIO::error_severity::WARNING,  "is not a reference task; visit probabilities for entries are ignored." } },
-	    { LQIO::WRN_XXXX_TIME_DEFINED_BUT_ZERO,	{ LQIO::error_severity::WARNING,  "has %s time defined, but its value is zero" } },
+	    { LQIO::WRN_XXXX_DEFINED_BUT_ZERO,		{ LQIO::error_severity::WARNING,  "has %s defined, but its value is zero" } },
 	};
 	
 	void DocumentObject::input_error( unsigned code, ... ) const
