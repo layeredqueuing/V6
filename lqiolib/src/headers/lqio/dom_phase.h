@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- *  $Id: dom_phase.h 16627 2023-04-03 22:04:21Z greg $
+ *  $Id: dom_phase.h 17239 2024-05-27 14:02:21Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -73,7 +73,6 @@ namespace LQIO {
 	    void setCoeffOfVariationSquared(const ExternalVariable* cvsq);
 	    void setCoeffOfVariationSquaredValue(double value);
 	    bool hasCoeffOfVariationSquared() const;
-	    bool isNonExponential() const;
 	    void setMaxServiceTime(const ExternalVariable* serviceTime);
 	    void setMaxServiceTimeValue(double value);
 	    virtual double getMaxServiceTime() const;

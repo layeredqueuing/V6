@@ -9,13 +9,14 @@
  *
  * November, 1994
  *
- * $Id: server.h 17096 2024-03-04 14:40:54Z greg $
+ * $Id: server.h 17244 2024-05-27 22:47:34Z greg $
  *
  * ------------------------------------------------------------------------
  */
 
-#if	!defined(MVA_SERVER_H)
-#define	MVA_SERVER_H
+#pragma once
+#if	!defined(LIBMVA_SERVER_H)
+#define	LIBMVA_SERVER_H
 
 #include "pop.h"
 #include "prob.h"
@@ -69,6 +70,8 @@ public:
     Server& setVisits( const unsigned k, const double _v ) { return setVisits( 1, k, 1, _v ); }
     Server& addVisits( const unsigned e, const unsigned k, const unsigned p, const double );
     virtual Server& setVariance( const unsigned, const unsigned, const unsigned, const double );
+    Server& setVariance( const unsigned e, const unsigned k, const double _v ) { return setVariance( e, k, 1, _v ); }
+    Server& setVariance( const unsigned k, const double _v ) { return setVariance( 1, k, 1, _v ); }
     virtual double getVariance( const unsigned, const unsigned, const unsigned ) const { return 0.0; }
     virtual Server& setClientChain( const unsigned e, const unsigned k );
 
@@ -440,6 +443,25 @@ private:
 };
 
 
+
+#if BUG_471
+/* ------------- High Variation Decomposition FIFO Server ------------- */
+
+class HVFCFS_Decomp_Server : public virtual Server, public HVFCFS_Server {
+public:
+    HVFCFS_Decomp_Server() : Server(), HVFCFS_Server(1,1) {}
+    HVFCFS_Decomp_Server( const unsigned k ) : Server(k), HVFCFS_Server(k) {}
+    HVFCFS_Decomp_Server( const unsigned e, const unsigned k ) : Server(e,k), HVFCFS_Server(e,k) {}
+    HVFCFS_Decomp_Server( const unsigned e, const unsigned k, const unsigned p ) : Server(e,k,p), HVFCFS_Server(e,k,p) {}
+    virtual ~HVFCFS_Decomp_Server() {}
+
+    virtual void wait( const MVA& solver, const unsigned k, const Population & N ) const;
+
+    virtual const std::string& typeStr() const { return __type_str; }
+
+    static const std::string __type_str;
+};
+#endif    
 
 
 /* -------------- HOL Priority High Variation FIFO Server ------------- */

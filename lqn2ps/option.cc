@@ -1,6 +1,6 @@
 /* srvn2eepic.c	-- Greg Franks Sun Jan 26 2003
  *
- * $Id: option.cc 17096 2024-03-04 14:40:54Z greg $
+ * $Id: option.cc 17239 2024-05-27 14:02:21Z greg $
  */
 
 #include "lqn2ps.h"
@@ -215,6 +215,7 @@ const std::map<const Special, const std::string> Options::special = {
     { Special::SQUISH_ENTRY_NAMES,	    "squish" },
     { Special::SPEX_HEADER,		    "no-header" },
     { Special::SUBMODEL_CONTENTS,	    "submodels" },
+    { Special::TASKS_ONLY,		    "tasks-only" },
     { Special::TASK_SCHEDULING,		    LQIO::DOM::Pragma::_task_scheduling_ }
 };
 

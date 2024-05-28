@@ -1,5 +1,5 @@
 /*  -*- C++ -*-
- * $Id: server.cc 17096 2024-03-04 14:40:54Z greg $
+ * $Id: server.cc 17239 2024-05-27 14:02:21Z greg $
  *
  * Copyright the Real-Time and Distributed Systems Group,
  * Department of Systems and Computer Engineering,
@@ -1817,6 +1817,24 @@ HVFCFS_Server::printInput( std::ostream& output, const unsigned e, const unsigne
     return output;
 }
 
+#if BUG_471
+/* ------------- High Variation Decomposition FIFO Server ------------- */
+
+/*
+ * Eager, Derek L and Sorin, Daniel J. and Vernon, Mary K. "AMVA Techniques for High Service Time Variability"
+ * ACM Sigmetrics, 2000
+ */
+
+const std::string HVFCFS_Decomp_Server::__type_str = "HVFCFS_Decomp_Server";
+
+void
+HVFCFS_Decomp_Server::wait( const MVA& solver, const unsigned k, const Population& N ) const
+{
+    // pRa + (1-p)Rb (6)
+    HVFCFS_Server::wait( solver, k, N );
+}
+#endif
+    
 /* ------------------- FCFS Server with priorities. ------------------- */
 
 const std::string PR_HVFCFS_Server::__type_str = "PR_HVFCFS_Server";

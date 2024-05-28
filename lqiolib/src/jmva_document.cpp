@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: jmva_document.cpp 17179 2024-04-10 10:55:30Z greg $
+ * $Id: jmva_document.cpp 17239 2024-05-27 14:02:21Z greg $
  *
  * Read in XML input files.
  *
@@ -2603,7 +2603,7 @@ namespace QNIO
 	    print_arguments.push_back( new std::vector<LQX::SyntaxTreeNode *> );
 	    print_arguments.back()->push_back( new LQX::ConstantValueExpression( ", " ) );				/* CSV. */
 	    for ( std::vector<var_name_and_expr>::const_iterator result = _result_variables.begin(); result != _result_variables.end(); ++result ) {
-		if ( result->type() != BCMP::Model::Result::Type::NONE && result->type() != _plot_type ) continue;	/* Filter dreck. */
+		if ( _plot_type != BCMP::Model::Result::Type::NONE && result->type() != BCMP::Model::Result::Type::NONE && result->type() != _plot_type ) continue;	/* Filter dreck. */
 		print_arguments.back()->push_back( new LQX::VariableExpression( result->name(), false ) );		/* Print out results */
 	    }
 	}

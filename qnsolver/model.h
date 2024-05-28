@@ -10,7 +10,7 @@
  *
  * December 2020
  *
- * $Id: model.h 16325 2023-01-12 17:47:10Z greg $
+ * $Id: model.h 17239 2024-05-27 14:02:21Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -44,8 +44,9 @@ class Model {
     friend class ClosedModel;
     
 public:
-    enum class Solver { BOUNDS, OPEN, EXACT_MVA, LINEARIZER, LINEARIZER2, BARD_SCHWEITZER, EXPERIMENTAL };
+    enum class HVFCFS { DEFAULT, EAGER, REISER };
     enum class Multiserver { DEFAULT, CONWAY, REISER, REISER_PS, ROLIA, ROLIA_PS, BRUELL, SCHMIDT, SURI, ZHOU };
+    enum class Solver { BOUNDS, OPEN, EXACT_MVA, LINEARIZER, LINEARIZER2, BARD_SCHWEITZER, EXPERIMENTAL };
     
 public:
     Model( QNIO::Document& input, Model::Solver mva, const std::string& );

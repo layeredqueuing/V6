@@ -9,7 +9,7 @@
  *
  * November 2022
  *
- * $Id: qnio_document.h 17178 2024-04-10 10:55:07Z greg $
+ * $Id: qnio_document.h 17244 2024-05-27 22:47:34Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -102,6 +102,7 @@ namespace QNIO {
 	void setBoundsOnly( bool value ) { _bounds_only = value; }
 	const std::string& getInputFileName() const { return _input_file_name; }
 	virtual InputFormat getInputFormat() const = 0;
+	std::deque<Comprehension>& comprehensions() { return _comprehensions; }		/* For loops from WhatIf */
 	const std::deque<Comprehension>& comprehensions() const { return _comprehensions; }		/* For loops from WhatIf */
 	bool hasVariable( const std::string& name ) const { return _input_variables.find(name) != _input_variables.end(); }
 	const std::map<const std::string,LQX::SyntaxTreeNode*>::iterator insertInputVariable( const std::string& name, LQX::SyntaxTreeNode * init=nullptr ) { return _input_variables.emplace(name,init).first; }

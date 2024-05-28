@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- *  $Id: bcmp_document.h 17178 2024-04-10 10:55:07Z greg $
+ *  $Id: bcmp_document.h 17239 2024-05-27 14:02:21Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  */
@@ -141,6 +141,7 @@ namespace BCMP {
 	    typedef std::pair<const std::string,Station> pair_t;
 
 	    enum class Type { NOT_DEFINED, DELAY, LOAD_INDEPENDENT, MULTISERVER, SOURCE };
+	    enum class Distribution { EXPONENTIAL, HYPER_EXPONENTIAL };
 
 	    /* -------------------------------------------------------- */
 	    /*                          Class                           */
@@ -153,7 +154,7 @@ namespace BCMP {
 		typedef std::map<const std::string,Class> map_t;
 		typedef std::pair<const std::string,Class> pair_t;
 
-		Class( LQX::SyntaxTreeNode * visits=nullptr, LQX::SyntaxTreeNode * service_time=nullptr );
+		Class( LQX::SyntaxTreeNode * visits=nullptr, LQX::SyntaxTreeNode * service_time=nullptr, LQX::SyntaxTreeNode * service_shape=nullptr );
 		~Class() {}
 
 		Class& operator=( const Class& );
@@ -164,8 +165,10 @@ namespace BCMP {
 
 		LQX::SyntaxTreeNode * visits() const { return _visits; }
 		LQX::SyntaxTreeNode * service_time() const { return _service_time; }
+		LQX::SyntaxTreeNode * service_shape() const { return _service_shape; }
 		void setVisits( LQX::SyntaxTreeNode * visits ) { _visits = visits; }
 		void setServiceTime( LQX::SyntaxTreeNode * service_time ) { _service_time = service_time; }
+		void setServiceShape( LQX::SyntaxTreeNode * service_shape ) { _service_shape = service_shape; }
 		const std::map<Result::Type,double>& results() const { return _results; }
 		Result::map_t& resultVariables()  { return _result_vars; }
 		const Result::map_t& resultVariables() const { return _result_vars; }
@@ -201,6 +204,7 @@ namespace BCMP {
 	    private:
 		LQX::SyntaxTreeNode* _visits;
 		LQX::SyntaxTreeNode* _service_time;
+		LQX::SyntaxTreeNode* _service_shape;
 		std::map<Result::Type,double> _results;
 		Result::map_t _result_vars;
 	    };
@@ -210,8 +214,8 @@ namespace BCMP {
 	/* ------------------------------------------------------------ */
 
 	public:
-	    Station( Type type=Type::NOT_DEFINED, scheduling_type scheduling=SCHEDULE_PS, LQX::SyntaxTreeNode * copies=nullptr ) :
-		_type(type), _scheduling(scheduling), _copies(copies), _reference(false) {}
+	    Station( Type type=Type::NOT_DEFINED, scheduling_type scheduling=SCHEDULE_PS, LQX::SyntaxTreeNode * copies=nullptr, Distribution distribution=Distribution::EXPONENTIAL ) :
+		_type(type), _scheduling(scheduling), _copies(copies), _distribution(distribution), _reference(false) {}
 	    ~Station();
 
 	    Station& operator=( const Station& );
@@ -226,6 +230,8 @@ namespace BCMP {
 	    void setType(Type type) { _type = type; }
 	    scheduling_type scheduling() const { return _scheduling; }
 	    void setScheduling( scheduling_type type ) { _scheduling = type; }
+	    Distribution distribution() const { return _distribution; }
+	    void setDistribution( Distribution distribution ) { _distribution = distribution; }
 	    LQX::SyntaxTreeNode * copies() const { return _copies; }
 	    void setCopies( LQX::SyntaxTreeNode * copies ) { _copies = copies; }
 	    bool reference() const { return _reference; }
@@ -306,6 +312,7 @@ namespace BCMP {
 	    Type _type;
 	    scheduling_type _scheduling;
 	    LQX::SyntaxTreeNode * _copies;
+	    Distribution _distribution;
 	    bool _reference;
 	    Class::map_t _classes;
 	    Result::map_t _result_vars;
@@ -397,7 +404,7 @@ namespace BCMP {
 	std::pair<Chain::map_t::iterator,bool> insertClosedChain( const std::string&, LQX::SyntaxTreeNode *, LQX::SyntaxTreeNode * think_time=nullptr, LQX::SyntaxTreeNode * priority=nullptr );
 	std::pair<Chain::map_t::iterator,bool> insertOpenChain( const std::string&, LQX::SyntaxTreeNode * );
 	std::pair<Station::map_t::iterator,bool> insertStation( const std::string&, const Station& );
-	std::pair<Station::map_t::iterator,bool> insertStation( const std::string& name, Station::Type type, scheduling_type scheduling=SCHEDULE_DELAY, LQX::SyntaxTreeNode * copies=nullptr ) { return insertStation( name, Station( type, scheduling, copies ) ); }
+	std::pair<Station::map_t::iterator,bool> insertStation( const std::string& name, Station::Type type, scheduling_type scheduling=SCHEDULE_DELAY, LQX::SyntaxTreeNode * copies=nullptr, Station::Distribution distribution=Station::Distribution::EXPONENTIAL ) { return insertStation( name, Station( type, scheduling, copies, distribution ) ); }
 
 	Station::Class::map_t computeCustomerDemand( const std::string& ) const;
 

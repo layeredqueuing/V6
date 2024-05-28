@@ -17,7 +17,7 @@
 #include "call.h"
 
 /*
- * $Id: task.h 17075 2024-02-28 21:20:08Z greg $
+ * $Id: task.h 17244 2024-05-27 22:47:34Z greg $
  *
  * Solve LQN using petrinets.
  */
@@ -90,6 +90,8 @@ public:
     virtual bool is_sync_server() const { return _sync_server; }
     virtual bool inservice_flag() const { return _inservice_flag; }
     virtual bool has_main_thread() const { return _has_main_thread; }
+    bool has_service_time() const;
+    bool has_deterministic_phases() const;
 
     Processor * processor() const { return _processor; }
     double utilization( const unsigned int m ) const { return _utilization[m]; }

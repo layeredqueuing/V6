@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: bcmp_document.cpp 17179 2024-04-10 10:55:30Z greg $
+ * $Id: bcmp_document.cpp 17239 2024-05-27 14:02:21Z greg $
  *
  * Read in XML input files.
  *
@@ -339,6 +339,7 @@ namespace BCMP {
 	_type = src._type;
 	_scheduling = src._scheduling;
 	_copies = src._copies;
+	_distribution = src._distribution;
 	_reference = src._reference;
 	_classes.clear();
 	std::copy(src._classes.begin(), src._classes.end(), std::inserter(_classes, _classes.begin()));
@@ -352,6 +353,7 @@ namespace BCMP {
 	_type = Model::Station::Type::NOT_DEFINED;
 	_scheduling = SCHEDULE_PS;
 	_copies = nullptr;
+	_distribution = Model::Station::Distribution::EXPONENTIAL;
 	_reference = false;
 	_classes.clear();
 	_result_vars.clear();
@@ -550,8 +552,8 @@ namespace BCMP {
 
     const char * const Model::Station::Class::__typeName = "class";
 
-    Model::Station::Class::Class( LQX::SyntaxTreeNode * visits, LQX::SyntaxTreeNode * service_time ) :
-	_visits(visits), _service_time(service_time), _results(), _result_vars()
+    Model::Station::Class::Class( LQX::SyntaxTreeNode * visits, LQX::SyntaxTreeNode * service_time, LQX::SyntaxTreeNode * service_shape ) :
+	_visits(visits), _service_time(service_time), _service_shape(service_shape), _results(), _result_vars()
     {
 	_results[Result::Type::THROUGHPUT] = 0.;
 	_results[Result::Type::QUEUE_LENGTH] = 0.;

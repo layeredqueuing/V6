@@ -1,5 +1,5 @@
 /*
- * $Id: qnsolver.cc 17179 2024-04-10 10:55:30Z greg $
+ * $Id: qnsolver.cc 17244 2024-05-27 22:47:34Z greg $
  */
 
 #include "config.h"
@@ -40,6 +40,7 @@ const struct option longopts[] =
     { LQIO::DOM::Pragma::_linearizer_,          no_argument,            0, 'l' },
     { LQIO::DOM::Pragma::_schweitzer_,          no_argument,            0, 's' },
     { LQIO::DOM::Pragma::_force_multiserver_,   no_argument,            0, 'M' },
+    { LQIO::DOM::Pragma::_hvfcfs_,		required_argument,	0, 0x100+'v' },
     { "queue-length",                           optional_argument,      0, 'q' },
     { "response-time",                          optional_argument,      0, 'r' },
     { "throughput",                             optional_argument,      0, 't' },
@@ -91,6 +92,7 @@ const static std::map<const std::string,const std::string> opthelp  = {
     { "waiting-time",                           "Output gnuplot to plot station waiting-times.  ARG specifies a class or station." },
     { "print-lqx",                              "Print the LQX program used to solve the model." },
     { "verbose",                                "" },
+    { LQIO::DOM::Pragma::_hvfcfs_,		"Choose HVFCFS algorithm (eager,reiser,default)" },
     { LQIO::DOM::Pragma::_exact_,               "Use Exact MVA." },
     { LQIO::DOM::Pragma::_fast_,                "Use the Fast Linearizer solver." },
     { LQIO::DOM::Pragma::_force_multiserver_,   "Use the multiserver solution for load independent stations (copies=1)." },
@@ -266,6 +268,10 @@ int main (int argc, char *argv[])
 	    Model::verbose_flag = true;
 	    break;
 
+	case 0x100+'v':
+	    pragmas.insert(LQIO::DOM::Pragma::_hvfcfs_,optarg);
+	    break;
+	    
 	case 'w':
 	    print_gnuplot = true;			/* Output WhatIf as gnuplot	*/
 	    plot_type = BCMP::Model::Result::Type::RESIDENCE_TIME;
@@ -364,8 +370,8 @@ static bool exec( QNIO::Document& input, const std::string& output_file_name, co
 	    std::cerr << LQIO::io_vars.lq_toolname << ": Cannot open output file \"" << output_file_name << "\" -- " << strerror( errno ) << std::endl;
 	    return false;
 	}
-    } else if ( print_jmva ) {
-	const std::string extension = bounds ? "jmva" : "jaba";
+    } else {
+	const std::string extension = (print_qnap2 ? "qnap2" : (bounds ? "jaba" : "jmva"));
 	LQIO::Filename filename( input.getInputFileName(), extension );
 	LQIO::Filename::backup( filename() );
 	output.open( filename(), std::ios::out );
@@ -384,16 +390,18 @@ static bool exec( QNIO::Document& input, const std::string& output_file_name, co
 	catch ( const std::invalid_argument& e ) {
 	    std::cerr << LQIO::io_vars.lq_toolname << ": Invalid class or station name for --plot: " << e.what() << std::endl;
 	}
-	if ( output_file_name.empty() ) {
-	    LQIO::Filename filename( input.getInputFileName(), "qnap" );
-	    LQIO::Filename::backup( filename() );
-	    output.open( filename(), std::ios::out );
-	    if ( !output ) {
-		std::cerr << LQIO::io_vars.lq_toolname << ": Cannot open output file \"" << input.getInputFileName() << "\" -- " << strerror( errno ) << std::endl;
-		return false;
-	    }
-	} 
 	qnap_model.exportModel( output );
+
+    } else if ( print_jmva ) {
+	if ( dynamic_cast<QNIO::JMVA_Document*>(&input) != nullptr ) {
+	    input.exportModel( output );
+	} else {
+	    Model model( input, Pragma::mva(), std::string() );
+	    model.solve();	// Resolve symbols
+	    QNIO::JMVA_Document new_model( input.model() );
+//	    new_model.comprehensions() = input.comprehensions();
+	    new_model.exportModel( output );	/* Will save all results (if !bounds) */
+	}
 
     } else {
 	try {
@@ -402,19 +410,10 @@ static bool exec( QNIO::Document& input, const std::string& output_file_name, co
 	catch ( const std::invalid_argument& e ) {
 	    std::cerr << LQIO::io_vars.lq_toolname << ": Invalid class or station name for --plot: " << e.what() << std::endl;
 	}
-	if ( print_jmva ) {
-	    /* Since we might get QNAP in, rexport directly -- WhatIf?? */
-	    Model model( input, Pragma::mva(), std::string() );
-	    model.solve();
-//	    QNIO::JMVA_Document new_model( output_file_name, input.model() );
-//	    new_model.comprehensions() = input.comprehensions();
-//	    new_model.exportModel( output );	/* Will save all results (if !bounds) */
-	    input.exportModel( output );
-	} else {
-	    Model model( input, Pragma::mva(), output_file_name );
-	    model.solve();
-	}
+	Model model( input, Pragma::mva(), output_file_name );
+	model.solve();
     }
+
     if ( output ) {
 	output.close();
     }

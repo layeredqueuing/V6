@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_document.cpp 17179 2024-04-10 10:55:30Z greg $
+ *  $Id: dom_document.cpp 17239 2024-05-27 14:02:21Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -669,7 +669,7 @@ namespace LQIO {
 
 	bool Document::hasNonExponentialPhase() const
 	{
-	    return std::any_of( _tasks.begin(), _tasks.end(), Task::any_of( &Phase::isNonExponential ) );
+	    return std::any_of( _tasks.begin(), _tasks.end(), Task::any_of( &Phase::hasCoeffOfVariationSquared ) );
 	}
 
 	bool Document::hasDeterministicPhase() const

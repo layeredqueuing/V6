@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- *  $Id: qnap2_document.h 17178 2024-04-10 10:55:07Z greg $
+ *  $Id: qnap2_document.h 17239 2024-05-27 14:02:21Z greg $
  *
  *  Created by Greg Franks 2020/12/28
  */
@@ -245,6 +245,7 @@ namespace QNIO {
 	void setWarning( bool value ) {}
 	bool setStationScheduling( const std::string& );
 	bool setStationType( BCMP::Model::Station::Type, LQX::SyntaxTreeNode * );
+	bool setStationDistribution( BCMP::Model::Station::Distribution ); 
 	bool setStationTransit( const std::string&, const std::vector<std::pair<const std::string,LQX::SyntaxTreeNode *>*>& );
 	void setEntry( LQX::SyntaxTreeNode * );
 	void setMain( LQX::SyntaxTreeNode * );
