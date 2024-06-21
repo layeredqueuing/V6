@@ -602,6 +602,11 @@ namespace QNIO {
 	    const std::string& _suffix;
 	};
 
+	struct fold_chain {
+	    fold_chain() {}
+	    std::string operator()( const std::string& s1, const BCMP::Model::Chain::pair_t& m ) const;
+	};
+
 	struct fold_class {
 	    fold_class( const BCMP::Model::Chain::map_t& chains, BCMP::Model::Chain::Type type ) : _chains(chains), _type(type) {}
 	    std::string operator()( const std::string& s1, const BCMP::Model::Station::Class::pair_t& k2 ) const;

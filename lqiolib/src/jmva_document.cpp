@@ -354,6 +354,7 @@ namespace QNIO {
     JMVA_Document::handle_text( void * data, const XML_Char * text, int length )
     {
 	const static std::vector<JMVA_Document::start_fptr> text_handler = {
+	    &JMVA_Document::startCoeffOfVariation,		/* BUG_467 */
 	    &JMVA_Document::startDescription,
 	    &JMVA_Document::startServiceTime,
 	    &JMVA_Document::startServiceTimeList,		/* BUG_411 */
@@ -630,6 +631,8 @@ namespace QNIO {
 	    _stack.push( parse_stack_t(element,&JMVA_Document::startServiceTimes,station) );
 	} else if ( strcasecmp( element, Xvisits ) == 0 ) {
 	    _stack.push( parse_stack_t(element,&JMVA_Document::startVisits,station) );
+	} else if ( strcasecmp( element, XcoeffsOfVariation ) == 0 ) {	// Bug 467
+	    _stack.push( parse_stack_t(element,&JMVA_Document::startCoeffsOfVariation,station) );
 	} else {
 	    XML::throw_element_error( element, attributes );
 	}
@@ -638,6 +641,42 @@ namespace QNIO {
     /* Place holder for handle_text */
 
     const std::set<const XML_Char *,JMVA_Document::attribute_table_t> JMVA_Document::demand_table = { Xcustomerclass };
+
+    /*+ BUG_467 */
+    void
+    JMVA_Document::startCoeffsOfVariation( Object& object, const XML_Char * element, const XML_Char ** attributes )
+    {
+	checkAttributes( element, attributes, demand_table );	// common to visits
+	BCMP::Model::Station * station = object.getStation();
+	assert( station != nullptr );
+	station->setDistribution( BCMP::Model::Station::Distribution::NON_EXPONENTIAL );
+	std::string class_name = XML::getStringAttribute( attributes, Xcustomerclass );
+	if ( strcasecmp( element, XcoeffOfVariation ) == 0 ) {
+	    _text.clear();					// Reset buffer for handle_text.
+	    BCMP::Model::Station::Class::map_t& demands = station->classes();		// Will insert...
+	    const std::pair<BCMP::Model::Station::Class::map_t::iterator,bool> result = demands.emplace( class_name, BCMP::Model::Station::Class() );
+	    _stack.push( parse_stack_t(element,&JMVA_Document::startCoeffOfVariation,&JMVA_Document::endCoeffOfVariation,Object(&result.first->second) ) );
+	} else {
+	    XML::throw_element_error( element, attributes );       	/* Should not get here. */
+	}
+    }
+    
+
+    void
+    JMVA_Document::startCoeffOfVariation( Object& object, const XML_Char * element, const XML_Char ** attributes )
+    {
+	XML::throw_element_error( element, attributes );           	/* Should not get here. */
+    }
+    
+
+    void
+    JMVA_Document::endCoeffOfVariation( Object& object, const XML_Char * element )
+    {
+	LQX::SyntaxTreeNode * shape = getVariable( element, _text.c_str() );	// Shape is CV_squared
+	object.getDemand()->setServiceShape( shape );				// Through the magic of unions...
+//	if ( dynamic_cast<LQX::VariableExpression *>(visits) ) _visit_vars.emplace(object.getDemand(),dynamic_cast<LQX::VariableExpression *>(visits)->getName());
+    }
+    /*- BUG_467 */
 
     void
     JMVA_Document::startServiceTimes( Object& object, const XML_Char * element, const XML_Char ** attributes )
@@ -1469,14 +1508,32 @@ namespace QNIO {
     {
 	_plot_type = type;
 	_no_bounds = no_bounds;
+
+	std::string prefix;
+	std::string suffix;
+	if ( format == LQIO::GnuPlot::Format::NONE || (whatif_statements().empty() && no_bounds) ) {
+	    return;
+	} else if ( format == LQIO::GnuPlot::Format::TERMINAL ) {
+	    prefix = "#";
+	    suffix = "svg";
+	} else {
+	    suffix = LQIO::GnuPlot::output_suffix.at(format);
+	}
+
 	for ( auto& var : _result_variables ) {
 	    if ( var.type() != BCMP::Model::Result::Type::NONE && var.type() != _plot_type ) continue;
 	    _result_index.emplace( var.name(), _result_index.size() + 1 );
 	}
+
+	if ( whatif_statements().empty() ) {
+	    setBoundsOnly( true );
+	}
 	
 	_gnuplot.push_back( LQIO::GnuPlot::print_node( "set title \"" + model().comment() + "\"" ) );
-	_gnuplot.push_back( LQIO::GnuPlot::print_node( "#set output \"" + LQIO::Filename( getInputFileName(), "svg" )() + "\"" ) );
-	_gnuplot.push_back( LQIO::GnuPlot::print_node( "#set terminal svg" ) );
+
+	std::string filename = LQIO::Filename( getInputFileName() )() + "-" + BCMP::Model::Result::suffix.at(type) + "." + suffix;
+	_gnuplot.push_back( LQIO::GnuPlot::print_node( prefix + "set output \"" + filename + "\"" ) );
+	_gnuplot.push_back( LQIO::GnuPlot::print_node( prefix + "set terminal " + suffix ) );
 
 	std::ostringstream plot;		// Plot command collected here.
 
@@ -2241,6 +2298,11 @@ namespace QNIO {
 	_output << XML::start_element( Xvisits ) << ">" << std::endl;
 	std::for_each( station.classes().begin(), station.classes().end(), printVisits( _output, _model, strictJMVA() ) );
 	_output << XML::end_element( Xvisits ) << std::endl;
+	if ( station.distribution() != BCMP::Model::Station::Distribution::EXPONENTIAL ) {    		/* BUG_467 */
+	    _output << XML::start_element( XcoeffOfVariation ) << ">" << std::endl;
+	    std::for_each( station.classes().begin(), station.classes().end(), printCoeffOfVariation( _output, _model, strictJMVA() ) );
+	    _output << XML::end_element( XcoeffOfVariation ) << std::endl;
+	}
 	_output << XML::end_element( element ) << std::endl;
     }
 
@@ -2334,7 +2396,8 @@ namespace QNIO {
 	}
 	_output << "</" << Xservicetimes << ">" << std::endl;
     }
-    
+
+
     void
     JMVA_Document::printVisits::operator()( const BCMP::Model::Station::Class::pair_t& d ) const
     {
@@ -2348,6 +2411,24 @@ namespace QNIO {
 	print_comment( _output, d.second.visits() );
 	_output << std::endl;
     }
+
+    
+    /*+ BUG_467 */
+    void
+    JMVA_Document::printCoeffOfVariation::operator()( const BCMP::Model::Station::Class::pair_t& d ) const
+    {
+	std::ostringstream shape;
+	if ( strictJMVA() || d.second.service_shape() == nullptr ) {
+	    shape << getDoubleValue( d.second.service_shape() );
+	} else {
+	    shape << *d.second.service_shape();
+	}
+	_output << XML::inline_element( Xvisit, Xcustomerclass, d.first, shape.str() );
+	print_comment( _output, d.second.service_shape() );
+	_output << std::endl;
+    }
+    /*- BUG_467 */
+
 
     /*
      * Insert SPEX result variables.  The <measure> element is hijacked by putting the result variable
@@ -2729,6 +2810,8 @@ namespace QNIO {
     const XML_Char * JMVA_Document::Xclass		= "class";
     const XML_Char * JMVA_Document::Xclasses		= "classes";
     const XML_Char * JMVA_Document::Xclosedclass	= "closedclass";
+    const XML_Char * JMVA_Document::XcoeffsOfVariation  = "coefficientsofvariation";	// Bug 467
+    const XML_Char * JMVA_Document::XcoeffOfVariation   = "coefficientofvariation";	// Bug 467
     const XML_Char * JMVA_Document::XcompareAlgs	= "compareAlgs";
     const XML_Char * JMVA_Document::Xcustomerclass	= "customerclass";
     const XML_Char * JMVA_Document::Xdelaystation	= "delaystation";

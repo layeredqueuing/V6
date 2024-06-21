@@ -141,7 +141,7 @@ namespace BCMP {
 	    typedef std::pair<const std::string,Station> pair_t;
 
 	    enum class Type { NOT_DEFINED, DELAY, LOAD_INDEPENDENT, MULTISERVER, SOURCE };
-	    enum class Distribution { EXPONENTIAL, HYPER_EXPONENTIAL };
+	    enum class Distribution { EXPONENTIAL, NON_EXPONENTIAL };
 
 	    /* -------------------------------------------------------- */
 	    /*                          Class                           */
