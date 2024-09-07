@@ -8,7 +8,7 @@
 /************************************************************************/
 
 /*
- * $Id: call.cc 17075 2024-02-28 21:20:08Z greg $
+ * $Id: call.cc 17264 2024-09-07 21:08:34Z greg $
  *
  * Generate a Petri-net from an SRVN description.
  *
@@ -38,7 +38,7 @@ Call::value( const Phase * src, double upper_limit ) const
 {
     try {
 	const double value = _dom->getCallMeanValue();
-	if ( !src->has_stochastic_calls() ) {
+	if ( src->has_deterministic_calls() ) {
 	    if ( value != trunc(value) ) throw std::domain_error( "invalid integer" );
 	} else if ( 0 < upper_limit && upper_limit < value ) {
 	    std::stringstream ss;

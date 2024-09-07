@@ -8,7 +8,7 @@
 /************************************************************************/
 
 /*
- * $Id: task.cc 17244 2024-05-27 22:47:34Z greg $
+ * $Id: task.cc 17264 2024-09-07 21:08:34Z greg $
  *
  * Generate a Petri-net from an SRVN description.
  *
@@ -394,7 +394,8 @@ bool Task::has_service_time() const
 
 bool Task::has_deterministic_phases() const
 {
-    return std::any_of( entries.begin(), entries.end(), std::mem_fn( &Entry::has_deterministic_phases ) );
+    return std::any_of( entries.begin(), entries.end(), std::mem_fn( &Entry::has_deterministic_calls ) )
+	|| std::any_of( activities.begin(), activities.end(), std::mem_fn( &Phase::has_deterministic_calls ) );
 }
 
 

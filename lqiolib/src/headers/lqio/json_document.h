@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- *  $Id: json_document.h 17214 2024-05-14 15:25:56Z greg $
+ *  $Id: json_document.h 17255 2024-07-08 14:50:02Z greg $
  *
  *  Created by Greg Franks.
  */
@@ -411,6 +411,7 @@ namespace LQIO {
 	    {
 	    public:
 		ImportCall() : Import() {}
+		ImportCall( obj_string_fptr f )  : Import( f ) {}
 		ImportCall( call_extvar_fptr f ) : Import( f ) {}
 		ImportCall( set_object_fptr f )  : Import( f ) {}
 		

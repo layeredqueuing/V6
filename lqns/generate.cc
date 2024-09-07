@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: generate.cc 17111 2024-03-05 21:43:09Z greg $
+ * $Id: generate.cc 17264 2024-09-07 21:08:34Z greg $
  *
  * Print out model information.  We can also print out the
  * submodels as C++ source.
@@ -24,7 +24,9 @@
 #include <cmath>
 #include <getopt.h>
 #include <lqio/bcmp_document.h>
+#if HAVE_EXPAT_H
 #include <lqio/jmva_document.h>
+#endif
 #include <lqio/qnap2_document.h>
 #include <lqio/error.h>
 #include <lqio/glblerr.h>
@@ -848,8 +850,10 @@ Generate::BCMP_Model::serialize( const Submodel * submodel, serialize_fptr f )
 void
 Generate::JMVA_Document::serialize( std::ostream& output, const std::string& filename, const BCMP::Model& model )
 {
+#if HAVE_EXPAT_H
     QNIO::JMVA_Document jmva( model );
     jmva.print( output );
+#endif
 }
 
 

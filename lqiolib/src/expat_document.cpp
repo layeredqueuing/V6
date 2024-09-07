@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- * $Id: expat_document.cpp 17239 2024-05-27 14:02:21Z greg $
+ * $Id: expat_document.cpp 17264 2024-09-07 21:08:34Z greg $
  *
  * Read in XML input files.
  *
@@ -1387,11 +1387,12 @@ namespace LQIO {
         Expat_Document::handleProcessor( DocumentObject * object, const XML_Char ** attributes )
         {
 	    static const std::set<const XML_Char *,Expat_Document::attribute_table_t> processor_table = {
-		Xname,
-		Xscheduling,
-		Xquantum,
+		Xcomment,
 		Xmultiplicity,
+		Xname,
+		Xquantum,
 		Xreplication,
+		Xscheduling,
 		Xspeed_factor
 	    };
 
@@ -1410,6 +1411,7 @@ namespace LQIO {
 					   getOptionalAttribute(attributes,Xreplication) );
                 _document.addProcessorEntity( processor );
 
+		processor->setComment( XML::getStringAttribute(attributes,Xcomment,"") );
 		processor->setRate( getVariableAttribute(attributes,Xspeed_factor,"1.") );
 
 		LQIO::DOM::ExternalVariable * quantum = getOptionalAttribute(attributes,Xquantum);
@@ -1448,8 +1450,9 @@ namespace LQIO {
         Expat_Document::handleGroup( DocumentObject * processor, const XML_Char ** attributes )
         {
 	    static const std::set<const XML_Char *,Expat_Document::attribute_table_t> group_table = {
-		Xname,
 		Xcap,
+		Xcomment,
+		Xname,
 		Xshare
 	    };
 
@@ -1470,6 +1473,8 @@ namespace LQIO {
 				       XML::getBoolAttribute( attributes, Xcap) );
 		    _document.addGroup(group);
 		    dynamic_cast<Processor *>(processor)->addGroup(group);
+
+		    group->setComment( XML::getStringAttribute(attributes,Xcomment,"") );
 		}
             } else if ( !group ) {
                 throw undefined_symbol( group_name );
@@ -1494,15 +1499,16 @@ namespace LQIO {
         Expat_Document::handleTask( DocumentObject * object, const XML_Char ** attributes )
         {
 	    static const std::set<const XML_Char *,Expat_Document::attribute_table_t> task_table = {
-		Xname,
-		Xscheduling,
+		Xactivity_graph,                // ignored.
+		Xcomment,
 		Xinitially,
-		Xqueue_length,
-		Xpriority,
-		Xthink_time,
 		Xmultiplicity,
+		Xname,
+		Xpriority,
+		Xqueue_length,
 		Xreplication,
-		Xactivity_graph                 // ignored.
+		Xscheduling,
+		Xthink_time
 	    };
 
 	    checkAttributes( Xtask, attributes, task_table );
@@ -1589,6 +1595,7 @@ namespace LQIO {
                         task->input_error( LQIO::ERR_NON_REF_THINK_TIME );
                     }
                 }
+		task->setComment( XML::getStringAttribute(attributes,Xcomment,"") );
 
                 /* Link in the entity information */
                 _document.addTaskEntity(task);
@@ -1795,14 +1802,15 @@ namespace LQIO {
         Expat_Document::handleEntry( DocumentObject * task, const XML_Char ** attributes )
         {
 	    static const std::set<const XML_Char *,Expat_Document::attribute_table_t> entry_table = {
+		Xcomment,
+		Xloss_probability,
 		Xname,
-		Xtype,
+		Xopen_arrival_rate,
 		Xpriority,
 		Xprob,
-		Xopen_arrival_rate,
-		Xloss_probability,
+		Xrwlock,
 		Xsemaphore,
-		Xrwlock
+		Xtype
 	    };
 
 	    checkAttributes( Xentry, attributes, entry_table );
@@ -1828,6 +1836,7 @@ namespace LQIO {
 		entry->setEntryPriority( getOptionalAttribute(attributes,Xpriority) );
 		entry->setOpenArrivalRate( getOptionalAttribute(attributes,Xopen_arrival_rate ) );
 		entry->setVisitProbability( getOptionalAttribute(attributes,Xprob ) );
+		entry->setComment( XML::getStringAttribute(attributes,Xcomment,"") );
 
                 const XML_Char * semaphore = XML::getStringAttribute(attributes,Xsemaphore,"");
                 if ( strlen(semaphore) > 0 ) {
@@ -1875,7 +1884,7 @@ namespace LQIO {
             Phase* phase = nullptr;
             const long p = XML::getLongAttribute(attributes,Xphase);
             if ( p < 1 || 3 < p ) {
-                throw std::invalid_argument( "phase" );
+                throw std::invalid_argument( Xphase );
             } else {
                 phase = dynamic_cast<Entry *>(entry)->getPhase(p);
                 if (!phase) internal_error( __FILE__, __LINE__, "missing phase." );
@@ -1925,14 +1934,15 @@ namespace LQIO {
         Expat_Document::handleActivity( Phase * phase, const XML_Char ** attributes )
         {
 	    static const std::set<const XML_Char *,Expat_Document::attribute_table_t> activity_table = {
-		Xphase,
-		Xname,
 		Xbound_to_entry,
-		Xhost_demand_mean,
-		Xhost_demand_cvsq,
-		Xthink_time,
 		Xcall_order,
-		Xmax_service_time
+		Xcomment,
+		Xhost_demand_cvsq,
+		Xhost_demand_mean,
+		Xmax_service_time,
+		Xname,
+		Xphase,
+		Xthink_time
 	    };
 
 	    checkAttributes( Xactivity, attributes, activity_table );
@@ -1954,6 +1964,7 @@ namespace LQIO {
                 if ( strlen(call_order) > 0 ) {
                     phase->setPhaseTypeFlag(strcasecmp(XDETERMINISTIC, call_order) == 0 ? Phase::Type::DETERMINISTIC : Phase::Type::STOCHASTIC);
                 }
+		phase->setComment( XML::getStringAttribute(attributes,Xcomment,"") );
             }
         }
 
@@ -2004,9 +2015,9 @@ namespace LQIO {
         */
 
 	const std::set<const XML_Char *,Expat_Document::attribute_table_t> Expat_Document::call_table = {
-	    Xdest,
 	    Xcalls_mean,
-	    Xprob
+	    Xcomment,
+	    Xdest
 	};
 
         Call *
@@ -2043,20 +2054,13 @@ namespace LQIO {
                 /* Check the existence */
                 if (call == nullptr) {
                     call = new Call( &_document, call_type, dynamic_cast<Phase *>(phase), to_entry, calls );
-		    std::string name = phase->getName();
-		    name += '_';
-		    name += to_entry->getName();
+		    const std::string name = phase->getName() + "_" + to_entry->getName();
 		    call->setName(name);
 		    dynamic_cast<Phase *>(phase)->addCall(call);
-                } else {
-                    if (call->getCallType() != Call::Type::NULL_CALL) {
-			LQIO::input_error( LQIO::WRN_MULTIPLE_SPECIFICATION );
-                    }
-
-                    /* Set the new call type and the new mean */
-                    call->setCallType(call_type);
-                    call->setCallMean(calls);
+                } else if (call->getCallType() != Call::Type::NULL_CALL) {
+		    LQIO::input_error( LQIO::WRN_MULTIPLE_SPECIFICATION );
                 }
+		call->setComment( XML::getStringAttribute( attributes, Xcomment, "" ) );
             }
 
             return call;
@@ -2093,14 +2097,13 @@ namespace LQIO {
 
                 if ( !call ) {
                     call = new Call( &_document, call_type, dynamic_cast<Activity *>(activity), to_entry, getVariableAttribute(attributes,Xcalls_mean) );
-		    std::string name = activity->getName();
-		    name += '_';
-		    name += to_entry->getName();
+		    const std::string name = activity->getName() + "_" + to_entry->getName();
 		    call->setName(name);
                     dynamic_cast<Activity *>(activity)->addCall(call);
                 } else if (call->getCallType() != Call::Type::NULL_CALL) {
                     LQIO::input_error( LQIO::WRN_MULTIPLE_SPECIFICATION );
                 }
+		call->setComment( XML::getStringAttribute( attributes, Xcomment, "" ) );
             } else if ( !call ) {
                 throw undefined_symbol( "call" );
             }
@@ -2112,6 +2115,14 @@ namespace LQIO {
         Call *
         Expat_Document::handleEntryCall( DocumentObject * entry, const XML_Char ** attributes )
         {
+	    static const std::set<const XML_Char *,Expat_Document::attribute_table_t> forwarding_table = {
+		Xcomment,
+		Xdest,
+		Xprob
+	    };
+
+	    checkAttributes( Xforwarding, attributes, forwarding_table );
+	    
             const XML_Char * dest_entry_name = XML::getStringAttribute(attributes,Xdest);
 
             /* Obtain the entry that we will be adding the phase times to */
@@ -2130,26 +2141,19 @@ namespace LQIO {
             if ( _createObjects ) {
                 if ( call == nullptr ) {
                     call = new Call( &_document, from_entry, to_entry, getVariableAttribute(attributes,Xprob) );
-		    std::string name = from_entry->getName();
-		    name += '_';
-		    name += to_entry->getName();
+		    const std::string name = from_entry->getName() + "_" + to_entry->getName();
 		    call->setName(name);
                     from_entry->addForwardingCall(call);
                 } else if (call->getCallType() != Call::Type::NULL_CALL) {
                     LQIO::input_error( LQIO::WRN_MULTIPLE_SPECIFICATION );
                 }
+		call->setComment( XML::getStringAttribute( attributes, Xcomment, "" ) );
             }
 
             return call;
         }
 
 
-        const std::set<const XML_Char *,Expat_Document::attribute_table_t> Expat_Document::histogram_table = {
-            Xmin,
-            Xmax,
-            Xnumber_bins,
-            "phase"		// Xphase
-	};
 //          Xbin_size,
 //          Xmean,
 //          Xstd_dev,
@@ -2159,6 +2163,13 @@ namespace LQIO {
         Histogram *
         Expat_Document::handleHistogram( DocumentObject * object, const XML_Char ** attributes )
         {
+	    static const std::set<const XML_Char *,Expat_Document::attribute_table_t> histogram_table = {
+		Xmin,
+		Xmax,
+		Xnumber_bins,
+		Xphase
+	    };
+	    
 	    checkAttributes( Xhistogram_bin, attributes, histogram_table );
 
 	    /* Handle entries specially */
@@ -2184,6 +2195,13 @@ namespace LQIO {
         Histogram *
         Expat_Document::handleQueueLengthDistribution( DocumentObject * object, const XML_Char ** attributes )
         {
+	    static const std::set<const XML_Char *,Expat_Document::attribute_table_t> histogram_table = {
+		Xmin,
+		Xmax,
+		Xnumber_bins,
+		Xphase
+	    };
+
 	    checkAttributes( Xhistogram_bin, attributes, histogram_table );
 
             return findOrAddHistogram( object, Histogram::Type::DISCRETE,
@@ -2635,6 +2653,9 @@ namespace LQIO {
             const scheduling_type scheduling = processor.getSchedulingType();
             output << XML::start_element( Xprocessor )
                    << XML::attribute( Xname, processor.getName() );
+	    if ( !processor.getComment().empty() ) {
+		output << XML::attribute( Xcomment, processor.getComment() );
+	    }
 	    if ( processor.isInfinite() ) {
 		output << XML::attribute( Xscheduling, scheduling_label.at(SCHEDULE_DELAY).XML );        // see labels.cpp
 		/* All other attributes don't matter for a delay server */
@@ -2700,8 +2721,11 @@ namespace LQIO {
         void
         Expat_Document::exportGroup( std::ostream& output, const Group & group ) const
         {
-            output << XML::start_element( Xgroup ) << XML::attribute( Xname, group.getName() )
-                   << XML::attribute( Xshare, *group.getGroupShare() )
+            output << XML::start_element( Xgroup ) << XML::attribute( Xname, group.getName() );
+	    if ( !group.getComment().empty() ) {
+		output << XML::attribute( Xcomment, group.getComment() );
+	    }
+	    output << XML::attribute( Xshare, *group.getGroupShare() )
                    << XML::attribute( Xcap, group.getCap() )
                    << ">" << std::endl;
 
@@ -2742,6 +2766,9 @@ namespace LQIO {
         Expat_Document::exportTask( std::ostream& output, const Task & task ) const
         {
             output << XML::start_element( Xtask ) << XML::attribute( Xname, task.getName() );
+	    if ( !task.getComment().empty() ) {
+		output << XML::attribute( Xcomment, task.getComment() );
+	    }
 	    if ( task.isInfinite() ) {
 		output << XML::attribute( Xscheduling, scheduling_label.at(SCHEDULE_DELAY).XML );            // see lqio/labels.c
 	    } else { 
@@ -2987,6 +3014,9 @@ namespace LQIO {
                 || hasResults();
             output << XML::start_element( Xentry, complex_element )
                    << XML::attribute( Xname, entry.getName() );
+	    if ( !entry.getComment().empty() ) {
+		output << XML::attribute( Xcomment, entry.getComment() );
+	    }
 
             if ( entry.isStandardEntry() ) {
                 output << XML::attribute( Xtype, XPH1PH2 );
@@ -3161,6 +3191,9 @@ namespace LQIO {
             const bool complex_element = calls.size() > 0 || hasResults() || phase.hasHistogram() || hasSPEX();
             output << XML::start_element( Xactivity, complex_element )
                    << XML::attribute( Xname, phase.getName() );
+	    if ( !phase.getComment().empty() ) {
+		output << XML::attribute( Xcomment, phase.getComment() );
+	    }
 
             const Activity * activity = dynamic_cast<const Activity *>(&phase);
             if ( activity ) {
@@ -3373,7 +3406,6 @@ namespace LQIO {
         void
         Expat_Document::exportCall( std::ostream& output, const Call & call ) const
         {
-
 	    static const std::map<const Call::Type,const Expat_Document::call_type_table_t> call_type_table = {
 		{ Call::Type::SEND_NO_REPLY, { Xasynch_call, Xcalls_mean } },
 		{ Call::Type::RENDEZVOUS, { Xsynch_call,  Xcalls_mean } },
@@ -3385,6 +3417,9 @@ namespace LQIO {
             const bool complex_type = hasResults() || call.hasHistogram() || hasSPEX();
             output << XML::start_element( call_type->second.element, complex_type )
                    << XML::attribute( Xdest, call.getDestinationEntry()->getName() );
+	    if ( !call.getComment().empty() ) {
+		output << XML::attribute( Xcomment, call.getComment() );
+	    }
             if ( call.getCallMean() ) {
                 output << XML::attribute( call_type->second.attribute, *call.getCallMean() );
             }

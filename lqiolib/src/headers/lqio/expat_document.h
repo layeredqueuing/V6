@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- *  $Id: expat_document.h 16945 2024-01-26 13:02:36Z greg $
+ *  $Id: expat_document.h 17264 2024-09-07 21:08:34Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  */
@@ -377,7 +377,6 @@ namespace LQIO {
 	    static const std::set<const XML_Char *,attribute_table_t> entry_table;
 	    static const std::set<const XML_Char *,attribute_table_t> activity_table;
 	    static const std::set<const XML_Char *,attribute_table_t> call_table;
-	    static const std::set<const XML_Char *,Expat_Document::attribute_table_t> histogram_table;
 	    static const std::map<const XML_Char *,const result_table_t,result_table_t>  result_table;
 	    static const std::map<const XML_Char *,const observation_table_t,observation_table_t>  observation_table;	/* SPEX */
 	    static const std::map<const int,const char *> __key_lqx_function_map;			/* Maps srvn_gram.h KEY_XXX to SPEX attribute name */

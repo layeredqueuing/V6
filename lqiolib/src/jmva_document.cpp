@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: jmva_document.cpp 17239 2024-05-27 14:02:21Z greg $
+ * $Id: jmva_document.cpp 17258 2024-07-15 14:53:50Z greg $
  *
  * Read in XML input files.
  *
@@ -1530,10 +1530,6 @@ namespace QNIO {
 	}
 	
 	_gnuplot.push_back( LQIO::GnuPlot::print_node( "set title \"" + model().comment() + "\"" ) );
-
-	std::string filename = LQIO::Filename( getInputFileName() )() + "-" + BCMP::Model::Result::suffix.at(type) + "." + suffix;
-	_gnuplot.push_back( LQIO::GnuPlot::print_node( prefix + "set output \"" + filename + "\"" ) );
-	_gnuplot.push_back( LQIO::GnuPlot::print_node( prefix + "set terminal " + suffix ) );
 
 	std::ostringstream plot;		// Plot command collected here.
 

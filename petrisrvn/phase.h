@@ -11,7 +11,7 @@
 #define PETRISRVN_PHASE_H
 
 /*
- * $Id: phase.h 17075 2024-02-28 21:20:08Z greg $
+ * $Id: phase.h 17264 2024-09-07 21:08:34Z greg $
  *
  * Solve LQN using petrinets.
  */
@@ -73,7 +73,7 @@ public:
 
     bool has_calls() const { return _call.size() > 0; }
     bool has_deterministic_service() const;
-    bool has_stochastic_calls() const;
+    bool has_deterministic_calls() const;
     bool is_hyperexponential() const;
     virtual bool is_activity() const { return false; }
     int is_erlang() const;
