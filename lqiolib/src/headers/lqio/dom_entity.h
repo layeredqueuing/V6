@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- *  $Id: dom_entity.h 15827 2022-08-14 15:20:00Z greg $
+ *  $Id: dom_entity.h 17277 2024-09-10 21:19:38Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -25,7 +25,7 @@ namespace LQIO {
 	protected:
 	    template <class Type> struct add_using {
 		typedef double (Type::*fp)();
-		add_using<Type>( fp f ) : _f(f) {}
+		add_using( fp f ) : _f(f) {}
 		double operator()( double sum, Type * object ) { return sum + (object->*_f)(); }
 		double operator()( double sum, const std::pair<std::string,Type *>& object ) { return sum + (object.second->*_f)(); }
 	    private:
@@ -34,7 +34,7 @@ namespace LQIO {
 
 	    template <class Type> struct add_using_const {
 		typedef double (Type::*fp)() const;
-		add_using_const<Type>( fp f ) : _f(f) {}
+		add_using_const( fp f ) : _f(f) {}
 		double operator()( double sum, const Type * object ) { return sum + (object->*_f)(); }
 		double operator()( double sum, const std::pair<std::string,Type *>& object ) { return sum + (object.second->*_f)(); }
 	    private:

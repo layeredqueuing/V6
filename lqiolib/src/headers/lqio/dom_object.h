@@ -1,5 +1,5 @@
 /*  -*- C++ -*-
- *  $Id: dom_object.h 16945 2024-01-26 13:02:36Z greg $
+ *  $Id: dom_object.h 17277 2024-09-10 21:19:38Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -25,7 +25,7 @@ namespace LQIO {
 		typedef bool (Type::*test_fn)() const;
 
 	    public:
-		Predicate<Type>( const test_fn f ) : _f(f) {}
+		Predicate( const test_fn f ) : _f(f) {}
 		bool operator()( const Type* object ) const { return (object->*_f)(); }
 		bool operator()( const std::pair<std::string, Type *>& object ) const { return (object.second->*_f)(); }
 		bool operator()( const std::pair<unsigned int, Type *>& object ) const { return (object.second->*_f)(); }

@@ -2,7 +2,7 @@
 # Copyright (C) 2005 Greg Franks <greg@sce.carleton.ca>
 #
 # ------------------------------------------------------------------------
-# $Id: Makefile.am 16948 2024-01-26 14:40:09Z greg $
+# $Id: Makefile.am 17284 2024-09-13 14:58:56Z greg $
 # ------------------------------------------------------------------------
 
 SRVN=	../lqsim
@@ -175,7 +175,7 @@ other:	$(OTHER)
 33-spex-convergence.lqxo: 33-spex-convergence.lqnx
 	$(SRVN) -B5,100000 -o $*.out $<
 	@mv $*.d/$*-002.lqxo $@
-	@srvndiff $(DIFFOPTS) $@ ../../models/regression/lqns-results/$@
+	@srvndiff $(DIFFOPTS) $@ ../../models/regression/sim-results/$@
 	@rm -rf $*.d
 
 50-replication.lqxo:	50-replication.lqnx

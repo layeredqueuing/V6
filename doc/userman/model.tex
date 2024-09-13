@@ -7,7 +7,7 @@
 %% Created:             Tue Jul 18 2006
 %%
 %% ----------------------------------------------------------------------
-%% $Id: model.tex 12977 2017-04-04 03:35:54Z greg $
+%% $Id: model.tex 17289 2024-09-13 18:55:26Z greg $
 %% ----------------------------------------------------------------------
 
 \chapter{The Layered Queueing Network Model}
@@ -191,6 +191,10 @@ or the special constant
 the multiplicity is set to \texttt{@infinity}, the processor is coerced to a delay
 server\index{processor!delay}.  \index{processor|)}
 
+Priorities\index{priority!highest} range from zero to positive
+infinity, with a priority of zero being the lowest.  The default
+priority for all tasks is zero.\index{processor|)}
+
 \subsection{Groups}
 \label{sec:groups}
 
@@ -246,6 +250,7 @@ methods\index{scheduling!task}:
   processing of the current entry by the task.
 \end{description}
 
+<<<<<<< .working
 Each task can have multiple homogenous
 threads\index{task!multiplicity}\index{task!threads}\index{threads!homogenous}, all of which are served by
 the common queue (see \S\protect\ref{sec:multiplicity}).  The task
@@ -253,6 +258,15 @@ multiplicity\index{task!multiplicity}\index{multiplicity!task} must be a integer
 special constant
 \texttt{@infinity}\index{multiplicity!"@infinity@\texttt{"@infinity}}\index{"@infinity@\texttt{"@infinity}}.  If
 the multiplicity is set to \texttt{@infinity}, the task is coerced to a delay server\index{task!delay}.
+||||||| .merge-left.r17282
+Priorities\index{priority!highest} range from zero to positive
+infinity, with a priority of zero being the highest.  The default
+priority for all entries is zero.
+=======
+Priorities\index{priority!highest} range from zero to positive
+infinity, with a priority of zero being the lowest.  The default
+priority for all entries is zero.
+>>>>>>> .merge-right.r17288
 
 The subclasses of \emph{task} are:
 \begin{description}

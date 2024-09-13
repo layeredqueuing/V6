@@ -9,7 +9,7 @@
 /*
  * Input processing.
  *
- * $Id: model.cc 17179 2024-04-10 10:55:30Z greg $
+ * $Id: model.cc 17282 2024-09-12 16:24:34Z greg $
  */
 
 #include "lqsim.h"
@@ -129,7 +129,6 @@ Model::solve( solve_using run_function, const std::string& input_file_name, LQIO
     /* Make sure we got a document */
 
     if ( document == nullptr || LQIO::io_vars.anError() ) return INVALID_INPUT;
-    document->setResultDescription();			/* Wipe out any description and replace with generic. */
 
     if ( LQIO::Spex::input_variables().empty() ) {
 	if ( LQIO::Spex::__no_header ) {
@@ -407,7 +406,8 @@ Model::print_intermediate()
 {
     _document->setResultConvergenceValue(_confidence)
 	.setResultValid(_confidence <= _parameters._precision)
-	.setResultIterations(number_blocks);
+	.setResultIterations(number_blocks)
+	.setResultDescription();
 
     _document->print( _output_file_name, SolverInterface::Solve::customSuffix, _output_format, rtf_flag, number_blocks );
 }
@@ -541,6 +541,7 @@ Model::start()
 	print_raw_stats( stddbg );
     }
 
+    _document->setResultDescription();
     _document->print( _output_file_name, _document->getResultInvocationNumber() > 0 ? SolverInterface::Solve::customSuffix : std::string(""), _output_format, rtf_flag );
 
     if ( _confidence > _parameters._precision && _parameters._precision > 0.0 ) {

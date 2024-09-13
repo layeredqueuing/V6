@@ -1,7 +1,7 @@
 /* runlqx.h	-- Greg Franks
  *
   * ------------------------------------------------------------------------
- * $Id: runlqx.cc 16945 2024-01-26 13:02:36Z greg $
+ * $Id: runlqx.cc 17282 2024-09-12 16:24:34Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -75,8 +75,7 @@ namespace SolverInterface
 	bool ok = false;
 	try {
 	    assert (_aModel );
-	    _document->setResultInvocationNumber( invocationCount )
-		.setResultDescription();
+	    _document->setResultInvocationNumber( invocationCount );
 	    ok = (_aModel->*_solve)();
 	}
 	catch ( const std::runtime_error & error ) {

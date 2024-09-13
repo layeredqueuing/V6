@@ -1,7 +1,7 @@
 /* -*- c++ -*-
  * lqn2ps.h	-- Greg Franks
  *
- * $Id: lqn2ps.h 16978 2024-01-29 21:31:31Z greg $
+ * $Id: lqn2ps.h 17277 2024-09-10 21:19:38Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -483,7 +483,7 @@ StringPlural plural( const std::string& s, const unsigned i );	/* See main.cc */
 template <class Type> struct Select
 {
     typedef bool (Type::*predicate)() const;
-    Select<Type>( const predicate p ) : _p(p) {};
+    Select( const predicate p ) : _p(p) {};
     std::vector<Type*> operator()( const std::vector<Type*>& in, const Type* object ) const { if ( (object->*_p)() ) { std::vector<Type*> out(in); out.push_back(object);  return out; } else { return in;} }
     std::vector<Type*> operator()( const std::vector<Type*>& in, const Type& object ) const { if ( (object.*_p)()  ) { std::vector<Type*> out(in); out.push_back(&object); return out; } else { return in;} }
 private:
@@ -494,7 +494,7 @@ private:
 template <class Type1, class Type2> struct Collect
 {
     typedef const Type1& (Type2::*function)() const;
-    Collect<Type1,Type2>( const function f ) : _f(f) {};
+    Collect( const function f ) : _f(f) {};
     std::vector<Type1> operator()( const std::vector<Type1>& in, const Type2* object ) const { std::vector<Type1> out(in); out.push_back((object->*_f)()); return out; }
     std::vector<Type1> operator()( const std::vector<Type1>& in, const Type2& object ) const { std::vector<Type1> out(in); out.push_back((object.*_f)());  return out; }
 private:
@@ -542,7 +542,7 @@ private:
 	
 template <class Type> struct EQ
 {
-    EQ<Type>( const Type * const a ) : _a(a) {}
+    EQ( const Type * const a ) : _a(a) {}
     bool operator()( const Type * const b ) const { return _a == b; }
 private:
     const Type * const _a;

@@ -1,4 +1,4 @@
-/* $Id: standalone.c 15459 2022-03-09 21:53:20Z greg $ */
+/* $Id: standalone.c 17274 2024-09-10 20:29:53Z greg $ */
 /************************************************************************/
 /*	para_library.c - PARASOL library source file			*/
 /*									*/
@@ -23,6 +23,8 @@
 /*  The author may be reached at neilson@scs.carleton.ca or through	*/
 /*  the School of Computer Science at Carleton University.		*/
 /************************************************************************/
+
+#define _GNU_SOURCE	/* For feenableexcept */
 
 #include <parasol/para_internals.h>
 #include <parasol/para_privates.h>

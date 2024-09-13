@@ -1,7 +1,7 @@
 /* -*- c++ -*-
  * Lqsim-parasol task interface.
  *
- * $Id: task.h 16124 2022-11-18 11:26:13Z greg $
+ * $Id: task.h 17289 2024-09-13 18:55:26Z greg $
  */
 
 /************************************************************************/
@@ -113,7 +113,7 @@ private:
     Task& operator=( const Task& ) = delete;
 
 public:
-    Task( const Type type, LQIO::DOM::Task* domTask, Processor * aProc, Group * aGroup );
+    Task( const Type type, int priority, LQIO::DOM::Task* domTask, Processor * aProc, Group * aGroup );
     virtual ~Task();
 
     LQIO::DOM::Task * getDOM() const{ return _dom; }
@@ -122,7 +122,7 @@ public:
     virtual const std::string& name() const { return _dom->getName(); }
     virtual scheduling_type discipline() const { return _dom->getSchedulingType(); }
     virtual unsigned multiplicity() const;					/* Special access!		*/
-    virtual int priority() const;
+    virtual int priority() const { return _priority; }
 
     Type type() const { return _type; }
     const std::string& type_name() const { return type_strings.at(_type); }
@@ -187,6 +187,7 @@ private:
 
 private:
     LQIO::DOM::Task* _dom;			/* Stores all of the data.      */
+    const int _priority;			/* Parasol priority		*/
 
     Processor * _processor;			/* node			        */
     int _group_id;				/* group  			*/
@@ -228,7 +229,7 @@ private:
     Reference_Task& operator=( const Reference_Task& ) = delete;
 
 public:
-    Reference_Task( const Type type, LQIO::DOM::Task* domTask, Processor * aProc, Group * aGroup );
+    Reference_Task( const Type type, int priority, LQIO::DOM::Task* domTask, Processor * aProc, Group * aGroup );
 
     virtual bool is_not_waiting() const;
 
@@ -248,7 +249,7 @@ private:
 class Server_Task : public Task
 {
 public:
-    Server_Task( const Type type, LQIO::DOM::Task* domTask, Processor * aProc, Group * aGroup );
+    Server_Task( const Type type, int priority, LQIO::DOM::Task* domTask, Processor * aProc, Group * aGroup );
 
     virtual int std_port() const;
     virtual bool is_not_waiting() const;
@@ -273,7 +274,7 @@ protected:
 class Timeout_Task : public Server_Task
 {
 public:
-    Timeout_Task( const Task::Type type, LQIO::DOM::Task* domTask, Processor * aProc, Group * aGroup );
+    Timeout_Task( const Task::Type type, int priority, LQIO::DOM::Task* domTask, Processor * aProc, Group * aGroup );
 
     int ready_port() const { return _ready_port; }
     Instance * server_task() const { return _server_task; }
@@ -309,7 +310,7 @@ protected:
 class Retry_Task : public Server_Task
 {
 public:
-    Retry_Task( const Task::Type type, LQIO::DOM::Task* domTask, Processor * aProc, Group * aGroup );
+    Retry_Task( const Task::Type type, int priority, LQIO::DOM::Task* domTask, Processor * aProc, Group * aGroup );
 
     int ready_port() const { return _ready_port; }
     Instance * server_task() const { return _server_task; }
@@ -346,7 +347,7 @@ protected:
 class Semaphore_Task : public Server_Task
 {
 public:
-    Semaphore_Task( const Type type, LQIO::DOM::Task* domTask, Processor * aProc, Group * aGroup );
+    Semaphore_Task( const Type type, int priority, LQIO::DOM::Task* domTask, Processor * aProc, Group * aGroup );
 
     int signal_port() const { return _signal_port; }
     Instance * signal_task() const { return _signal_task; }
@@ -377,7 +378,7 @@ protected:
 class ReadWriteLock_Task : public Semaphore_Task
 {
 public:
-    ReadWriteLock_Task( const Type type, LQIO::DOM::Task* domTask, Processor * aProc, Group * aGroup );
+    ReadWriteLock_Task( const Type type, int priority, LQIO::DOM::Task* domTask, Processor * aProc, Group * aGroup );
 
     Instance * writer() const { return _writer; }
     Instance * reader() const { return _reader; }
@@ -426,7 +427,7 @@ private:
 class Pseudo_Task : public Task
 {
 public:
-    Pseudo_Task( const std::string& name ) : Task( Type::OPEN_ARRIVAL_SOURCE, nullptr, nullptr, nullptr ), _name(name) {}
+    Pseudo_Task( const std::string& name ) : Task( Type::OPEN_ARRIVAL_SOURCE, MAX_PRIORITY, nullptr, nullptr, nullptr ), _name(name) {}
 
     virtual const std::string& name() const { return _name; }
     virtual scheduling_type discipline() const { return SCHEDULE_DELAY; }

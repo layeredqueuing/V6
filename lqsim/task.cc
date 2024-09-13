@@ -10,7 +10,7 @@
 /*
  * Input output processing.
  *
- * $Id: task.cc 17192 2024-04-30 21:20:30Z greg $
+ * $Id: task.cc 17289 2024-09-13 18:55:26Z greg $
  */
 
 #include <iostream>
@@ -71,8 +71,9 @@ const std::map<const Task::Type,const std::string> Task::type_strings =  {
 
 unsigned total_tasks = 0;
 
-Task::Task( const Task::Type type, LQIO::DOM::Task* dom, Processor * processor, Group * a_group )
+Task::Task( const Task::Type type, int priority, LQIO::DOM::Task* dom, Processor * processor, Group * a_group )
     : _dom(dom),
+      _priority(priority),
       _processor(processor),
       _group_id(-1),
       _compute_func(nullptr),
@@ -491,6 +492,11 @@ Task::insertDOMResults()
 	}
     }
 
+    for ( std::vector<Activity *>::const_iterator next_activity = _activity.begin(); next_activity != _activity.end(); ++next_activity ) {
+	taskProcUtil += (*next_activity)->r_cpu_util.mean();
+	taskProcVar  += (*next_activity)->r_cpu_util.variance();
+    }
+
     /* Store totals */
 
     getDOM()->setResultPhaseUtilizations(max_phases(),phaseUtil)
@@ -538,18 +544,25 @@ Task::add( LQIO::DOM::Task* dom )
     const scheduling_type sched_type = dom->getSchedulingType();
 
     Task * cp = nullptr;
-    const char* processor_name = dom->getProcessor()->getName().c_str();
+    const std::string& processor_name = dom->getProcessor()->getName().c_str();
     Processor * processor = Processor::find( processor_name );
 
     if ( !LQIO::DOM::Common_IO::is_default_value( dom->getPriority(), 0 ) && ( processor->discipline() == SCHEDULE_FIFO
 										   || processor->discipline() == SCHEDULE_PS
 										   || processor->discipline() == SCHEDULE_RAND ) ) {
-	dom->input_error( LQIO::WRN_PRIO_TASK_ON_FIFO_PROC, processor_name );
+	dom->input_error( LQIO::WRN_PRIO_TASK_ON_FIFO_PROC, processor_name.c_str() );
     }
 
+    int priority = dom->hasPriority() ? dom->getPriorityValue() : 0;
+    if ( priority < MIN_PRIORITY || MAX_PRIORITY < priority ) {
+	priority = dom->getPriorityValue() > MAX_PRIORITY ? MAX_PRIORITY : 0;
+	LQIO::input_error( WRN_INVALID_PRIORITY, dom->getPriorityValue(), MIN_PRIORITY, MAX_PRIORITY, priority );
+    }
+//    priority = MAX_PRIORITY - priority;		/* Bug 453. */
+    
     Group * group = nullptr;
     if ( !domGroup && processor->discipline() == SCHEDULE_CFS ) {
-	LQIO::input_error( LQIO::ERR_NO_GROUP_SPECIFIED, task_name, processor_name );
+	LQIO::input_error( LQIO::ERR_NO_GROUP_SPECIFIED, task_name, processor_name.c_str() );
     } else if ( domGroup ) {
 	group = Group::find( domGroup->getName().c_str() );
 	if ( !group ) {
@@ -567,7 +580,7 @@ Task::add( LQIO::DOM::Task* dom )
 	if ( dom->isInfinite() ) {
 	    dom->input_error( LQIO::ERR_REFERENCE_TASK_IS_INFINITE );
 	}
-	cp = new Reference_Task( Task::Type::CLIENT, dom, processor, group );
+	cp = new Reference_Task( Task::Type::CLIENT, priority, dom, processor, group );
 	break;
 
     case SCHEDULE_PPR:
@@ -585,7 +598,7 @@ Task::add( LQIO::DOM::Task* dom )
 	} else {
 	    a_type = Task::Type::SERVER;
 	}
-	cp = new Server_Task( a_type, dom, processor, group );
+	cp = new Server_Task( a_type, priority, dom, processor, group );
 	break;
 
     case SCHEDULE_DELAY:
@@ -598,7 +611,7 @@ Task::add( LQIO::DOM::Task* dom )
 	if ( dom->hasQueueLength() ) {
 	    dom->runtime_error( LQIO::WRN_TASK_QUEUE_LENGTH );
 	}
-	cp = new Server_Task( Task::Type::INFINITE_SERVER, dom, processor, group );
+	cp = new Server_Task( Task::Type::INFINITE_SERVER, priority, dom, processor, group );
 	break;
 
 /*+ BUG_164 */
@@ -609,7 +622,7 @@ Task::add( LQIO::DOM::Task* dom )
 	if ( dom->isInfinite() ) {
 	    dom->runtime_error( LQIO::ERR_INFINITE_SERVER );
 	}
- 	cp = new Semaphore_Task( Task::Type::SEMAPHORE, dom, processor, group );
+ 	cp = new Semaphore_Task( Task::Type::SEMAPHORE, priority, dom, processor, group );
 	break;
 /*- BUG_164 */
 
@@ -622,25 +635,25 @@ Task::add( LQIO::DOM::Task* dom )
 	if ( dom->isInfinite() ) {
 	    dom->runtime_error( LQIO::ERR_INFINITE_SERVER );
 	}
- 	cp = new ReadWriteLock_Task( Task::Type::RWLOCK, dom, processor, group );
+ 	cp = new ReadWriteLock_Task( Task::Type::RWLOCK, priority, dom, processor, group );
 	break;
 /* reader_writer lock*/
 
 /* Decision tasks */
     case SCHEDULE_ABORT:
     case SCHEDULE_TIMEOUT:
-	cp = new Timeout_Task( Task::Type::TIMEOUT_QUEUE, dom, processor, group );
+	cp = new Timeout_Task( Task::Type::TIMEOUT_QUEUE, priority, dom, processor, group );
 	break;
 
     case SCHEDULE_INF_RETRY:      
     case SCHEDULE_RETRY:
 
-	cp = new Retry_Task( Task::Type::RETRY_QUEUE, dom, processor, group );
+	cp = new Retry_Task( Task::Type::RETRY_QUEUE, priority, dom, processor, group );
 	break;
 /* Decision tasks */
 
     default:
-	cp = new Server_Task( Task::Type::SERVER, dom, processor, group );		/* Punt... */
+	cp = new Server_Task( Task::Type::SERVER, priority, dom, processor, group );		/* Punt... */
 	dom->runtime_error( LQIO::WRN_SCHEDULING_NOT_SUPPORTED, scheduling_label.at(sched_type).str.c_str() );
 	break;
     }
@@ -688,18 +701,6 @@ Task::multiplicity() const
 }
 
 
-int
-Task::priority() const
-{
-    try {
-	return getDOM()->getPriorityValue();
-    }
-    catch ( const std::domain_error &e ) {
-	getDOM()->throw_invalid_parameter( "priority", e.what() );
-    }
-    return 0;
-}
-
 bool
 Task::is_infinite() const
 {
@@ -735,8 +736,8 @@ Task::derive_utilization() const
 
 /* ------------------------------------------------------------------------ */
 
-Reference_Task::Reference_Task( const Task::Type type, LQIO::DOM::Task* dom, Processor * aProc, Group * aGroup )
-    : Task( type, dom, aProc, aGroup ), _think_time(0.0), _task_list()
+Reference_Task::Reference_Task( const Task::Type type, int priority, LQIO::DOM::Task* dom, Processor * aProc, Group * aGroup )
+    : Task( type, priority, dom, aProc, aGroup ), _think_time(0.0), _task_list()
 {
 }
 
@@ -789,8 +790,8 @@ Reference_Task::is_not_waiting() const
 
 /* ------------------------------------------------------------------------ */
 
-Server_Task::Server_Task( const Task::Type type, LQIO::DOM::Task* dom, Processor * aProc, Group * aGroup )
-    : Task( type, dom, aProc, aGroup ),
+Server_Task::Server_Task( const Task::Type type, int priority, LQIO::DOM::Task* dom, Processor * aProc, Group * aGroup )
+    : Task( type, priority, dom, aProc, aGroup ),
       _task(0),
       _worker_port(-1),
       _sync_server(false)
@@ -871,8 +872,8 @@ Server_Task::kill()
 
 /* ------------------------------------------------------------------------ */
 
-Semaphore_Task::Semaphore_Task( const Task::Type type, LQIO::DOM::Task* dom, Processor * aProc, Group * aGroup )
-    : Server_Task( type, dom, aProc, aGroup ),
+Semaphore_Task::Semaphore_Task( const Task::Type type, int priority, LQIO::DOM::Task* dom, Processor * aProc, Group * aGroup )
+    : Server_Task( type, priority, dom, aProc, aGroup ),
       r_hold(),
       r_hold_sqr(),
       r_hold_util(),
@@ -998,8 +999,8 @@ Semaphore_Task::print( FILE * output ) const
 
 /* ------------------------------------------------------------------------ */
 
-ReadWriteLock_Task::ReadWriteLock_Task( const Task::Type type, LQIO::DOM::Task* dom, Processor * aProc, Group * aGroup )
-    : Semaphore_Task( type, dom, aProc, aGroup ),
+ReadWriteLock_Task::ReadWriteLock_Task( const Task::Type type, int priority, LQIO::DOM::Task* dom, Processor * aProc, Group * aGroup )
+    : Semaphore_Task( type, priority, dom, aProc, aGroup ),
       _reader(0),
       _writer(0),
       _signal_port2(-1),
@@ -1232,8 +1233,8 @@ ReadWriteLock_Task::print( FILE * output ) const
 }
 /* ------------------------------------------------------------------------ */
 
-Timeout_Task::Timeout_Task( const Task::Type type, LQIO::DOM::Task* domTask, Processor * aProc, Group * aGroup )
-    : Server_Task( type, domTask, aProc, aGroup ),
+Timeout_Task::Timeout_Task( const Task::Type type, int priority, LQIO::DOM::Task* domTask, Processor * aProc, Group * aGroup )
+    : Server_Task( type, priority, domTask, aProc, aGroup ),
       _server_task(0),
       _ready_port(-1)
 {
@@ -1391,8 +1392,8 @@ Timeout_Task::print( FILE * output ) const
 
 /* ------------------------------------------------------------------------ */
 
-Retry_Task::Retry_Task( const Task::Type type, LQIO::DOM::Task* domTask, Processor * aProc, Group * aGroup )
-    : Server_Task( type, domTask, aProc, aGroup ),
+Retry_Task::Retry_Task( const Task::Type type, int priority, LQIO::DOM::Task* domTask, Processor * aProc, Group * aGroup )
+    : Server_Task( type, priority, domTask, aProc, aGroup ),
       _server_task(0),
       _ready_port(-1)
 {

@@ -7,7 +7,7 @@
  *
  * June 2007
  *
- * $Id: submodel.h 17027 2024-02-04 15:24:18Z greg $
+ * $Id: submodel.h 17277 2024-09-10 21:19:38Z greg $
  */
 
 #ifndef _SUBMODEL_H
@@ -69,7 +69,7 @@ private:
      */
 
     template <class Type> struct erase_from {
-	erase_from<Type>( std::set<Type>& x ) : _x(x) {}
+	erase_from( std::set<Type>& x ) : _x(x) {}
 	void operator()( Type y ) { _x.erase(y); }
     private:
 	std::set<Type>& _x;

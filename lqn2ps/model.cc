@@ -1,6 +1,6 @@
 /* model.cc	-- Greg Franks Mon Feb  3 2003
  *
- * $Id: model.cc 17179 2024-04-10 10:55:30Z greg $
+ * $Id: model.cc 17282 2024-09-12 16:24:34Z greg $
  *
  * Load, slice, and dice the lqn model.
  */
@@ -880,6 +880,10 @@ Model::store()
 	return true;
     }
 #endif
+    if ( input_output() && _document->getResultDescription().empty() ) {
+	_document->setResultDescription( "Layered Queuening Network Model." );
+    }
+    
     if ( output_output() && !Flags::have_results ) {
 
 	std::cerr << LQIO::io_vars.lq_toolname << ": There are no results to output for " << _inputFileName << std::endl;
