@@ -10,7 +10,7 @@
 /*
  * Lqsim-parasol entry interface.
  *
- * $Id: entry.h 16124 2022-11-18 11:26:13Z greg $
+ * $Id: entry.h 17294 2024-09-16 17:49:40Z greg $
  */
 
 #ifndef ENTRY_H
@@ -134,7 +134,7 @@ public:
     Entry& accumulate_data();
     virtual Entry& insertDOMResults();
 
-    double compute_minimum_service_time();
+    double compute_minimum_service_time( std::deque<Entry *>& );
 
     static Entry * add( LQIO::DOM::Entry* domEntry, Task * );
     

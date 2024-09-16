@@ -1,7 +1,7 @@
 /* histogram.cc	-- Greg Franks Mon Jun 15 2009
  *
  * ------------------------------------------------------------------------
- * $Id: histogram.cc 16752 2023-06-19 19:18:17Z greg $
+ * $Id: histogram.cc 17296 2024-09-16 19:49:44Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -28,21 +28,21 @@ Histogram::Histogram( const LQIO::DOM::Histogram * histogram )
     if ( _max < _min ) {
 	LQIO::input_error( LQIO::ERR_HISTOGRAM_INVALID_MAX, _max );
     }
-    for_each ( _hist.begin(), _hist.end(), Exec<hist_bin>(&hist_bin::clear) );
+    std::for_each ( _hist.begin(), _hist.end(), std::mem_fn(&hist_bin::clear) );
 }
 
 
 void
 Histogram::configure()
 {
-    for_each ( _hist.begin(), _hist.end(), Exec<hist_bin>(&hist_bin::clear) );
+    for_each ( _hist.begin(), _hist.end(), std::mem_fn(&hist_bin::clear) );
 }
 
 void
 Histogram::reset()
 {
     _count = 0.0;
-    for_each ( _hist.begin(), _hist.end(), Exec<hist_bin>(&hist_bin::reset) );
+    for_each ( _hist.begin(), _hist.end(), std::mem_fn(&hist_bin::reset) );
 }
 
 
