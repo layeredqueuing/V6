@@ -7,6 +7,7 @@
 
 
 #include "lqsim.h"
+#include <algorithm>
 #include <cmath>
 #include <cstdlib>
 #include <functional>
