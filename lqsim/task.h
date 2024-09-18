@@ -1,7 +1,7 @@
 /* -*- c++ -*-
  * Lqsim-parasol task interface.
  *
- * $Id: task.h 17289 2024-09-13 18:55:26Z greg $
+ * $Id: task.h 17299 2024-09-17 19:10:28Z greg $
  */
 
 /************************************************************************/
@@ -66,15 +66,6 @@ class Task {
      * other algorithm type things).
      */
 
-    struct eqTaskStr
-    {
-	eqTaskStr( const std::string& s ) : _s(s) {}
-	bool operator()(const Task * p1 ) const { return p1->name() == _s; }
-
-    private:
-	const std::string& _s;
-    };
-
 public:
     static std::set <Task *, ltTask> __tasks;	/* Task table.	*/
 
@@ -105,7 +96,7 @@ public:
     static const std::map<const Type,const std::string> type_strings;
 
 public:
-    static Task * find( const char * task_name );
+    static Task * find( const std::string& task_name );
     static Task * add( LQIO::DOM::Task* domTask );
 
 private:
@@ -142,7 +133,7 @@ public:
     Message * alloc_message();
     void free_message( Message * msg );
 
-    Activity * find_activity( const char * activity_name ) const;
+    Activity * find_activity( const std::string& activity_name ) const;
 
     bool is_infinite() const;
     bool is_multiserver() const { return multiplicity() > 1; }

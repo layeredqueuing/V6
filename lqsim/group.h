@@ -2,7 +2,7 @@
  *
  * Processor Group handling.
  *
- * $Id: group.h 16945 2024-01-26 13:02:36Z greg $
+ * $Id: group.h 17299 2024-09-17 19:10:28Z greg $
  */
 
 /************************************************************************/
@@ -28,20 +28,6 @@ class Group
     struct ltGroup
     {
 	bool operator()(const Group * p1, const Group * p2) const { return strcmp( p1->name(), p2->name() ) < 0; }
-    };
-
-
-    /*
-     * Compare a group name to a string.  Used by the find_if (and other algorithm type things.
-     */
-
-    struct eqGroupStr 
-    {
-	eqGroupStr( const std::string& s ) : _s(s) {}
-	bool operator()(const Group * p1 ) const { return _s == p1->name(); }
-
-    private:
-	const std::string _s;
     };
 
 private:
