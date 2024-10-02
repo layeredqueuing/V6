@@ -8,7 +8,7 @@
 /************************************************************************/
 
 /*
- * $Id: phase.cc 17264 2024-09-07 21:08:34Z greg $
+ * $Id: phase.cc 17309 2024-09-26 21:00:55Z greg $
  *
  * Generate a Petri-net from an SRVN description.
  *
@@ -198,7 +198,7 @@ std::vector<double>* Phase::get_histogram( const Entry * entry ) const
 double
 Phase::service_rate() const
 {
-    if ( s() == 0.0 ) {
+    if ( !has_service_time() ) {
 	return 1.0;
     } else {
 	double sum = 1.0;
@@ -215,7 +215,8 @@ Phase::service_rate() const
 
 bool Phase::has_deterministic_calls() const
 {
-    return get_dom()->getPhaseTypeFlag() != LQIO::DOM::Phase::Type::STOCHASTIC;	/* clash with WSPNLIB DETERMINISTIC */
+    return get_dom()->getPhaseTypeFlag() != LQIO::DOM::Phase::Type::STOCHASTIC	/* clash with WSPNLIB DETERMINISTIC */
+	|| !has_service_time();			/* Force to deterministic */
 }
 
 
@@ -223,7 +224,7 @@ bool
 Phase::has_deterministic_service() const
 {
     return coeff_of_var() == 0.0
-	&& s() > 0.0
+	&& has_service_time()
 	&& task()->type() != Task::Type::OPEN_SRC;
 }
 
@@ -232,7 +233,7 @@ bool
 Phase::is_hyperexponential() const
 {
     return coeff_of_var() > 1.0
-	&& s() > 0.0
+	&& has_service_time()
 	&& task()->type() != Task::Type::OPEN_SRC;
 }
 
@@ -280,7 +281,7 @@ Phase::check()
     double ysum = 0;
     double zsum = 0;
     const Processor * curr_proc = task()->processor();
-    if ( s() > 0.0 && coeff_of_var() != 1.0 && curr_proc->get_scheduling() == SCHEDULE_PPR ) {
+    if ( has_service_time() && coeff_of_var() != 1.0 && curr_proc->get_scheduling() == SCHEDULE_PPR ) {
 	LQIO::runtime_error( WRN_PREEMPTIVE_SCHEDULING, curr_proc->name(), name() );
 //	curr_proc->scheduling = SCHEDULE_FIFO;
     }
@@ -379,7 +380,7 @@ Phase::transmorgrify( const double x_pos, const double y_pos, const unsigned m,
 	if ( !simplify_phase() ) {
 	    c_trans = create_trans( X_OFFSET(s_pos+1,0), y_pos - 0.5, layer_mask,
 				    _prob_a, 1, IMMEDIATE, "w%s%d%d", name(), m, s );
-	    if ( this->s() > 0.0 ) {
+	    if ( has_service_time() ) {
 	        if ( task()->type() == Task::Type::OPEN_SRC ) {
 		    create_arc( layer_mask, INHIBITOR, c_trans, curr_slice->SX[m][1] );
 		} else {
@@ -396,7 +397,7 @@ Phase::transmorgrify( const double x_pos, const double y_pos, const unsigned m,
 	    create_arc( layer_mask, TO_TRANS, c_trans, curr_slice->WX[m] );
 	    create_arc( layer_mask, TO_PLACE, c_trans, curr_slice->SX[m][2] );
 	}
-	if ( this->s() == 0 ) {
+	if ( !has_service_time() ) {
 	    c_trans = create_trans( X_OFFSET(s_pos+2,0), y_pos - 0.5, layer_mask,  1.0, 1, IMMEDIATE, "s%s%d%d", name(), m, s );
 	} else if ( has_deterministic_service() ) {
 	    c_trans = create_trans( X_OFFSET(s_pos+2,0), y_pos - 0.5, layer_mask, -_rpar_s[0], 1, DETERMINISTIC, "s%s%d%d", name(), m, s );
@@ -405,7 +406,7 @@ Phase::transmorgrify( const double x_pos, const double y_pos, const unsigned m,
 	} else {
 	    c_trans = create_trans( X_OFFSET(s_pos+2,0), y_pos - 0.5, layer_mask, -_rpar_s[0], 1, EXPONENTIAL, "s%s%d%d", name(), m, s );
 	}
-	if ( this->s() > 0.0 && task()->type() != Task::Type::OPEN_SRC ) {
+	if ( has_service_time() && task()->type() != Task::Type::OPEN_SRC ) {
 	    processor_acquired( c_trans, m, s );
 	}
 
@@ -425,7 +426,7 @@ Phase::transmorgrify( const double x_pos, const double y_pos, const unsigned m,
 	} else {
 	    doneX[m] = c_trans;
 	}
-	if ( this->s() > 0.0 && task()->type() != Task::Type::OPEN_SRC ) {
+	if ( has_service_time() && task()->type() != Task::Type::OPEN_SRC ) {
 	    release_processor( c_trans, m, s );
 	}
 	if ( is_hyperexponential() ) {
@@ -554,7 +555,7 @@ Phase::follow_forwarding_path( const unsigned slice_no, Entry * a, double rate )
 void
 Phase::create_spar()
 {
-    if ( s() == 0 ) return;	/* Ignore phases with zero service times. */
+    if ( !has_service_time() ) return;	/* Ignore phases with zero service times. */
 
     const double mu = service_rate();
     if ( is_hyperexponential() ) {
@@ -722,7 +723,7 @@ Phase::get_processor_utilization ( unsigned m )
     assert( 0 < n_slices() && n_slices() < DIMSLICE );
 
     for ( unsigned int s = 0; s < n_slices(); ++s ) {
-	if ( this->s() == 0.0 ) continue;
+	if ( !has_service_time() ) continue;
 
 	if ( h->is_single_place_processor() ) {
 	    mean_tokens += get_pmmean( "S%s%d%d", name(), m, s );			/* Entry service.	*/

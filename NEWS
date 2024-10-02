@@ -1,7 +1,20 @@
-* Bugs fixed in 6.2.29
-442 	LQN Solv 	Merge V5 to V6 
+* Bugs fixed in 6.2.31
+468 	lqiolib 	bug-467.xlqn:48: error: Entry "WebServer" has a start activity defined. Activity "analyze" is a duplicate.
+469 	lqiolib 	Reload json results from spex model fails. 
+472 	lqiolib 	hexp(m,cv^2) not implemented.
+466 	lqn2xxx 	terminating due to uncaught exception of type ActivityList::bad_internal_join: 
+465 	lqn2xxx 	Generating .svg and .emf output is borked.
+478 	lqns 		LQNS 6.2.28 handles correctly this model while 6.2.29 throws a lqns: domain error
+222 	lqsim	 	V5 lqsim: faulty models causing aborts
+264 	lqsim 		V6: lqsim regression.
+453 	lqsim 		lqsim (V5) 63-semaphore failing. Priorities inverted in parasol.
+481 	lqsim 		Processor utilization is NOT saved if the processor sharing is used.
+476 	lqx 		C++20 [-Wtemplate-id-cdtor] 21 | ReferencedPointer<T>()
+480 	miscella 	template-id not allowed for constructor in C++20 [-Wtemplate-id-cdtor]
+470 	petrisrv 	The 'c' parameter has no effect.
+423 	petrisrv 	Petrisrvn quorum borked.
 
-* Bugs fixes in 5.30
+* Bugs fixes in 6.2.30
 208 	lqiolib 	Add --gnuplot output. 
 448 	lqiolib 	Faults in open models.
 456 	lqiolib 	Add drop probability for open arrivals.
@@ -16,7 +29,7 @@
 449 	petrisrv 	Petrisrvn regression failures
 450 	srvndiff 	srvndiff: 34-priority.lqxo:11: error: Invalid argument "-0.538461" to attribute for element <result-task>
 
-* Bugs fixes in 5.29
+* Bugs fixes in 6.2.29
 441     lqiolib         Null model comment.
 443     lqiolib         Export/Import the schema "description" field.
 445     lqiolib         if ( va_list ) {}

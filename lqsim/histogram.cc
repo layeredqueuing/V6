@@ -1,7 +1,7 @@
 /* histogram.cc	-- Greg Franks Mon Jun 15 2009
  *
  * ------------------------------------------------------------------------
- * $Id: histogram.cc 17303 2024-09-18 18:03:35Z greg $
+ * $Id: histogram.cc 17308 2024-09-19 18:02:02Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
+#include <algorithm>
 #include <functional>
 #include <lqio/error.h>
 #include "histogram.h"
@@ -36,14 +37,14 @@ Histogram::Histogram( const LQIO::DOM::Histogram * histogram )
 void
 Histogram::configure()
 {
-    for_each ( _hist.begin(), _hist.end(), std::mem_fn(&hist_bin::clear) );
+    std::for_each ( _hist.begin(), _hist.end(), std::mem_fn(&hist_bin::clear) );
 }
 
 void
 Histogram::reset()
 {
     _count = 0.0;
-    for_each ( _hist.begin(), _hist.end(), std::mem_fn(&hist_bin::reset) );
+    std::for_each ( _hist.begin(), _hist.end(), std::mem_fn(&hist_bin::reset) );
 }
 
 

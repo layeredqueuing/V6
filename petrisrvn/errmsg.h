@@ -8,7 +8,7 @@
  */
 
 /*
- * $Id: errmsg.h 17075 2024-02-28 21:20:08Z greg $
+ * $Id: errmsg.h 17309 2024-09-26 21:00:55Z greg $
  */
 
 #include <lqio/glblerr.h>
@@ -16,7 +16,6 @@
 
 enum {
     FTL_TAG_TABLE_FULL=LQIO::LSTGBLERRMSG+1,
-    ERR_BOGUS_REFERENCE_TASK,
     ERR_MULTI_SYNC_SERVER,
     ERR_COMMON_ENTRY_EXTERNAL_SYNC,
     WRN_CONVERGENCE,

@@ -1,7 +1,7 @@
 # Process this file with autoconf to produce a configure script.
-# $Id: configure.ac 16978 2024-01-29 21:31:31Z greg $
+# $Id: configure.ac 17305 2024-09-19 13:59:02Z greg $
 # ------------------------------------------------------------------------
-AC_INIT([lqns],[6.2.30],[greg@sce.carleton.ca])
+AC_INIT([lqns],[6.2.31],[greg@sce.carleton.ca])
 AC_CONFIG_AUX_DIR([config])
 AC_CONFIG_MACRO_DIRS([config])
 AC_CONFIG_HEADERS([config.h])

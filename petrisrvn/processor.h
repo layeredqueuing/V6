@@ -11,7 +11,7 @@
 #define _PROCESSOR_H
 
 /*
- * $Id: processor.h 17075 2024-02-28 21:20:08Z greg $
+ * $Id: processor.h 17309 2024-09-26 21:00:55Z greg $
  *
  * Solve LQN using petrinets.
  */
@@ -51,7 +51,8 @@ public:
 
     bool is_single_place_processor() const;
     bool is_ps_processor() const;		/* BUG 415 */
-
+    bool is_not_used() const;
+    
     void remove_netobj() { PX = nullptr; }
     void initialize();
     void transmorgrify( unsigned max_count );

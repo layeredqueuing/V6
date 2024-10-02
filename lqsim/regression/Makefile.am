@@ -2,7 +2,7 @@
 # Copyright (C) 2005 Greg Franks <greg@sce.carleton.ca>
 #
 # ------------------------------------------------------------------------
-# $Id: Makefile.am 17284 2024-09-13 14:58:56Z greg $
+# $Id: Makefile.am 17321 2024-10-01 21:37:19Z greg $
 # ------------------------------------------------------------------------
 
 SRVN=	../lqsim
@@ -35,6 +35,11 @@ MULTI=	20-multiserver.lqxo \
 	22-multiserver.lqxo \
 	23-multiserver.lqxo \
 	24-multiserver.lqxo
+OVER=	31-overtaking.lqxo \
+	32-async-inf.lqxo \
+	33-spex-convergence.lqxo \
+	34-priority.lqxo \
+	35-subchain.lqxo
 ACT=	40-activities.lqxo \
 	41-activities.lqxo \
 	42-activities.lqxo \
@@ -44,10 +49,6 @@ ACT=	40-activities.lqxo \
 	46-activities.lqxo \
 	47-activities.lqxo \
 	48-activities.lqxo
-OVER=	31-overtaking.lqxo \
-	32-async-inf.lqxo \
-	33-spex-convergence.lqxo \
-	34-priority.lqxo
 REPL=	50-replication.lqxo \
 	51-replication.lqxo \
 	52-replication.lqxo \

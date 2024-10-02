@@ -8,7 +8,7 @@
 /************************************************************************/
 
 /*
- * $Id: task.cc 17264 2024-09-07 21:08:34Z greg $
+ * $Id: task.cc 17309 2024-09-26 21:00:55Z greg $
  *
  * Generate a Petri-net from an SRVN description.
  *
@@ -242,26 +242,16 @@ Task::initialize()
     
     if ( !entries.size() ) {
 	get_dom()->runtime_error( LQIO::ERR_TASK_HAS_NO_ENTRIES );
-    } else if ( type() == Task::Type::REF_TASK && !has_service_time() && !has_deterministic_phases()  ) {
-	LQIO::runtime_error( ERR_BOGUS_REFERENCE_TASK, name() );
     } 
     if ( processor() != nullptr && processor()->get_scheduling() == SCHEDULE_CFS && dynamic_cast<const LQIO::DOM::Task *>(get_dom())->getGroup() == nullptr ) {
 	get_dom()->runtime_error( LQIO::ERR_NO_GROUP_SPECIFIED, processor()->name() );
     }
     if ( n_activities() ) {
-	bool hasActivityEntry = false;
-	for ( vector<Entry *>::const_iterator e = entries.begin(); e != entries.end(); ++e ) {
-	    if ( (*e)->start_activity() ) {
-		hasActivityEntry = true;
-	    }
-	}
-	for ( vector<Activity *>::const_iterator a = activities.begin(); a != activities.end(); ++a ) {
-	    (*a)->check();
-	}
-
-	if ( !hasActivityEntry ) {
+	if( std::all_of( entries.begin(), entries.end(), []( const Entry * entry ){ return entry->start_activity() == nullptr; } ) ) {
 	    get_dom()->runtime_error( LQIO::ERR_NO_START_ACTIVITIES );
 	}
+	
+	std::for_each( activities.begin(), activities.end(), std::mem_fn( &Activity::check ) );
     }
 
     if ( type() == Task::Type::SEMAPHORE ) {
@@ -385,6 +375,13 @@ bool Task::is_single_place_task() const
     return type() == Task::Type::REF_TASK && (customers_flag
 				  || (n_threads() > 1 && !processor()->is_infinite()));
 }
+
+
+bool Task::is_dummy_task() const
+{
+    return type() == Task::Type::REF_TASK && !has_service_time(); // && !has_deterministic_phases();
+}
+
 
 bool Task::has_service_time() const
 {
