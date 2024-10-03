@@ -8,7 +8,7 @@
 /************************************************************************/
 
 /*
- * $Id: entry.cc 17264 2024-09-07 21:08:34Z greg $
+ * $Id: entry.cc 17328 2024-10-02 19:55:53Z greg $
  *
  * Generate a Petri-net from an SRVN description.
  *
@@ -73,14 +73,14 @@ Entry::clear()
 Entry *
 Entry::create( LQIO::DOM::Entry * dom, Task * task )
 {
-    std::vector<Entry *>::const_iterator nextEntry = find_if( __entry.begin(), __entry.end(), eqEntryStr( dom->getName() ) );
-    if ( nextEntry != __entry.end() ) {
+    const std::string& name = dom->getName();
+    if ( std::find_if( __entry.begin(), __entry.end(), [&]( const Entry * entry ){ return name == entry->name(); } ) != __entry.end() ) {
 	dom->runtime_error( LQIO::ERR_DUPLICATE_SYMBOL );
 	return nullptr;
     } else {
-	Entry * ep = new Entry( dom, task );
-	::__entry.push_back( ep );
-	return ep;
+	Entry * entry = new Entry( dom, task );
+	::__entry.push_back( entry );
+	return entry;
     }
 }
 
@@ -235,12 +235,12 @@ Entry::initialize()
 	    Phase * curr_phase = &phase[p];
 	    if ( !curr_phase->get_dom() ) continue;
 
-	    double calls = curr_phase->check();
+	    curr_phase->initialize();
 
-	    if ( curr_phase->s() > 0.0 || curr_phase->think_time() > 0.0 ) {
+	    if ( curr_phase->has_service_time() || curr_phase->think_time() > 0.0 ) {
 		_has_service_time = true;
 	    }
-	    if ( ( calls > 0 || curr_phase->s() > 0.0 ) && p > n_phases() ) {
+	    if ( ( curr_phase->has_calls() || curr_phase->has_service_time() ) && p > n_phases() ) {
 		set_n_phases( p );
 	    }
 	}
@@ -304,7 +304,7 @@ Entry::transmorgrify( double base_x_pos, double base_y_pos, unsigned ix_e, struc
     double x_pos = base_x_pos + ix_e * 0.5;
     double y_pos = base_y_pos;
     double task_y_offset = Y_OFFSET(1.0);
-    struct place_object * start_place = 0;
+    struct place_object * start_place = nullptr;
     double next_pos;
     const LAYER layer_mask = ENTRY_LAYER(entry_id())|(m == 0 ? PRIMARY_LAYER : 0);
 
@@ -327,7 +327,9 @@ Entry::transmorgrify( double base_x_pos, double base_y_pos, unsigned ix_e, struc
 
 	if ( !task()->inservice_flag() || task()->is_client() ) {
 	    for ( p = 1; p < n_phases(); ++p ) {
-		create_arc( layer_mask, TO_PLACE, phase[p].doneX[m], phase[p+1].ZX[m] );
+		if ( phase[p].doneX[m] != nullptr ) {
+		    create_arc( layer_mask, TO_PLACE, phase[p].doneX[m], phase[p+1].ZX[m] );
+		}
 	    }
 	    /*+ BUG_164 */
 	    if ( d_place ) {
@@ -339,7 +341,10 @@ Entry::transmorgrify( double base_x_pos, double base_y_pos, unsigned ix_e, struc
 	    }
 	    /*- BUG_164 */
 	}
-	start_place = phase[1].ZX[m];
+
+	for ( p = 1; start_place == nullptr && p <= n_phases(); ++p ) {
+	    start_place = phase[p].ZX[m];	/* First one, starting at 1 */
+	}
 	next_pos = X_OFFSET(p_pos+1,0.0);
 
     } else {
@@ -530,11 +535,11 @@ double Entry::queueing_time( const Entry * entry ) const
 
 /* static */ Entry * Entry::find( const std::string& name)
 {
-    std::vector<Entry *>::const_iterator nextEntry = find_if( __entry.begin(), __entry.end(), eqEntryStr( name ) );
-    if ( nextEntry == __entry.end() ) {
-	return 0;
+    std::vector<Entry *>::const_iterator entry = find_if( __entry.begin(), __entry.end(), [&]( const Entry * entry ){ return entry->name() == name; } );
+    if ( entry == __entry.end() ) {
+	return nullptr;
     } else {
-	return *nextEntry;
+	return *entry;
     }
 }
 

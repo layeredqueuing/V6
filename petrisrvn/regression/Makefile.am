@@ -2,7 +2,7 @@
 # Copyright (C) 2005 Greg Franks <greg@sce.carleton.ca>
 #
 # ------------------------------------------------------------------------
-# $Id: Makefile.am 17284 2024-09-13 14:58:56Z greg $
+# $Id: Makefile.am 17324 2024-10-02 14:46:37Z greg $
 # ------------------------------------------------------------------------
 
 
@@ -26,7 +26,8 @@ INTER=	10-interlock.lqxo \
 	14-interlock.lqxo \
 	15-split-interlock.lqxo \
 	16-split-interlock.lqxo \
-	18-interlock.lqxo
+	18-interlock.lqxo \
+	19-interlock.lqxo
 MULTI=	20-multiserver.lqxo \
 	21-multiserver.lqxo \
 	22-multiserver.lqxo \

@@ -11,7 +11,7 @@
 #define _ACTIVITY_H
 
 /*
- * $Id: activity.h 17075 2024-02-28 21:20:08Z greg $
+ * $Id: activity.h 17328 2024-10-02 19:55:53Z greg $
  *
  * Solve LQN using petrinets.
  */
@@ -42,7 +42,7 @@ public:
     virtual bool is_activity() const { return true; }
     unsigned int n_replies() const { return _replies.size(); }
 
-    virtual double check();
+    virtual bool check() const;
 
     bool find_children( std::deque<Activity *>& activity_stack, std::deque<ActivityList *>& fork_stack, const Entry * e );
     double count_replies( std::deque<Activity *>& activity_stack, const Entry * e, const double rate, const unsigned curr_phase, unsigned& next_phase  );
@@ -93,14 +93,5 @@ private:
 public:
     static std::map<LQIO::DOM::ActivityList*, LQIO::DOM::ActivityList*> actConnections;
     static std::map<LQIO::DOM::ActivityList*, ActivityList *> domToNative;
-};
-
-struct eqActivityStr
-{
-    eqActivityStr( const std::string& s ) : _s(s) {}
-    bool operator()(const Activity * p1 ) const { return _s == p1->name(); }
-
-private:
-    const std::string& _s;
 };
 #endif

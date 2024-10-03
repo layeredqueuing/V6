@@ -11,7 +11,7 @@
 #define _ENTRY_H
 
 /*
- * $Id: entry.h 17264 2024-09-07 21:08:34Z greg $
+ * $Id: entry.h 17328 2024-10-02 19:55:53Z greg $
  *
  * Solve LQN using petrinets.
  */
@@ -133,20 +133,6 @@ private:
 
 public:
     static unsigned int __next_entry_id;
-};
-
-
-/*
- * Compare a processor name to a string.  Used by the find_if (and other algorithm type things.
- */
-
-struct eqEntryStr
-{
-    eqEntryStr( const std::string& s ) : _s(s) {}
-    bool operator()(const Entry * e ) const { return _s == e->name(); }
-
-private:
-    const std::string& _s;
 };
 
 extern std::vector<Entry *> __entry;

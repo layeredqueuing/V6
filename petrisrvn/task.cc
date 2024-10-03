@@ -8,7 +8,7 @@
 /************************************************************************/
 
 /*
- * $Id: task.cc 17309 2024-09-26 21:00:55Z greg $
+ * $Id: task.cc 17328 2024-10-02 19:55:53Z greg $
  *
  * Generate a Petri-net from an SRVN description.
  *
@@ -250,8 +250,7 @@ Task::initialize()
 	if( std::all_of( entries.begin(), entries.end(), []( const Entry * entry ){ return entry->start_activity() == nullptr; } ) ) {
 	    get_dom()->runtime_error( LQIO::ERR_NO_START_ACTIVITIES );
 	}
-	
-	std::for_each( activities.begin(), activities.end(), std::mem_fn( &Activity::check ) );
+	std::for_each( activities.begin(), activities.end(), std::mem_fn( &Activity::initialize ) );
     }
 
     if ( type() == Task::Type::SEMAPHORE ) {
@@ -398,12 +397,15 @@ bool Task::has_deterministic_phases() const
 
 bool Task::scheduling_is_ok() const
 {
-    return is_infinite() && get_scheduling() == SCHEDULE_DELAY
-	|| !is_infinite() && get_scheduling() == SCHEDULE_CUSTOMER
-	|| multiplicity() != 1 && ( get_scheduling() == SCHEDULE_HOL
-				 || get_scheduling() == SCHEDULE_SEMAPHORE )
-	|| get_scheduling() == SCHEDULE_FIFO
-	|| get_scheduling() == SCHEDULE_RAND;
+    switch ( get_scheduling() ) {
+    case SCHEDULE_CUSTOMER: return !is_infinite();
+    case SCHEDULE_DELAY: return is_infinite();
+    case SCHEDULE_FIFO:
+    case SCHEDULE_HOL:
+    case SCHEDULE_RAND:
+    case SCHEDULE_SEMAPHORE: return true;
+    default: return false;
+    }
 }
 
 
@@ -459,7 +461,7 @@ Task::add_activity( LQIO::DOM::Activity * dom )
 Activity *
 Task::find_activity( const std::string& name ) const
 {
-    vector<Activity *>::const_iterator ap = find_if( activities.begin(), activities.end(), eqActivityStr( name ) );
+    vector<Activity *>::const_iterator ap = std::find_if( activities.begin(), activities.end(), [&]( Activity * activity ){ return name == activity->name(); } );
     if ( ap != activities.end() ) {
 	return *ap;
     } else {

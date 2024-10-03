@@ -2,7 +2,7 @@
 # Copyright (C) 2005 Greg Franks <greg@sce.carleton.ca>
 #
 # ------------------------------------------------------------------------
-# $Id: Makefile.am 17321 2024-10-01 21:37:19Z greg $
+# $Id: Makefile.am 17324 2024-10-02 14:46:37Z greg $
 # ------------------------------------------------------------------------
 
 SRVN=	../lqsim
@@ -140,7 +140,7 @@ distclean:	clean
 sanity:	$(SANITY)
 	echo $(SANITY) | tr -s " " "\n" | srvndiff -S0.01 -Q -@- . ../../models/regression/sim-results
 
-inter:	$(INTER)
+interlock: $(INTER)
 	echo $(INTER) | tr -s " " "\n" | srvndiff -Q -@- . ../../models/regression/sim-results
 
 multi:	$(MULTI)

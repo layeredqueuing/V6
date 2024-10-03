@@ -11,7 +11,7 @@
 #define PETRISRVN_PHASE_H
 
 /*
- * $Id: phase.h 17309 2024-09-26 21:00:55Z greg $
+ * $Id: phase.h 17324 2024-10-02 14:46:37Z greg $
  *
  * Solve LQN using petrinets.
  */
@@ -77,16 +77,17 @@ public:
     bool has_deterministic_calls() const;
     bool is_hyperexponential() const;
     virtual bool is_activity() const { return false; }
-    int is_erlang() const;
+    bool is_special_reference_phase() const;
     int n_stages() const;
 
     unsigned int n_slices() const { return _n_slices; }	/* Number of slices for net.	*/
     double mean_processor_calls() const { return _mean_processor_calls; }
 
-    virtual double check();
+    virtual bool check() const;
     Phase& add_call( LQIO::DOM::Call * );
     void build_forwarding_list();
 
+    virtual void initialize();
     double transmorgrify( const double x_pos, const double y_pos, const unsigned m,
 			  const LAYER layer_mask, const double p_pos, const short enabling );
     void create_spar();
