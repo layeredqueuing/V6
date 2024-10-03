@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: common_io.cpp 15943 2022-10-04 22:24:49Z greg $
+ * $Id: common_io.cpp 17331 2024-10-03 12:57:24Z greg $
  *
  * Read in XML input files.
  *
@@ -189,29 +189,6 @@ static inline double tv_to_double( struct timeval& tv ) { return (static_cast<do
 	    output.precision(precision);
 	    output.fill(fill);
 	    return output;
-	}
-
-	ForPhase::ForPhase()
-	    : _maxPhase(DOM::Phase::MAX_PHASE), _type(DOM::Call::Type::NULL_CALL)
-	{
-	    for ( unsigned p = 0; p < DOM::Phase::MAX_PHASE; ++p ) {
-		ia[p] = 0;
-	    }
-	}
-
-	void
-	CollectCalls::operator()( const std::pair<unsigned, Phase*>& p )
-	{
-	    const unsigned n = p.first;
-	    const std::vector<Call *>& calls = p.second->getCalls();
-	    for ( std::vector<Call*>::const_iterator c = calls.begin(); c != calls.end(); ++c ) {
-		const Call* call = *c;
-		if ( !_test || (call->*_test)() ) {
-		    ForPhase& y = _calls[call->getDestinationEntry()];
-		    y.setType( call->getCallType() );
-		    y[n] = call;
-		}
-	    }
 	}
 
 	std::ostream&
