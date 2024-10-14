@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: jmva_document.cpp 17258 2024-07-15 14:53:50Z greg $
+ * $Id: jmva_document.cpp 17360 2024-10-12 10:59:43Z greg $
  *
  * Read in XML input files.
  *
@@ -79,7 +79,7 @@ namespace QNIO {
     /* DOM input.                                                       */
     /* ---------------------------------------------------------------- */
 
-    JMVA_Document::JMVA_Document( const std::string& input_file_name ) :
+    JMVA_Document::JMVA_Document( const std::filesystem::path& input_file_name ) :
 	Document( input_file_name, BCMP::Model() ),
 	_strict_jmva(true), _parser(nullptr), _stack(),
 	_lqx_program_text(), _lqx_program_line_number(0), _lqx(nullptr), _program(),
@@ -117,7 +117,7 @@ namespace QNIO {
 	/* LQX present? */
 	const std::string& program_text = getLQXProgramText();
 	if ( !program_text.empty() ) {
-	    _lqx = LQX::Program::loadFromText(getInputFileName().c_str(), getLQXProgramLineNumber(), program_text.c_str());
+	  _lqx = LQX::Program::loadFromText(getInputFileName().string().c_str(), getLQXProgramLineNumber(), program_text.c_str());
 	}
 	return true;
     }
@@ -130,7 +130,7 @@ namespace QNIO {
      */
 
     bool
-    JMVA_Document::load( LQIO::DOM::Document& lqn, const std::string& input_file_name )
+    JMVA_Document::load( LQIO::DOM::Document& lqn, const std::filesystem::path& input_file_name )
     {
 	JMVA_Document * jmva = new JMVA_Document( input_file_name );
 	if ( !jmva->parse() ) return false;
@@ -147,7 +147,7 @@ namespace QNIO {
 
 	if ( !LQIO::Filename::isFileName( getInputFileName() ) ) {
 	    input_fd = fileno( stdin );
-	} else if ( ( input_fd = open( getInputFileName().c_str(), O_RDONLY ) ) < 0 ) {
+	} else if ( ( input_fd = open( getInputFileName().string().c_str(), O_RDONLY ) ) < 0 ) {
 	    std::cerr << LQIO::io_vars.lq_toolname << ": Cannot open input file " << getInputFileName() << " - " << strerror( errno ) << std::endl;
 	    return false;
 	}
@@ -1530,6 +1530,10 @@ namespace QNIO {
 	}
 	
 	_gnuplot.push_back( LQIO::GnuPlot::print_node( "set title \"" + model().comment() + "\"" ) );
+
+	std::string filename = LQIO::Filename( getInputFileName() ).str() + "-" + BCMP::Model::Result::suffix.at(type) + "." + suffix;
+	_gnuplot.push_back( LQIO::GnuPlot::print_node( prefix + "set output \"" + filename + "\"" ) );
+	_gnuplot.push_back( LQIO::GnuPlot::print_node( prefix + "set terminal " + suffix ) );
 
 	std::ostringstream plot;		// Plot command collected here.
 

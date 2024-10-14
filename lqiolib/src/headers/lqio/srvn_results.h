@@ -7,7 +7,7 @@
 /************************************************************************/
 
 /*
- * $Id: srvn_results.h 16627 2023-04-03 22:04:21Z greg $
+ * $Id: srvn_results.h 17360 2024-10-12 10:59:43Z greg $
  */
 
 #ifndef SRVN_RESULTS_H
@@ -128,7 +128,7 @@ void total_thpt_ut_confidence( const char * task_name, int conf_level, double tp
 
 namespace LQIO {
     namespace SRVN {
-	bool loadResults( const std::string& );
+	bool loadResults( const std::filesystem::path& );
     }
 }
 #endif

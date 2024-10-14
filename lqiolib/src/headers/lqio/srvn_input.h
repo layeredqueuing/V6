@@ -1,5 +1,5 @@
 /*
- *  $Id: srvn_input.h 17255 2024-07-08 14:50:02Z greg $
+ *  $Id: srvn_input.h 17360 2024-10-12 10:59:43Z greg $
  *  libsrvnio2
  *
  *  Created by Martin Mroz on 24/02/09.
@@ -106,7 +106,7 @@ namespace LQIO {
 	class Document;
     }
     namespace SRVN {
-	bool load(DOM::Document&, const std::string&, bool);
+	bool load(DOM::Document&, const std::filesystem::path&, bool);
     }
 }
 

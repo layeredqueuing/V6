@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: generate.cc 17264 2024-09-07 21:08:34Z greg $
+ * $Id: generate.cc 17360 2024-10-12 10:59:43Z greg $
  *
  * Print out model information.  We can also print out the
  * submodels as C++ source.
@@ -826,7 +826,7 @@ Generate::BCMP_Model::serialize( const Submodel * submodel, serialize_fptr f )
     
     if ( dynamic_cast<const MVASubmodel *>(submodel) == nullptr ) return;
 
-    const std::string source_file_name = LQIO::DOM::Document::__input_file_name;	/* We need a copy to preserve over output */
+    const std::filesystem::path source_file_name = LQIO::DOM::Document::__input_file_name;	/* We need a copy to preserve over output */
     std::ostringstream file_name;
     file_name << __directory_name << "/submodel-" << submodel->number() << "." << extension.at(f);
     
@@ -840,7 +840,7 @@ Generate::BCMP_Model::serialize( const Submodel * submodel, serialize_fptr f )
 	std::ostringstream comment;
 	comment << source_file_name << ", submodel " << submodel->number();
 	bcmp.setComment( comment.str() );
-	(*f)( output, source_file_name, bcmp._model );
+	(*f)( output, source_file_name.string(), bcmp._model );
     }
 
     output.close();

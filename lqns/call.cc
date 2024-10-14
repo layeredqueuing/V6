@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: call.cc 17211 2024-05-13 22:13:11Z greg $
+ * $Id: call.cc 17349 2024-10-09 19:00:02Z greg $
  *
  * Everything you wanted to know about a call to an entry, but were afraid to ask.
  *
@@ -178,8 +178,7 @@ Call::initCustomers( std::deque<const Task *>& stack, unsigned int customers )
 	task->initCustomers( stack, customers );
     } else if ( hasSendNoReply() ) {
 	/* Asynchronous send, so this is effectively an open arrival */
-	std::deque<const Task *> stack2;
-	task->initCustomers( stack2, std::numeric_limits<unsigned int>::max() );
+	task->initCustomers( stack, std::numeric_limits<unsigned int>::max() );
     } // Ignore hasForwarding().
     return *this;
 }

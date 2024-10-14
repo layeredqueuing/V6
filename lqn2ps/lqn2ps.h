@@ -1,7 +1,7 @@
 /* -*- c++ -*-
  * lqn2ps.h	-- Greg Franks
  *
- * $Id: lqn2ps.h 17325 2024-10-02 15:18:10Z greg $
+ * $Id: lqn2ps.h 17349 2024-10-09 19:00:02Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -29,8 +29,6 @@
 #include <string>
 #include <stdexcept>
 #include <regex>
-#include <lqio/dom_document.h>
-#include <lqio/dom_extvar.h>
 #include "option.h"
 
 namespace LQIO {
@@ -42,6 +40,7 @@ namespace LQIO {
 	class DocumentObject;
 	class Entity;
 	class Entry;
+	class ExternalVariable;
 	class Group;
 	class Phase;
 	class Pragma;

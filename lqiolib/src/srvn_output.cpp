@@ -1,5 +1,5 @@
 /*
- *  $Id: srvn_output.cpp 17331 2024-10-03 12:57:24Z greg $
+ *  $Id: srvn_output.cpp 17360 2024-10-12 10:59:43Z greg $
  *
  * Copyright the Real-Time and Distributed Systems Group,
  * Department of Systems and Computer Engineering,
@@ -362,7 +362,7 @@ namespace LQIO {
 	    output << textbf << call_header( fwd_waiting_time_str ) << newline << textrm;
 	    std::for_each( _entities.begin(), _entities.end(), EntryOutput( output, &EntryOutput::printForwardingWaiting ) );
 	}
-	
+
         if ( getDOM().hasSendNoReply() ) {
             output << call_header( snr_waiting_time_str ) << phase_header( ObjectOutput::__maxPhase ) << newline;
             std::for_each( _entities.begin(), _entities.end(), CallOutput( output, &DOM::Call::hasSendNoReply, &CallOutput::printCallWaiting, &CallOutput::printCallWaitingConfidence ) );
@@ -729,11 +729,11 @@ namespace LQIO {
         return output;
     }
 
-    /* 
-     * Collect all variables associated with the object, then print them out.  Since entries have their own variables, 
+    /*
+     * Collect all variables associated with the object, then print them out.  Since entries have their own variables,
      * and phases are associated with entries, do both at the same time.
      */
-    
+
     /* static  */ std::ostream&
     SRVN::ObjectInput::printObservationVariables( std::ostream& output, const DOM::DocumentObject& object )
     {
@@ -949,7 +949,7 @@ namespace LQIO {
         output << "-1"  << std::endl << std::endl;
 
 	/* Open Arrivals */
-	
+
         if ( getDOM().entryHasOpenWait() ) {
 	    unsigned int count = std::count_if( _entities.begin(), _entities.end(), for_each_entry_count_if( &DOM::Entry::hasOpenArrivalRate ) );
             output << "R " << count << std::endl;
@@ -969,9 +969,9 @@ namespace LQIO {
     /*
      * Strip newlines and other funny characters
      */
-    
+
     /* static */ std::ostream&
-    SRVN::Parseable::printComment( std::ostream& output, const std::string& s ) 
+    SRVN::Parseable::printComment( std::ostream& output, const std::string& s )
     {
 	for ( std::string::const_iterator p = s.begin(); p != s.end() ; ++p ) {	/* Handle comments */
 	    if ( *p == '\n' ) {
@@ -1254,7 +1254,7 @@ namespace LQIO {
     }
 
     /*
-     * Print out the variable, var.  If it's a variable, print out the name.  If the variable has been set, print the value, but only 
+     * Print out the variable, var.  If it's a variable, print out the name.  If the variable has been set, print the value, but only
      * if the value is valid.
      */
     
@@ -1277,7 +1277,7 @@ namespace LQIO {
     }
 
     /*
-     * Print out the variable, var.  If it's a variable, print out the name.  If the variable has been set, print the value, but only 
+     * Print out the variable, var.  If it's a variable, print out the name.  If the variable has been set, print the value, but only
      * if the value is valid.
      */
     
@@ -1355,7 +1355,7 @@ namespace LQIO {
 	}
 	return output;
     }
-    
+
     /* -------------------------------------------------------------------- */
     /* Document                                                             */
     /* -------------------------------------------------------------------- */
@@ -1393,9 +1393,6 @@ namespace LQIO {
         _output << newline
                 << "Convergence test value: " << document.getResultConvergenceValue() << newline
                 << "Number of iterations:   " << document.getResultIterations() << newline;
-        if ( document.getExtraComment().length() > 0 ) {
-            _output << "Other:                  " << document.getExtraComment() << newline;
-        }
         _output << newline;
 
         const std::map<std::string,std::string>& pragmas = document.getPragmaList();
@@ -1609,7 +1606,7 @@ namespace LQIO {
         const bool is_infinite = processor.isInfinite();
 	const double copies = is_infinite ? 1.0 : static_cast<double>(processor.getCopiesValue());
 	const double rate   = processor.hasRate() ? processor.getRateValue() : 1.0;
-	
+
         for ( std::set<DOM::Task*>::const_iterator nextTask = tasks.begin(); nextTask != tasks.end(); ++nextTask ) {
             const DOM::Task * task = *nextTask;
             bool print_task_name = true;
@@ -2309,22 +2306,20 @@ namespace LQIO {
         _output << std::endl << "A " << task.getName() << std::endl;
         std::for_each( activities.begin(), activities.end(), ActivityInput( _output, &ActivityInput::print ) );
 
-	const DOM::Activity * deferredReplyActivity = nullptr;		/* Deferred activity for replies */
+	/* Find all activties that reply */
+	std::set<const DOM::Activity *> deferredReplyActivities;
+	std::for_each( activities.begin(), activities.end(), [&]( const auto& activity ){ if ( !activity.second->getReplyList().empty() ) deferredReplyActivities.insert( activity.second ); } );
+
+	/* Print out all defined precedence lists. */
         const std::set<DOM::ActivityList*>& precedences = task.getActivityLists();
-        if ( precedences.size() ) {
-            _output << " :" << std::endl;
-            deferredReplyActivity = std::for_each( precedences.begin(), precedences.end(), ActivityListInput( _output, &ActivityListInput::print, precedences.size() ) ).getPendingReplyActivity();
-        } else if ( activities.size() ) {
-            const std::map<std::string,DOM::Activity*>::const_iterator i = activities.begin();
-            const DOM::Activity * activity = i->second;
-            if ( activity->getReplyList().size() > 0 ) {
-		deferredReplyActivity = activity;
-                _output << " :" << std::endl;
-	    }
-        }
-	if ( deferredReplyActivity != nullptr ) {
-	    _output << "  " << deferredReplyActivity->getName();
-	    printReplyList( deferredReplyActivity->getReplyList() );
+	if ( !precedences.empty() || !deferredReplyActivities.empty() ) _output << " :" << std::endl;
+	std::for_each( precedences.begin(), precedences.end(), ActivityListInput( _output, &ActivityListInput::print, precedences.size(), deferredReplyActivities ) );
+
+	/* BUG 377 Any activities that reply and were not in a pre-precedence list are output here */
+	for ( std::set<const DOM::Activity *>::const_iterator activity = deferredReplyActivities.begin(); activity != deferredReplyActivities.end(); ++activity ) {
+	    _output << "  " << (*activity)->getName();
+	    printReplyList( (*activity)->getReplyList() );
+	    if ( std::next( activity ) != deferredReplyActivities.end() ) _output << ";";
 	    _output << std::endl;
 	}
 
@@ -2374,7 +2369,7 @@ namespace LQIO {
         _output.flags(oldFlags);
     }
 
-    void SRVN::EntryOutput::CountForwarding::operator()( const std::pair<unsigned, DOM::Entity *>& ep ) 
+    void SRVN::EntryOutput::CountForwarding::operator()( const std::pair<unsigned, DOM::Entity *>& ep )
     {
         const DOM::Task * task = dynamic_cast<const DOM::Task *>(ep.second);
         if ( !task ) return;
@@ -2599,13 +2594,13 @@ namespace LQIO {
     {
 	commonPrintForwarding( entry, entity, print, &DOM::Call::getResultWaitingTime, &DOM::Call::getResultWaitingTimeVariance );
     }
-    
+
     void
     SRVN::EntryOutput::printForwardingVarianceWaiting( const DOM::Entry &entry, const DOM::Entity &entity, bool& print ) const
     {
 	commonPrintForwarding( entry, entity, print, &DOM::Call::getResultVarianceWaitingTime, &DOM::Call::getResultVarianceWaitingTimeVariance );
     }
-	
+
     void
     SRVN::EntryOutput::commonPrintForwarding( const DOM::Entry &entry, const DOM::Entity &entity, bool& print, doubleCallFunc get_result, doubleCallFunc get_variance ) const
     {
@@ -2822,7 +2817,7 @@ namespace LQIO {
         std::ios_base::fmtflags oldFlags = _output.setf( std::ios::left, std::ios::adjustfield );
 
 	/* Pad with default values if phase is missing from list */
-	
+
 	for ( ; _p < p.first; ++_p ) {
 	    (this->*_func)( DOM::Phase() );
 	}
@@ -2839,7 +2834,7 @@ namespace LQIO {
 	catch ( const std::domain_error& e ) {
 	    p.throw_invalid_parameter( "CV sq", e.what() );
 	}
-	    
+
     }
 
     void SRVN::PhaseInput::printMaxServiceTimeExceeded( const DOM::Phase& p ) const
@@ -2851,12 +2846,12 @@ namespace LQIO {
 	    p.throw_invalid_parameter( "Exceeded", e.what() );
 	}
     }
-    
+
     void SRVN::PhaseInput::printPhaseFlag( const DOM::Phase& p ) const
     {
 	_output << " " << std::setw(ObjectInput::__maxInpLen) << (p.hasDeterministicCalls() ? "1" : "0");
     }
-    
+
     void SRVN::PhaseInput::printServiceTime( const DOM::Phase& p ) const
     {
 	try {
@@ -2866,7 +2861,7 @@ namespace LQIO {
 	    p.throw_invalid_parameter( "service time", e.what() );
 	}
     }
-    
+
     void SRVN::PhaseInput::printThinkTime( const DOM::Phase& p ) const
     {
 	try {
@@ -2924,7 +2919,7 @@ namespace LQIO {
 
 
     void
-    SRVN::ActivityListInput::operator()( const DOM::ActivityList * precedence ) const
+    SRVN::ActivityListInput::operator()( const DOM::ActivityList * precedence )
     {
         std::ios_base::fmtflags oldFlags = _output.setf( std::ios::left, std::ios::adjustfield );
         (this->*_func)( *precedence );
@@ -2932,12 +2927,11 @@ namespace LQIO {
     }
 
     void
-    SRVN::ActivityListInput::print( const DOM::ActivityList& precedence ) const
+    SRVN::ActivityListInput::print( const DOM::ActivityList& precedence )
     {
         if ( precedence.isForkList() ) return;
 
         _output << " ";
-	_pending_reply_activity = nullptr;
         printPreList( precedence );
         if ( precedence.getNext() ) {
             _output << " -> ";
@@ -2946,14 +2940,14 @@ namespace LQIO {
         } else {
             _count += 1;
         }
-        if ( _count < _size || _pending_reply_activity != nullptr ) {
+        if ( _count < _size || !_pending_reply_activities.empty() ) {
             _output << ";";
         }
         _output << std::endl;
     }
 
     void
-    SRVN::ActivityListInput::printPreList( const DOM::ActivityList& precedence ) const          /* joins */
+    SRVN::ActivityListInput::printPreList( const DOM::ActivityList& precedence )          /* joins */
     {
         const std::vector<const DOM::Activity*>& list = precedence.getList();
         for ( std::vector<const DOM::Activity*>::const_iterator next_activity = list.begin(); next_activity != list.end(); ++next_activity ) {
@@ -2980,33 +2974,33 @@ namespace LQIO {
 
             _output << " " << activity->getName();
             const std::vector<DOM::Entry*>& replies = activity->getReplyList();
-            if ( replies.size() ) {
+            if ( !replies.empty() ) {
                 printReplyList( replies );
+		_pending_reply_activities.erase( activity );	// No longer pending.
             }
         }
     }
 
     void
-    SRVN::ActivityListInput::printPostList( const DOM::ActivityList& precedence ) const         /* forks */
+    SRVN::ActivityListInput::printPostList( const DOM::ActivityList& precedence )         /* forks */
     {
-        const DOM::Activity * end_activity = 0;
-        bool first = true;
+        const DOM::Activity * end_activity = nullptr;
 
         const std::vector<const DOM::Activity*>& list = precedence.getList();
-        for ( std::vector<const DOM::Activity*>::const_iterator next_activity = list.begin(); next_activity != list.end(); ++next_activity ) {
-            const DOM::Activity * activity = *next_activity;
-	    if ( activity->getReplyList().size() > 0 ) {
-		_pending_reply_activity = activity;
+        for ( std::vector<const DOM::Activity*>::const_iterator next = list.begin(); next != list.end(); ++next ) {
+            const DOM::Activity * activity = *next;
+	    if ( !activity->getReplyList().empty() ) {
+		_pending_reply_activities.insert( activity );
 	    }
             switch ( precedence.getListType() ) {
             case DOM::ActivityList::Type::AND_FORK:
-                if ( !first ) {
+                if ( next != list.begin() ) {
                     _output << " & ";
                 }
                 break;
 
             case DOM::ActivityList::Type::OR_FORK:
-                if ( !first ) {
+                if ( next != list.begin() ) {
                     _output << " + ";
                 }
                 _output << "(" << precedence.getParameterValue( activity ) << ") ";
@@ -3020,7 +3014,7 @@ namespace LQIO {
                     end_activity = activity;
                     continue;
                 }
-                if ( !first ) {
+                if ( next != list.begin() ) {
                     _output << " , ";
                 }
                 _output << precedence.getParameterValue( activity ) << " * ";
@@ -3030,7 +3024,6 @@ namespace LQIO {
                 abort();
             }
             _output << activity->getName();
-            first = false;
         }
         if ( end_activity ) {
             _output << ", " << end_activity->getName();

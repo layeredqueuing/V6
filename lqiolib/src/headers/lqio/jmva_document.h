@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- *  $Id: jmva_document.h 17178 2024-04-10 10:55:07Z greg $
+ *  $Id: jmva_document.h 17360 2024-10-12 10:59:43Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  */
@@ -155,12 +155,12 @@ namespace QNIO {
 
 
     public:
-	JMVA_Document( const std::string& input_file_name );
+	JMVA_Document( const std::filesystem::path& input_file_name );
 	JMVA_Document( const BCMP::Model& );
 	virtual ~JMVA_Document();
 
 	virtual bool load();
-	static bool load( LQIO::DOM::Document&, const std::string& );		// Factory.
+	static bool load( LQIO::DOM::Document&, const std::filesystem::path& );		// Factory.
 	virtual InputFormat getInputFormat() const { return InputFormat::JMVA; }
 
     private:

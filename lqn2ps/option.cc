@@ -1,10 +1,11 @@
 /* srvn2eepic.c	-- Greg Franks Sun Jan 26 2003
  *
- * $Id: option.cc 17239 2024-05-27 14:02:21Z greg $
+ * $Id: option.cc 17349 2024-10-09 19:00:02Z greg $
  */
 
 #include "lqn2ps.h"
 #include <algorithm>
+#include <lqio/dom_document.h>
 #include <lqio/dom_pragma.h>
 #include "model.h"
 #include "option.h"

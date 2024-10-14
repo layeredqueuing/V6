@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- *  $Id: dom_document.h 16887 2023-12-07 18:08:01Z greg $
+ *  $Id: dom_document.h 17354 2024-10-10 13:04:51Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -11,6 +11,7 @@
 
 #include <map>
 #include <string>
+#include <filesystem>
 #include "dom_pragma.h"
 #include "dom_entry.h"
 #include "dom_extvar.h"
@@ -58,9 +59,6 @@ namespace LQIO {
 	public:
 	    enum class OutputFormat { DEFAULT, LQN, XML, JABA, JMVA, JSON, RTF, PARSEABLE, QNAP2, TXT };
 	    enum class InputFormat  { AUTOMATIC, LQN, XML, JABA, JMVA, JSON, QNAP2 };
-
-	private:
-	    enum class cached { SET_FALSE, SET_TRUE, NOT_SET };
 
 	private:
 	    Document& operator=( const Document& ) = delete;
@@ -230,11 +228,11 @@ namespace LQIO {
 
 
 	    /* I/O */
-	    static InputFormat getInputFormatFromFilename( const std::string&, const InputFormat=InputFormat::AUTOMATIC );
-	    static Document* load(const std::string&, InputFormat format, unsigned& errorCode, bool load_results );
-	    virtual bool loadResults( const std::string& directory_name, const std::string& file_name, const std::string& extension, OutputFormat format, unsigned& errorCode );
-	    void print( const std::string& output_file_name, const std::string& suffix, OutputFormat format, bool rtf_output ) const;
-	    void print( const std::string& output_file_name, const std::string& suffix, OutputFormat format, bool rtf_output, unsigned int iteration ) const;
+	    static InputFormat getInputFormatFromFilename( const std::filesystem::path&, const InputFormat=InputFormat::AUTOMATIC );
+	    static Document* load(const std::filesystem::path&, InputFormat format, unsigned& errorCode, bool load_results );
+	    virtual bool loadResults( const std::filesystem::path& directory_name, const std::filesystem::path& file_name, const std::string& extension, OutputFormat format, unsigned& errorCode );
+	    void print( const std::filesystem::path& output_file_name, const std::string& suffix, OutputFormat format, bool rtf_output ) const;
+	    void print( const std::filesystem::path& output_file_name, const std::string& suffix, OutputFormat format, bool rtf_output, unsigned int iteration ) const;
 	    std::ostream& print( std::ostream& ouptut, const OutputFormat format=OutputFormat::LQN ) const;
 	    std::ostream& printExternalVariables( std::ostream& ouptut ) const;
 
@@ -243,7 +241,7 @@ namespace LQIO {
 	    static void db_check_set_entry(DOM::Entry* entry, DOM::Entry::Type requisiteType = DOM::Entry::Type::NOT_DEFINED );
 	    ExternalVariable* db_build_parameter_variable(const std::string& input, bool* isSymbol);
 	    static void lqx_parser_trace( FILE * );
-	    static std::string __input_file_name;
+	    static std::filesystem::path __input_file_name;
 
 	    static bool __debugXML;
 	    static bool __debugJSON;
@@ -253,12 +251,6 @@ namespace LQIO {
 	    Document& set( const std::string&, const ExternalVariable * );
 	    const ExternalVariable * get( const std::string& ) const;
 	    static inline bool wasSet(const std::pair<std::string,SymbolExternalVariable*>& var ) { return var.second->wasSet(); }
-	    struct notSet {
-		notSet(std::vector<std::string>& list) : _list(list) {}
-		void operator()( const std::pair<std::string,SymbolExternalVariable*>& var ) { if (!var.second->wasSet()) _list.push_back(var.first); }
-	    private:
-		std::vector<std::string>& _list;
-	    };
 
 	public:
 	    /* Names of document attributes */
@@ -311,12 +303,6 @@ namespace LQIO {
 
 	    unsigned  _maximumPhase;
 	    bool _hasResults;
-
-	    /* Cached values */
-
-	    mutable cached _hasRendezvous;
-	    mutable cached _hasSendNoReply;
-	    mutable cached _taskHasAndJoin;
 
 	    /* Solution results from LQNS/LQSim */
 

@@ -1,6 +1,6 @@
 /* model.cc	-- Greg Franks Mon Feb  3 2003
  *
- * $Id: model.cc 17282 2024-09-12 16:24:34Z greg $
+ * $Id: model.cc 17362 2024-10-13 12:05:57Z greg $
  *
  * Load, slice, and dice the lqn model.
  */
@@ -28,6 +28,7 @@
 #endif
 #include <lqio/dom_document.h>
 #include <lqio/dom_activity.h>
+#include <lqio/filename.h>
 #include <lqio/srvn_results.h>
 #include <lqio/srvn_output.h>
 #include <lqio/srvn_spex.h>
@@ -106,7 +107,7 @@ struct lt_submodel
 
 /* ------------------------ Constructors etc. ------------------------- */
 
-Model::Model( LQIO::DOM::Document * document, const std::string& input_file_name, const std::string& output_file_name, unsigned int numberOfLayers )
+Model::Model( LQIO::DOM::Document * document, const std::filesystem::path& input_file_name, const std::filesystem::path& output_file_name, unsigned int numberOfLayers )
     : _layers(numberOfLayers+1),
       _key(nullptr),
       _label(nullptr),
@@ -899,43 +900,23 @@ Model::store()
 	/* Default mapping */
 
 	std::string suffix = "";
-	std::string directory_name = LQIO::Filename::createDirectory( hasOutputFileName() ? _outputFileName : _inputFileName, _document->getResultInvocationNumber() > 0 );
+#if REP2FLAT
+	if ( Flags::replication() == Replication::EXPAND ) {
+	    suffix = "-flat";
+	}
+#endif
+	std::filesystem::path directory_name = LQIO::Filename::createDirectory( hasOutputFileName() ? _outputFileName : _inputFileName, _document->getResultInvocationNumber() > 0 );
 	LQIO::Filename filename;
-	const std::string extension = getExtension();
+	const std::filesystem::path extension = getExtension();
 	if ( !hasOutputFileName() || !directory_name.empty() ) {
-	    filename.generate( _inputFileName, extension, directory_name, suffix );
+	    filename.generate( directory_name, _inputFileName, suffix, extension );
 	} else {
 	    filename = _outputFileName;
 	}
 
-	if ( _inputFileName == filename() && input_output() ) {
-#if REP2FLAT
-	    if ( Flags::replication() == Replication::EXPAND ) {
-		std::string ext = ".";		// look for .ext
-		ext += extension;
-		const size_t pos = filename.rfind( ext );
-		if ( pos != std::string::npos ) {
-		    filename.insert( pos, "-flat" );	// change filename.ext to filename-flat.ext
-		} else {
-		    std::ostringstream msg;
-		    msg << "Cannot overwrite input file " << filename() << " with a subset of original model.";
-		    throw std::runtime_error( msg.str() );
-		}
-	    } else if ( partial_output()
-			|| Flags::aggregation() != Aggregate::NONE
-			|| Flags::replication() != Replication::NONE ) {
-		std::ostringstream msg;
-		msg << "Cannot overwrite input file " << filename() << " with a subset of original model.";
-		throw std::runtime_error( msg.str() );
-	    }
-#else
-	    if ( partial_output()
-		 || Flags::aggregation() != Aggregate::NONE ) {
-		ostringstream msg;
-		msg << "Cannot overwrite input file " << filename() << " with a subset of original model.";
-		throw runtime_error( msg.str() );
-	    }
-#endif
+	if ( _inputFileName == filename() && input_output() && ( partial_output() || Flags::aggregation() != Aggregate::NONE ) ) {
+	    const std::string msg = "Cannot overwrite input file " + filename.str() + " with a subset of original model.";
+	    throw std::runtime_error( msg );
 	}
 
 	filename.backup();
@@ -944,9 +925,9 @@ Model::store()
 	switch( Flags::output_format() ) {
 #if EMF_OUTPUT
 	case File_Format::EMF:
-	    output.open( filename().c_str(), std::ios::out|std::ios::binary );	/* NO \r's in output for windoze */
+	    output.open( filename(), std::ios::out|std::ios::binary );	/* NO \r's in output for windoze */
 	    if ( !output ) {
-		throw std::runtime_error( std::string( "Cannot open output file " ) + filename() + " - not a regular file." );
+		throw std::runtime_error( std::string( "Cannot open output file " ) + filename.str() + " - not a regular file." );
 	    }
 	    break;
 #endif
@@ -960,19 +941,17 @@ Model::store()
 #if HAVE_LIBPNG
 	case File_Format::PNG:
 #endif
-	    output.open( filename().c_str(), std::ios::out|std::ios::binary );	/* NO \r's in output for windoze */
+	    output.open( filename(), std::ios::out|std::ios::binary );	/* NO \r's in output for windoze */
 	    break;
 #endif /* HAVE_LIBGD */
 
 	default:
-	    output.open( filename().c_str(), std::ios::out );
+	    output.open( filename(), std::ios::out );
 	    break;
 	}
 
 	if ( !output ) {
-	    std::ostringstream msg;
-	    msg << "Cannot open output file " << filename() << " - " << strerror( errno );
-	    throw std::runtime_error( msg.str() );
+	    throw std::runtime_error( std::string( "Cannot open output file ") + filename().string() + " - " + strerror( errno ) );
 	} else {
 	    output.exceptions ( std::ios::failbit | std::ios::badbit );
 	    output << *this;
@@ -995,8 +974,8 @@ Model::reload()
 
     LQIO::Filename directory_name( hasOutputFileName() ? _outputFileName : _inputFileName, "d" );		/* Get the base file name */
 
-    if ( access( directory_name().c_str(), R_OK|X_OK ) < 0 ) {
-	runtime_error( LQIO::ERR_CANT_OPEN_DIRECTORY, directory_name().c_str(), strerror( errno ) );
+    if ( access( directory_name.str().c_str(), R_OK|X_OK ) < 0 ) {
+	runtime_error( LQIO::ERR_CANT_OPEN_DIRECTORY, directory_name.str().c_str(), strerror( errno ) );
 	throw LQX::RuntimeException( "--reload-lqx can't load results." );
     }
 
@@ -1028,53 +1007,52 @@ Model::reload()
 
 
 
-std::string
+std::filesystem::path
 Model::getExtension()
 {
     /* Extension exceptions (except SRVN) */
-    static const std::map<const File_Format,const std::string> exceptions = {
-	{ File_Format::EEPIC,	    "tex" },
-	{ File_Format::PSTEX,       "fig" },
-	{ File_Format::PARSEABLE,   "p" },
-	{ File_Format::LQX, 	    "lqx" },
-	{ File_Format::XML, 	    "lqnx" }
+    static const std::map<const File_Format,const std::filesystem::path> exceptions = {
+	{ File_Format::EEPIC,	    ".tex" },
+	{ File_Format::PSTEX,       ".fig" },
+	{ File_Format::PARSEABLE,   ".p" },
+	{ File_Format::LQX, 	    ".lqx" },
+	{ File_Format::XML, 	    ".lqnx" }
     };
 
     /* Map any of source extensions to lqn */
-    static const std::set<std::string> source_extensions = {
-	"lqnx",
-	"xlqn",
-	"xml",
-	"json",
-	"lqxo",
-	"lqjo",
-	"jmva",
-	"qnap2",
-	"qnap",
-	"qnp"
+    static const std::set<std::filesystem::path> source_extensions = {
+	".lqnx",
+	".xlqn",
+	".xml",
+	".json",
+	".lqxo",
+	".lqjo",
+	".jmva",
+	".qnap2",
+	".qnap",
+	".qnp"
     };
 
-    std::map<const File_Format,const std::string>::const_iterator i;
+    std::map<const File_Format,const std::filesystem::path>::const_iterator i;
+    std::map<const File_Format,const std::string>::const_iterator j;
     const File_Format o = Flags::output_format();
 
     if ( Flags::output_format() == File_Format::SRVN ) {
 	/* Non standard files names are retained (in theory) */
-	std::size_t n = _inputFileName.find_last_of( '.' );
-	if ( n != std::string::npos ) {
-	    std::string ext = _inputFileName.substr( n+1 );
-	    std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-	    if ( source_extensions.find( ext ) == source_extensions.end() ) {
-		return ext;	/* Not in the list above, so overwrite file. */
-	    }
-	} 
-	return "lqn";
+	const std::filesystem::path ext = _inputFileName.extension();
+	if ( source_extensions.find( ext ) == source_extensions.end() ) {
+	    return ext;	/* Not in the list above, so overwrite file. */
+	}
+	return std::filesystem::path(".lqn");
     } else if ( (i = exceptions.find(o)) != exceptions.end() ) {
 	return i->second;
-    } else if ( (i = Options::file_format.find(o)) != Options::file_format.end() ) {
-	return i->second;
+    } else if ( (j = Options::file_format.find(o)) != Options::file_format.end() ) {
+	std::filesystem::path path(".");
+	path += j->second;
+	return path;
     } else {
 	std::runtime_error( "Unknown output format." );
-	return std::string("");
+	return std::filesystem::path();
     }
 }
 
@@ -2270,12 +2248,11 @@ Model::printSXD( const char * file_name ) const
 	std::filesystem::create_directory( dir_name() );
     }
     catch ( std::filesystem::filesystem_error& e ) {
-	runtime_error( LQIO::ERR_CANT_OPEN_DIRECTORY, dir_name().c_str(), e.what() );
+	runtime_error( LQIO::ERR_CANT_OPEN_DIRECTORY, dir_name.str().c_str(), e.what() );
 	throw;
     } 
 
-    std::string meta_name = dir_name();
-    meta_name += "/META-INF";
+    const std::filesystem::path meta_name = dir_name() / "META-INF";
     try {
 	std::filesystem::create_directory( meta_name );
 	printSXD( file_name, dir_name(), "META-INF/manifest.xml", &Model::printSXDManifest );
@@ -2286,8 +2263,8 @@ Model::printSXD( const char * file_name ) const
 	printSXD( file_name, dir_name(), "mimetype", &Model::printSXDMimeType );
     }
     catch ( const std::runtime_error &error ) {
-	rmdir( meta_name.c_str() );
-	rmdir( dir_name().c_str() );
+        rmdir( meta_name.string().c_str() );
+	rmdir( dir_name.str().c_str() );
 	throw;
     }
 
@@ -2295,37 +2272,32 @@ Model::printSXD( const char * file_name ) const
 }
 
 const Model&
-Model::printSXD( const std::string& dst_name, const std::string& dir_name, const char * file_name, const printSXDFunc aFunc ) const
+Model::printSXD( const std::string& dst_name, const std::filesystem::path& dir_name, const std::string& file_name, const printSXDFunc aFunc ) const
 {
-    std::string pathname = dir_name;
-    pathname += "/";
-    pathname += file_name;
+  const std::filesystem::path pathname = dir_name / file_name;
 
     std::ofstream output;
-    output.open( pathname.c_str(), std::ios::out );
+    output.open( pathname.string().c_str(), std::ios::out );
     if ( !output ) {
-	std::ostringstream msg;
-	msg << "Cannot open output file \"" << pathname << "\" - " << strerror( errno );
-	throw std::runtime_error( msg.str() );
+        const std::string msg = "Cannot open output file \"" + pathname.string() + "\" - " + strerror( errno );
+	throw std::runtime_error( msg );
     } else {
 	/* Write out all other XML goop needed */
 	(this->*aFunc)( output );
 	output.close();
 
 #if !defined(__WINNT__)
-	std::ostringstream command;
-	command << "cd " << dir_name << "; zip -r ../" << dst_name << " " << file_name;
-	int rc = system( command.str().c_str() );
-	unlink( pathname.c_str() );	/* Delete now. */
+	const std::string command = "cd " + dir_name.string() + "; zip -r ../" + dst_name + " " + file_name;
+	int rc = system( command.c_str() );
+	unlink( pathname.string().c_str() );	/* Delete now. */
 	if ( rc != 0 ) {
-	    std::ostringstream msg;
-	    msg << "Cannot execute \"" << command.str() << "\" - ";
+	    std::string msg = "Cannot execute \"" + command + "\" - ";
 	    if ( rc < 0 ) {
-		msg << strerror( errno );
+		msg += strerror( errno );
 	    } else {
-		msg << "status=0x" << std::hex << rc;
-	    }
-	    throw std::runtime_error( msg.str() );
+	        msg += "status=" + std::to_string( rc );
+	    } 
+	    throw std::runtime_error( msg );
 	}
 #endif
     }
@@ -2520,7 +2492,7 @@ Model::printOverallStatistics( std::ostream& output )
 std::ostream&
 Model::printSummary( std::ostream& output ) const
 {
-    if ( _inputFileName.size() ) {
+    if ( !_inputFileName.empty() ) {
 	output << _inputFileName << ":";
     }
     if ( graphical_output() ) {

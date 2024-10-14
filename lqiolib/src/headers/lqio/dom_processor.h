@@ -1,5 +1,5 @@
-/*
- *  $Id: dom_processor.h 15222 2021-12-15 15:41:14Z greg $
+/* -*- c++ -*-
+ *  $Id: dom_processor.h 17334 2024-10-03 23:02:58Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.

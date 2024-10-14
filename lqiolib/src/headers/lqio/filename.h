@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: filename.h 17178 2024-04-10 10:55:07Z greg $
+ * $Id: filename.h 17360 2024-10-12 10:59:43Z greg $
  *
  * MVA solvers: Exact, Bard-Schweitzer, Linearizer and Linearizer2.
  * Abstract superclass does no operation by itself.
@@ -16,6 +16,7 @@
 #define	LQIOLIB_FILENAME_H
 
 #include <string>
+#include <filesystem>
 
 namespace LQIO {
 
@@ -23,31 +24,30 @@ namespace LQIO {
     {
     public:
 	Filename() {};
-	Filename( const std::string& base, const std::string& extension = "", const std::string& directory = "", const std::string& suffix = "");
+	Filename( const std::filesystem::path& base, const std::string& extension = "", const std::filesystem::path& directory = "", const std::string& suffix = "");
 	Filename( const Filename& );
 	Filename& operator=( const Filename& );
 	Filename& operator=( const std::string& );
+	Filename& operator=( const std::filesystem::path& );
 
-	const std::string& operator()() const;
-	Filename& operator<<( const char * );
+	const std::filesystem::path& operator()() const { return _path; }
+	std::string str() const { return _path.string(); }
+	Filename& operator<<( const std::string& );
 	Filename& operator<<( const unsigned );
 
-	const std::string& generate( const std::string& base, const std::string& extension, const std::string& directory = "", const std::string& suffix = "" );
+	const std::filesystem::path& generate( const std::filesystem::path& directory, const std::filesystem::path& path, const std::string& suffix, const std::string& extension );
+	const std::filesystem::path& generate( const std::filesystem::path& path, const std::string& extension ) { return generate( std::filesystem::path(), path, extension, std::string() ); } // 
+
 	Filename& backup() { Filename::backup( (*this)() ); return *this; }
 
-	int mtimeCmp( const std::string& file_name );
+        int mtimeCmp( const std::filesystem::path& file_name );
 
-	unsigned rfind( const std::string& s ) const;
-	unsigned find( const std::string& s ) const;
-	Filename& insert( unsigned pos, const char * s );
-
-	static bool isDirectory( const std::string& file_name );
-	static void backup( const std::string& file_name );
-	static std::string createDirectory( const std::string& file_name, bool lqx_output );
-	static inline bool isFileName( const std::string& name ) { return !name.empty() && name != "-"; }
+	static void backup( const std::filesystem::path& file_name );
+	static std::filesystem::path createDirectory( const std::filesystem::path& name, bool lqx_output );
+        static inline bool isFileName( const std::filesystem::path& name ) { return !name.empty() && name != "-"; }
 
     private:
-	std::string _filename;
+	std::filesystem::path _path;
     };
 }
 #endif

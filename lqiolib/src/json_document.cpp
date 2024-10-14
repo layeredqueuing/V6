@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: json_document.cpp 17255 2024-07-08 14:50:02Z greg $
+ * $Id: json_document.cpp 17360 2024-10-12 10:59:43Z greg $
  *
  * Read in JSON input files.
  *
@@ -114,7 +114,7 @@ namespace LQIO {
 namespace LQIO {
     namespace DOM {
 
-	JSON_Document::JSON_Document( Document& document, const std::string& input_file_name, bool createObjects, bool loadResults )
+	JSON_Document::JSON_Document( Document& document, const std::filesystem::path& input_file_name, bool createObjects, bool loadResults )
 	    : _dom(), _document( document ), _input_file_name(input_file_name), _createObjects(createObjects), _loadResults(loadResults)
 	{
 	    Import::__indent = 0;
@@ -128,7 +128,7 @@ namespace LQIO {
 
 
 	bool
-	JSON_Document::load( Document& document, const std::string& input_file_name, unsigned& errorCode, const bool load_results )
+	JSON_Document::load( Document& document, const std::filesystem::path& input_file_name, unsigned& errorCode, const bool load_results )
 	{
 	    JSON_Document input( document, input_file_name, true, load_results );
 
@@ -138,9 +138,9 @@ namespace LQIO {
 		const std::string& program_text = document.getLQXProgramText();
 		if ( program_text.size() ) {
 		    /* If we have an LQX program, then we need to compute */
-		    LQX::Program* program = LQX::Program::loadFromText(input_file_name.c_str(), document.getLQXProgramLineNumber(), program_text.c_str());
+		    LQX::Program* program = LQX::Program::loadFromText(input_file_name.string().c_str(), document.getLQXProgramLineNumber(), program_text.c_str());
 		    if (program == nullptr) {
-			LQIO::runtime_error( LQIO::ERR_LQX_COMPILATION, input_file_name.c_str() );
+		        LQIO::runtime_error( LQIO::ERR_LQX_COMPILATION, input_file_name.string().c_str() );
 		    }
 		    document.setLQXProgram( program );
 		}
@@ -154,9 +154,9 @@ namespace LQIO {
 	 */
 
 	bool
-	JSON_Document::loadResults( Document& document, const std::string& input_file_name )
+	JSON_Document::loadResults( Document& document, const std::filesystem::path& path )
 	{
-	    JSON_Document input( document, input_file_name, false, true );
+	    JSON_Document input( document, path, false, true );
 	    return input.parse();
 	}
 
@@ -175,7 +175,7 @@ namespace LQIO {
 
 	    if ( !Filename::isFileName( _input_file_name ) ) {
 		input_fd = fileno( stdin );
-	    } else if ( ( input_fd = open( _input_file_name.c_str(), O_RDONLY ) ) < 0 ) {
+	    } else if ( ( input_fd = open( _input_file_name.string().c_str(), O_RDONLY ) ) < 0 ) {
 		std::cerr << LQIO::io_vars.lq_toolname << ": Cannot open input file " << _input_file_name << " - " << strerror( errno ) << std::endl;
 		return false;
 	    }
@@ -198,7 +198,7 @@ namespace LQIO {
 #if HAVE_MMAP
 	    char *buffer = static_cast<char *>(mmap( 0, statbuf.st_size, PROT_READ, MAP_PRIVATE|MAP_FILE, input_fd, 0 ));
 	    if ( buffer != MAP_FAILED ) {
-		std::string err = picojson::parse( _dom, buffer, buffer + statbuf.st_size );
+	        const std::string err = picojson::parse( _dom, buffer, buffer + statbuf.st_size );
 		if ( err.empty() ) {
 		    try {
 			handleModel();
@@ -256,7 +256,7 @@ namespace LQIO {
 	{
 	    va_list args;
 	    va_start( args, fmt );
-	    verrprintf( stderr, LQIO::error_severity::ERROR, _input_file_name.c_str(),	0, 0, fmt, args );
+	    verrprintf( stderr, LQIO::error_severity::ERROR, _input_file_name.string().c_str(),	0, 0, fmt, args );
 	    va_end( args );
 	}
  
@@ -2647,7 +2647,7 @@ namespace LQIO {
 		/* A bit more complicated because phases are referenced via entries. */
 		const Phase * phase = dynamic_cast<Phase *>(object);
 		const Entry * entry = phase->getSourceEntry();
-		LQIO::spex.observation( entry, LQIO::Spex::ObservationInfo( key, get_phase( phase ), var1, conf, var2 ) );
+		LQIO::spex.observation( entry, LQIO::Spex::ObservationInfo( key, phase->getPhaseNumber(), var1, conf, var2 ) );
 	    } else if ( dynamic_cast<Call *>(object) ) {
 		/* Even more complicated becauses I need to get to the entry to find the call in LQX */
 		const LQIO::DOM::Call * call = dynamic_cast<LQIO::DOM::Call *>(object);
@@ -2660,7 +2660,7 @@ namespace LQIO {
 		} else if ( dynamic_cast<const Phase *>(source) ) {
 		    const Phase * phase = dynamic_cast<const Phase *>(source);
 		    const Entry * entry = phase->getSourceEntry();
-		    const unsigned int p = get_phase( phase );
+		    const unsigned int p = phase->getPhaseNumber();
 		    LQIO::spex.observation( entry, p, destination, LQIO::Spex::ObservationInfo( key, p, var1, conf, var2 ) );
 		} else {	/* forwarding */
 		    const Entry * entry = dynamic_cast<const Entry *>(source);
@@ -2885,7 +2885,7 @@ namespace LQIO {
 
 	    _output << begin_object( Xheader );
 	    ExportComment( _output, _conf_95 ).print( document );
-	    _output << attribute( Xname, base_name() )
+	    _output << attribute( Xname, base_name().string() )
 		    << next_attribute( Xdescription, document.getResultDescription() );
 	    _output << end_object();
 	}

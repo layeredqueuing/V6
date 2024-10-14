@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- * $Id: expat_document.cpp 17324 2024-10-02 14:46:37Z greg $
+ * $Id: expat_document.cpp 17360 2024-10-12 10:59:43Z greg $
  *
  * Read in XML input files.
  *
@@ -75,7 +75,7 @@ namespace LQIO {
         /* DOM input.                                                       */
         /* ---------------------------------------------------------------- */
 
-        Expat_Document::Expat_Document( Document& document, const std::string& input_file_name, bool createObjects, bool loadResults )
+        Expat_Document::Expat_Document( Document& document, const std::filesystem::path& input_file_name, bool createObjects, bool loadResults )
             : _document( document ), _parser(), _input_file_name(input_file_name), _createObjects(createObjects), _loadResults(loadResults), _stack(), _text(),
 	      _has_spex(false), _spex_observation()
         {
@@ -87,7 +87,7 @@ namespace LQIO {
         }
 
 	bool
-        Expat_Document::load( Document& document, const std::string& input_filename, const bool load_results )
+        Expat_Document::load( Document& document, const std::filesystem::path& input_filename, const bool load_results )
         {
 	    Expat_Document input( document, input_filename, true, load_results );
 
@@ -101,8 +101,8 @@ namespace LQIO {
 		    if ( Spex::__parameter_list != nullptr ) {
 			runtime_error( LQIO::ERR_LQX_SPEX, input_filename.c_str() );
 			return false;
-		    } else if ( (program = LQX::Program::loadFromText(input_filename.c_str(), document.getLQXProgramLineNumber(), program_text.c_str())) == nullptr ) {
-			runtime_error( LQIO::ERR_LQX_COMPILATION, input_filename.c_str() );
+		    } else if ( (program = LQX::Program::loadFromText(input_filename.string().c_str(), document.getLQXProgramLineNumber(), program_text.c_str())) == nullptr ) {
+			runtime_error( LQIO::ERR_LQX_COMPILATION, input_filename.string().c_str() );
 			return false;
 		    } else {
 			document.setLQXProgram( program );
@@ -124,9 +124,9 @@ namespace LQIO {
          */
 
         /* static */ bool
-        Expat_Document::loadResults( Document& document, const std::string& input_file_name )
+        Expat_Document::loadResults( Document& document, const std::filesystem::path& path )
         {
-	    Expat_Document input( document, input_file_name, false, true );
+	    Expat_Document input( document, path, false, true );
 	    return input.parse();
         }
 
@@ -145,7 +145,7 @@ namespace LQIO {
 
             if ( !Filename::isFileName( _input_file_name ) ) {
                 input_fd = fileno( stdin );
-            } else if ( ( input_fd = open( _input_file_name.c_str(), O_RDONLY ) ) < 0 ) {
+            } else if ( ( input_fd = open( _input_file_name.string().c_str(), O_RDONLY ) ) < 0 ) {
                 std::cerr << LQIO::io_vars.lq_toolname << ": Cannot open input file " << _input_file_name << " - " << strerror( errno ) << std::endl;
                 return false;
             }
@@ -239,7 +239,7 @@ namespace LQIO {
         {
             va_list args;
             va_start( args, fmt );
-            verrprintf( stderr, LQIO::error_severity::ERROR, _input_file_name.c_str(),  XML_GetCurrentLineNumber(_parser), 0, fmt, args );
+            verrprintf( stderr, LQIO::error_severity::ERROR, _input_file_name.string().c_str(),  XML_GetCurrentLineNumber(_parser), 0, fmt, args );
             va_end( args );
         }
 
@@ -1298,7 +1298,7 @@ namespace LQIO {
 			} else if ( dynamic_cast<const LQIO::DOM::Phase *>(source) ) {
 			    const LQIO::DOM::Phase * phase = dynamic_cast<const Phase *>(source);
 			    const LQIO::DOM::Entry * entry = phase->getSourceEntry();
-			    LQIO::spex.observation( entry, get_phase( phase ), destination, *observation );
+			    LQIO::spex.observation( entry, phase->getPhaseNumber(), destination, *observation );
 			} else {    /* forwarding */
 			    const LQIO::DOM::Entry * entry = dynamic_cast<const Entry *>(source);
 			    assert( entry != nullptr );
@@ -2315,14 +2315,14 @@ namespace LQIO {
                 if ( item != observation_table.end() ) {
 		    const int key = item->second.key;
 		    /* Find the phase for the observation */
-		    int p = 0;
+		    unsigned int p = 0;
 		    if ( dynamic_cast<LQIO::DOM::Phase *>( object ) != nullptr && dynamic_cast<LQIO::DOM::Activity *>( object ) == nullptr ) {
-			p = get_phase( dynamic_cast<LQIO::DOM::Phase *>( object ) );
+			p = dynamic_cast<LQIO::DOM::Phase *>( object )->getPhaseNumber();
 		    } else if ( dynamic_cast<LQIO::DOM::Call *>( object ) != nullptr ) {
 			const LQIO::DOM::Call * call = dynamic_cast<const LQIO::DOM::Call *>(object);
 			const DocumentObject * source = call->getSourceObject();
 			if ( dynamic_cast<const LQIO::DOM::Phase *>(source) && dynamic_cast<LQIO::DOM::Activity *>( object ) == nullptr ) {
-			    p = get_phase( dynamic_cast<const LQIO::DOM::Phase *>(source) );
+			    p = dynamic_cast<const LQIO::DOM::Phase *>(source)->getPhaseNumber();
 			}
 		    } else if ( dynamic_cast<LQIO::DOM::Entry *>( object ) == nullptr ) {
 			p = item->second.phase;		/* Any else not an entry */
@@ -2532,7 +2532,7 @@ namespace LQIO {
 	    if ( !LQIO::io_vars.lq_command_line.empty() ) {
 		output << XML::comment( LQIO::io_vars.lq_command_line );
 	    }
-            output << XML::start_element( Xlqn_model ) << XML::attribute( Xname, base_name() )
+            output << XML::start_element( Xlqn_model ) << XML::attribute( Xname, base_name().string() )
 		   << XML::attribute( Xdescription, _document.getResultDescription() )
 		   << " xmlns:xsi=\"" << XMLSchema_instance << "\" xsi:noNamespaceSchemaLocation=\"";
 	

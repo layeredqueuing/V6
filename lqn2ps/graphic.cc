@@ -1,6 +1,6 @@
 /* graphic.cc	-- Greg Franks Wed Feb 12 2003
  *
- * $Id: graphic.cc 16945 2024-01-26 13:02:36Z greg $
+ * $Id: graphic.cc 17349 2024-10-09 19:00:02Z greg $
  */
 
 #include <cassert>
@@ -9,6 +9,7 @@
 #include <set>
 #include <sstream>
 #include <limits>
+#include <lqio/dom_document.h>
 #include "graphic.h"
 #include "point.h"
 #if HAVE_GD_H

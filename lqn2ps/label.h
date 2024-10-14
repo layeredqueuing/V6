@@ -1,6 +1,6 @@
 /* -*- c++ -*- node.h	-- Greg Franks
  *
- * $Id: label.h 17277 2024-09-10 21:19:38Z greg $
+ * $Id: label.h 17349 2024-10-09 19:00:02Z greg $
  */
 
 #ifndef _LABEL_H
@@ -21,6 +21,10 @@ class LabelStringManip;
 class SRVNEntryManip;
 class SRVNCallManip;
 class TaskCallManip;
+
+namespace LQX {
+    class SyntaxTreeNode;
+}
 
 class Label : public Graphic
 {

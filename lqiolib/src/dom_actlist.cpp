@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_actlist.cpp 17063 2024-02-08 18:50:23Z greg $
+ *  $Id: dom_actlist.cpp 17354 2024-10-10 13:04:51Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -62,7 +62,7 @@ namespace LQIO {
 	std::string ActivityList::inputErrorPreamble( unsigned int code ) const
 	{
 	    const error_message_type& error = DocumentObject::__error_messages.at(code);
-	    std::string buf = LQIO::DOM::Document::__input_file_name + ":" + std::to_string(srvnlineno)
+	    std::string buf = LQIO::DOM::Document::__input_file_name.string() + ":" + std::to_string(srvnlineno)
 		+ ": " + severity_table.at(error.severity)
 		+ ": Task \"" + getTask()->getName() + "\", "
 		+ getListTypeName() + " \"" + getListName() + "\", "
@@ -77,7 +77,7 @@ namespace LQIO {
 	std::string ActivityList::runtimeErrorPreamble( unsigned int code ) const
 	{
 	    const error_message_type& error = __error_messages.at(code);
-	    std::string buf = LQIO::DOM::Document::__input_file_name + ":" + std::to_string(getLineNumber())
+	    std::string buf = LQIO::DOM::Document::__input_file_name.string() + ":" + std::to_string(getLineNumber())
 		+ ": " + severity_table.at(error.severity)
 		+ ": Task \"" + getTask()->getName() + "\", "
 		+ getListTypeName() + " \"" + getListName() + "\", "
@@ -88,8 +88,7 @@ namespace LQIO {
     
 	const std::string ActivityList::getListName() const
 	{
-	    std::string listName;
-	    return std::accumulate( std::next( _list.begin() ), _list.end(), _list.front()->getName(), fold( __op.at(_type) ) );
+	    return std::accumulate( std::next( _list.begin() ), _list.end(), _list.front()->getName(), [&]( const std::string& l, const Activity * r ){ return l + " " + __op.at(_type) + " " + r->getName(); } );
 	}
 	
 	bool ActivityList::isJoinList() const

@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- *  $Id: qnap2_document.h 17239 2024-05-27 14:02:21Z greg $
+ *  $Id: qnap2_document.h 17360 2024-10-12 10:59:43Z greg $
  *
  *  Created by Greg Franks 2020/12/28
  */
@@ -191,13 +191,13 @@ namespace QNIO {
 	};
 
     public:
-	QNAP2_Document( const std::string& input_file_name );			/* For input */
+        QNAP2_Document( const std::filesystem::path& input_file_name );		/* For input */
 	QNAP2_Document( const BCMP::Model& model );				/* For output */
 	QNAP2_Document( const QNIO::Document& );
 	virtual ~QNAP2_Document();
 
 	virtual bool load();
-	static bool load( LQIO::DOM::Document&, const std::string& );		// Factory.
+	static bool load( LQIO::DOM::Document&, const std::filesystem::path& );		// Factory.
 	virtual InputFormat getInputFormat() const { return InputFormat::QNAP; }
 
 	virtual bool disableDefaultOutputWithLQX() const { return !_result; }
