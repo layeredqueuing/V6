@@ -1,6 +1,6 @@
 /* -*- c++ -*-  activity.h	-- Greg Franks
  *
- * $Id: activity.h 16982 2024-01-30 01:12:30Z greg $
+ * $Id: activity.h 17369 2024-10-15 22:13:09Z greg $
  */
 
 #ifndef _ACTIVITY_H
@@ -36,7 +36,6 @@ public:
 	cycle_error( const std::deque<const Activity *>& );
 	size_t depth() const { return _depth; }
     private:
-	static std::string fold( const std::string& s1, const Activity * a2 );
 	const size_t _depth;
     };
     

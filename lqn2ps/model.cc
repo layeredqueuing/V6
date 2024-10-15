@@ -1,6 +1,6 @@
 /* model.cc	-- Greg Franks Mon Feb  3 2003
  *
- * $Id: model.cc 17362 2024-10-13 12:05:57Z greg $
+ * $Id: model.cc 17369 2024-10-15 22:13:09Z greg $
  *
  * Load, slice, and dice the lqn model.
  */
@@ -16,7 +16,6 @@
 #include <fstream>
 #include <functional>
 #include <limits>
-#include <sstream>
 #include <stdexcept>
 #include <errno.h>
 #include <time.h>
@@ -160,22 +159,22 @@ Model::Model( LQIO::DOM::Document * document, const std::filesystem::path& input
 
 Model::~Model()
 {
-    std::for_each( Share::__share.begin(), Share::__share.end(), Delete<Share *> );
+    std::for_each( Share::__share.begin(), Share::__share.end(), []( Share * share ){ delete share; } );
     Share::__share.clear();
 
-    std::for_each( Task::__tasks.begin(), Task::__tasks.end(), Delete<Task *> );
+    std::for_each( Task::__tasks.begin(), Task::__tasks.end(), []( Task * task ){ delete task; } );
     Task::__tasks.clear();
 
-    std::for_each( Processor::__processors.begin(), Processor::__processors.end(), Delete<Processor *> );
+    std::for_each( Processor::__processors.begin(), Processor::__processors.end(), []( Processor * processor ){ delete processor; } );
     Processor::__processors.clear();
 
-    std::for_each( Entry::__entries.begin(), Entry::__entries.end(), Delete<Entry *> );
+    std::for_each( Entry::__entries.begin(), Entry::__entries.end(), []( Entry * entry ){ delete entry; } );
     Entry::__entries.clear();
 
-    std::for_each( OpenArrivalSource::__source.begin(), OpenArrivalSource::__source.end(), Delete<OpenArrivalSource *> );
+    std::for_each( OpenArrivalSource::__source.begin(), OpenArrivalSource::__source.end(), []( OpenArrivalSource * openArrivalSource ){ delete openArrivalSource; } );
     OpenArrivalSource::__source.clear();
 
-    std::for_each( Group::__groups.begin(), Group::__groups.end(), Delete<Group *> );
+    std::for_each( Group::__groups.begin(), Group::__groups.end(), []( Group * group ){ delete group; } );
     Group::__groups.clear();
 
     Processor::__key_table.clear();
@@ -225,7 +224,7 @@ Model::operator*=( const double s )
 
 
 Model&
-Model::translateScale( const double s ) 
+Model::translateScale( const double s )
 {
     std::for_each( _layers.begin(), _layers.end(), [=]( Layer& layer ){ layer.translateY( top() ); } );
     if ( _key ) {
@@ -242,7 +241,7 @@ Model::translateScale( const double s )
 
 
 Model&
-Model::moveBy( const double dx, const double dy ) 
+Model::moveBy( const double dx, const double dy )
 {
     std::for_each( _layers.begin(), _layers.end(), [=]( Layer& layer ){ layer.moveBy( dx, dy ); } );
     if ( _key ) {
@@ -313,9 +312,8 @@ void
 Model::group_by_submodel()
 {
     for ( unsigned i = SERVER_LEVEL; i < nLayers(); i += 1 ) {
-	std::ostringstream s;
-	s << "Submodel " << i;
-	Group * aGroup = new GroupSquashed( nLayers(), s.str(), _layers.at(i-1), _layers.at(i) );
+	const std::string s = "Submodel " + std::to_string(i);
+	Group * aGroup = new GroupSquashed( nLayers(), s, _layers.at(i-1), _layers.at(i) );
 	aGroup->format().label().resizeBox().positionLabel();
 	Group::__groups.push_back( aGroup );
     }
@@ -386,7 +384,7 @@ Model::create( const std::string& input_file_name, const LQIO::DOM::Pragma& prag
     if ( !parse_file_name.empty() && Flags::print_results() ) {
 	try {
 	    Flags::have_results = LQIO::SRVN::loadResults( parse_file_name );
-	} 
+	}
 	catch ( const std::runtime_error &error ) {
 	    std::cerr << LQIO::io_vars.lq_toolname << ": Cannot load results file " << parse_file_name << " - " << error.what() << "." << std::endl;
 	    Flags::have_results = false;
@@ -407,7 +405,7 @@ Model::create( const std::string& input_file_name, const LQIO::DOM::Pragma& prag
     }
     document->mergePragmas( pragmas.getList() );       	/* Save pragmas -- prepare will process */
     Pragma::set( document->getPragmaList() );
-    
+
     /* Show/hide processors as required because it can be set by pragmas */
     switch ( Flags::layering() ) {
     case Layering::HWSW:
@@ -435,7 +433,7 @@ Model::create( const std::string& input_file_name, const LQIO::DOM::Pragma& prag
     }
 
 #if BUG_270
-    if ( !queueing_output() && (   
+    if ( !queueing_output() && (
 #if JMVA_OUTPUT && HAVE_EXPAT_H
 	     Flags::output_format() == File_Format::JMVA ||
 #endif
@@ -468,21 +466,21 @@ Model::create( const std::string& input_file_name, const LQIO::DOM::Pragma& prag
 		if ( program == nullptr ) {
 		    LQIO::runtime_error( LQIO::ERR_LQX_COMPILATION, input_file_name.c_str() );
 		    status = INVALID_INPUT;
-		} else { 
+		} else {
 		    /* Attempt to run the program */
 		    document->registerExternalSymbolsWithProgram(program);
 
 		    if ( Flags::print_spex ) {
 			program->print( std::cerr );
 		    }
-		    
+
 		    if ( Flags::print[RELOAD_LQX].opts.value.b ) {
 			program->getEnvironment()->getMethodTable()->registerMethod(new SolverInterface::Solve(document, &Model::reload, model));
 		    } else {
 			program->getEnvironment()->getMethodTable()->registerMethod(new SolverInterface::Solve(document, &Model::store, model));
 		    }
 		    LQIO::RegisterBindings(program->getEnvironment(), document);
-	
+
 		    FILE * output = nullptr;
 		    if ( output_file_name.size() > 0 && output_file_name != "-" ) {
 			output = fopen( output_file_name.c_str(), "w" );
@@ -706,7 +704,7 @@ Model::process()
     }
 
     /* Assign all tasks to layers. */
-    
+
     layerize();
     for ( std::vector<Layer>::iterator layer = _layers.begin(); layer != _layers.end(); ++layer ) {
 	layer->number(layer - _layers.begin());    /* Assign numbers to layers. */
@@ -720,7 +718,7 @@ Model::process()
 
     if ( Flags::print[SUMMARY].opts.value.b || Flags::print_submodels ) {
 	printSummary( std::cerr );
-    } 
+    }
 
     if ( !Flags::have_results && Flags::colouring() == Colouring::RESULTS ) {
 	Flags::set_colouring( Colouring::INPUT );
@@ -758,7 +756,7 @@ Model::process()
     } else if ( Flags::include_only() != nullptr && Flags::surrogates ) {
 
 	/* Call transmorgrify on all layers */
-	
+
 //	Need to find the highest layer "included"
 //	_layers[layer].transmorgrifyClients( _document );
 	for ( unsigned i = _layers.size(); i > 0; --i ) {
@@ -884,7 +882,7 @@ Model::store()
     if ( input_output() && _document->getResultDescription().empty() ) {
 	_document->setResultDescription( "Layered Queuening Network Model." );
     }
-    
+
     if ( output_output() && !Flags::have_results ) {
 
 	std::cerr << LQIO::io_vars.lq_toolname << ": There are no results to output for " << _inputFileName << std::endl;
@@ -915,8 +913,7 @@ Model::store()
 	}
 
 	if ( _inputFileName == filename() && input_output() && ( partial_output() || Flags::aggregation() != Aggregate::NONE ) ) {
-	    const std::string msg = "Cannot overwrite input file " + filename.str() + " with a subset of original model.";
-	    throw std::runtime_error( msg );
+	    throw std::runtime_error( std::string("Cannot overwrite input file ") + filename.str() + " with a subset of original model." );
 	}
 
 	filename.backup();
@@ -951,7 +948,7 @@ Model::store()
 	}
 
 	if ( !output ) {
-	    throw std::runtime_error( std::string( "Cannot open output file ") + filename().string() + " - " + strerror( errno ) );
+	    throw std::runtime_error( std::string( "Cannot open output file ") + filename.str() + " - " + strerror( errno ) );
 	} else {
 	    output.exceptions ( std::ios::failbit | std::ios::badbit );
 	    output << *this;
@@ -993,7 +990,7 @@ Model::reload()
 	output_format = LQIO::DOM::Document::OutputFormat::XML;
 	break;
     }
-    
+
     unsigned int errorCode;
     if ( !_document->loadResults( directory_name(), _inputFileName,
 				  SolverInterface::Solve::customSuffix, output_format, errorCode ) ) {
@@ -1061,8 +1058,8 @@ Model::getExtension()
 /*
  * Transform the model by removing infinite servers.  Multiple entries
  * are allowed, but multiple phases are not.
- * Step one - map calls to clients.  We may get multiple calls to a given entity 
- * Step two - merge the calls. 
+ * Step one - map calls to clients.  We may get multiple calls to a given entity
+ * Step two - merge the calls.
  */
 
 /* static */ bool
@@ -1075,7 +1072,7 @@ Model::prune()
     catch ( const std::domain_error& e ) {
 	LQIO::runtime_error( ERR_UNASSIGNED_VARIABLES );
     }
-    
+
     return Flags::ignore_errors() || !LQIO::io_vars.anError();
 }
 #endif
@@ -1115,7 +1112,7 @@ Model::topologicalSort()
 
     unsigned int i = 1;			/* Client path number */
     for ( std::set<Task *>::const_iterator task = Task::__tasks.begin(); task != Task::__tasks.end(); ++task ) {
-	if ( (*task)->rootLevel() == Task::root_level_t::IS_NON_REFERENCE 
+	if ( (*task)->rootLevel() == Task::root_level_t::IS_NON_REFERENCE
 	     || (Flags::client_tasks != nullptr && regex_match( (*task)->name(), *Flags::client_tasks ) ) ) continue;
 
 	try {
@@ -1175,7 +1172,7 @@ Model::check() const
 {
     std::for_each( Processor::__processors.begin(), Processor::__processors.end(), std::mem_fn( &Entity::check ) );
     std::for_each( Task::__tasks.begin(), Task::__tasks.end(), std::mem_fn( &Entity::check ) );
-    if ( std::none_of( Task::__tasks.begin(), Task::__tasks.end(), std::mem_fn( &Task::isReferenceTask ) ) && 
+    if ( std::none_of( Task::__tasks.begin(), Task::__tasks.end(), std::mem_fn( &Task::isReferenceTask ) ) &&
 	 std::none_of( Task::__tasks.begin(), Task::__tasks.end(), std::mem_fn( &Task::hasOpenArrivals ) ) ) {
 	LQIO::runtime_error( LQIO::ERR_NO_REFERENCE_TASKS );
     }
@@ -1710,9 +1707,9 @@ Model::expand()
 
     /*  Delete all original Entities from the symbol table and collections */
 
-    std::for_each( old_entry.begin(), old_entry.end(), Delete<Entry *> );
-    std::for_each( old_task.begin(), old_task.end(), Delete<Task *> );
-    std::for_each( old_processor.begin(), old_processor.end(), Delete<Processor *> );
+    std::for_each( old_entry.begin(), old_entry.end(), []( Entry * entry ){ delete entry; } );
+    std::for_each( old_task.begin(), old_task.end(), []( Task * task ){ delete task; } );
+    std::for_each( old_processor.begin(), old_processor.end(), []( Processor * processor ){ delete processor; } );
 
     return *this;
 }
@@ -1750,9 +1747,9 @@ Model::returnReplication()
     _document->clearAllMaps();
 
     LQIO::DOM::DocumentObject * root = nullptr;
-    std::for_each( old_processor.begin(), old_processor.end(), [&]( Processor * processor){ processor->replicateProcessor( &root ); } ); // 
+    std::for_each( old_processor.begin(), old_processor.end(), [&]( Processor * processor){ processor->replicateProcessor( &root ); } ); //
     std::for_each( old_entry.begin(), old_entry.end(), std::mem_fn( &Entry::replicateCall ) );	/* do before entry */
-    std::for_each( old_task.begin(), old_task.end(), std::mem_fn( &Task::replicateCall ) );		/* do before task */
+    std::for_each( old_task.begin(), old_task.end(), std::mem_fn( &Task::replicateCall ) );	/* do before task */
     std::for_each( old_entry.begin(), old_entry.end(), [&]( Entry * entry ){ entry->replicateEntry( &root ); } );
     std::for_each( old_task.begin(), old_task.end(), [&]( Task * task ){ task->replicateTask( &root ); } );
     Task::updateFanInOut();
@@ -1876,7 +1873,7 @@ Model::printGD( std::ostream& output, outputFuncPtr func ) const
 std::ostream&
 Model::printPostScript( std::ostream& output ) const
 {
-    printPostScriptPrologue( output, _inputFileName,
+  printPostScriptPrologue( output, getDOM()->getResultDescription(),
 			     static_cast<int>(left()+0.5),
 			     static_cast<int>(bottom()+0.5),
 			     static_cast<int>(right()+0.5),
@@ -2097,7 +2094,7 @@ Model::printLQX( std::ostream& output ) const
     LQIO::Spex::clear();		/* removes spex, so LQX will output. */
     return printXML( output );
 }
-    
+
 std::ostream&
 Model::printXML( std::ostream& output ) const
 {
@@ -2238,6 +2235,7 @@ Model::printPostScriptPrologue( std::ostream& output, const std::string& title,
 #define MKDIR(a1,a2) mkdir( a1, a2 )
 #endif
 
+#if 0
 const Model&
 Model::printSXD( const char * file_name ) const
 {
@@ -2250,7 +2248,7 @@ Model::printSXD( const char * file_name ) const
     catch ( std::filesystem::filesystem_error& e ) {
 	runtime_error( LQIO::ERR_CANT_OPEN_DIRECTORY, dir_name.str().c_str(), e.what() );
 	throw;
-    } 
+    }
 
     const std::filesystem::path meta_name = dir_name() / "META-INF";
     try {
@@ -2270,17 +2268,17 @@ Model::printSXD( const char * file_name ) const
 
     return *this;
 }
+#endif
 
 const Model&
 Model::printSXD( const std::string& dst_name, const std::filesystem::path& dir_name, const std::string& file_name, const printSXDFunc aFunc ) const
 {
-  const std::filesystem::path pathname = dir_name / file_name;
+    const std::filesystem::path pathname = dir_name / file_name;
 
     std::ofstream output;
     output.open( pathname.string().c_str(), std::ios::out );
     if ( !output ) {
-        const std::string msg = "Cannot open output file \"" + pathname.string() + "\" - " + strerror( errno );
-	throw std::runtime_error( msg );
+	throw std::runtime_error( std::string("Cannot open output file \"") + pathname.string() + "\" - " + strerror( errno ) );
     } else {
 	/* Write out all other XML goop needed */
 	(this->*aFunc)( output );
@@ -2296,7 +2294,7 @@ Model::printSXD( const std::string& dst_name, const std::filesystem::path& dir_n
 		msg += strerror( errno );
 	    } else {
 	        msg += "status=" + std::to_string( rc );
-	    } 
+	    }
 	    throw std::runtime_error( msg );
 	}
 #endif
@@ -2416,7 +2414,7 @@ Model::Count::operator+=( const Model::Count& addend )
 }
 
 Model::Count&
-Model::Count::operator()( const Entity * entity ) 
+Model::Count::operator()( const Entity * entity )
 {
     const Task * aTask = dynamic_cast<const Task *>(entity);
     if ( aTask ) {
@@ -2775,7 +2773,7 @@ Group_Model::Justify::operator()( Group * group )
 
     /* The next column starts here.  PseudoGroups (for group
      * scheduling) are ignored if they have no default tasks */
-    
+
     if ( _x > 0 ) {
 	_x += Flags::x_spacing();
     }

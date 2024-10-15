@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: filename.cpp 17362 2024-10-13 12:05:57Z greg $
+ * $Id: filename.cpp 17369 2024-10-15 22:13:09Z greg $
  *
  * File name generation.
  *
@@ -24,7 +24,7 @@
 
 namespace LQIO {
 
-    Filename::Filename( const std::filesystem::path& base, const std::string& extension, const std::filesystem::path& directory, const std::string& suffix )
+    Filename::Filename( const std::filesystem::path& base, const std::filesystem::path& extension, const std::filesystem::path& directory, const std::string& suffix )
     {
 	generate( directory, base, suffix, extension );
     }
@@ -37,7 +37,7 @@ namespace LQIO {
 
 
     const std::filesystem::path&
-    Filename::generate( const std::filesystem::path& directory, const std::filesystem::path& path, const std::string& suffix, const std::string& extension )
+    Filename::generate( const std::filesystem::path& directory, const std::filesystem::path& path, const std::string& suffix, const std::filesystem::path& extension )
     {
 	/* prepend directory */
 	if ( !directory.empty() ) {
