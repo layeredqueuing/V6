@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: lqn2ps.cc 17184 2024-04-29 11:01:37Z greg $
+ * $Id: lqn2ps.cc 17458 2024-11-12 11:54:17Z greg $
  *
  * Command line processing.
  *
@@ -16,6 +16,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
@@ -43,7 +44,7 @@ extern "C" int resultdebug;
 
 bool SolverInterface::Solve::solveCallViaLQX = false;/* Flag when a solve() call was made */
 
-static std::string parse_file_name = "";
+static std::filesystem::path parse_file_name = "";
 
 #if (defined(linux) || defined(__linux__)) && !defined(__USE_XOPEN_EXTENDED)
 extern "C" int getsubopt (char **, char * const *, char **);
@@ -218,9 +219,9 @@ main(int argc, char *argv[])
     extern char *optarg;
     extern int optind;
     char * options;
-    std::string output_file_name = "";
+    std::filesystem::path output_file_name = "";
 
-    sscanf( "$Date: 2024-04-29 07:01:37 -0400 (Mon, 29 Apr 2024) $", "%*s %s %*s", copyrightDate );
+    sscanf( "$Date: 2024-11-12 06:54:17 -0500 (Tue, 12 Nov 2024) $", "%*s %s %*s", copyrightDate );
 
     static std::string opts = "";
 #if HAVE_GETOPT_H
@@ -316,8 +317,8 @@ main(int argc, char *argv[])
 		/* Fall through... */
 	    case 0x200+'p':
 		parse_file_name = optarg;
-		if ( parse_file_name != "-" && access( parse_file_name.c_str(), R_OK ) != 0 ) {
-		    std::cerr << LQIO::io_vars.lq_toolname << ": Cannot open parseable output file " << parse_file_name << " - "
+		if ( parse_file_name != "-" && access( parse_file_name.string().c_str(), R_OK ) != 0 ) {
+		    std::cerr << LQIO::io_vars.lq_toolname << ": Cannot open parseable output file " << parse_file_name.string() << " - "
 			      << strerror( errno ) << std::endl;
 		    exit( 1 );
 		}
@@ -716,7 +717,7 @@ main(int argc, char *argv[])
     }
 
     if ( Flags::output_format() == File_Format::QNAP2 
-#if JMVA_OUTPUT && HAVE_EXPAT_H
+#if JMVA_OUTPUT && HAVE_LIBEXPAT
 	  || Flags::output_format() == File_Format::JMVA
 #endif
 	) {
@@ -768,7 +769,7 @@ main(int argc, char *argv[])
 #if QNAP2_OUTPUT
 		    && Flags::output_format() != File_Format::QNAP2
 #endif
-#if JMVA_OUTPUT && HAVE_EXPAT_H
+#if JMVA_OUTPUT && HAVE_LIBEXPAT
 		    && Flags::output_format() != File_Format::JMVA
 #endif
 		    && Flags::output_format() != File_Format::LQX
@@ -845,7 +846,7 @@ main(int argc, char *argv[])
     struct stat statbuf;
 
 #if !defined(__WINNT__) && !defined(MSDOS)
-    if ( output_file_name == "" && fstat( fileno( stdout ), &statbuf )
+    if ( output_file_name.empty() && fstat( fileno( stdout ), &statbuf )
 	 && ( S_ISREG(statbuf.st_mode) || S_ISFIFO(statbuf.st_mode)
 #if defined(S_ISSOCK)
 	      || S_ISSOCK(statbuf.st_mode)
@@ -983,7 +984,7 @@ setOutputFormat( const File_Format f )
     case File_Format::NO_OUTPUT:
 	break;
 
-#if JMVA_OUTPUT && HAVE_EXPAT_H
+#if JMVA_OUTPUT && HAVE_LIBEXPAT
     case File_Format::JMVA:
 	Flags::set_aggregation( Aggregate::ENTRIES );			/* No entries. */
 	break;

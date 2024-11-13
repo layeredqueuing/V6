@@ -10,36 +10,18 @@
 /*
  * Global vars for simulation.
  *
- * $Id: model.h 16945 2024-01-26 13:02:36Z greg $
+ * $Id: model.h 17464 2024-11-13 12:55:06Z greg $
  */
 
 #ifndef LQSIM_MODEL_H
 #define LQSIM_MODEL_H
 
-#include <lqsim.h>
+#include "lqsim.h"
 #include <lqio/dom_document.h>
 #include <lqio/common_io.h>
-#include <regex>
 #include "result.h"
-#if HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#if HAVE_SYS_TIMES_H
-#include <sys/times.h>
-#endif
-#include <time.h>
-
-namespace LQIO {
-    namespace DOM {
-	class Document;
-    }
-}
 
 extern matherr_type matherr_disposition;    	/* What to do on math fault     */
-extern FILE * stddbg;
-
-extern std::regex processor_match_pattern;	/* Pattern to match.	    */
-extern std::regex task_match_pattern;		/* Pattern to match.	    */
 
 /*
  * Information unique to a particular instance of a task.
@@ -47,14 +29,18 @@ extern std::regex task_match_pattern;		/* Pattern to match.	    */
 
 extern bool abort_on_dropped_message;
 extern bool reschedule_on_async_send;
-extern bool messages_lost;
+extern bool print_lqx;
 
+#if !BUG_289
 extern "C" void ps_genesis(void);
+#endif
 
 class Task;
 
 class Model {
+#if !BUG_289
     friend void ps_genesis(void);
+#endif
 
 public:
     struct simulation_parameters {
@@ -96,7 +82,7 @@ public:
     };
 
 private:
-    Model( LQIO::DOM::Document* document, const std::string&, const std::string&, LQIO::DOM::Document::OutputFormat );
+    Model( LQIO::DOM::Document* document, const std::filesystem::path&, const std::filesystem::path&, LQIO::DOM::Document::OutputFormat );
     Model( const Model& );
     Model& operator=( const Model& );
 
@@ -104,7 +90,7 @@ public:
     typedef bool (Model::*solve_using)();
     virtual ~Model();
     
-    static int solve( solve_using, const std::string&, LQIO::DOM::Document::InputFormat, const std::string&, LQIO::DOM::Document::OutputFormat, const LQIO::DOM::Pragma& );
+    static int solve( solve_using, const std::filesystem::path&, LQIO::DOM::Document::InputFormat, const std::filesystem::path&, LQIO::DOM::Document::OutputFormat, const LQIO::DOM::Pragma& );
 
     bool operator!() const { return _document == nullptr; }
 
@@ -127,26 +113,28 @@ private:
     void accumulate_data();
     void insertDOMResults();
 
-    const std::string& getOutputFileName() const { return (_output_file_name.size() > 0 && _output_file_name != "-") ? _output_file_name : _input_file_name; }
+    const std::filesystem::path& getOutputFileName() const { return (!_output_file_name.empty() && _output_file_name != "-") ? _output_file_name : _input_file_name; }
     
     void print_intermediate();
-    void print_raw_stats( FILE * output ) const;
+    std::ostream& print( std::ostream& output ) const;
     
     bool run( int );
     static void start_task( Task * );
 
     static double rms_confidence();
-    static double normalized_conf95( const result_t& stat );
+    static double normalized_conf95( const Result& stat );
 
 private:
     LQIO::DOM::Document* _document;
-    std::string _input_file_name;
-    std::string _output_file_name;
+    const std::filesystem::path _input_file_name;
+    const std::filesystem::path _output_file_name;
     const LQIO::DOM::Document::OutputFormat _output_format;
     LQIO::DOM::CPUTime _start_time;
     simulation_parameters _parameters;
     double _confidence;
+#if defined(_PARASOL)
     static int __genesis_task_id;
+#endif
     static Model * __model;
     static const std::map<const LQIO::DOM::Document::OutputFormat,const std::string> __parseable_output;
 

@@ -1,8 +1,7 @@
-# $Id: err_non_ref_think_time.lqn 15708 2022-06-23 17:25:01Z greg $
-# Fri Oct 28 10:50:02 2005
+# $Id: err_non_ref_think_time.lqn 17379 2024-10-16 23:34:31Z greg $
 # ------------------------------------------------------------------------
 
-G "ERR_NON_REF_THINK_TIME" 1e-05 50 10 0.9 -1
+G "ERR_NON_REF_THINK_TIME: lqsim,lqns,petrisrvn,lqiolib," 1e-05 50 10 0.9 -1
 
 P 2
   p p1 f i

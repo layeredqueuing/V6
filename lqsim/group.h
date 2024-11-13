@@ -2,7 +2,7 @@
  *
  * Processor Group handling.
  *
- * $Id: group.h 17299 2024-09-17 19:10:28Z greg $
+ * $Id: group.h 17458 2024-11-12 11:54:17Z greg $
  */
 
 /************************************************************************/
@@ -43,25 +43,24 @@ public:
 public:
     Group( LQIO::DOM::Group * group, const Processor& processor );
 
-    LQIO::DOM::Group * getDOMGroup() const { return _domGroup; }
-    const char * name() const { return _domGroup->getName().c_str(); }
-    bool cap() const { return _domGroup->getCap(); }		/* Cap share		*/
+    LQIO::DOM::Group * getDOM() const { return _dom; }
+    const char * name() const { return _dom->getName().c_str(); }
+    bool cap() const { return _dom->getCap(); }		/* Cap share		*/
     const Processor& processor() const { return _processor; }
+    const std::set<Task*>& tasks() { return _tasks; }
+    
     Group& create();
 
     Group& reset_stats() { r_util.reset(); return *this; }
     Group& accumulate_data() { r_util.accumulate(); return *this; }
     Group& insertDOMResults();
 
-public:
-    std::map<Task *,int> _tasks;	/* Maps task to group 		*/
-
 private:
-    LQIO::DOM::Group * _domGroup;
+    LQIO::DOM::Group * _dom;
     const Processor &_processor;
     const unsigned int _total_tasks;
-    result_t r_util;			/* Utilization.			*/
+    VariableResult r_util;			/* Utilization.			*/
 
-    std::set<Task*> _task_list;
+    std::set<Task*> _tasks;
 };
 #endif

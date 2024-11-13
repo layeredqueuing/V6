@@ -2,7 +2,7 @@
 # Copyright (C) 2005 Greg Franks <greg@sce.carleton.ca>
 #
 # ------------------------------------------------------------------------
-# $Id: Makefile.am 17324 2024-10-02 14:46:37Z greg $
+# $Id: Makefile.am 17458 2024-11-12 11:54:17Z greg $
 # ------------------------------------------------------------------------
 
 SRVN=	../lqsim
@@ -10,7 +10,8 @@ OPTS=	-C1.0,1000 -S1049217653
 #OPTS=	-B3,10000,1000 -M -S1049217653
 EPSILON = '-S1.0'
 
-SANITY=	01-sanity.lqxo \
+SANITY=	00-sanity.lqxo \
+	01-sanity.lqxo \
 	02-sanity.lqxo \
 	03-sanity.lqxo \
 	04-sanity.lqxo \
@@ -175,8 +176,8 @@ other:	$(OTHER)
 
 33-spex-convergence.lqxo: 33-spex-convergence.lqnx
 	$(SRVN) -B5,100000 -o $*.out $<
-	@mv $*.d/$*-002.lqxo $@
-	@srvndiff $(DIFFOPTS) $@ ../../models/regression/sim-results/$@
+	@mv $*.d/$*-006.lqxo $@
+	@srvndiff -Q $(EPSILON) $@ ../../models/regression/sim-results/$@
 	@rm -rf $*.d
 
 50-replication.lqxo:	50-replication.lqnx

@@ -10,7 +10,7 @@
  * November 2020.
  *
  * ------------------------------------------------------------------------
- * $Id: actlist.h 15760 2022-07-25 14:36:17Z greg $
+ * $Id: actlist.h 17458 2024-11-12 11:54:17Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -33,15 +33,6 @@ class AndJoinActivityList;
 
 
 class ActivityList {
-private:
-    /* Used to concatentate activity list names into a string */
-    struct fold {
-	fold( const std::string& op ) : _op(op) {}
-	std::string operator()( const std::string& s1, const Activity * a2 ) const;
-    private:
-	const std::string& _op;
-    };
-
 private:
     ActivityList( const ActivityList& ) = delete;
     ActivityList& operator=( const ActivityList& ) = delete;
@@ -251,11 +242,11 @@ public:
     virtual ~AndJoinActivityList();
 
     virtual AndJoinActivityList& configure();
+    AndJoinActivityList& initialize();
     virtual AndJoinActivityList& push_back( Activity * activity );
 
     bool set_join_type( Join type );
     bool join_type_is( Join type ) const { return type == _join_type; }
-    bool add_to_join_list( unsigned i, Activity * activity );
     unsigned int get_quorum_count() const { return _quorum_count; }
 
     virtual double find_children( std::deque<Activity *>& activity_stack, std::deque<AndForkActivityList *>& fork_stack, const Entry * ep );
@@ -265,6 +256,7 @@ public:
     AndJoinActivityList& reset_stats();
     AndJoinActivityList& accumulate_data();
     AndJoinActivityList& insertDOMResults();
+    std::ostream& print( std::ostream& ) const;
 
 private:
     const AndForkActivityList * _fork;		/* Link to join from fork.	*/
@@ -273,8 +265,8 @@ private:
     unsigned int _quorum_count; 		/* tomari quorum		*/
 
 public:
-    result_t r_join;				/* results for join delays	*/
-    result_t r_join_sqr;			/* results for delays.		*/
+    SampleResult r_join;			/* results for join delays	*/
+    SampleResult r_join_sqr;			/* results for delays.		*/
     Histogram * _hist_data;
 };
 

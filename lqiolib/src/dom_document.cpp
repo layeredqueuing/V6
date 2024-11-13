@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_document.cpp 17369 2024-10-15 22:13:09Z greg $
+ *  $Id: dom_document.cpp 17409 2024-10-31 13:27:39Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -69,7 +69,7 @@ namespace LQIO {
 	    { XPrintInterval,               10. },
 	    { XUnderrelaxationCoefficient,  0.9 },
 	    { XSpexIterationLimit,          50. },
-	    { XSpexUnderrelaxation,         1.0 },
+	    { XSpexUnderrelaxation,         0.7 },
 	    { XSpexConvergence,             0.001 }
 	};
 	

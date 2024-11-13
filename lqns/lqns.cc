@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: lqns.cc 17352 2024-10-09 22:15:51Z greg $
+ * $Id: lqns.cc 17458 2024-11-12 11:54:17Z greg $
  *
  * Command line processing.
  *
@@ -13,11 +13,13 @@
  */
 
 #include "lqns.h"
-#include <sstream>
-#include <fstream>
+#include <cmath>
+#include <cstring>
 #include <cstdio>
 #include <cstdlib>
-#include <cmath>
+#include <filesystem>
+#include <fstream>
+#include <sstream>
 #include <errno.h>
 #include <fcntl.h>           /* Definition of AT_* constants */
 #if HAVE_GETOPT_H
@@ -127,7 +129,7 @@ extern "C" int getsubopt (char **, char * const *, char **);
 
 int main (int argc, char *argv[])
 {
-    std::string outputFileName = "";
+    std::filesystem::path outputFileName = "";
     LQIO::DOM::Document::OutputFormat output_format = LQIO::DOM::Document::OutputFormat::DEFAULT;
     LQIO::CommandLine command_line( longopts );
     Options::Debug::initialize();
@@ -144,7 +146,7 @@ int main (int argc, char *argv[])
     
     command_line = LQIO::io_vars.lq_toolname;
 
-    sscanf( "$Date: 2024-10-09 18:15:51 -0400 (Wed, 09 Oct 2024) $", "%*s %s %*s", copyrightDate );
+    sscanf( "$Date: 2024-11-12 06:54:17 -0500 (Tue, 12 Nov 2024) $", "%*s %s %*s", copyrightDate );
 
     matherr_disposition = fp_exception_reporting::DEFERRED_ABORT;
 

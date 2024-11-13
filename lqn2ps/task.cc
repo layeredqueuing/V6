@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqn2ps/task.cc $
+ * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk-V6/lqn2ps/task.cc $
  *
  * Everything you wanted to know about a task, but were afraid to ask.
  *
@@ -10,7 +10,7 @@
  * January 2001
  *
  * ------------------------------------------------------------------------
- * $Id: task.cc 17369 2024-10-15 22:13:09Z greg $
+ * $Id: task.cc 17379 2024-10-16 23:34:31Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -2388,6 +2388,7 @@ Task::draw( std::ostream& output ) const
 	{ SCHEDULE_PPR,	        'p' },
 	{ SCHEDULE_RAND,	'r' },
 	{ SCHEDULE_RWLOCK,      'W' },
+	{ SCHEDULE_SEMAPHORE,   'S' },
 	{ SCHEDULE_UNIFORM,     'u' }
     };
 

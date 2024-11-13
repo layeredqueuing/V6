@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<!-- $Id: err_async_request_to_wait.lqnx 17379 2024-10-16 23:34:31Z greg $ -->
+<lqn-model name="err_async_request_to_wait" description="Layered Queueing Network Model" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="/usr/local/share/lqns/lqn.xsd">
+   <solver-params comment="ERR_ASYNC_REQUEST_TO_WAIT: lqsim,,lqiolib" conv_val="1e-05" it_limit="50" underrelax_coeff="0.9" print_int="10"/>
+   <processor name="clients" scheduling="hol">			<!-- Force order based on priority -->
+      <task name="wait" scheduling="ref" priority="1">	<!-- highest priority -->
+         <entry name="call_wait" type="PH1PH2">
+            <entry-phase-activities>
+               <activity name="wait" phase="1" host-demand-mean="1" call-order="DETERMINISTIC">
+                  <asynch-call dest="wait" calls-mean="1"/>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+      </task>
+      <task name="signal" scheduling="ref" priority="0">	<!-- lowest priority -->
+         <entry name="call_signal" type="PH1PH2">
+            <entry-phase-activities>
+               <activity name="signal" phase="1" host-demand-mean="1" call-order="DETERMINISTIC">
+                  <synch-call dest="signal" calls-mean="1"/>
+               </activity>
+            </entry-phase-activities>
+         </entry>
+      </task>
+   </processor>
+   <processor name="server" scheduling="fcfs">
+      <task name="server" scheduling="semaphore">
+         <entry name="wait" type="PH1PH2" semaphore="wait">
+            <entry-phase-activities>
+               <activity name="wait" phase="1" host-demand-mean="1"/>
+            </entry-phase-activities>
+         </entry>
+         <entry name="signal" type="PH1PH2" semaphore="signal">
+            <entry-phase-activities>
+               <activity name="signal" phase="1" host-demand-mean="1"/>
+            </entry-phase-activities>
+         </entry>
+      </task>
+   </processor>
+</lqn-model>

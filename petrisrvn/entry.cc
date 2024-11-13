@@ -8,17 +8,19 @@
 /************************************************************************/
 
 /*
- * $Id: entry.cc 17328 2024-10-02 19:55:53Z greg $
+ * $Id: entry.cc 17458 2024-11-12 11:54:17Z greg $
  *
  * Generate a Petri-net from an SRVN description.
  *
  */
 
 #include "petrisrvn.h"
-#include <cmath>
 #include <algorithm>
-#include <vector>
+#include <cmath>
+#include <functional>
+#include <numeric>
 #include <sstream>
+#include <vector>
 #include <lqio/glblerr.h>
 #include <lqio/dom_entry.h>
 #include "makeobj.h"
@@ -35,7 +37,8 @@ std::vector<Entry *> __entry;
 unsigned int Entry::__next_entry_id = 1;
 
 Entry::Entry( LQIO::DOM::Entry * dom, Task * task )
-    : forwards(),
+    : phase(DIMPH+1),
+      forwards(),
 #if defined(BUFFER_BY_ENTRY)
       ZZ(0),
 #endif
@@ -126,30 +129,26 @@ double Entry::prob_fwd( const Entry * entry ) const
 
 double Entry::yy(const Entry* entry) const
 {
-    double ysum = 0;
-    for ( unsigned int p = 1; p <= DIMPH; ++p ) {
-	ysum += phase[p].y(entry);
-    }
-    return ysum;
+    return std::accumulate( std::next(phase.begin()), phase.end(), 0.0, [=]( double sum, const Phase& phase ){ return sum + phase.y(entry); } );
 }
 
 double Entry::zz(const Entry* entry) const
 {
-    double zsum = 0;
-    for ( unsigned int p = 1; p <= DIMPH; ++p ) {
-	zsum += phase[p].z(entry);
-    }
-    return zsum;
+    return std::accumulate( std::next(phase.begin()), phase.end(), 0.0, [=]( double sum, const Phase& phase ){ return sum + phase.z(entry); } );
+}
+
+bool
+Entry::has_calls() const
+{
+    if ( !is_regular_entry() ) return false;
+    return std::any_of( std::next(phase.begin()), phase.end(), std::mem_fn( &Phase::has_calls ) );
 }
 
 bool
 Entry::has_deterministic_calls() const
 {
     if ( !is_regular_entry() ) return false;
-    for ( unsigned int p = 1; p <= n_phases(); ++p ) {
-	if ( phase[p].has_deterministic_calls() ) return true;
-    }
-    return false;
+    return std::any_of( std::next(phase.begin()), phase.end(), std::mem_fn( &Phase::has_deterministic_calls ) );
 }
 
 bool
@@ -269,8 +268,19 @@ Entry::initialize()
 
     const_cast<Task *>(task())->set_n_phases( n_phases() );
 
-    if ( task()->type() != Task::Type::SEMAPHORE && semaphore_type() != LQIO::DOM::Entry::Semaphore::NONE ) {
-	task()->get_dom()->runtime_error( LQIO::ERR_NOT_SEMAPHORE_TASK, (semaphore_type() == LQIO::DOM::Entry::Semaphore::SIGNAL ? "signal" : "wait"), name() );
+    switch ( semaphore_type() ) {
+    case LQIO::DOM::Entry::Semaphore::WAIT:
+	if ( requests() == Requesting_Type::SEND_NO_REPLY ) {
+	    get_dom()->runtime_error( LQIO::ERR_ASYNC_REQUEST_TO_WAIT );
+	}
+	/* fall through */
+    case LQIO::DOM::Entry::Semaphore::SIGNAL:
+	if ( task()->type() != Task::Type::SEMAPHORE ) {
+	    task()->get_dom()->runtime_error( LQIO::ERR_NOT_SEMAPHORE_TASK, (semaphore_type() == LQIO::DOM::Entry::Semaphore::SIGNAL ? "signal" : "wait"), name() );
+	}
+	break;
+    case LQIO::DOM::Entry::Semaphore::NONE:
+	break;
     }
 
     /* Deal with forwarding. */
@@ -567,4 +577,3 @@ Entry::find( const std::string& from_entry_name, Entry * & from_entry, const std
     }
     return rc;
 }
-

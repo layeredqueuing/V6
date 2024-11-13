@@ -1,5 +1,5 @@
 /* -*- c++ -*-
-< * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/task.h $
+< * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk-V6/lqns/task.h $
  *
  * Tasks.
  *
@@ -10,7 +10,7 @@
  * November, 1994
  * May 2009.
  *
- * $Id: task.h 17211 2024-05-13 22:13:11Z greg $
+ * $Id: task.h 17458 2024-11-12 11:54:17Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -174,6 +174,7 @@ public:
 
     virtual bool isTask() const { return true; }
     bool isCalled() const;
+    bool hasCalls() const;
     virtual bool hasActivities() const { return _activities.size() != 0 ? true : false; }
     bool hasClientChain( unsigned int n, unsigned int k ) const;
     bool hasForks() const { return _has_forks; }

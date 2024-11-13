@@ -2,7 +2,7 @@
  * 
  * Logic executed for task behaviour in simulation.
  *
- * $Id: instance.h 16202 2022-12-26 22:26:49Z greg $
+ * $Id: instance.h 17458 2024-11-12 11:54:17Z greg $
  */
 
 /************************************************************************/
@@ -24,6 +24,7 @@
 class Entry;
 class Activity;
 class Message;
+class Random;
 
 
 extern volatile int client_init_count;		/* Semaphore for -C...*/
@@ -61,7 +62,7 @@ public:
     void timeline_trace( const trace_events event, ... );
     
 protected:
-    void client_cycle( const double think_time );
+    void client_cycle( Random * );
     void server_cycle(  Entry *, Message * msg, bool reschedule );
     Message * wait_for_message( long& entry_id );
     Message * wait_for_message2( long& entry_id );
@@ -86,8 +87,8 @@ private:
     void do_forwarding ( Message * msg, const Entry * ep );
 
 public:
-    int r_e_execute;			/* For preemption (state).	*/
-    int r_a_execute;			/* For preemption (state).	*/
+    Result * r_e_execute;		/* For preemption (state).	*/
+    Result * r_a_execute;		/* For preemption (state).	*/
 
 protected:
     Task * _cp;				/* Pointer to class.	        */
@@ -146,9 +147,13 @@ class srn_client : public Real_Instance
     /* CLIENT 		*/
 public:
     srn_client( Task * cp, const std::string& task_name  );
-
+    ~srn_client();
+    
     virtual const std::string& type_name() const { return Task::type_strings.at(Task::Type::CLIENT); }
     void run();
+
+private:
+    Random * _think_time;		/* Distribution generator	*/
 };
 
 

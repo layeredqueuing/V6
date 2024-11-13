@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- *  $Id: dom_task.h 15827 2022-08-14 15:20:00Z greg $
+ *  $Id: dom_task.h 17458 2024-11-12 11:54:17Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -66,7 +66,8 @@ namespace LQIO {
 	    const char * getTypeName() const { return __typeName; }
 
 	    const std::vector<Entry*>& getEntryList() const;
-
+	    bool isReferenceTask() const;
+	    
 	    /* Variable Accessors and Mutators */
 	    unsigned int getQueueLengthValue() const;
 	    const ExternalVariable * getQueueLength() const;

@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: phase.cc 17211 2024-05-13 22:13:11Z greg $
+ * $Id: phase.cc 17458 2024-11-12 11:54:17Z greg $
  *
  * Everything you wanted to know about an phase, but were afraid to ask.
  *
@@ -310,8 +310,8 @@ Phase::Phase( const Phase& src )
 
 Phase::~Phase()
 {
-    std::for_each( _devices.begin(), _devices.end(), Delete<DeviceInfo *> );
-    std::for_each( callList().begin(), callList().end(), Delete<Call *> );
+    std::for_each( _devices.begin(), _devices.end(), []( DeviceInfo * deviceinfo ){ delete deviceinfo; } );
+    std::for_each( callList().begin(), callList().end(), []( Call * call ){ delete call; } );
 }
 
 

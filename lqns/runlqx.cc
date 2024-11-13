@@ -1,6 +1,6 @@
 /* runlqx.h	-- Greg Franks
  *
- * $URL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/runlqx.cc $
+ * $URL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk-V6/lqns/runlqx.cc $
  * ------------------------------------------------------------------------
  * $Id: runlqx.cc 17282 2024-09-12 16:24:34Z greg $
  * ------------------------------------------------------------------------

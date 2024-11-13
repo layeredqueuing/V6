@@ -1,4 +1,4 @@
-// $Id: spinlock.cc 15459 2022-03-09 21:53:20Z greg $
+// $Id: spinlock.cc 17458 2024-11-12 11:54:17Z greg $
 //=======================================================================
 //	spinlock.cc - PS_Spinlock class definition.
 //

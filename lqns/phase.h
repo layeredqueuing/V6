@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/phase.h $
+ * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk-V6/lqns/phase.h $
  *
  * Everything you wanted to know about an entry, but were afraid to ask.
  *
@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: phase.h 17211 2024-05-13 22:13:11Z greg $
+ * $Id: phase.h 17458 2024-11-12 11:54:17Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -287,8 +287,8 @@ public:
     virtual double throughput() const;
     double utilization() const;
     double processorUtilization() const;
-    bool isUsed() const { return _calls.size() > 0.0 || serviceTime() > 0.0; }
     bool hasVariance() const;
+    bool hasCalls() const { return !_calls.empty(); }
     virtual bool isPseudo() const { return false; }		// quorum
     
     /* computation */

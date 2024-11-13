@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/entry.cc $
+ * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk-V6/lqns/entry.cc $
  *
  * Everything you wanted to know about an entry, but were afraid to ask.
  *
@@ -12,7 +12,7 @@
  * July 2007.
  *
  * ------------------------------------------------------------------------
- * $Id: entry.cc 17266 2024-09-08 20:09:16Z greg $
+ * $Id: entry.cc 17458 2024-11-12 11:54:17Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -537,19 +537,13 @@ Entry::hasVariance() const
 
 
 
-/*
- * Check entry type.  If entry is NOT defined, the set entry type.
- * Return 1 if types match or entry type not set.
- */
-
 bool
-Entry::entryTypeOk( const LQIO::DOM::Entry::Type aType )
+Entry::hasCalls() const
 {
-    if ( _entryType == LQIO::DOM::Entry::Type::NOT_DEFINED ) {
-	_entryType = aType;
-	return true;
+    if ( isStandardEntry() ) {
+	return std::any_of( _phase.begin(), _phase.end(), std::mem_fn( &Phase::hasCalls ) );
     } else {
-	return _entryType == aType;
+	return false;
     }
 }
 
@@ -561,12 +555,29 @@ Entry::entryTypeOk( const LQIO::DOM::Entry::Type aType )
  */
 
 bool
-Entry::entrySemaphoreTypeOk( const LQIO::DOM::Entry::Semaphore aType )
+Entry::entryTypeOk( const LQIO::DOM::Entry::Type type )
+{
+    if ( _entryType == LQIO::DOM::Entry::Type::NOT_DEFINED ) {
+	_entryType = type;
+	return true;
+    } else {
+	return _entryType == type;
+    }
+}
+
+
+
+/*
+ * Check entry type.  If entry is NOT defined, the set entry type.
+ * Return 1 if types match or entry type not set.
+ */
+
+bool
+Entry::entrySemaphoreTypeOk( const LQIO::DOM::Entry::Semaphore type )
 {
     if ( _semaphoreType == LQIO::DOM::Entry::Semaphore::NONE ) {
-	_semaphoreType = aType;
-    } else if ( _semaphoreType != aType ) {
-	LQIO::input_error( LQIO::ERR_MIXED_SEMAPHORE_ENTRY_TYPES, name().c_str() );
+	_semaphoreType = type;
+    } else if ( _semaphoreType != type ) {
 	return false;
     }
     return true;

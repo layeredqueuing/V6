@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/pragma.h $
+ * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk-V6/lqns/pragma.h $
  *
  * Pragma processing.
  *
@@ -10,7 +10,7 @@
  * November, 1994
  * December, 2020
  *
- * $Id: pragma.h 16945 2024-01-26 13:02:36Z greg $
+ * $Id: pragma.h 17458 2024-11-12 11:54:17Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -19,6 +19,7 @@
 #define	LQNS_PRAGMA_H
 
 #include <map>
+#include <cassert>
 #include <lqio/input.h>
 #include <lqio/dom_pragma.h>
 #include "help.h"

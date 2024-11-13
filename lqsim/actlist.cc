@@ -10,7 +10,7 @@
  * Activities are arcs in the graph that do work.
  * Nodes are points in the graph where splits and joins take place.
  *
- * $Id: actlist.cc 16124 2022-11-18 11:26:13Z greg $
+ * $Id: actlist.cc 17464 2024-11-13 12:55:06Z greg $
  */
 
 #include "lqsim.h"
@@ -26,7 +26,9 @@
 #include <lqio/input.h>
 #include "activity.h"
 #include "actlist.h"
+#include "entry.h"
 #include "errmsg.h"
+#include "histogram.h"
 #include "instance.h"
 #include "model.h"
 #include "task.h"
@@ -53,14 +55,7 @@ ActivityList::get_name() const
 	break;
     }
     
-    return std::accumulate( std::next( _list.begin() ), _list.end(), std::string(_list.front()->name()), fold( sep ) );
-}
-
-
-std::string
-ActivityList::fold::operator()( const std::string& s1, const Activity * a2 ) const
-{
-    return s1 + " " + _op + " " + a2->name();
+    return std::accumulate( std::next( _list.begin() ), _list.end(), std::string(_list.front()->name()), [&]( const std::string& s1, const Activity * a2 ){ return s1 + " " + sep + " " + a2->name(); } );
 }
 
 AndJoinActivityList::AndJoinActivityList( ActivityList::Type type, LQIO::DOM::ActivityList * dom )
@@ -69,6 +64,8 @@ AndJoinActivityList::AndJoinActivityList( ActivityList::Type type, LQIO::DOM::Ac
       _source(),
       _join_type(AndJoinActivityList::Join::UNDEFINED),
       _quorum_count(0),
+      r_join("Join delay",dom),
+      r_join_sqr("Join delay squared",dom),
       _hist_data(nullptr)
 {
     if ( getDOM()->hasHistogram() ) {
@@ -132,6 +129,13 @@ AndForkActivityList::initialize()
 	    _visits += 1;
 	}
     }
+    return *this;
+}
+
+
+AndJoinActivityList&
+AndJoinActivityList::initialize()
+{
     return *this;
 }
 
@@ -353,27 +357,6 @@ LoopActivityList::find_children( std::deque<Activity *>& activity_stack, std::de
     }
     return sum;
 }
-
-
-/*
- * Add anActivity to the activity list provided it isn't there already
- * and the slot that it is to go in isn't already occupied.
- */
-
-bool
-AndJoinActivityList::add_to_join_list( unsigned i, Activity * activity )
-{
-    if ( _source[i] == nullptr ) { 
-	_source[i] = activity;
-    } else if ( _source[i] != activity ) {
-	return false;
-    }
-
-    for ( std::vector<Activity *>::const_iterator j = _source.begin(); j != _source.end(); ++j ) {
-	if ( j - _source.begin() != i && *j == activity ) return false;
-    }
-    return true;
-}
 
 /* ------------------------------------------------------------------------ */
 
@@ -418,15 +401,8 @@ AndJoinActivityList::join_backtrack( std::deque<AndForkActivityList *>& fork_sta
 
 
 AndJoinActivityList::cycle_error::cycle_error( AndJoinActivityList& list )
-    : std::runtime_error( std::accumulate( std::next( list.begin() ), list.end(), std::string(list.front()->name()), fold ) )
+    : std::runtime_error( list.get_name() )
 {
-}
-
-
-std::string
-AndJoinActivityList::cycle_error::fold( const std::string& s1, const Activity * a2 )
-{
-    return s1 + "&" + a2->name();
 }
 
 /* ------------------------------------------------------------------------ */
@@ -593,6 +569,16 @@ AndJoinActivityList::accumulate_data()
 	_hist_data->accumulate_data();
     }
     return *this;
+}
+
+
+
+std::ostream&
+AndJoinActivityList::print( std::ostream& output ) const
+{
+    output << r_join
+	   << r_join_sqr;
+    return output;
 }
 
 AndJoinActivityList&

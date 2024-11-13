@@ -1,4 +1,4 @@
-// $Id: statistic.cc 15459 2022-03-09 21:53:20Z greg $
+// $Id: statistic.cc 17458 2024-11-12 11:54:17Z greg $
 //=======================================================================
 //	statistic.cc - PS_AbstractStatistic, PS_RateStatistic, 
 //		     PS_VariableStatistic and PS_SampleStatistic class

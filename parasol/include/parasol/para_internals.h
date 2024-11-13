@@ -1,4 +1,4 @@
-/* $Id: para_internals.h 15459 2022-03-09 21:53:20Z greg $ */
+/* $Id: para_internals.h 17458 2024-11-12 11:54:17Z greg $ */
 /************************************************************************/
 /*	para_internals.h - PARASOL library internal header file		*/
 /*									*/

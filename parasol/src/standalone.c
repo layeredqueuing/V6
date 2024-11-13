@@ -1,4 +1,4 @@
-/* $Id: standalone.c 17274 2024-09-10 20:29:53Z greg $ */
+/* $Id: standalone.c 17458 2024-11-12 11:54:17Z greg $ */
 /************************************************************************/
 /*	para_library.c - PARASOL library source file			*/
 /*									*/

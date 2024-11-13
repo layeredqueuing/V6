@@ -9,7 +9,7 @@
 /*
  * Input output processing.
  *
- * $Id: group.cc 17299 2024-09-17 19:10:28Z greg $
+ * $Id: group.cc 17464 2024-11-13 12:55:06Z greg $
  */
 
 #include "lqsim.h"
@@ -22,6 +22,7 @@
 #include <iostream>
 #include <lqio/input.h>
 #include <lqio/error.h>
+#include "entry.h"
 #include "errmsg.h"
 #include "processor.h"
 #include "group.h"
@@ -29,11 +30,12 @@
 std::set<Group *, Group::ltGroup> Group::__groups;
 
 
-Group::Group( LQIO::DOM::Group * group, const Processor& processor ) 
-    : _tasks(),
-      _domGroup( group ),
+Group::Group( LQIO::DOM::Group * dom, const Processor& processor ) 
+    : _dom(dom),
       _processor(processor), 
-      _total_tasks(group->getTaskList().size())
+      _total_tasks(dom->getTaskList().size()),
+      r_util("Utilization",dom),
+      _tasks()
 {
 }
 
@@ -50,40 +52,39 @@ Group::create()
     double share_sum = 0.0;
 
     try {
-	share = _domGroup->getGroupShareValue();
+	share = getDOM()->getGroupShareValue();
     }
     catch ( const std::domain_error& e ) {
-	getDOMGroup()->throw_invalid_parameter( "share", e.what() );
+	getDOM()->throw_invalid_parameter( "share", e.what() );
     }
 
-    if ( _task_list.size() == 0 ) {
-	const std::set<LQIO::DOM::Task *>& dom_list = _domGroup->getTaskList();
+    if ( _tasks.empty() ) {
+	const std::set<LQIO::DOM::Task *>& dom_list = getDOM()->getTaskList();
 	for ( std::set<LQIO::DOM::Task *>::const_iterator t = dom_list.begin(); t != dom_list.end(); ++t ) {
 	    Task * cp = Task::find( (*t)->getName() );
 	    assert( cp );
-	    _task_list.insert(cp);
+	    _tasks.insert(cp);
 	    cp->set_group_id(-1);
 	}
     } else {
-	for ( std::set<Task *>::iterator t = _task_list.begin(); t != _task_list.end(); ++t ) {
-	    Task * cp = *t;
-	    cp->set_group_id(-1);			// Reset the parasol group id.
-	}
+	std::for_each( tasks().begin(), tasks().end(), []( Task * task ){ task->set_group_id(-1); } );
     }
 
     /* Assign all multi-server tasks their own group */
 
     if ( _total_tasks > 1 ) {
 	const double new_share = share / _total_tasks;
-	for ( std::set<Task *>::iterator t = _task_list.begin(); t != _task_list.end(); ++t ) {
+	for ( std::set<Task *>::iterator t = tasks().begin(); t != tasks().end(); ++t ) {
 	    Task * cp = *t;
 	    if ( cp->multiplicity() > 1 ) {
+//#if defined(_PARASOL)
 		int group_id = ps_build_group( name(), new_share, _processor.node_id(), cap() );
 		if ( group_id < 0 ) {
 		    LQIO::input_error( ERR_CANNOT_CREATE_X, "group", name() );
 		    return *this;
 		}
 		cp->set_group_id( group_id );
+//#endif
 		share_sum += new_share;
 	    }
 	}
@@ -91,19 +92,15 @@ Group::create()
     
     /* Now do the remaining tasks - fixed rate, or single multi-processor */
 
+//#if defined(_PARASOL)
     int group_id = ps_build_group( name(), std::max( 0.0, share - share_sum ), _processor.node_id(), cap() );
     if ( group_id < 0 ) {
 	LQIO::input_error( ERR_CANNOT_CREATE_X, "group", name() );
 	return *this;
     }
+//#endif
 
-    for ( std::set<Task *>::iterator t = _task_list.begin(); t != _task_list.end(); ++t ) {
-	Task * cp = *t;
-	if ( cp->group_id() != -1 ) continue;
-	cp->set_group_id(group_id);
-    }
-
-    r_util.init( VARIABLE, "Group  %-11.11s - Utilization     ", name() );
+    std::for_each( tasks().begin(), tasks().end(), [=]( Task * task ){ if ( task->group_id() == -1 ) { task->set_group_id( group_id ); } } );
 
     return *this;
 }
@@ -113,10 +110,10 @@ Group::create()
  */
 
 Group *
-Group::find( const std::string& group_name  )
+Group::find( const std::string& name  )
 {
-    if ( group_name.empty() ) return nullptr;
-    std::set<Group *>::const_iterator group = find_if( Group::__groups.begin(), Group::__groups.end(), [=]( const Group * group ){ return group->name() ==  group_name; } );
+    if ( name.empty() ) return nullptr;
+    std::set<Group *>::const_iterator group = find_if( Group::__groups.begin(), Group::__groups.end(), [=]( const Group * group ){ return group->name() ==  name; } );
     if ( group == Group::__groups.end() ) {
 	return nullptr;
     } else {
@@ -151,12 +148,12 @@ Group::add( const std::pair<std::string,LQIO::DOM::Group*>& p )
 	LQIO::input_error( LQIO::ERR_NOT_DEFINED, processor_name );
 	return;
     } else if ( processor->discipline() != SCHEDULE_CFS ) {
-	dom->getProcessor()->input_error( LQIO::WRN_NON_CFS_PROCESSOR );
+	dom->input_error( LQIO::WRN_NON_CFS_PROCESSOR, processor_name );
     }
 
-    Group * aGroup = new Group( dom, *processor );
-//    aGroup->set_share( dom->getGroupShareValue() );		// set local copy. May update with multiserver.
-    __groups.insert( aGroup );
+    Group * group = new Group( dom, *processor );
+//    group->set_share( dom->getGroupShareValue() );		// set local copy. May update with multiserver.
+    __groups.insert( group );
 }
 
 
@@ -168,15 +165,15 @@ Group::add( const std::pair<std::string,LQIO::DOM::Group*>& p )
 Group&
 Group::insertDOMResults()
 {
-    if ( !getDOMGroup() ) return *this;
+    if ( !getDOM() ) return *this;
 
     double proc_util_mean = 0.0;
     double proc_util_var  = 0.0;
 
-    for ( std::set<Task *>::const_iterator t = _task_list.begin(); t != _task_list.end(); ++t ) {
+    for ( std::set<Task *>::const_iterator t = tasks().begin(); t != tasks().end(); ++t ) {
 	Task * cp = *t;
 	
-	for ( std::vector<Entry *>::const_iterator entry = cp->_entry.begin(); entry != cp->_entry.end(); ++entry ) {
+	for ( std::vector<Entry *>::const_iterator entry = cp->entries().begin(); entry != cp->entries().end(); ++entry ) {
 	    for ( std::vector<Activity>::iterator phase = (*entry)->_phase.begin(); phase != (*entry)->_phase.end(); ++phase ) {
 		proc_util_mean += phase->r_cpu_util.mean();
 		proc_util_var  += phase->r_cpu_util.variance();
@@ -185,9 +182,9 @@ Group::insertDOMResults()
 	/* Entry utilization includes activities */
     }
 
-    getDOMGroup()->setResultUtilization(proc_util_mean);
+    getDOM()->setResultUtilization(proc_util_mean);
     if ( number_blocks > 1 ) {
-	getDOMGroup()->setResultUtilizationVariance(proc_util_var);
+	getDOM()->setResultUtilizationVariance(proc_util_var);
     }
     return *this;
 }

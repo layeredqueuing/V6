@@ -8,7 +8,7 @@
 /************************************************************************/
 
 /*
- * $Id: model.cc 17360 2024-10-12 10:59:43Z greg $
+ * $Id: model.cc 17464 2024-11-13 12:55:06Z greg $
  *
  * Load the SRVN model.
  */
@@ -35,6 +35,7 @@
 #include <lqio/dom_actlist.h>
 #include <lqio/dom_bindings.h>
 #include <lqio/dom_entry.h>
+#include <lqio/dom_task.h>
 #include <lqio/error.h>
 #include <lqio/filename.h>
 #include <lqio/glblerr.h>
@@ -55,14 +56,7 @@
 #include "runlqx.h"
 #include "task.h"
 
-#if HAVE_SYS_TIMES_H
-typedef struct tms tms_t;
-#else
-typedef double tms_t;
-#endif
-
 bool Model::__forwarding_present;
-bool Model::__open_class_error;
 LQIO::DOM::CPUTime Model::__start_time;
 
 /* define	UNCONDITIONAL_PROBS */
@@ -221,7 +215,6 @@ Model::load( const std::string& input_filename, LQIO::DOM::Document::InputFormat
     LQIO::io_vars.reset();
 
     __forwarding_present     = false;
-    __open_class_error	     = false;
 
     /*
      * Initialize everything that needs it before parsing
@@ -457,7 +450,6 @@ void Model::setModelParameters( const LQIO::DOM::Document * document )
 void Model::clear()
 {
     Model::__forwarding_present = false;
-    Model::__open_class_error = false;
     Phase::__parameter_x   = 0.5;
     Phase::__parameter_y   = 0.5;
     Task::__server_x_offset = 1;
@@ -672,7 +664,7 @@ Model::compute()
 	} else {
 	    std::for_each( ::__task.begin(), __task.end(), std::mem_fn( &Task::get_results ) );	/* Read net to get tokens. */
 
-	    if ( stats.precision >= 0.01 || __open_class_error || LQIO::io_vars.anError() ) {
+	    if ( stats.precision >= 0.01 || LQIO::io_vars.anError() ) {
 		rc = false;
 	    }
 	    insert_DOM_results( rc == true, stats );	/* Save results */

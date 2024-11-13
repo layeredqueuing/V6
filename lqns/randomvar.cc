@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/randomvar.cc $
+ * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk-V6/lqns/randomvar.cc $
  *
  * Random variable manipulation functions.  There are two types, plain
  * old exponentials, and those represented by a discreet distribution
@@ -11,12 +11,13 @@
  *
  * January 2005.
  *
- * $Id: randomvar.cc 16945 2024-01-26 13:02:36Z greg $
+ * $Id: randomvar.cc 17458 2024-11-12 11:54:17Z greg $
  * ------------------------------------------------------------------------
  */
 
 
 #include "lqns.h"
+#include <algorithm>
 #include <cmath>
 #include <cstdlib>
 #include <mva/fpgoop.h>
@@ -1639,6 +1640,6 @@ DiscreteCDFs::addCDF( DiscretePoints& aCDF)
 
 DiscreteCDFs::~DiscreteCDFs()
 {
-    std::for_each( myCDFsCltn.begin(), myCDFsCltn.end(), Delete<DiscretePoints *> );
+    std::for_each( myCDFsCltn.begin(), myCDFsCltn.end(), []( DiscretePoints * points ){ delete points; } );
 }
 

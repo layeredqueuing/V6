@@ -1,5 +1,5 @@
 #                                               -*- Autoconf -*-
-# $Id: configure.ac 14569 2021-03-19 13:29:09Z greg $
+# $Id: configure.ac 17409 2024-10-31 13:27:39Z greg $
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
@@ -11,17 +11,18 @@ AC_CONFIG_SRCDIR([drvsrc/main.cpp])
 AC_CONFIG_HEADERS([config.h])
 AC_SUBST(YYLINENO)
 # Checks for programs.
-AC_LANG(C++)
 AC_PROG_CXX
 AC_PROG_CC
 AC_PROG_LEX([noyywrap])
 AC_PROG_YACC
+AC_LANG(C++)
 
 # Checks for libraries.
 LT_INIT
+AC_CHECK_LIB([m], [fmod])
 
 # Checks for header files.
-AC_CHECK_HEADERS([fcntl.h stdlib.h string.h sys/time.h])
+AC_CHECK_HEADERS([fcntl.h sys/time.h])
 
 if test "`flex --version`" = 'flex version 2.5.4'; then
   YYLINENO='-l'

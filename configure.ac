@@ -1,5 +1,5 @@
 # Process this file with autoconf to produce a configure script.
-# $Id: configure.ac 17305 2024-09-19 13:59:02Z greg $
+# $Id: configure.ac 17464 2024-11-13 12:55:06Z greg $
 # ------------------------------------------------------------------------
 AC_INIT([lqns],[6.2.31],[greg@sce.carleton.ca])
 AC_CONFIG_AUX_DIR([config])
@@ -120,7 +120,7 @@ AC_FUNC_STAT
 AC_FUNC_STRFTIME
 AC_FUNC_STRTOD
 AC_FUNC_VPRINTF
-AC_CHECK_FUNCS([ctime drand48 getopt_long getrusage getsubopt glob mcheck uname])
+AC_CHECK_FUNCS([getopt_long getrusage getsubopt glob mcheck_check_all uname])
 AC_CHECK_FUNCS([feclearexcept feenableexcept fesetexceptflag fetestexcept fpgetsticky fpsetmask fpsetsticky])
 AC_CHECK_FUNCS([lgamma])
 if test "x$enable_shared" = "xyes"; then

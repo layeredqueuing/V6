@@ -9,7 +9,7 @@
 /*
  * Lqsim-parasol Processor interface.
  *
- * $Id: processor.cc 17299 2024-09-17 19:10:28Z greg $
+ * $Id: processor.cc 17464 2024-11-13 12:55:06Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -18,11 +18,13 @@
 #include <cstdarg>
 #include <cstdlib>
 #include <iomanip>
+#include <regex>
 #include "lqsim.h"
 #include <lqio/input.h>
 #include <lqio/error.h>
 #include <lqio/labels.h>
 #include <lqio/dom_extvar.h>
+#include "entry.h"
 #include "errmsg.h"
 #include "processor.h"
 #include "result.h"
@@ -64,12 +66,12 @@ Processor::find( const std::string& processor_name  )
 }
 
 
-Processor::Processor( LQIO::DOM::Processor* domProcessor )
+Processor::Processor( LQIO::DOM::Processor* dom )
     : trace_flag(false),
-      r_util(),
+      r_util("Utilization",dom),
       _group(nullptr),
       _node_id(0),
-      _dom( domProcessor )
+      _dom( dom )
 {
     trace_flag = std::regex_match( name(), processor_match_pattern );
 }
@@ -90,7 +92,6 @@ Processor::create()
 	LQIO::input_error( ERR_CANNOT_CREATE_X, "processor", name().c_str() );
     } else {
 	processor_table[_node_id] = this;
-	r_util.init( ps_get_node_stat_index( _node_id ) );
     }
     return *this;
 }
@@ -243,11 +244,11 @@ Custom_Processor::main()
 		       && ps_task_priority(rtrq[0]) >= ip->priority() ))
 		 && ps_ready_queue( ps_my_node, MAX_TASKS, rtrq ) > 0 ) {
 		ps_schedule_time(ip->task_id()) = ps_now;
-		if ( ip->r_a_execute >= 0 ) {
-		    ps_record_stat( ip->r_a_execute, 0.0 );
+		if ( ip->r_a_execute != nullptr ) {
+		    ip->r_a_execute->record( 0.0 );
 		}
-		if ( ip->r_e_execute >= 0 ) {
-		    ps_record_stat( ip->r_e_execute, 0.0 );
+		if ( ip->r_e_execute != nullptr ) {
+		    ip->r_e_execute->record( 0.0 );
 		}
 		trace( PROC_PREEMPTING_TASK, ip, quantum );
 		quantum = run_task( rtrq[0] );
@@ -271,7 +272,7 @@ Custom_Processor::main()
 
 		_active -= 1;
 		_active_task[ps_my_host] = nullptr;
-		ps_record_stat( r_util.raw, _active );
+		r_util.record( _active );
 		ps_schedule( NULL_TASK, ps_my_host );
 	    }
 	    break;
@@ -289,17 +290,17 @@ Custom_Processor::main()
 		/* No tasks.			*/
 
 		_active += 1;
-		ps_record_stat( r_util.raw, _active );
+		r_util.record( _active );
 		quantum = run_task( task_id );
 	    } else if ( discipline() == SCHEDULE_PPR
 			&& ps_ready_queue( ps_my_node, MAX_TASKS, rtrq ) > 0
 			&& ps_task_priority(rtrq[0]) > ip->priority() ) {
 		ps_schedule_time(ip->task_id()) = ps_now;
-		if ( ip->r_a_execute >= 0 ) {
-		    ps_record_stat( ip->r_a_execute, 0.0 );
+		if ( ip->r_a_execute != nullptr ) {
+		    ip->r_a_execute->record( 0.0 );
 		}
-		if ( ip->r_e_execute >= 0 ) {
-		    ps_record_stat( ip->r_e_execute, 0.0 );
+		if ( ip->r_e_execute != nullptr ) {
+		    ip->r_e_execute->record( 0.0 );
 		}
 		trace( PROC_PRIO_PREEMPTING_TASK, object_tab[rtrq[0]], ip );
 		quantum = run_task( rtrq[0] );
@@ -330,11 +331,11 @@ Custom_Processor::run_task( long task_id )
 
     _active_task[ps_my_host] = ip;
     if ( ip ) {
-	if ( ip->r_a_execute >= 0 ) {
-	    ps_record_stat( ip->r_a_execute, 1.0 );
+	if ( ip->r_a_execute != nullptr ) {
+	    ip->r_a_execute->record( 1.0 );
 	}
-	if ( ip->r_e_execute >= 0 ) {
-	    ps_record_stat( ip->r_e_execute, 1.0 );
+	if ( ip->r_e_execute != nullptr ) {
+	    ip->r_e_execute->record( 1.0 );
 	}
     }
 
@@ -471,18 +472,17 @@ Processor::insertDOMResults()
     for ( std::vector<Task *>::const_iterator next_task = _tasks.begin(); next_task != _tasks.end(); ++next_task ) {
 	Task * cp = *next_task;
 
-	for ( std::vector<Entry *>::const_iterator next_entry = cp->_entry.begin(); next_entry != cp->_entry.end(); ++next_entry ) {
-	    Entry * ep = *next_entry;
+	for ( std::vector<Entry *>::const_iterator entry = cp->entries().begin(); entry != cp->entries().end(); ++entry ) {
 	    for ( unsigned p = 0; p < cp->max_phases(); ++p ) {
-		proc_util_mean += ep->_phase[p].r_cpu_util.mean();
-		proc_util_var  += ep->_phase[p].r_cpu_util.variance();
+		proc_util_mean += (*entry)->_phase[p].r_cpu_util.mean();
+		proc_util_var  += (*entry)->_phase[p].r_cpu_util.variance();
 	    }
 	}
 
-	for ( std::vector<Activity *>::const_iterator next_activity = cp->_activity.begin(); next_activity != cp->_activity.end(); ++next_activity ) {
-//	    std::cerr << "debug: processor " << name() << ", task " << cp->name() << ", activity " << (*next_activity)->name() << ": utilization " << (*next_activity)->r_cpu_util.mean() << std::endl; 
-	    proc_util_mean += (*next_activity)->r_cpu_util.mean();
-	    proc_util_var  += (*next_activity)->r_cpu_util.variance();
+	for ( std::vector<Activity *>::const_iterator activity = cp->activities().begin(); activity != cp->activities().end(); ++activity ) {
+//	    std::cerr << "debug: processor " << name() << ", task " << cp->name() << ", activity " << (*activity)->name() << ": utilization " << (*activity)->r_cpu_util.mean() << std::endl; 
+	    proc_util_mean += (*activity)->r_cpu_util.mean();
+	    proc_util_var  += (*activity)->r_cpu_util.variance();
 	}
     }
 
@@ -491,6 +491,14 @@ Processor::insertDOMResults()
 	getDOM()->setResultUtilizationVariance(proc_util_var);
     }
     return *this;
+}
+
+
+std::ostream&
+Processor::print( std::ostream& output ) const
+{
+    output << r_util;
+    return output;
 }
 
 /*----------------------------------------------------------------------*/

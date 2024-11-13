@@ -1,11 +1,10 @@
-# $Id: err_ref_task_forwarding.lqn 15708 2022-06-23 17:25:01Z greg $
-# Fri Oct 28 10:50:02 2005
+# $Id: err_not_specified-entry.lqn 17379 2024-10-16 23:34:31Z greg $
 # ------------------------------------------------------------------------
 
-G "ERR_REF_TASK_FORWARDING" 1e-05 50 10 0.9 -1
+G "ERR_NOT_SPECIFIED: lqsim,lqns,petrisrvn,lqn2ps," 1e-05 50 10 0.9 -1
 
 P 2
-  p p1 f
+  p p1 f i
   p p2 f
 -1
 
@@ -17,8 +16,7 @@ T 2
 E 2
 # ---------- t1 ----------
   s e1 1 -1
-  F e1 e2 1 -1
+  y e1 e2 1 -1
 # ---------- t2 ----------
-  s e2 1 -1
 -1
 

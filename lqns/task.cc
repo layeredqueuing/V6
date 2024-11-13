@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/task.cc $
+ * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk-V6/lqns/task.cc $
  *
  * Everything you wanted to know about a task, but were afraid to ask.
  *
@@ -10,7 +10,7 @@
  * November, 1994
  *
  * ------------------------------------------------------------------------
- * $Id: task.cc 17266 2024-09-08 20:09:16Z greg $
+ * $Id: task.cc 17458 2024-11-12 11:54:17Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -124,9 +124,9 @@ Task::Task( const Task& src, unsigned int replica )
 
 Task::~Task()
 {
-    std::for_each( _clientStation.begin(), _clientStation.end(), Delete<Server *> );
-    std::for_each( precedences().begin(), precedences().end(), Delete<ActivityList *> );
-    std::for_each( activities().begin(), activities().end(), Delete<Activity *> );
+    std::for_each( _clientStation.begin(), _clientStation.end(), []( Server * server ){ delete server; } );
+    std::for_each( precedences().begin(), precedences().end(), []( ActivityList * precedence ){ delete precedence; } );
+    std::for_each( activities().begin(), activities().end(), []( Activity * activity ){ delete activity; } );
 }
 
 
@@ -658,6 +658,13 @@ Task::isCalled() const
 }
 
 
+bool
+Task::hasCalls() const
+{
+    return std::any_of( entries().begin(), entries().end(), std::mem_fn( &Entry::hasCalls ) )
+	|| std::any_of( activities().begin(), activities().end(), std::mem_fn( &Phase::hasCalls ) );
+}
+
 
 /*
  * Return the base replica.
@@ -934,9 +941,7 @@ Task::sanityCheck() const
 {
     Entity::sanityCheck();
 
-    if ( !std::all_of( entries().begin(), entries().end(), std::mem_fn( &Entry::checkDroppedCalls ) ) ) {
-	getDOM()->runtime_error( LQIO::ADV_MESSAGES_DROPPED );
-    }
+    std::for_each( entries().begin(), entries().end(), []( const Entry * entry ){ if ( !entry->checkDroppedCalls() ) { entry->getDOM()->runtime_error( LQIO::ADV_MESSAGES_DROPPED ); } } );
     return *this;
 }
 
@@ -1863,7 +1868,11 @@ ReferenceTask::check() const
     if ( getDOM()->hasQueueLength() ) {
 	getDOM()->runtime_error( LQIO::ERR_NOT_SUPPORTED, "queue length" );
     }
-    double sum = std::accumulate( entries().begin(), entries().end(), 0.0, Entry::add_visit_probability );
+    if ( !hasCalls() ) {
+	getDOM()->runtime_error( LQIO::WRN_NOT_USED );
+    }
+    
+    const double sum = std::accumulate( entries().begin(), entries().end(), 0.0, []( double l, const Entry * r ){ return l + r->prVisit(); } );
     if ( sum < 1.0 - EPSILON || 1.0 + EPSILON < sum ) {
 	getDOM()->runtime_error( LQIO::ERR_INVALID_VISIT_PROBABILITY, sum );
     }

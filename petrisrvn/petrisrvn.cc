@@ -8,7 +8,7 @@
 /************************************************************************/
 
 /*
- * $Id: petrisrvn.cc 17352 2024-10-09 22:15:51Z greg $
+ * $Id: petrisrvn.cc 17409 2024-10-31 13:27:39Z greg $
  *
  * Generate a Petri-net from an SRVN description.
  *
@@ -66,7 +66,6 @@ bool trace_flag			= false; /* Output execution of greatspn*/
 bool uncondition_flag           = false; /* Uncondition in-service      */
 bool verbose_flag               = false; /* Verbose text output?        */
 
-bool customers_flag 		= true;	 /* Smash customers together.	*/
 bool distinguish_join_customers = true;	 /* unique cust at join for mult*/
 bool simplify_network		= false; /* Delete single place procs.  */
 
@@ -232,7 +231,7 @@ main(int argc, char *argv[])
 
 	case 256+'d':
 	  //	    distinguish_join_customers = true;			/* wrong one! */
-	    customers_flag = false;
+	    pragmas.insert(LQIO::DOM::Pragma::_disjoint_customers_);
 	    break;
 
 	case 'k':
@@ -398,12 +397,12 @@ main(int argc, char *argv[])
 
     /* Quick check.  -zin-service requires that the customers are differentiated. */
 
-    if ( ( inservice_match_pattern != nullptr ) && customers_flag ) {
+    if ( ( inservice_match_pattern != nullptr ) && !Pragma::__pragmas->disjoint_customers() ) {
 	if ( LQIO::io_vars.severity_level == LQIO::error_severity::ERROR || LQIO::io_vars.severity_level == LQIO::error_severity::ALL ) {
 	    (void) fprintf( stdout, "%s: --overtaking is incompatible with multiple customer clients\n", LQIO::io_vars.toolname() );
 	    (void) fprintf( stdout, "\t--disjoint-customers assumed\n" );
 	}
-	customers_flag = false;
+	Pragma::__pragmas->set_disjoint_customers( "false" );
     }
 
     /* create net_dir_name directory */

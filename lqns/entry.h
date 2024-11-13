@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/entry.h $
+ * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk-V6/lqns/entry.h $
  *
  * Everything you wanted to know about an entry, but were afraid to ask.
  *
@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: entry.h 17211 2024-05-13 22:13:11Z greg $
+ * $Id: entry.h 17458 2024-11-12 11:54:17Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -242,7 +242,6 @@ public:
     static Entry * find( const std::string&, unsigned int=1 );
     static Entry * create( LQIO::DOM::Entry* domEntry, unsigned int );
     static bool max_phase( const Entry * e1, const Entry * e2 ) { return e1->maxPhase() < e2->maxPhase(); }
-    static double add_visit_probability( double sum, const Entry* entry ) { return sum + entry->prVisit(); }
 
 protected:
     /* Instance creation */
@@ -342,6 +341,7 @@ public:
     bool hasNonExponentialPhases() const { return getDOM()->hasNonExponentialPhases(); }
     bool hasThinkTime() const { return getDOM()->hasThinkTime(); }
     bool hasVariance() const;
+    bool hasCalls() const;
     bool hasStartActivity() const { return _startActivity != nullptr; }
     bool hasOpenArrivals() const { return getDOM()->hasOpenArrivalRate(); }
     bool hasOvertaking() const { return maxPhase() > 1 /*&&( !(owner()->isReferenceTask()))*/; }

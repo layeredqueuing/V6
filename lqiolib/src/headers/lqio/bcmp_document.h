@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- *  $Id: bcmp_document.h 17239 2024-05-27 14:02:21Z greg $
+ *  $Id: bcmp_document.h 17255 2024-07-08 14:50:02Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  */

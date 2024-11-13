@@ -1,4 +1,4 @@
-// $Id: node.cc 15459 2022-03-09 21:53:20Z greg $
+// $Id: node.cc 17458 2024-11-12 11:54:17Z greg $
 //=======================================================================
 //	node.cc - PS_AbstractNode, PS_UserNode and PS_SystemNode class
 //		  definitions.

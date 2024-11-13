@@ -11,7 +11,7 @@
  * Activities are arcs in the graph that do work.
  * Nodes are points in the graph where splits and joins take place.
  *
- * $Id: activity.cc 17299 2024-09-17 19:10:28Z greg $
+ * $Id: activity.cc 17464 2024-11-13 12:55:06Z greg $
  */
 
 #include "lqsim.h"
@@ -27,30 +27,18 @@
 #include <lqio/dom_activity.h>
 #include <lqio/dom_actlist.h>
 #include "activity.h"
-#include "model.h"
 #include "entry.h"
-#include "task.h"
 #include "errmsg.h"
+#include "histogram.h"
 #include "message.h"
+#include "model.h"
 #include "processor.h"
-
-Activity * junk_activity_list = nullptr;
+#include "task.h"
 
 static void activity_cycle_error( std::deque<Activity *>& activity_stack );
 
-static double gamma_dist( const double a, const double b );
-static double erlang_dist( const double a, const int m );
-/* Distribution computation functions.  All take scale and shape, though shape may be ignored. */
-static double rv_constant( const double mean, const double shape );
-static double rv_gamma( const double mean, const double shape );
-static double rv_exponential( const double mean, const double shape );
-static double rv_pareto( const double scale, const double shape );
-static double rv_uniform( const double scale, const double shape );
-static double rv_hyperexponential( const double a, const double b);
-
 std::map<LQIO::DOM::ActivityList*, LQIO::DOM::ActivityList*> Activity::actConnections;
 std::map<LQIO::DOM::ActivityList*, ActivityList *> Activity::domToNative;
-
 
 /*
  * Initialize fields in activity.
@@ -59,15 +47,14 @@ std::map<LQIO::DOM::ActivityList*, ActivityList *> Activity::domToNative;
 Activity::Activity( Task * cp, LQIO::DOM::Phase * dom )
     : _dom(dom),
       _name(dom ? dom->getName() : ""),     
-      _arrival_rate(0.0),
+      _service_time(0.0),		// usually from the dom.
       _cv_sqr(0.0),
-      _think_time(0.0),
+      _slice_time(nullptr),		// Distribution set in configure()
+      _think_time(nullptr),		// Distribution set in configure()
+      _calls(),
       _task(cp),
       _phase(0),
-      _scale(0.0),
-      _shape(1.0),		/* coefficient of variation squared (usually) -- Exponential assumed */
-      _distribution(nullptr),
-      _index(cp ? cp->_activity.size(): -1),
+      _index(cp ? cp->activities().size(): -1),
       _prewaiting(0),
       _reply(),
       _is_reachable(false),
@@ -76,7 +63,17 @@ Activity::Activity( Task * cp, LQIO::DOM::Phase * dom )
       _output(nullptr),
       _active(0),
       _cpu_active(0),
-      _hist_data(nullptr)
+      _hist_data(nullptr),
+      r_util("Utilization",dom),
+      r_cpu_util("Execution",dom),
+      r_service("Service",dom),
+      r_slices("Slices",dom),
+      r_sends("Sends",dom),
+      r_proc_delay("Proc delay",dom),
+      r_proc_delay_sqr("Pr dly Sqr",dom),
+      r_cycle("Cycle Time",dom),
+      r_cycle_sqr("Cycle Sqred",dom),
+      r_afterQuorumThreadWait("afterQuorumThreadWait Raw Data",dom)
 {
     if ( dom && (dom->hasHistogram() || dom->hasMaxServiceTimeExceeded()) ) {
 //	    _hist_data = new Histogram( _dom->getHistogram() );
@@ -86,11 +83,9 @@ Activity::Activity( Task * cp, LQIO::DOM::Phase * dom )
 
 Activity::~Activity()
 {
-    if ( _hist_data ) {
-	delete _hist_data;
-    }
-    _input = nullptr;
-    _output = nullptr;
+    if ( _hist_data )  delete _hist_data;
+    if ( _slice_time ) delete _slice_time;
+    if ( _think_time ) delete _think_time;
 
     _reply.clear();
 }
@@ -103,12 +98,6 @@ Activity::rename( const std::string& s )
     return *this;
 }
 
-Activity& 
-Activity::set_DOM(LQIO::DOM::Phase* phaseInfo)
-{
-    _dom = phaseInfo;
-    return *this;
-}
 
 bool
 Activity::has_lost_messages() const
@@ -117,14 +106,19 @@ Activity::has_lost_messages() const
 }
 
 double
-Activity::service() const
+Activity::get_service_time() const
 {
-    if (_dom == nullptr) return _arrival_rate;		/* Psuedo entry sets this for open arrival */
-    try {
-	return getDOM()->getServiceTimeValue();
-    }
-    catch ( const std::domain_error& e ) {
-	getDOM()->throw_invalid_parameter( "service time", e.what() );
+    if ( getDOM() == nullptr ) {
+	return 0;
+    } else if ( task()->type() ==  Task::Type::OPEN_ARRIVAL_SOURCE ) {
+	return _service_time;	// Set in entry.cc
+    } else {
+	try {
+	    return getDOM()->getServiceTimeValue();
+	}
+	catch ( const std::domain_error& e ) {
+	    getDOM()->throw_invalid_parameter( "service time", e.what() );
+	}
     }
     return 0.;
 }
@@ -137,65 +131,51 @@ Activity::service() const
 double
 Activity::configure()
 {
-    const double n_calls = _calls.configure( _dom, (bool)(type() == LQIO::DOM::Phase::Type::STOCHASTIC) );
-    double slice;
-    
     _active = 0;
     _cpu_active = 0;
 
-    if ( _dom ) {
+    if ( !_hist_data && getDOM() != nullptr && (getDOM()->hasHistogram() || getDOM()->hasMaxServiceTimeExceeded()) ) {
+	_hist_data = new Histogram( getDOM()->getHistogram() );
+    }
+
+    if ( !is_specified() ) return 0.0;
+    
+    const double n_calls = _calls.configure( type() );
+    
+    if ( has_think_time() ) {
 	try { 
-	    _think_time = _dom->getThinkTimeValue();
+	    _think_time = new Exponential( getDOM()->getThinkTimeValue() );
 	}
 	catch ( const std::domain_error& e ) {
 	    getDOM()->throw_invalid_parameter( "think time", e.what() );
 	}
-	if ( !_hist_data && (getDOM()->hasHistogram() || getDOM()->hasMaxServiceTimeExceeded()) ) {
-	    _hist_data = new Histogram( getDOM()->getHistogram() );
-	}
     }
 
-    if ( type() == LQIO::DOM::Phase::Type::DETERMINISTIC ) {
-	slice = service() / (n_calls + 1);	/* Spread calls evenly */
-    } else if ( n_calls > 0.0 ) {
-	slice = service() / n_calls;		/* Geometric distribution */
-    } else {
-	slice = service();
-    }
+    const double slice_time = get_service_time() / (n_calls + 1);
 
-    if ( slice > Model::max_service ) {
-	Model::max_service = slice;
+    if ( slice_time > Model::max_service ) {
+	Model::max_service = slice_time;
     }
     if ( cv_sqr() < 0 ) {	/* Not initialized by user, assume exponential */
 	_cv_sqr = 1.0;
     }
 
-    /* set distribution function here to avoid retesting if elsewhere in local_compute */
-    /* Bug_372 -- Adjust mean and cv^2 to scale and shape for Pareto distribution */
-    if ( task()->discipline() == SCHEDULE_BURST ) {
-	_shape = sqrt( 1.0 / cv_sqr() + 1.0 ) + 1.0;
-	_scale = slice * ( _shape - 1.0 ) / _shape;
-	_distribution = rv_pareto;
+    if ( slice_time == 0. ) {
+	_slice_time = nullptr;
+    } else if ( task()->discipline() == SCHEDULE_BURST ) {
+	const double shape = sqrt( 1.0 / cv_sqr() + 1.0 ) + 1.0;
+	const double scale = slice_time * ( shape - 1.0 ) / shape;
+	_slice_time = new Pareto( scale, shape );
     } else if ( task()->discipline() == SCHEDULE_UNIFORM ) {
-	_shape = 0;
-	_scale = slice * 2.;			/* Mean of uniform is 1/2 upper limit. */
-	_distribution = rv_uniform;
-    } else if ( cv_sqr() == 0 ) {
-	_distribution = rv_constant;	/* args ignored */
-	_shape = 0;
-	_scale = slice;
-    } else if ( cv_sqr() < 1.0 ) {
-	_shape = 1.0 / cv_sqr();
-	_scale = slice * cv_sqr();
-	_distribution = rv_gamma;
+	_slice_time = new Uniform( 0, slice_time * 2. );
+    } else if ( cv_sqr() == 0.0 ) {
+	_slice_time = new Constant( slice_time );
     } else if ( cv_sqr() == 1.0 ) {
-	_distribution = rv_exponential;	/* coeff-of-var ignored */
-	_scale = slice;
-	_shape = 1.0;
+	_slice_time = new Exponential( slice_time );	// Need rate.
+    } else if ( cv_sqr() < 1.0 ) {
+	_slice_time = new Gamma( 1.0 / cv_sqr(), slice_time * cv_sqr() );
     } else {
-	_distribution = rv_hyperexponential;
-	_scale = slice;
-	_shape = cv_sqr();
+	_slice_time = new HyperExponential( slice_time, cv_sqr() );
     }
     if ( debug_flag ) {
 	print_debug_info();
@@ -212,18 +192,9 @@ Activity::configure()
 Activity&
 Activity::initialize()
 {
-    r_util.init( VARIABLE, "%30.30s Utilization", name().c_str() );
-    r_cpu_util.init( VARIABLE, "%30.30s Execution  ", name().c_str() );
-    r_service.init( SAMPLE,   "%30.30s Service    ", name().c_str() );
-    r_slices.init( SAMPLE,   "%30.30s Slices     ", name().c_str() );
-    r_sends.init( SAMPLE,   "%30.30s Sends      ", name().c_str() );
-    r_proc_delay.init( SAMPLE,   "%30.30s Proc delay ", name().c_str() );
-    r_proc_delay_sqr.init( SAMPLE,   "%30.30s Pr dly Sqr ", name().c_str() );
-    r_cycle.init( SAMPLE,   "%30.30s Cycle Time ", name().c_str() );
-    r_cycle_sqr.init( SAMPLE,   "%30.30s Cycle Sqred", name().c_str() );
-    r_afterQuorumThreadWait.init( SAMPLE,   "%30.30s afterQuorumThreadWait Raw Data", name().c_str() );	/* tomari quorum */
-
-    _calls.initialize( name().c_str() );
+    if ( getDOM() != nullptr) {
+	_calls.initialize();
+    }
     return *this;
 }
 
@@ -263,7 +234,7 @@ Activity::collect( std::deque<Activity *>& activity_stack, ActivityList::Collect
 	
 	sum = (this->*data._f)( data );
 
-	if ( find_reply( data._e ) ) {
+	if ( replies_to( data._e ) ) {
 	    data.phase = 2;
 	}
 
@@ -283,7 +254,7 @@ double Activity::count_replies( ActivityList::Collect& data ) const
 {
     Task * cp = data._e->task();
     const Entry * ep = data._e;
-    if ( find_reply( ep ) ) {
+    if ( replies_to( ep ) ) {
 	if ( data.phase >= 2 ) {
 	    getDOM()->runtime_error( LQIO::ERR_INVALID_REPLY_DUPLICATE, ep->name().c_str() );
 	} else if ( !data.can_reply || data.rate > 1.0 ) {
@@ -307,7 +278,7 @@ double Activity::count_replies( ActivityList::Collect& data ) const
 double
 Activity::compute_minimum_service_time( std::deque<Entry *>& stack ) const
 {
-    return service() + std::accumulate( _calls.begin(), _calls.end(), 0.0, [=]( double l, const tar_t& r ){ return l + r.compute_minimum_service_time(const_cast<std::deque<Entry *>&>(stack)); } );
+    return get_service_time() + std::accumulate( _calls.begin(), _calls.end(), 0.0, [=]( double l, const tar_t& r ){ return l + r.compute_minimum_service_time(const_cast<std::deque<Entry *>&>(stack)); } );
 }
     
 
@@ -376,7 +347,7 @@ Activity::accumulate_data()
 
     r_service.accumulate_service( r_cycle );			/* do first! */
     if ( task()->derive_utilization() ) {
-	r_cpu_util.accumulate_utilization( r_cycle, service() );
+	r_cpu_util.accumulate_utilization( r_cycle, get_service_time() );
     } else {
 	r_cpu_util.accumulate();
     }
@@ -567,7 +538,9 @@ Activity::print_debug_info()
 	
     (void) fprintf( stddbg, "----------\n%s, phase %d %s\n", name().c_str(), _phase, type() == LQIO::DOM::Phase::Type::DETERMINISTIC ? "Deterministic" : "" );
 
-    (void) fprintf( stddbg, "\tservice: %5.2g {%5.2g, %5.2g}\n", service(), _shape, _scale );
+#if 0
+    (void) fprintf( stddbg, "\tservice: %5.2g {%5.2g, %5.2g}\n", get_service_time(), _shape, _scale );
+#endif
 
     if ( _calls.size() > 0 ) {
 	fprintf( stddbg, "\tcalls:  " );
@@ -827,9 +800,9 @@ Activity::act_loop_list ( ActivityList * input_list, LQIO::DOM::ActivityList * d
 
 
 bool
-Activity::find_reply( const Entry * ep ) const
+Activity::replies_to( const Entry * ep ) const
 {
-    return  std::find( _reply.begin(), _reply.end(), ep ) != _reply.end();
+    return std::find( _reply.begin(), _reply.end(), ep ) != _reply.end();
 }
 
 
@@ -837,168 +810,32 @@ Activity::find_reply( const Entry * ep ) const
  * Print out raw data.
  */
 
-const Activity&
-Activity::print_raw_stat( FILE * output ) const
+std::ostream&
+Activity::print( std::ostream& output ) const
 {
     if ( r_cycle.has_results() ) {
-	r_util.print_raw( output,           "%-24.24s Utilization", name().c_str() );
-	r_service.print_raw( output,        "%-24.24s Service    ", name().c_str() );
-	r_slices.print_raw( output,         "%-24.24s Slices     ", name().c_str() );
-	r_sends.print_raw( output,          "%-24.24s Sends      ", name().c_str() );
-	r_cpu_util.print_raw( output,       "%-24.24s Proc. Util.", name().c_str() );
-	r_proc_delay.print_raw( output,     "%-24.24s Proc. delay", name().c_str() );
-	r_proc_delay_sqr.print_raw( output, "%-24.24s Prc dly sqr", name().c_str() );
-	r_cycle.print_raw( output,          "%-24.24s Cycle Time ", name().c_str() );
-	r_cycle_sqr.print_raw( output,      "%-24.24s Cycle Sqred", name().c_str() );
-	r_afterQuorumThreadWait.print_raw( output, "%-24.24s afterQuorumThreadWait Raw Data", name().c_str() );	/* tomari quorum */
+	output << r_util
+	       << r_service
+	       << r_slices
+	       << r_sends
+	       << r_cpu_util
+	       << r_proc_delay
+	       << r_proc_delay_sqr
+	       << r_cycle
+	       << r_cycle_sqr
+	       << r_afterQuorumThreadWait;
     }
 
-    _calls.print_raw_stat( output );
-    return *this;
+    _calls.print( output );
+    return output;
 }
 
 
 static void
 activity_cycle_error( std::deque<Activity *>& activity_stack )
 {
-    std::string buf;
-    Activity * ap = activity_stack.back();
-    
-    for ( std::deque<Activity *>::const_reverse_iterator i = activity_stack.rbegin(); i != activity_stack.rend(); ++i ) {
-	if ( i != activity_stack.rbegin() ) {
-	    buf += ", ";
-	}
-	buf += (*i)->name();
-    }
-    ap->task()->getDOM()->runtime_error( LQIO::ERR_CYCLE_IN_ACTIVITY_GRAPH, buf.c_str() );
-}
-
-/*----------------------------------------------------------------------*/
-/*		       Distribution functions.				*/
-/*----------------------------------------------------------------------*/
+    const LQIO::DOM::Task * task = activity_stack.back()->task()->getDOM();
+    const std::string buf = std::accumulate( std::next( activity_stack.rbegin() ), activity_stack.rend(), activity_stack.back()->name(), []( const std::string& l, const Activity * r ){ return l + "." + r->name(); } );
 
-/*
- * Returns a RV with a gamma distribution.  See Jain, P490 for details.
- */
-
-static double
-gamma_dist ( const double a, const double b )
-{
-
-    if ( b <= 0.0 ) {
-	(void) fprintf( stderr,  "Bogus `b' for gamma distribution function" );
-	abort();
-    } else if ( b < 1.0 ) {
-
-	/* Beta Distribution, Pg 485. a & b < 1 */
-
-	double x;
-	double y;
-	do {
-	    x = pow( drand48(), 1.0 / b );
-	    y = pow( drand48(), 1.0 / (1.0 - b) );
-	} while ( x + y > 1.0 );
-	return a * x / ( x + y ) * ps_exponential( 1.0 );
-    } else {
-	double diff = b - floor( b );
-	double temp = erlang_dist( a, (int)b );
-	if ( diff > 1.0e-5 ) {
-	    temp += gamma_dist( a, diff );
-	}
-	return temp;
-    }
-    /*NOTREACHED*/
-}
-
-
-/*
- * Returns a RV with a erlang distribution.  See Jain, P488 for details.
- */
-
-static double
-erlang_dist( const double a, const int m )
-{
-    double	prod;
-    int	i;
-
-    prod = 1.0;
-    for( i = 0; i < m; i++ ) {
-	prod *= drand48();
-    }
-    return -a * log(prod);
-}
-
-
-
-/*
- * Returns a constant.
- */
-
-static double
-rv_constant( const double scale, const double shape )
-{
-    return scale;
-}
-
-/*
- * Returns a uniformly distributed random variable.
- */
-
-static double
-rv_uniform( const double scale, const double shape )
-{
-    return scale * drand48();
-}
-
-/*
- * Returns an RV with gamma distribution.
- */
-
-static double
-rv_gamma( const double scale, const double shape )
-{
-    return gamma_dist( scale, shape );;
-}
-
-
-/*
- * Returns a RV with an exponential distribution. 
- */
-
-static double
-rv_exponential( const double scale, const double shape )
-{
-    return ps_exponential( scale );		/* This is macro in parasol */
-}
-
-
-/*
- * returns a psuedo-random variate from Morse's two-stage hyperexponential distribution.
- */
-
-static double
-rv_hyperexponential( const double mean, const double cv_sqr )
-{
-#if 0
-    if ( drand48() <= 0.5 / (cv_sqr - 0.5) ) {
-	return ps_exponential( mean * cv_sqr );
-    } else {
-	return ps_exponential( mean / 2.0 );
-    }
-#else
-    const double prob = 0.5 * (1.0 - (std::sqrt((cv_sqr-1.0)/(cv_sqr+1.0))));
-    const double temp = (drand48()>prob) ? (mean/(1.0-prob)) : (mean/prob);
-    return -0.5 * temp * log(drand48());
-#endif
-}
-
-
-/*
- * Returns a RV with a Pareto distribution.  See Jain, P495.
- */
-
-static double
-rv_pareto( const double scale, const double shape )
-{
-    return scale * pow( 1.0 - drand48(), -1.0 / shape );
+    task->runtime_error( LQIO::ERR_CYCLE_IN_ACTIVITY_GRAPH, buf.c_str() );
 }

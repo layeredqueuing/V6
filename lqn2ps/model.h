@@ -1,7 +1,7 @@
 /* -*- c++ -*-
  * model.h	-- Greg Franks
  *
- * $Id: model.h 17369 2024-10-15 22:13:09Z greg $
+ * $Id: model.h 17458 2024-11-12 11:54:17Z greg $
  */
 
 #ifndef _MODEL_H
@@ -95,11 +95,12 @@ protected:
     class Stats
     {
     public:
-	Stats();
+	Stats() : n(0), x(0), x_sqr(0), log_x(0), one_x(0), min(std::numeric_limits<double>::max()), max(-std::numeric_limits<double>::max()), min_filename(), max_filename(), f(nullptr) {}
+
 	std::ostream& operator<<( std::ostream& output ) const { return print( output ); }
 
-	Stats & accumulate( double value, const std::string& );
-	Stats & accumulate( const Model *, const std::string& );
+        Stats & accumulate( double value, const std::filesystem::path& );
+        Stats & accumulate( const Model *, const std::filesystem::path& );
 	Stats & accumulate( const modelFunc func ) { f = func; return *this; }
 	Stats & name( const std::string& aName ) { _name = aName; return *this; }
 	double sum() const { return x; }
@@ -143,14 +144,14 @@ public:
 
     Model& setModelNumber( unsigned int n ) { _modelNumber = n; return *this; }
 
-    static int create( const std::string& inputFileName, const LQIO::DOM::Pragma& pragmas, const std::string& output_file_name, const std::string& parse_file_name, int model_no );
+    static int create( const std::filesystem::path& inputFileName, const LQIO::DOM::Pragma& pragmas, const std::filesystem::path& output_file_name, const std::filesystem::path& parse_file_name, int model_no );
     bool load( const char * );
     bool process();
     bool store();
     bool reload();
     static double scaling() { return __model->_scaling; }
 
-    Model& accumulateStatistics( const std::string& fileName );
+    Model& accumulateStatistics( const std::filesystem::path& fileName );
 
     std::ostream& print( std::ostream& ) const;
     std::ostream& printStatistics( std::ostream&, const char * = 0 ) const;
@@ -218,8 +219,8 @@ private:
     unsigned nInfiniteServers() const;
 
     std::filesystem::path getExtension();
-    Model const& accumulateTaskStats( const std::string& ) const;	/* Does not count ref. tasks. */
-    Model const& accumulateEntryStats( const std::string& ) const;	/* Does not count ref. tasks. */
+    Model const& accumulateTaskStats( const std::filesystem::path& ) const;	/* Does not count ref. tasks. */
+    Model const& accumulateEntryStats( const std::filesystem::path& ) const;	/* Does not count ref. tasks. */
     std::map<unsigned, LQIO::DOM::Entity *>& remapEntities() const;
 
     std::ostream& printEEPIC( std::ostream& output ) const;

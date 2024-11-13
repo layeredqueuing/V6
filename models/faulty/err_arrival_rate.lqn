@@ -1,10 +1,10 @@
-# $Id: err_arrival_rate.lqn 15869 2022-09-20 09:05:46Z greg $
+ # $Id: err_arrival_rate.lqn 17379 2024-10-16 23:34:31Z greg $
 # Fri Oct 28 10:54:19 2005
 # ------------------------------------------------------------------------
 
 #pragma stop-on-message-loss=t
 
-G "ERR_ARRIVAL_RATE" 1e-05 50 10 0.9 -1
+G "ERR_ARRIVAL_RATE: lqns, lqiolib" 1e-05 50 10 0.9 -1
 
 P 3
   p p1 f

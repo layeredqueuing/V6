@@ -1,4 +1,4 @@
-// $Id: spinlock.h 15459 2022-03-09 21:53:20Z greg $
+// $Id: spinlock.h 17458 2024-11-12 11:54:17Z greg $
 //=======================================================================
 //	spinlock.h - PS_Spinlock class declaration.
 //

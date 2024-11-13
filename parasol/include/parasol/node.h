@@ -1,4 +1,4 @@
-// $Id: node.h 15459 2022-03-09 21:53:20Z greg $
+// $Id: node.h 17458 2024-11-12 11:54:17Z greg $
 //=======================================================================
 //	node.h - PS_AbstractNode, PS_UserNode and PS_SystemNode class
 //		 declarations.

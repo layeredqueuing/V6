@@ -1,7 +1,7 @@
 /* -*- c++ -*-
  * Lqsim-parasol task interface.
  *
- * $Id: task.h 17299 2024-09-17 19:10:28Z greg $
+ * $Id: task.h 17464 2024-11-13 12:55:06Z greg $
  */
 
 /************************************************************************/
@@ -11,6 +11,7 @@
 /* 									*/
 /* May 1996.								*/
 /* Nov 2005.								*/
+/* Nov 2024.								*/
 /************************************************************************/
 
 #ifndef	LQSIM_TASK_H
@@ -21,31 +22,25 @@
 #include <string>
 #include <list>
 #include <algorithm>
-#include <cstdio>
 #include <lqio/dom_task.h>
-#include <parasol/parasol.h>
 
-#include "result.h"
-#include "entry.h"
+#include "actlist.h"
 #include "message.h"
+#include "result.h"
 
-class Task;
-class Processor;
-class Group;
-class ParentGroup;
-class Instance;
 class Activity;
 class ActivityList;
+class Entry;
+class Group;
+class Instance;
+class ParentGroup;
+class Processor;
+class Task;
 class srn_client;
 
 #define	PRIORITY_OFFSET	10
 
 typedef SYSCALL (*syscall_func_ptr)( double );
-typedef void (*void_func_ptr)( void );
-typedef double (*join_delay_func_ptr)( const result_t * );
-typedef void * processor_class;
-
-typedef double (*hold_func_ptr)( const Task *, const unsigned );
 
 class Task {
     friend class Instance;
@@ -119,7 +114,11 @@ public:
     const std::string& type_name() const { return type_strings.at(_type); }
     virtual bool is_not_waiting() const { return false; }
 
-    unsigned n_entries() const { return _entry.size(); }
+    const std::vector<Entry *>& entries() const { return _entries; }
+    const std::vector<Activity *>& activities() const { return _activities; }
+    const std::vector<ActivityList *>& precedences() const { return  _precedences; }
+
+    unsigned n_entries() const { return _entries.size(); }
     unsigned max_phases() const { return _max_phases; }
     Task& max_phases( unsigned max_phases ) { _max_phases = std::max( _max_phases, max_phases ); return *this; }
 
@@ -140,16 +139,16 @@ public:
     bool is_reference_task() const { return type() == Type::CLIENT; }
     virtual bool is_sync_server() const { return false; }
     virtual bool is_aysnc_inf_server() const { return false; }
-    bool has_activities() const { return _activity.size() > 0; }	/* True if activities present.	*/
-    bool has_threads() const { return _forks.size() > 0; }
+    bool has_activities() const { return !_activities.empty(); }	/* True if activities present.	*/
+    bool has_threads() const { return !_forks.empty(); }
     bool has_think_time() const;
     bool has_lost_messages() const;
     virtual bool derive_utilization() const;
 
     void set_start_activity( LQIO::DOM::Entry* theDOMEntry );
     Activity * add_activity( LQIO::DOM::Activity * activity );
-    unsigned max_activities() const { return _activity.size(); }	/* Max # of activities.		*/
-    Task& add_list( ActivityList * list ) { _act_list.push_back( list ); return *this; }
+    unsigned max_activities() const { return _activities.size(); }	/* Max # of activities.		*/
+    Task& add_list( ActivityList * list ) { _precedences.push_back( list ); return *this; }
     Task& add_fork( AndForkActivityList * list ) { _forks.push_back( list ); return *this; }
     Task& add_join( AndJoinActivityList * list ) { _joins.push_back( list ); return *this; }
 
@@ -162,7 +161,7 @@ public:
     virtual Task& reset_stats();
     virtual Task& accumulate_data();
     virtual Task& insertDOMResults();
-    virtual FILE * print( FILE * ) const;
+    virtual std::ostream& print( std::ostream& ) const;
 
 protected:
     virtual void create_instance() = 0;
@@ -170,7 +169,6 @@ protected:
 private:
     bool has_send_no_reply() const;
 
-    void build_links();
     void alloc_pool();
 
     double throughput() const;
@@ -186,7 +184,9 @@ private:
     unsigned _active;				/* Number of active instances.	*/
     unsigned _max_phases;			/* Max # phases, this task.	*/
 
-    std::vector<ActivityList *> _act_list;	/* activity list array 		*/
+    std::vector<Entry *> _entries;		/* entry array		        */
+    std::vector<Activity *>_activities;		/* List of activities.		*/
+    std::vector<ActivityList *> _precedences;	/* activity list array 		*/
     std::vector<AndForkActivityList *> _forks;	/* List of forks for this task	*/
     std::vector<AndJoinActivityList *> _joins; 	/* List of joins for this task	*/
     std::list<Message *> _pending_msgs;		/* Messages blocked by join.	*/
@@ -198,16 +198,12 @@ protected:
     Type _type;
 
 public:
-    std::vector<Entry *> _entry;		/* entry array		        */
-    std::vector<Activity *>_activity;		/* List of activities.		*/
-
     bool trace_flag;				/* True if task is to be traced	*/
 
     Histogram * _hist_data;            		/* Structure which stores histogram data for this task */
-    result_t r_cycle;				/* Cycle time.		        */
-    result_t r_util;				/* Utilization.		        */
-    result_t r_group_util;			/* group Utilization.		*/
-    result_t r_loss_prob;			/* Asynch message loss prob.	*/
+    SampleResult r_cycle;			/* Cycle time.		        */
+    VariableResult r_util;			/* Utilization.		        */
+    VariableResult r_group_util;		/* group Utilization.		*/
 
     unsigned _hold_active;			/* Number of active instances.	*/
 };
@@ -226,7 +222,9 @@ public:
 
     virtual double think_time() const { return _think_time; }			/* Cached.  see create()	*/
 
+#if !BUG_289
     virtual bool start();
+#endif
     virtual Reference_Task& kill();
 
 protected:
@@ -234,7 +232,7 @@ protected:
 
 private:
     double _think_time;				/* Cached copy of think time.	*/
-    std::vector<srn_client *> _task_list;	/* task id's of clients		*/
+    std::vector<srn_client *> _clients;		/* task id's of clients		*/
 };
 
 class Server_Task : public Task
@@ -278,19 +276,19 @@ public:
     virtual Timeout_Task& accumulate_data();
     virtual Timeout_Task& insertDOMResults();
 
-    virtual FILE * print( FILE * ) const;
+    virtual std::ostream& print( std::ostream& ) const;
 
 protected:
     virtual void create_instance();
 
 public:
-    result_t r_timeout;				/* Service time.		*/
-    result_t r_timeout_sqr;
-    result_t r_timeout_cycle;			/* Cycle time.		        */
-    result_t r_timeout_util;			/* Utilization.		        */
-    result_t r_timeout_prob;			/* Timeout prob.	        */
-    result_t r_forward;
-    result_t r_calldelay;
+    SampleResult r_timeout;			/* Service time.		*/
+    SampleResult r_timeout_sqr;
+    SampleResult r_timeout_cycle;		/* Cycle time.		        */
+    VariableResult r_timeout_util;		/* Utilization.		        */
+    SampleResult r_timeout_prob;		/* Timeout prob.	        */
+    SampleResult r_forward;
+    SampleResult r_calldelay;
     double _timeout;
     double _cleanup;
 protected:
@@ -314,17 +312,17 @@ public:
     virtual Retry_Task& accumulate_data();
     virtual Retry_Task& insertDOMResults();
 
-    virtual FILE * print( FILE * ) const;
+    virtual std::ostream& print( std::ostream& ) const;
     bool isInfRetry() {return _maxRetries <0;}
 
 protected:
     virtual void create_instance();
 
 public:
-    result_t r_nretry;				/* Mean number of retries.	*/
-    result_t r_Yretry;
-    result_t r_tretry;
-    result_t r_abort_prob;			/* Abort prob.	                */
+    SampleResult r_nretry;			/* Mean number of retries.	*/
+    SampleResult r_Yretry;
+    SampleResult r_tretry;
+    SampleResult r_abort_prob;			/* Abort prob.	                */
     double _sleep;
     double _cleanup;
     double _maxRetries;
@@ -343,7 +341,6 @@ public:
     int signal_port() const { return _signal_port; }
     Instance * signal_task() const { return _signal_task; }
 
-    virtual Semaphore_Task& create();
     virtual bool start();
     virtual Semaphore_Task& kill();
 
@@ -351,15 +348,15 @@ public:
     virtual Semaphore_Task& accumulate_data();
     virtual Semaphore_Task& insertDOMResults();
 
-    virtual FILE * print( FILE * ) const;
+    virtual std::ostream& print( std::ostream& ) const;
 
 protected:
     virtual void create_instance();
 
 public:
-    result_t r_hold;				/* Service time.		*/
-    result_t r_hold_sqr;			/* Service time.		*/
-    result_t r_hold_util;
+    SampleResult r_hold;			/* Service time.		*/
+    SampleResult r_hold_sqr;			/* Service time.		*/
+    VariableResult r_hold_util;
 
 protected:
     Instance * _signal_task;			/* 				*/
@@ -378,7 +375,6 @@ public:
     int readerQ_port() const { return _readerQ_port; }
     int signal_port2() const { return _signal_port2; }
 
-    virtual ReadWriteLock_Task& create();
     virtual bool start();
     virtual ReadWriteLock_Task& kill();
 
@@ -386,23 +382,23 @@ public:
     virtual ReadWriteLock_Task& accumulate_data();
     virtual ReadWriteLock_Task& insertDOMResults();
 
-    virtual FILE * print( FILE * ) const;
+    virtual std::ostream& print( std::ostream& ) const;
 
 protected:
     virtual void create_instance();
 
 public:
-    result_t r_reader_hold;			/* Reader holding time		*/
-    result_t r_reader_hold_sqr;
-    result_t r_reader_wait;			/* Reader blocked time		*/
-    result_t r_reader_wait_sqr;
-    result_t r_reader_hold_util;
+    SampleResult r_reader_hold;			/* Reader holding time		*/
+    SampleResult r_reader_hold_sqr;
+    SampleResult r_reader_wait;			/* Reader blocked time		*/
+    SampleResult r_reader_wait_sqr;
+    VariableResult r_reader_hold_util;
 
-    result_t r_writer_hold;			/* writer holding time		*/
-    result_t r_writer_hold_sqr;
-    result_t r_writer_wait;			/* writer blocked time		*/
-    result_t r_writer_wait_sqr;
-    result_t r_writer_hold_util;
+    SampleResult r_writer_hold;			/* writer holding time		*/
+    SampleResult r_writer_hold_sqr;
+    SampleResult r_writer_wait;			/* writer blocked time		*/
+    SampleResult r_writer_wait_sqr;
+    VariableResult r_writer_hold_util;
 
 private:
     Instance * _reader;				/* task id for readers' queue   */
@@ -441,8 +437,6 @@ private:
     Instance * _task;			/* task id of main inst	        */
 };
 
-
-typedef double (*hold_func_ptr)( const Task *, const unsigned );
 
 extern unsigned total_tasks;
 #endif

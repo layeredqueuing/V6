@@ -1,4 +1,4 @@
-# $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/dist/win-nt/Makefile.am $
+# $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk-V6/dist/win-nt/Makefile.am $
 # $Id: Makefile.am 14935 2021-07-21 15:09:13Z greg $
 # Used for make dist.
 # ------------------------------------------------------------------------

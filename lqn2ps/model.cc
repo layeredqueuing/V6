@@ -1,6 +1,6 @@
 /* model.cc	-- Greg Franks Mon Feb  3 2003
  *
- * $Id: model.cc 17369 2024-10-15 22:13:09Z greg $
+ * $Id: model.cc 17464 2024-11-13 12:55:06Z greg $
  *
  * Load, slice, and dice the lqn model.
  */
@@ -19,9 +19,6 @@
 #include <stdexcept>
 #include <errno.h>
 #include <time.h>
-#if HAVE_SYS_TIMES_H
-#include <sys/times.h>
-#endif
 #if HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -324,7 +321,7 @@ Model::group_by_submodel()
  */
 
 int
-Model::create( const std::string& input_file_name, const LQIO::DOM::Pragma& pragmas, const std::string& output_file_name, const std::string& parse_file_name, int model_no )
+Model::create( const std::filesystem::path& input_file_name, const LQIO::DOM::Pragma& pragmas, const std::filesystem::path& output_file_name, const std::filesystem::path& parse_file_name, int model_no )
 {
     /* Maps for type conversion */
     static const std::map<const File_Format,const LQIO::DOM::Document::InputFormat> lqn2xxx_to_dom = {
@@ -434,7 +431,7 @@ Model::create( const std::string& input_file_name, const LQIO::DOM::Pragma& prag
 
 #if BUG_270
     if ( !queueing_output() && (
-#if JMVA_OUTPUT && HAVE_EXPAT_H
+#if JMVA_OUTPUT && HAVE_LIBEXPAT
 	     Flags::output_format() == File_Format::JMVA ||
 #endif
 	     Flags::output_format() == File_Format::QNAP2) ) {
@@ -482,8 +479,8 @@ Model::create( const std::string& input_file_name, const LQIO::DOM::Pragma& prag
 		    LQIO::RegisterBindings(program->getEnvironment(), document);
 
 		    FILE * output = nullptr;
-		    if ( output_file_name.size() > 0 && output_file_name != "-" ) {
-			output = fopen( output_file_name.c_str(), "w" );
+		    if ( !output_file_name.empty() && output_file_name != "-" ) {
+		        output = fopen( output_file_name.string().c_str(), "w" );
 			if ( !output ) {
 			    runtime_error( LQIO::ERR_CANT_OPEN_FILE, output_file_name.c_str(), strerror( errno ) );
 			    status = FILEIO_ERROR;
@@ -1507,7 +1504,7 @@ Model::nInfiniteServers() const
 
 
 Model&
-Model::accumulateStatistics( const std::string& filename )
+Model::accumulateStatistics( const std::filesystem::path& filename )
 {
     stats[TOTAL_LAYERS].accumulate( this, filename );
     stats[TOTAL_TASKS].accumulate( this, filename );
@@ -1524,7 +1521,7 @@ Model::accumulateStatistics( const std::string& filename )
 
 
 const Model&
-Model::accumulateTaskStats( const std::string& filename ) const
+Model::accumulateTaskStats( const std::filesystem::path& filename ) const
 {
     /* Does not count ref. tasks. */
 
@@ -1542,7 +1539,7 @@ Model::accumulateTaskStats( const std::string& filename ) const
 
 
 const Model&
-Model::accumulateEntryStats( const std::string& filename ) const
+Model::accumulateEntryStats( const std::filesystem::path& filename ) const
 {
     for ( std::vector<Layer>::const_iterator layer = _layers.begin(); layer != _layers.end(); ++layer ) {
 	for ( std::vector<Entity *>::const_iterator entity = layer->entities().begin(); entity != layer->entities().end(); ++entity ) {
@@ -1626,7 +1623,7 @@ Model::print( std::ostream& output ) const
 #if HAVE_GD_H && HAVE_LIBGD && HAVE_LIBJPEG
 	{ File_Format::JPEG,	    &Model::printJPG },
 #endif
-#if JMVA_OUTPUT && HAVE_EXPAT_H
+#if JMVA_OUTPUT && HAVE_LIBEXPAT
 	{ File_Format::JMVA,	    &Model::printJMVA },
 #endif
 	{ File_Format::JSON,	    &Model::printJSON },
@@ -2105,7 +2102,7 @@ Model::printXML( std::ostream& output ) const
 
 
 
-#if JMVA_OUTPUT && HAVE_EXPAT_H
+#if JMVA_OUTPUT && HAVE_LIBEXPAT
 /*
  * It has to be a submodel...
  */
@@ -2316,7 +2313,7 @@ Model::printSXDMeta( std::ostream& output ) const
     output << "<!DOCTYPE office:document-meta PUBLIC \"-//OpenOffice.org//DTD OfficeDocument 1.0//EN\" \"office.dtd\">" << std::endl;
     output << "<office:document-meta xmlns:office=\"http://openoffice.org/2000/office\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" xmlns:dc=\"http://purl.org/dc/elements/1.1/\" xmlns:meta=\"http://openoffice.org/2000/meta\" xmlns:presentation=\"http://openoffice.org/2000/presentation\" xmlns:fo=\"http://www.w3.org/1999/XSL/Format\" office:version=\"1.0\">" << std::endl;
     output << "<office:meta>" << std::endl;
-#if HAVE_CTIME
+#if HAVE_TIME_H
     time_t tloc;
     time( &tloc );
     strftime( buf, 32, "%Y-%m-%d %H:%M:%S", localtime( &tloc ) );
@@ -2330,12 +2327,6 @@ Model::printSXDMeta( std::ostream& output ) const
     output << "<meta:generator>" << LQIO::io_vars.lq_toolname << " Version " << VERSION << "</meta:generator>" << std::endl;
     output << "<meta:creation-date>" << buf << "</meta:creation-date>" << std::endl;
     output << "<meta:editing-cycles>1</meta:editing-cycles>" << std::endl;
-#if HAVE_SYS_TIMES_H
-    struct tms run_time;
-    times( &run_time );
-    strftime( buf, 32, "PT%MM%SS", localtime( &tloc ) );
-    output << "<meta:editing-duration>" << buf << "</meta:editing-duration>" << std::endl;
-#endif
     output << "<meta:user-defined meta:name=\"Info 1\">" << command_line << "</meta:user-defined>" << std::endl;
     output << "<meta:user-defined meta:name=\"Info 2\"/>" << std::endl;
     output << "<meta:user-defined meta:name=\"Info 3\"/>" << std::endl;
@@ -2517,18 +2508,10 @@ Model::printSummary( std::ostream& output ) const
 
 /* ------------------------------------------------------------------------ */
 
-Model::Stats::Stats()
-    : n(0), x(0), x_sqr(0), log_x(0), one_x(0), min(std::numeric_limits<double>::max()), max(-std::numeric_limits<double>::max()), f(nullptr)
-{
-    min_filename = "";
-    max_filename = "";
-}
-
-
-
 Model::Stats&
-Model::Stats::accumulate( double value, const std::string& filename )
+Model::Stats::accumulate( double value, const std::filesystem::path& path )
 {
+    const std::string filename = path.string();
     n += 1;
     x += value;
     x_sqr += value * value;
@@ -2553,7 +2536,7 @@ Model::Stats::accumulate( double value, const std::string& filename )
 
 
 Model::Stats&
-Model::Stats::accumulate( const Model * model, const std::string& filename )
+Model::Stats::accumulate( const Model * model, const std::filesystem::path& filename )
 {
     assert( model != nullptr && f != nullptr );
     return accumulate( static_cast<double>((model->*f)()), filename );
@@ -2943,12 +2926,11 @@ Squashed_Model::generate()
 	    (*task)->setLevel( CLIENT_LEVEL );
 	}
     }
-    for ( std::set<Processor *>::const_iterator nextProcessor = Processor::__processors.begin(); nextProcessor != Processor::__processors.end(); ++nextProcessor ) {
-	Processor * aProcessor = *nextProcessor;
-	if ( aProcessor->level() == 0 ) {
-	    dynamic_cast<const LQIO::DOM::Processor *>(aProcessor->getDOM())->runtime_error( LQIO::WRN_NOT_USED );
+    for ( std::set<Processor *>::const_iterator processor = Processor::__processors.begin(); processor != Processor::__processors.end(); ++processor ) {
+	if ( (*processor)->level() == 0 ) {
+	    dynamic_cast<const LQIO::DOM::Processor *>((*processor)->getDOM())->runtime_error( LQIO::WRN_NOT_USED );
 	} else {
-	    aProcessor->setLevel( SERVER_LEVEL );
+	    (*processor)->setLevel( SERVER_LEVEL );
 	}
     }
 

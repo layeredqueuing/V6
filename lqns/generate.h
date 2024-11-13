@@ -7,7 +7,7 @@
  *
  * November, 1994
  *
- * $Id: generate.h 17105 2024-03-05 21:28:11Z greg $
+ * $Id: generate.h 17379 2024-10-16 23:34:31Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -107,7 +107,9 @@ private:
 
     class BCMP_Model {
     public:
+#if HAVE_LIBEXPAT
 	static void serialize_JMVA( const Submodel* );
+#endif
 	static void serialize_QNAP( const Submodel* );
 
     protected:
@@ -138,10 +140,12 @@ private:
     };
 
 
+#if HAVE_LIBEXPAT
     class JMVA_Document : private BCMP_Model {
     public:
 	static void serialize( std::ostream& output, const std::string&, const BCMP::Model& model );
     };
+#endif
     
     class QNAP_Document : private BCMP_Model {
     public:

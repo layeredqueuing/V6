@@ -13,7 +13,7 @@
 #define _PETRISRVN_H
 
 /*
- * $Id: petrisrvn.h 17075 2024-02-28 21:20:08Z greg $
+ * $Id: petrisrvn.h 17409 2024-10-31 13:27:39Z greg $
  *
  * Solve LQN using petrinets.
  */
@@ -95,7 +95,6 @@ extern bool trace_flag;			/* Trace greatspn execution.		*/
 extern bool uncondition_flag;		/* Uncodition pr{inservice|}		*/
 extern bool verbose_flag;		/* Spew out GreatSPN noise.		*/
 
-extern bool customers_flag;		/* Smash customers together.		*/
 extern bool distinguish_join_customers;	/* Cust at join multi-server are unique	*/ 
 extern bool simplify_network;		/* Delete single place processors	*/
 

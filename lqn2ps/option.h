@@ -1,7 +1,7 @@
 /* -*- c++ -*-
  * lqn2ps.h	-- Greg Franks
  *
- * $Id: option.h 16750 2023-06-19 12:16:45Z greg $
+ * $Id: option.h 17379 2024-10-16 23:34:31Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -45,7 +45,7 @@ enum class File_Format {
 #if HAVE_GD_H && HAVE_LIBGD && HAVE_GDIMAGEGIFPTR
     GIF,
 #endif
-#if JMVA_OUTPUT && HAVE_EXPAT_H
+#if JMVA_OUTPUT && HAVE_LIBEXPAT
     JMVA,
 #endif
 #if HAVE_GD_H && HAVE_LIBGD && HAVE_LIBJPEG

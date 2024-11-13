@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/activity.h $
+ * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk-V6/lqns/activity.h $
  *
  * Everything you wanted to know about an activity, but were afraid to ask.
  *
@@ -11,19 +11,20 @@
  * July 2007
  *
  * ------------------------------------------------------------------------
- * $Id: activity.h 17211 2024-05-13 22:13:11Z greg $
+ * $Id: activity.h 17458 2024-11-12 11:54:17Z greg $
  * ------------------------------------------------------------------------
  */
 
 #ifndef _ACTIVITY_H
 #define _ACTIVITY_H
 
-#include <set>
-#include <map>
+#include <algorithm>
 #include <deque>
-#include <stack>
-#include <numeric>
 #include <lqio/dom_activity.h>
+#include <map>
+#include <numeric>
+#include <set>
+#include <stack>
 #include "phase.h"
 #if HAVE_LIBGSL
 #include "randomvar.h"
@@ -84,8 +85,8 @@ public:
 	    State& operator=( const State& src ) = delete;
 	public:
 	    const std::deque<const Activity *>& getActivityStack() const { return _activityStack; }	// For error handling only.
-	    bool find_fork( const AndOrForkActivityList * fork ) const { return std::find( _forkSet.begin(), _forkSet.end(), fork ) != _forkSet.end(); }
-	    bool find_join( const AndOrJoinActivityList * join ) const { return std::find( _joinSet.begin(), _joinSet.end(), join ) != _joinSet.end(); }
+	    bool find_fork( const AndOrForkActivityList * fork ) const { return _forkSet.find( fork ) != _forkSet.end(); }
+	    bool find_join( const AndOrJoinActivityList * join ) const { return _joinSet.find( join ) != _joinSet.end(); }
 	    void insert_fork( const AndOrForkActivityList * fork ) { if ( std::find( _forkStack.begin(), _forkStack.end(), fork ) != _forkStack.end() ) _forkSet.insert( fork ); }
 	    void insert_join( const AndOrJoinActivityList * join ) { _joinSet.insert( join ); }
 	private:

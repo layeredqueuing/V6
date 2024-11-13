@@ -1,6 +1,6 @@
 /* help.cc	-- Greg Franks Wed Oct 12 2005
  *
- * $Id: help.cc 17105 2024-03-05 21:28:11Z greg $
+ * $Id: help.cc 17464 2024-11-13 12:55:06Z greg $
  */
 
 #include "lqns.h"
@@ -2301,14 +2301,14 @@ HelpTroff::preamble( std::ostream& output ) const
     time_t tloc;
     time( &tloc );
 
-#if defined(HAVE_CTIME)
+#if HAVE_TIME_H
     strftime( date, 32, "%d %B %Y", localtime( &tloc ) );
 #endif
 
     output << __comment << " t -*- nroff -*-" << std::endl
 	   << ".TH lqns 1 \"" << date << "\" \"" << VERSION << "\"" << std::endl;
 
-    output << __comment << " $Id: help.cc 17105 2024-03-05 21:28:11Z greg $" << std::endl
+    output << __comment << " $Id: help.cc 17464 2024-11-13 12:55:06Z greg $" << std::endl
 	   << __comment << std::endl
 	   << __comment << " --------------------------------" << std::endl;
 
@@ -2592,7 +2592,7 @@ std::ostream&
 HelpLaTeX::preamble( std::ostream& output ) const
 {
     char date[32];
-#if defined(HAVE_CTIME)
+#if HAVE_TIME_H
     time_t tloc;
     time( &tloc );
 
@@ -2602,12 +2602,12 @@ HelpLaTeX::preamble( std::ostream& output ) const
     output << __comment << "  -*- mode: latex; mode: outline-minor; fill-column: 108 -*- " << std::endl
 	   << __comment << " Title:  lqns" << std::endl
 	   << __comment << "" << std::endl
-	   << __comment << " $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/help.cc $" << std::endl
+	   << __comment << " $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk-V6/lqns/help.cc $" << std::endl
 	   << __comment << " Original Author:     Greg Franks <greg@sce.carleton.ca>" << std::endl
 	   << __comment << " Created:             " << date << std::endl
 	   << __comment << "" << std::endl
 	   << __comment << " ----------------------------------------------------------------------" << std::endl
-	   << __comment << " $Id: help.cc 17105 2024-03-05 21:28:11Z greg $" << std::endl
+	   << __comment << " $Id: help.cc 17464 2024-11-13 12:55:06Z greg $" << std::endl
 	   << __comment << " ----------------------------------------------------------------------" << std::endl << std::endl;
 
     output << "\\chapter{Invoking the Analytic Solver ``lqns''}" << std::endl

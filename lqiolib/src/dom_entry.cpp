@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_entry.cpp 17334 2024-10-03 23:02:58Z greg $
+ *  $Id: dom_entry.cpp 17458 2024-11-12 11:54:17Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -331,7 +331,7 @@ namespace LQIO {
 		const std::map<const Entry::Type,const std::string>::const_iterator i = entry_types.find(_type);
 		const std::map<const Entry::Type,const std::string>::const_iterator j = entry_types.find(newType);
 		assert ( i != entry_types.end() && j != entry_types.end() );
-		runtime_error( LQIO::WRN_ENTRY_TYPE_MISMATCH, i->second.c_str(), j->second.c_str() );
+		runtime_error( LQIO::WRN_MIXED_ENTRY_TYPES, i->second.c_str(), j->second.c_str() );
 		_type = newType;
 	    }
 	    return _type == newType;

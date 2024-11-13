@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_object.cpp 17354 2024-10-10 13:04:51Z greg $
+ *  $Id: dom_object.cpp 17464 2024-11-13 12:55:06Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -51,6 +51,7 @@ namespace LQIO {
 	
 	std::map<unsigned, LQIO::error_message_type> DocumentObject::__error_messages = {
 	    { LQIO::ADV_MESSAGES_DROPPED,		{ LQIO::error_severity::ADVISORY, "dropped messages for open-class queues" } },
+	    { LQIO::ERR_ARRIVAL_RATE,			{ LQIO::error_severity::ERROR,    "arrival rate of %g exceeds service rate of %g." } },
 	    { LQIO::ERR_ASYNC_REQUEST_TO_WAIT,		{ LQIO::error_severity::ERROR,    "(wait) cannot accept send-no-reply requests" } },
 	    { LQIO::ERR_BAD_PATH_TO_JOIN,		{ LQIO::error_severity::ERROR,    "activity \"%s\" is not reachable" } },
 	    { LQIO::ERR_CYCLE_IN_ACTIVITY_GRAPH,	{ LQIO::error_severity::ERROR, 	  "has a cycle in activity graph.  Backtrace is \"%s\"" } },
@@ -97,13 +98,12 @@ namespace LQIO {
 	    { LQIO::ERR_TASK_HAS_NO_ENTRIES,	 	{ LQIO::error_severity::ERROR, 	  "has no entries defined" } },
 	    { LQIO::ERR_WRONG_TASK_FOR_ENTRY,		{ LQIO::error_severity::ERROR,    "is not part of task \"%s\""} },
 	    { LQIO::WRN_ENTRY_HAS_NO_REQUESTS,		{ LQIO::error_severity::WARNING,  "does not receive any requests" } },
-	    { LQIO::WRN_ENTRY_TYPE_MISMATCH,		{ LQIO::error_severity::WARNING,  "was previously set to type \"%s\" - changing to type \"%s\"" } },
+	    { LQIO::WRN_MIXED_ENTRY_TYPES,		{ LQIO::error_severity::WARNING,  "is specified using both activity and phase methods" } },
 	    { LQIO::WRN_INFINITE_MULTI_SERVER, 		{ LQIO::error_severity::WARNING,  "is an infinite server with a multiplicity of %d" } },
 	    { LQIO::WRN_INFINITE_SERVER_OPEN_ARRIVALS,	{ LQIO::error_severity::WARNING,  "is an infinite server that accepts either asynchronous messages or open arrivals" } },
 	    { LQIO::WRN_NON_CFS_PROCESSOR,		{ LQIO::error_severity::WARNING,  "is a processor which is not running fair share scheduling" } },
 	    { LQIO::WRN_NOT_USED,			{ LQIO::error_severity::WARNING,  "is not used" } },
 	    { LQIO::WRN_PRIO_TASK_ON_FIFO_PROC,		{ LQIO::error_severity::WARNING,  "with priority is running on processor \"%s\" which does not have priority scheduling" } },
-	    { LQIO::WRN_PROCESSOR_HAS_NO_TASKS,		{ LQIO::error_severity::WARNING,  "has no tasks" } },
 	    { LQIO::WRN_QUANTUM_SCHEDULING,		{ LQIO::error_severity::WARNING,  "using \"%s\" scheduling has a non-zero quantum specified" } },
 	    { LQIO::WRN_SCHEDULING_NOT_SUPPORTED,	{ LQIO::error_severity::WARNING,  "with %s scheduling is not supported" } },
 	    { LQIO::WRN_TASK_HAS_VISIT_PROBABILITY,	{ LQIO::error_severity::WARNING,  "is not a reference task; visit probabilities for entries are ignored." } },
@@ -148,9 +148,8 @@ namespace LQIO {
 	std::string DocumentObject::inputErrorPreamble( unsigned int code ) const
 	{
 	    const error_message_type& error = __error_messages.at(code);
-
 	    std::string object_name = getTypeName();
-	    if ( dynamic_cast<const Task *>(this) && dynamic_cast<const Task *>(this)->getSchedulingType() == SCHEDULE_CUSTOMER ) {
+	    if ( dynamic_cast<const Task *>(this) != nullptr && dynamic_cast<const Task *>(this)->isReferenceTask() ) {
 		object_name.insert( 0, "Reference " );
 	    } else {
 		object_name[0] = std::toupper( object_name[0] );

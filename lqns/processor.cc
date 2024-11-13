@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/processor.cc $
+ * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk-V6/lqns/processor.cc $
  *
  * Everything you wanted to know about a task, but were afraid to ask.
  *
@@ -10,7 +10,7 @@
  * November, 1994
  *
  * ------------------------------------------------------------------------
- * $Id: processor.cc 17211 2024-05-13 22:13:11Z greg $
+ * $Id: processor.cc 17464 2024-11-13 12:55:06Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -110,7 +110,7 @@ Processor::configure( const unsigned nSubmodels )
 {
     if ( nEntries() == 0 ) {
 	if ( isInteresting() || nClients() == 0 ) {
-	    getDOM()->runtime_error( LQIO::WRN_PROCESSOR_HAS_NO_TASKS );
+	    getDOM()->runtime_error( LQIO::WRN_NOT_USED );
 	}
 	return *this;
     }

@@ -2,14 +2,15 @@
 # Copyright (C) 2005 Greg Franks <greg@sce.carleton.ca>
 #
 # ------------------------------------------------------------------------
-# $Id: Makefile.am 17321 2024-10-01 21:37:19Z greg $
+# $Id: Makefile.am 17409 2024-10-31 13:27:39Z greg $
 # ------------------------------------------------------------------------
 
 SRVN=	../lqns
 OPTS=	-Pvariance=mol,threads=hyper -w
 DIFFOPTS= -Q -S0.001  +p
 
-SANITY=	01-sanity.lqxo \
+SANITY=	00-sanity.lqxo \
+	01-sanity.lqxo \
 	02-sanity.lqxo \
 	03-sanity.lqxo \
 	04-sanity.lqxo \
@@ -177,7 +178,7 @@ distclean:	clean
 
 33-spex-convergence.lqxo: 33-spex-convergence.lqnx
 	$(SRVN) -o $*.out $<
-	@mv $*.d/$*-002.lqxo $@
+	@mv $*.d/$*-007.lqxo $@
 	@srvndiff $(DIFFOPTS) $@ ../../models/regression/lqns-results/$@
 	@rm -rf $*.d
 

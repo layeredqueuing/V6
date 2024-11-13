@@ -1,5 +1,5 @@
 /* actlist.cc   -- Greg Franks Thu Feb 20 1997
- * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqns/actlist.cc $
+ * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk-V6/lqns/actlist.cc $
  *
  * Everything you wanted to know about connecting activities, but were afraid to ask.
  *
@@ -10,7 +10,7 @@
  * February 1997
  *
  * ------------------------------------------------------------------------
- * $Id: actlist.cc 17369 2024-10-15 22:13:09Z greg $
+ * $Id: actlist.cc 17458 2024-11-12 11:54:17Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -499,7 +499,7 @@ AndOrForkActivityList::cloneVirtualEntry( const Entry * src, const Task * owner,
 
 AndOrForkActivityList::~AndOrForkActivityList()
 {
-    std::for_each( entries().begin(), entries().end(), Delete<Entry *> );
+    std::for_each( entries().begin(), entries().end(), []( Entry * entry ){ delete entry; } );
 }
 
 
@@ -1929,7 +1929,7 @@ RepeatActivityList::RepeatActivityList( const RepeatActivityList& src, const Tas
 
 RepeatActivityList::~RepeatActivityList()
 {
-    std::for_each( entries().begin(), entries().end(), Delete<Entry *> );
+    std::for_each( entries().begin(), entries().end(), []( Entry * entry ){ delete entry; } );
 }
 
 

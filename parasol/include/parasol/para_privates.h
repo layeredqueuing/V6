@@ -1,4 +1,4 @@
-/* $Id: para_privates.h 15457 2022-03-09 15:54:19Z greg $ */
+/* $Id: para_privates.h 17458 2024-11-12 11:54:17Z greg $ */
 /************************************************************************/
 /*	para_privates.h - PARASOL library internal header file		*/
 /*									*/

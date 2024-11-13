@@ -2,7 +2,7 @@
 # Copyright (C) 2005 Greg Franks <greg@sce.carleton.ca>
 #
 # ------------------------------------------------------------------------
-# $Id: Makefile.am 17324 2024-10-02 14:46:37Z greg $
+# $Id: Makefile.am 17409 2024-10-31 13:27:39Z greg $
 # ------------------------------------------------------------------------
 
 
@@ -10,7 +10,8 @@ SRVN=	../petrisrvn
 OPTS=	-w
 DIFFOPTS= -Q -S0.1
 
-SANITY=	01-sanity.lqxo \
+SANITY=	00-sanity.lqxo \
+	01-sanity.lqxo \
 	02-sanity.lqxo \
 	03-sanity.lqxo \
 	04-sanity.lqxo \
@@ -122,7 +123,7 @@ other:	$(OTHER)
 
 33-spex-convergence.lqxo: 33-spex-convergence.lqnx
 	$(SRVN) -w -o $*.out $<
-	@mv $*.d/$*-002.lqxo $@
+	@mv $*.d/$*-007.lqxo $@
 	@srvndiff $(DIFFOPTS) $@ ../../models/regression/petri-results/$@
 	@rm -rf $*.d
 

@@ -1,13 +1,14 @@
 /* option.cc -- Greg Franks Wed Oct 12 2005
  *
- * $Id: option.cc 17200 2024-05-05 23:54:01Z greg $
+ * $Id: option.cc 17458 2024-11-12 11:54:17Z greg $
  */
 
 #include "lqns.h"
-#include <fstream>
-#include <sstream>
 #include <cctype>
 #include <cstdlib>
+#include <cstring>
+#include <fstream>
+#include <sstream>
 #include <errno.h>
 #include <lqio/error.h>
 #include <lqio/srvn_spex.h>

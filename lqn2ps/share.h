@@ -1,6 +1,6 @@
 /* share.h	-- Greg Franks
  *
- * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk/lqn2ps/share.h $
+ * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk-V6/lqn2ps/share.h $
  *
  * ------------------------------------------------------------------------
  * $Id: share.h 16945 2024-01-26 13:02:36Z greg $

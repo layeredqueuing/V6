@@ -1,20 +1,19 @@
 /*  -*- c++ -*-
  *
  * ------------------------------------------------------------------------
- * $Id: target.h 17294 2024-09-16 17:49:40Z greg $
+ * $Id: target.h 17458 2024-11-12 11:54:17Z greg $
  * ------------------------------------------------------------------------
  */
 
 #ifndef _TARGET_H
 #define _TARGET_H
 
-#include <cstdio>
 #include <deque>
 #include <vector>
 #include <assert.h>
-#include "result.h"
 #include <lqio/dom_call.h>
 #include <lqio/dom_phase.h>
+#include "result.h"
 
 class Activity;
 class Entry;
@@ -23,10 +22,10 @@ class Task;
 
 class tar_t {				/* send target struct		*/
     friend class Targets;
-    enum class Type { undefined, call, constant };
 
 public:
-    tar_t() : _entry(nullptr), _link(-1), _tprob(0.0), _calls(0.0), _reply(false), _type(Type::undefined) {}
+    tar_t( Entry * entry, LQIO::DOM::Call * dom );
+    tar_t( Entry * entry, double calls );
 
     Entry * entry() const { return _entry; }
     double calls() const { return _calls; }
@@ -34,6 +33,7 @@ public:
     int link() const { return _link; }
     tar_t& set_link( int link ) { assert( link < MAX_NODES ); _link = link; return *this; }
 
+    void initialize();
     bool dropped_messages() const;
     double mean_delay() const;		/* Result values 		*/
     double variance_delay() const;
@@ -45,19 +45,12 @@ public:
     void send_asynchronous( const Entry *, const int priority );
     FILE * print( FILE * ) const;
     tar_t& insertDOMResults();
+    std::ostream& print( std::ostream& output ) const;
 
 public:
-    result_t r_delay;			/* Delay to send to target.	*/
-    result_t r_delay_sqr;		/* Delay to send to target.	*/
-    result_t r_loss_prob;		/* Loss probability.		*/
-
-
-private:
-//    tar_t( const tar_t& );
-//    tar_t& operator=( const tar_t& );		/* need for realloc */
-
-    void initialize( Entry * to_entry, LQIO::DOM::Call* domCall ) { _entry = to_entry; _type = Type::call; _dom._call = domCall; }
-    void initialize( Entry * to_entry, double value, bool reply=false ) { _entry = to_entry; _type = Type::constant; _calls = value; _reply = reply; }
+    SampleResult r_delay;		/* Delay to send to target.	*/
+    SampleResult r_delay_sqr;		/* Delay to send to target.	*/
+    SampleResult r_loss_prob;		/* Loss probability.		*/
 
 private:
     Entry * _entry;			/* target entry 		*/
@@ -65,18 +58,14 @@ private:
     double _tprob;			/* test probability		*/
     double _calls;			/* # of calls.			*/
     bool _reply;			/* Generate reply.		*/
-    Type _type;				/* Types are different...	*/
-    union {				/* ...so we use a  union	*/
-	LQIO::DOM::Call* _call;		/* ...instead of dynamic_cast	*/
-	LQIO::DOM::ExternalVariable* _extvar;
-    } _dom;
+    LQIO::DOM::Call* _call;		/* ...instead of dynamic_cast	*/
 };
 
 class Targets {				/* send table struct		*/
 public:
     typedef std::vector<tar_t>::const_iterator const_iterator;
 
-    Targets() {}
+    Targets() : _type(LQIO::DOM::Phase::STOCHASTIC), _target() {}
     ~Targets() {}
 
     const tar_t& operator[]( size_t ix ) const { return _target[ix]; }
@@ -86,23 +75,17 @@ public:
 
     void store_target_info( Entry * to_entry, LQIO::DOM::Call* a_call );
     void store_target_info( Entry * to_entry, double );
-    double configure( const LQIO::DOM::DocumentObject * dom, bool normalize );
-    void initialize( const char * );
+    double configure( LQIO::DOM::Phase::Type, bool=true );
+    void initialize();
     tar_t * entry_to_send_to( unsigned int& i, unsigned int& j ) const;
-    const Targets& print_raw_stat( FILE * ) const;
+    std::ostream& print( std::ostream& ) const;
 
     Targets& reset_stats();
     Targets& accumulate_data();
     Targets& insertDOMResults();
 
 private:
+    LQIO::DOM::Phase::Type _type;	/* 				*/
     std::vector<tar_t> _target;		/* target array			*/
-
-    bool alloc_target_info( Entry * to_entry ) ;
-
-private:
-    LQIO::DOM::Phase::Type _type;			/* 				*/
 };
-
-
 #endif
