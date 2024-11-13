@@ -10,7 +10,7 @@
 /*
  * Input output processing.
  *
- * $Id: task.cc 17464 2024-11-13 12:55:06Z greg $
+ * $Id: task.cc 17465 2024-11-13 13:11:32Z greg $
  */
 
 #include "lqsim.h"
@@ -725,7 +725,7 @@ Reference_Task::kill()
 bool
 Reference_Task::is_not_waiting() const
 {
-    for ( std::vector<srn_client *>::const_iterator t = _task_list.begin(); t != _task_list.end(); ++t ) {
+    for ( std::vector<srn_client *>::const_iterator t = _clients.begin(); t != _clients.end(); ++t ) {
 	if ( ps_task_state( (*t)->task_id() ) != TASK_RECEIVING ) return true;
     }
     return false;
@@ -1180,14 +1180,6 @@ Timeout_Task::create()
     _timeout = domtask->getTimeoutValue();
     _cleanup = domtask->getAbortValue();
 
-    r_timeout.init();
-    r_timeout_sqr.init();
-    r_timeout_cycle.init();
-    r_timeout_util.init();
-    r_timeout_prob.init();
-    r_forward.init();
-    r_calldelay.init();
-
     return *this;
 }
 
@@ -1344,13 +1336,6 @@ Retry_Task::create()
     _sleep = domtask->getSleepTimeValue();
     _cleanup = domtask->getAbortValue();
     _maxRetries = domtask->getMaxRetriesValue();
-
-
-    r_nretry.init();
-    r_tretry.init();
-    r_Yretry.init();
-    r_abort_prob.init();
-
     return *this;
 }
 
