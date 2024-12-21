@@ -1,6 +1,6 @@
 /* -*- c++ -*-
  * submodel.C	-- Greg Franks Wed Dec 11 1996
- * $Id: submodel.cc 17458 2024-11-12 11:54:17Z greg $
+ * $Id: submodel.cc 17519 2024-12-21 22:07:12Z greg $
  *
  * MVA submodel creation and solution.  This class is the interface
  * between the input model consisting of processors, tasks, and entries,
@@ -462,8 +462,10 @@ Submodel::partition()
     
     /* Collect all servers for each client */
     for ( std::set<Task *>::const_iterator client = _clients.begin(); client != _clients.end(); ++client ) {
-	const std::set<Task *>& group = groups.back().first;
-	if ( !groups.empty() && group.find( *client ) != group.end() ) continue;	/* already there */
+	if ( !groups.empty() ) {
+	    const std::set<Task *>& group = groups.back().first;
+	    if ( group.find( *client ) != group.end() ) continue;	/* already there */
+	}
 	groups.resize( groups.size() + 1 );
 	addToGroup( *client, groups.back() );
     }
