@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: entity.cc 17458 2024-11-12 11:54:17Z greg $
+ * $Id: entity.cc 17535 2025-03-01 13:06:03Z greg $
  *
  * Everything you wanted to know about a task or processor, but were
  * afraid to ask.
@@ -166,11 +166,10 @@ unsigned
 Entity::findChildren( Call::stack& callStack, const bool ) const
 {
     unsigned max_depth = std::max( submodel(), callStack.depth() );
-    Entity * entity = const_cast<Entity *>(this);		// findChildren is normally const...
 #if 0
     std::cerr << "Entity::findChildren: " << print_name() << "->setSubmodel(" << max_depth << ")" << std::endl;
 #endif
-    entity->setSubmodel( max_depth );
+    const_cast<Entity *>(this)->setSubmodel( max_depth );		// findChildren is normally const...
     return max_depth;
 }
 

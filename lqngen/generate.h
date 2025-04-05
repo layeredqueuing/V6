@@ -1,7 +1,7 @@
 /* -*- c++ -*-
  * generate.h	-- Greg Franks
  *
- * $Id: generate.h 16945 2024-01-26 13:02:36Z greg $
+ * $Id: generate.h 17535 2025-03-01 13:06:03Z greg $
  *
  */
 
@@ -158,7 +158,7 @@ private:
     class EntityHeading : public LQXOutput {
     public:
 	EntityHeading( std::ostream& output, int i ) : LQXOutput( output, i ) {}
-	void operator()( const std::pair<unsigned,LQIO::DOM::Entity *>& ) const;
+	void operator()( const LQIO::DOM::Entity * ) const;
     };
 
     class EntryHeading : public LQXOutput {
@@ -199,7 +199,7 @@ private:
     class EntityResult : public LQXOutput {
     public:
 	EntityResult( std::ostream& output, int i ) : LQXOutput( output, i ) {}
-	void operator()( const std::pair<unsigned,LQIO::DOM::Entity *>& ) const;
+	void operator()( const LQIO::DOM::Entity * ) const;
     };
 
     class EntryResult : public LQXOutput {
@@ -226,7 +226,7 @@ private:
     };
 
     struct EntityObservation {
-	void operator()( const std::pair<unsigned,LQIO::DOM::Entity *>& ) const;
+	void operator()( const LQIO::DOM::Entity * ) const;
     };
 
     struct EntryObservation {

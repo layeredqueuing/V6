@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- *  $Id: dom_document.h 17369 2024-10-15 22:13:09Z greg $
+ *  $Id: dom_document.h 17535 2025-03-01 13:06:03Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -75,9 +75,6 @@ namespace LQIO {
 	    /* STORE: Model Parameter Information */
 	    void setModelParameters(const std::string& comment, ExternalVariable* conv_val, ExternalVariable* it_limit, ExternalVariable* print_int, ExternalVariable* underrelax_coeff, const void * arg );
 
-	    /* Obtaining identifiers for entities */
-	    unsigned getNextEntityId();
-
 	    /* Handling Entries, Processors, Tasks, Phases and Groups */
 	    void addProcessorEntity(Processor* processor);
 	    Processor* getProcessorByName(const std::string& name) const;
@@ -95,7 +92,7 @@ namespace LQIO {
 	    const std::map<std::string,Group*>& getGroups() const;	// For output functions.
 	    const std::map<std::string,Task*>& getTasks() const;	// For output functions.
 	    const std::map<std::string,Entry*>& getEntries() const;	//
-	    const std::map<unsigned,Entity *>& getEntities() const;	// For remapping by lqn2ps.
+	    const std::vector<Entity *>& getEntities() const;		// For remapping by lqn2ps.
 	    const std::map<std::string,Decision*>& getDecisions() const;
 	    const std::map<std::string,DecisionPath*>& getDecisionPaths() const;
 
@@ -278,7 +275,7 @@ namespace LQIO {
 	    std::map<std::string, Group*> _groups;		/* group.name -> Group */
 	    std::map<std::string, Task*> _tasks;		/* task.name -> Task */
 	    std::map<std::string, Entry*> _entries;		/* entry.name -> Entry */
-	    std::map<unsigned, Entity*> _entities;		/* entity.id -> Entity */
+	    std::vector<Entity*> _entities;			/* Entities by input order */
 	    std::map<std::string, Decision*> _decisions;	/* decision.name -> Decision */
 	    std::map<std::string, DecisionPath*> _decisionPaths;	/* decisionPath.name -> DecisionPath */
 
@@ -287,7 +284,6 @@ namespace LQIO {
 	    std::map<const std::string, const ExternalVariable*> _controlVariables;
 	    static std::map<const std::string, const double> __initialValues;
 
-	    unsigned _nextEntityId;				/* for sorting, see _entities	*/
 	    const InputFormat _format;				/* input format			*/
 
 	    /* The stored LQX program, if any */

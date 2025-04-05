@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: model.cc 17458 2024-11-12 11:54:17Z greg $
+ * $Id: model.cc 17535 2025-03-01 13:06:03Z greg $
  *
  * Layer-ization of model.  The basic concept is from the reference
  * below.  However, model partioning is more complex than task vs device.
@@ -562,6 +562,7 @@ Model::initialize()
 	    initializeSubmodels();	/* Init MVA values (pop&waits). */		/* -- Step 2 -- */
 	}
 
+	reorderOutput();
 	if ( Options::Debug::submodels() ) {	/* Print out layers... 		*/
 	    for ( const auto submodel : _submodels ) submodel->print( std::cout );
 	}
@@ -792,7 +793,7 @@ Model::reinitializeSubmodels()
      * Reinitialize the MVA stuff
      */
 
-    std::for_each( __task.begin(),  __task.end(), std::mem_fn( &Task::createInterlock ) );
+    std::for_each( __task.begin(), __task.end(), std::mem_fn( &Task::createInterlock ) );
 
     /*
      * Initialize waiting times and populations at servers Done in reverse
@@ -815,13 +816,42 @@ Model::reinitializeSubmodels()
 
 
 /*
+ * Reorder the entities (for output) in the DOM to level (ref task = 0), then name.
+ */
+
+void
+Model::reorderOutput() const
+{
+    /* For ordering the multiset. Never use || here! */
+    struct compare {
+	bool operator()( const Entity *l, const Entity *r ) const { return l->submodel() < r->submodel() && l->name() < r->name(); }
+    };
+    /* For only copying the originals back */
+    const struct predicate {
+	bool operator()( const Entity *e ) const { return !e->isReplica() && e->getDOM() != nullptr; }
+    } predicate;
+
+    /* go through all the tasks and processors and save based on their depth. Processor and tasks names can collide. */
+
+    std::multiset<Entity *,compare> mapped;
+    std::copy_if( __task.begin(), __task.end(), std::inserter( mapped, mapped.end() ), predicate );
+    std::copy_if( __processor.begin(), __processor.end(), std::inserter( mapped, mapped.end() ), predicate );
+	       
+    /* Change the order in the DOM.  DO NOT clear entities because the vector has to be the right size */
+    std::vector<LQIO::DOM::Entity *>& entities = const_cast<std::vector<LQIO::DOM::Entity *>&>(getDOM()->getEntities());
+    assert( mapped.size() == entities.size() );
+    std::transform( mapped.begin(), mapped.end(), entities.begin(), []( Entity * entity ){ return entity->getDOM(); } );
+}
+
+
+
+/*
  * Now that the model is constructed, solve it by calling Model::run().
  */
 
 bool
 Model::compute()
 {
-
     SolverReport report( const_cast<LQIO::DOM::Document *>(getDOM()), _MVAStats );
     setModelParameters();
 

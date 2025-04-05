@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_entity.cpp 15827 2022-08-14 15:20:00Z greg $
+ *  $Id: dom_entity.cpp 17535 2025-03-01 13:06:03Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -19,7 +19,6 @@ namespace LQIO {
 		       const scheduling_type schedulingType, const ExternalVariable* copies,
 		       const ExternalVariable* replicas) :
 	    DocumentObject(document, name),
-	    _entityId(const_cast<Document *>(document)->getNextEntityId()), 
 	    _entitySchedulingType(schedulingType),
 	    _copies(copies), _replicas(replicas)
 #if defined(BUG_393)
@@ -31,7 +30,6 @@ namespace LQIO {
 
 	Entity::Entity(const Entity& src ) :
 	    DocumentObject(src),
-	    _entityId(const_cast<Document *>(src.getDocument())->getNextEntityId()), 
 	    _entitySchedulingType(src._entitySchedulingType),
 	    _copies(ExternalVariable::clone(src._copies)), _replicas(ExternalVariable::clone(src._replicas))
 #if defined(BUG_393)
@@ -42,18 +40,6 @@ namespace LQIO {
 
 	Entity::~Entity()
 	{
-	}
-    
-	const unsigned int Entity::getId() const
-	{
-	    /* Return the entity ID */
-	    return _entityId;
-	}
-    
-	void Entity::setId(const unsigned int newId)
-	{
-	    /* Set the entity ID */
-	    _entityId = newId;
 	}
     
 	const scheduling_type Entity::getSchedulingType() const

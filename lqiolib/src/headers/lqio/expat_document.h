@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- *  $Id: expat_document.h 17360 2024-10-12 10:59:43Z greg $
+ *  $Id: expat_document.h 17535 2025-03-01 13:06:03Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  */
@@ -147,7 +147,7 @@ namespace LQIO {
 
 	    struct ExportProcessor {
 		ExportProcessor( std::ostream& output, const Expat_Document& self ) : _output( output ), _self( self ) {}
-		void operator()( const std::pair<unsigned, Entity *>& e ) const { Processor * p = dynamic_cast<Processor *>(e.second); if ( p ) _self.exportProcessor( _output, *p ); }
+		void operator()( Entity * e ) const { Processor * p = dynamic_cast<Processor *>(e); if ( p ) _self.exportProcessor( _output, *p ); }
 	    private:
 		std::ostream& _output;
 		const Expat_Document& _self;

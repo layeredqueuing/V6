@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: model.h 17458 2024-11-12 11:54:17Z greg $
+ * $Id: model.h 17535 2025-03-01 13:06:03Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -121,11 +121,12 @@ protected:
     void printIntermediate( const double ) const;
 	
 private:
+    bool hasOutputFileName() const { return !_output_file_name.empty() && _output_file_name != "-"; }
+
     bool generate( unsigned );	/* Create layers.	*/
     static void extend();
     void configure();
-
-    bool hasOutputFileName() const { return !_output_file_name.empty() && _output_file_name != "-"; }
+    void reorderOutput() const;
 
     std::ostream& printOvertaking( std::ostream& ) const;
 

@@ -1,6 +1,6 @@
 /* model.cc	-- Greg Franks Mon Feb  3 2003
  *
- * $Id: model.cc 17464 2024-11-13 12:55:06Z greg $
+ * $Id: model.cc 17535 2025-03-01 13:06:03Z greg $
  *
  * Load, slice, and dice the lqn model.
  */
@@ -88,18 +88,6 @@ Model::Stats Model::stats[Model::N_STATS];
 
 static DoubleManip to_inches( const double );
 
-/*
- * Compare two entities by their submodel.
- */
-
-struct lt_submodel
-{
-    bool operator()(const Entity * e1, const Entity * e2) const
-	{
-	    return (e1->level() < e2->level())
-		|| (e1->level() == e2->level() && (!dynamic_cast<const LQIO::DOM::Entity *>(e2->getDOM()) || (dynamic_cast<const LQIO::DOM::Entity *>(e1->getDOM()) && (dynamic_cast<const LQIO::DOM::Entity *>(e1->getDOM())->getId() < dynamic_cast<const LQIO::DOM::Entity *>(e2->getDOM())->getId()))));
-	}
-};
 
 /* ------------------------ Constructors etc. ------------------------- */
 
@@ -1972,13 +1960,12 @@ Model::printModelComment( std::ostream& output, const std::string& head, const s
  * Change the order of the entity list from the order of input to the order we have assigned.
  */
 
-std::map<unsigned, LQIO::DOM::Entity *>&
+void
 Model::remapEntities() const
 {
-    std::map<unsigned, LQIO::DOM::Entity *>& entities = const_cast<std::map<unsigned, LQIO::DOM::Entity *>&>(getDOM()->getEntities());
+    std::vector<LQIO::DOM::Entity *>& entities = const_cast<std::vector<LQIO::DOM::Entity *>&>(getDOM()->getEntities());
     entities.clear();
     std::for_each( _layers.begin(), _layers.end(), Remap( entities ) );
-    return entities;
 }
 
 void
@@ -1987,11 +1974,16 @@ Model::Remap::operator()( const Layer& layer )
     std::for_each( layer.entities().begin(), layer.entities().end(), Remap( _entities ) );
 }
 
+
+/*
+ * Add entity back to the Document's entity list only if it has not been added already.
+ */
+
 void
 Model::Remap::operator()( const Entity * entity )
 {
-    if ( entity->isSelectedIndirectly() ) {
-	_entities[_entities.size() + 1] = const_cast<LQIO::DOM::Entity *>(dynamic_cast<const LQIO::DOM::Entity *>(entity->getDOM()));	/* Our order, not the dom's */
+    if ( entity->isSelectedIndirectly() && _mapped.insert(entity).second ) {
+	_entities.push_back(const_cast<LQIO::DOM::Entity *>(dynamic_cast<const LQIO::DOM::Entity *>(entity->getDOM())));	/* Our order, not the dom's */
     }
 }
 
@@ -2003,7 +1995,8 @@ Model::Remap::operator()( const Entity * entity )
 std::ostream&
 Model::printInput( std::ostream& output ) const
 {
-    LQIO::SRVN::Input srvn( *getDOM(), remapEntities(), Flags::annotate_input );
+    remapEntities();
+    LQIO::SRVN::Input srvn( *getDOM(), Flags::annotate_input );
     srvn.print( output );
     return output;
 }
@@ -2017,7 +2010,8 @@ Model::printInput( std::ostream& output ) const
 std::ostream&
 Model::printOutput( std::ostream& output ) const
 {
-    LQIO::SRVN::Output srvn( *getDOM(), remapEntities(), Flags::print[CONFIDENCE_INTERVALS].opts.value.b, Flags::print[VARIANCE].opts.value.b, Flags::print[HISTOGRAMS].opts.value.b );
+    remapEntities();
+    LQIO::SRVN::Output srvn( *getDOM(), Flags::print[CONFIDENCE_INTERVALS].opts.value.b, Flags::print[VARIANCE].opts.value.b, Flags::print[HISTOGRAMS].opts.value.b );
     srvn.print( output );
     return output;
 }
@@ -2031,7 +2025,8 @@ Model::printOutput( std::ostream& output ) const
 std::ostream&
 Model::printParseable( std::ostream& output ) const
 {
-    LQIO::SRVN::Parseable srvn( *getDOM(), remapEntities(), Flags::print[CONFIDENCE_INTERVALS].opts.value.b );
+    remapEntities();
+    LQIO::SRVN::Parseable srvn( *getDOM(), Flags::print[CONFIDENCE_INTERVALS].opts.value.b );
     srvn.print( output );
     return output;
 }
@@ -2045,7 +2040,8 @@ Model::printParseable( std::ostream& output ) const
 std::ostream&
 Model::printRTF( std::ostream& output ) const
 {
-    LQIO::SRVN::RTF srvn( *getDOM(), remapEntities(), Flags::print[CONFIDENCE_INTERVALS].opts.value.b );
+    remapEntities();
+    LQIO::SRVN::RTF srvn( *getDOM(), Flags::print[CONFIDENCE_INTERVALS].opts.value.b );
     srvn.print( output );
     return output;
 }
