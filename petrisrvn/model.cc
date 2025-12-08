@@ -8,7 +8,7 @@
 /************************************************************************/
 
 /*
- * $Id: model.cc 17464 2024-11-13 12:55:06Z greg $
+ * $Id: model.cc 17614 2025-12-08 23:38:42Z greg $
  *
  * Load the SRVN model.
  */
@@ -157,6 +157,9 @@ Model::solve( solve_using solver_function, const std::string& inputFileName, LQI
 	    }
 
 	    if ( status == 0 ) {
+		/* Don't create directories etc if there are no loops (i.e., parameters only) */
+		SolverInterface::Solve::implicitSolve = LQIO::Spex::has_vars() && !LQIO::Spex::has_loops();
+
 		/* Invoke the LQX program itself */
 		if ( !program->invoke() ) {
 		    LQIO::runtime_error( LQIO::ERR_LQX_EXECUTION, inputFileName.c_str() );
@@ -669,7 +672,7 @@ Model::compute()
 	    }
 	    insert_DOM_results( rc == true, stats );	/* Save results */
 
-	    _document->setResultDescription();
+	    _document->setModelDescription();
 	    _document->print( _output_file_name, suffix, _output_format, rtf_flag );
 
 	    if ( inservice_match_pattern != nullptr ) {
@@ -1562,7 +1565,7 @@ Model::insert_DOM_results( const bool valid, const solution_stats_t& stats ) con
 
     std::stringstream buf;
     buf << "Tangible: " << stats.tangible << ", Vanishing: " << stats.vanishing;
-    _document->setExtraComment( buf.str() );
+    _document->setResultComment( buf.str() );
 
     LQIO::DOM::CPUTime stop_time;
     stop_time.init();

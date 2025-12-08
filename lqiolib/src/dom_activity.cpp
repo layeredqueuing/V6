@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_activity.cpp 17354 2024-10-10 13:04:51Z greg $
+ *  $Id: dom_activity.cpp 17614 2025-12-08 23:38:42Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -35,7 +35,7 @@ namespace LQIO {
 	      _outputList(nullptr), _inputList(nullptr),
 	      _resultCVSquared(0.0),
 	      _resultThroughput(0.0), _resultThroughputVariance(0.0),
-	      _resultProcessorUtilization(0.0), _resultProcessorUtilizationVariance(0.0)
+	      _resultProcessorUtilization(src._resultProcessorUtilization), _resultProcessorUtilizationVariance(src._resultProcessorUtilizationVariance)
 	{
 	}
 

@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_document.cpp 17535 2025-03-01 13:06:03Z greg $
+ *  $Id: dom_document.cpp 17614 2025-12-08 23:38:42Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -117,7 +117,7 @@ namespace LQIO {
 
 
 	Document::Document( InputFormat format )
-	    : _modelComment(), _extraComment(),
+	    : _modelComment(), 
 	      _processors(), _groups(), _tasks(), _entries(),
 	      _entities(), _variables(), _controlVariables(),
 	      _format(format),
@@ -127,6 +127,9 @@ namespace LQIO {
 	      _resultInvocationNumber(0),
 	      _resultConvergenceValue(0.0),
 	      _resultIterations(0),
+	      _resultPlatformInformation(),
+	      _resultSolverInformation(),
+	      _resultComment(),
 	      _resultUserTime(0),
 	      _resultSysTime(0),
 	      _resultElapsedTime(0),
@@ -182,6 +185,25 @@ namespace LQIO {
 	    if ( underrelax_coeff != nullptr )  _controlVariables.emplace( std::pair<const std::string,ExternalVariable*>(XUnderrelaxationCoefficient,underrelax_coeff) );
 	}
 
+	Document& Document::setModelDescription()
+	{
+	    _modelDescription = LQIO::io_vars.lq_toolname + " " + LQIO::io_vars.lq_version + " solution for " + __input_file_name.string();
+	    if ( getSymbolExternalVariableCount() > 0 ) {
+		_modelDescription += ": ";
+		std::ostringstream ss;
+		printExternalVariables( ss );
+		_modelDescription += ss.str();
+	    }
+	    _modelDescription += ".";
+	    return *this;
+	}
+
+	Document& Document::setModelDescription( const std::string& modelDescription )
+	{
+	    _modelDescription = modelDescription;
+	    return *this;
+	}
+
 	const std::string& Document::getModelComment() const
 	{
 	    return _modelComment;
@@ -190,17 +212,6 @@ namespace LQIO {
 	Document& Document::setModelComment( const std::string& comment )
 	{
 	    _modelComment = comment;
-	    return *this;
-	}
-
-	const std::string& Document::getExtraComment() const
-	{
-	    return _extraComment;
-	}
-
-	Document& Document::setExtraComment( const std::string& value )
-	{
-	    _extraComment = value;
 	    return *this;
 	}
 
@@ -530,25 +541,6 @@ namespace LQIO {
 	    return *this;
 	}
 
-	Document& Document::setResultDescription()
-	{
-	    _resultDescription = LQIO::io_vars.lq_toolname + " " + LQIO::io_vars.lq_version + " solution for " + __input_file_name.string();
-	    if ( getSymbolExternalVariableCount() > 0 ) {
-		_resultDescription += ": ";
-		std::ostringstream ss;
-		printExternalVariables( ss );
-		_resultDescription += ss.str();
-	    }
-	    _resultDescription += ".";
-	    return *this;
-	}
-
-	Document& Document::setResultDescription( const std::string& resultDescription )
-	{
-	    _resultDescription = resultDescription;
-	    return *this;
-	}
-
 	Document& Document::setResultConvergenceValue(double resultConvergenceValue)
 	{
 	    _hasResults = true;
@@ -605,6 +597,18 @@ namespace LQIO {
 	    return *this;
 	}
 	
+
+	const std::string& Document::getResultComment() const
+	{
+	    return _resultComment;
+	}
+
+	Document& Document::setResultComment( const std::string& value )
+	{
+	    _resultComment = value;
+	    return *this;
+	}
+
 	Document& Document::setResultUserTime(double resultUserTime)
 	{
 	    _hasResults = true;

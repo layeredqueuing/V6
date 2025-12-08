@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_processor.cpp 17334 2024-10-03 23:02:58Z greg $
+ *  $Id: dom_processor.cpp 17614 2025-12-08 23:38:42Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -38,17 +38,15 @@ namespace LQIO {
 	      _processorQuantum(ExternalVariable::clone(src._processorQuantum)),
 	      _taskList(),
 	      _groupList(),
-	      _resultUtilization(0.0),
-	      _resultUtilizationVariance(0.0)
+	      _resultUtilization(src._resultUtilization),
+	      _resultUtilizationVariance(src._resultUtilizationVariance)
 	{
 	}
 
 	Processor::~Processor()
 	{
 	    /* Delete all owned tasks */
-	    for ( std::set<Task*>::const_iterator task = _taskList.begin(); task != _taskList.end(); ++task) {
-		delete *task;
-	    }
+	    std::for_each( _taskList.begin(), _taskList.end(), []( Task * task ) { delete task; } );
 	}
 
 	/* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- [Input Values] -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */

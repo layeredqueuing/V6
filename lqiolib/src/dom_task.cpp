@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_task.cpp 17458 2024-11-12 11:54:17Z greg $
+ *  $Id: dom_task.cpp 17614 2025-12-08 23:38:42Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -38,21 +38,14 @@ namespace LQIO {
 	      _activities(), _precedences(),
 	      _fanOut(), _fanIn(),
 	      _resultPhaseCount(0),
+	      _resultPhaseUtilizations(), _resultPhaseUtilizationVariances(),
 	      _resultProcUtilization(0.0), _resultProcUtilizationVariance(0.0),
 	      _resultThroughput(0.0), _resultThroughputVariance(0.0),
 	      _resultUtilization(0.0), _resultUtilizationVariance(0.0),
 	      _resultBottleneckStrength(0.0)
 	{
 	    /* Associate the entries with tasks */
-	    std::vector<Entry *>::const_iterator nextEntry;
-	    for ( nextEntry = entryList.begin(); nextEntry != entryList.end(); ++nextEntry ) {
-		(*nextEntry)->setTask(this);
-	    }
-
-	    for ( unsigned int p = 0; p < Phase::MAX_PHASE; ++p ) {
-		_resultPhaseUtilizations[p] = 0;
-		_resultPhaseUtilizationVariances[p] = 0;
-	    }
+	    std::for_each( entryList.begin(), entryList.end(), [this]( Entry * entry ){ entry->setTask(this); } );
 	}
 
 	Task::Task( const Task& src )
@@ -63,23 +56,14 @@ namespace LQIO {
 	      _priority(ExternalVariable::clone(src._priority)),
 	      _thinkTime(ExternalVariable::clone(src._thinkTime)),
 	      _group(),					/* Need to reset this */
-	      _activities(), _precedences(),
-	      _fanOut(), _fanIn(),
-	      _resultPhaseCount(0),
-	      _resultProcUtilization(0.0), _resultProcUtilizationVariance(0.0),
-	      _resultThroughput(0.0), _resultThroughputVariance(0.0),
-	      _resultUtilization(0.0), _resultUtilizationVariance(0.0)
+	      _activities(), _precedences(),		/* Need to reset this */
+	      _fanOut(), _fanIn(),			/* Need to reset this */
+	      _resultPhaseCount(src._resultPhaseCount),
+	      _resultPhaseUtilizations( src._resultPhaseUtilizations ), _resultPhaseUtilizationVariances( src._resultPhaseUtilizationVariances ),
+	      _resultProcUtilization(src._resultProcUtilization), _resultProcUtilizationVariance(src._resultProcUtilizationVariance),
+	      _resultThroughput(src._resultThroughput), _resultThroughputVariance(src._resultThroughputVariance),
+	      _resultUtilization(src._resultUtilization), _resultUtilizationVariance(src._resultUtilizationVariance)
 	{
-	    for ( unsigned int p = 0; p < Phase::MAX_PHASE; ++p ) {
-		_resultPhaseUtilizations[p] = 0;
-		_resultPhaseUtilizationVariances[p] = 0;
-	    }
-	    for ( std::map<const std::string, const LQIO::DOM::ExternalVariable *>::iterator fan_out = _fanOut.begin(); fan_out != _fanOut.end(); ++fan_out ) {
-		fan_out->second = ExternalVariable::clone(fan_out->second);
-	    }
-	    for ( std::map<const std::string, const LQIO::DOM::ExternalVariable *>::iterator fan_in = _fanIn.begin(); fan_in != _fanIn.end(); ++fan_in ) {
-		fan_in->second = ExternalVariable::clone(fan_in->second);
-	    }
 	}
 
 	Task::~Task()
@@ -323,9 +307,7 @@ namespace LQIO {
 
 	void Task::deleteActivities()
 	{
-	    for ( std::map<std::string,Activity*>::iterator activity = _activities.begin(); activity != _activities.end(); ++activity ) {
-		delete activity->second;
-	    }
+	    std::for_each( _activities.begin(), _activities.end(), []( const std::pair<std::string,Activity*>& activity ){ delete activity.second; } );
 	    _activities.clear();
 	}
 		
@@ -370,19 +352,13 @@ namespace LQIO {
 
 	void Task::deleteActivityLists()
 	{
-	    for ( std::set<ActivityList*>::const_iterator precedence = _precedences.begin(); precedence != _precedences.end(); ++precedence ) {
-		delete *precedence;
-	    }
+	    std::for_each( _precedences.begin(), _precedences.end(), []( ActivityList* precedence ) { delete precedence; } );
 	    _precedences.clear();
 	}
 
 	bool Task::hasAndJoinActivityList() const
 	{
-	    const std::set<ActivityList*>& list = getActivityLists();
-	    for ( std::set<ActivityList*>::const_iterator precedence = list.begin(); precedence != list.end(); ++precedence ) {
-		if ( dynamic_cast<AndJoinActivityList *>(*precedence ) ) return true;
-	    }
-	    return false;
+	    return std::any_of( getActivityLists().begin(), getActivityLists().end(), []( const ActivityList* precedence ){ return dynamic_cast<const AndJoinActivityList *>(precedence) != nullptr; } );
 	}
 
 	/* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- [Result Values] -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= */

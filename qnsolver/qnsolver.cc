@@ -1,5 +1,5 @@
 /*
- * $Id: qnsolver.cc 17379 2024-10-16 23:34:31Z greg $
+ * $Id: qnsolver.cc 17614 2025-12-08 23:38:42Z greg $
  */
 
 #include "config.h"
@@ -10,7 +10,10 @@
 #include <cstdlib>
 #include <cstring>
 #include <getopt.h>
+#include <ctype.h>
+#if HAVE_LIBGEN_H
 #include <libgen.h>
+#endif
 #if HAVE_EXPAT_H
 #include <lqio/jmva_document.h>
 #endif
@@ -459,7 +462,7 @@ usage()
 	} else {
 	    s = " ";
 	}
-	if ( isascii(o->val) && isgraph(o->val) ) {
+	if ( (o->val & ~0x7f) == 0 && isgraph(o->val) ) {
 	    std::cerr << " -" << static_cast<char>(o->val) << ", ";
 	} else {
 	    std::cerr << "     ";

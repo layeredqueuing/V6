@@ -1,7 +1,7 @@
 /* -*- c++ -*-
  * model.h	-- Greg Franks
  *
- * $Id: model.h 17535 2025-03-01 13:06:03Z greg $
+ * $Id: model.h 17614 2025-12-08 23:38:42Z greg $
  */
 
 #ifndef _MODEL_H
@@ -9,6 +9,7 @@
 
 #include "lqn2ps.h"
 #include <filesystem>
+#include <array>
 #include <vector>
 #include <set>
 #include <lqio/common_io.h>
@@ -284,9 +285,9 @@ private:
 public:
     static unsigned forwardingCount;
     static unsigned openArrivalCount;
-    static unsigned rendezvousCount[MAX_PHASES+1];
-    static unsigned sendNoReplyCount[MAX_PHASES+1];
-    static unsigned phaseCount[MAX_PHASES+1];
+    static std::array<unsigned,MAX_PHASES+1> rendezvousCount;
+    static std::array<unsigned,MAX_PHASES+1> sendNoReplyCount;
+    static std::array<unsigned,MAX_PHASES+1> phaseCount;
 
 protected:
     std::vector<Layer> _layers;
@@ -301,7 +302,7 @@ protected:
 private:
     static std::vector<std::string> __group_list;	/* group by regex list	*/
     static Model * __model;
-    static Stats stats[];
+    static std::array<Stats,N_STATS> stats;
 
     LQIO::DOM::Document * _document;
     const std::filesystem::path _inputFileName;

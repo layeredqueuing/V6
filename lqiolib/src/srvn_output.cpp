@@ -1,5 +1,5 @@
 /*
- *  $Id: srvn_output.cpp 17535 2025-03-01 13:06:03Z greg $
+ *  $Id: srvn_output.cpp 17614 2025-12-08 23:38:42Z greg $
  *
  * Copyright the Real-Time and Distributed Systems Group,
  * Department of Systems and Computer Engineering,
@@ -68,11 +68,8 @@ namespace LQIO {
     }
 
     SRVN::ForPhase::ForPhase()
-	: _maxPhase(DOM::Phase::MAX_PHASE), _type(DOM::Call::Type::NULL_CALL)
+	: _calls(), _maxPhase(DOM::Phase::MAX_PHASE), _type(DOM::Call::Type::NULL_CALL)
     {
-	for ( unsigned p = 0; p < DOM::Phase::MAX_PHASE; ++p ) {
-	    ia[p] = 0;
-	}
     }
 
     void
@@ -1170,8 +1167,8 @@ namespace LQIO {
         output << "# Invoked as: " << io_vars.lq_command_line << ' ' << DOM::Document::__input_file_name << std::endl
 	       << "# " << DOM::Common_IO::svn_id() << std::endl
 	       << "# " << std::setfill( '-' ) << std::setw( 72 ) << '-' << std::setfill( ' ' ) << std::endl;
-        if ( !_document.getExtraComment().empty() ) {
-            output << "# " << _document.getExtraComment() << std::endl;
+        if ( !_document.getResultComment().empty() ) {
+            output << "# " << _document.getResultComment() << std::endl;
         }
 
         const std::map<std::string,std::string>& pragmas = _document.getPragmaList();
@@ -1380,8 +1377,8 @@ namespace LQIO {
         if ( !comment.empty() ) {
             _output << "Comment: " << comment << newline;
         }
-        if ( !document.getExtraComment().empty() ) {
-            _output << "Other:   " << document.getExtraComment() << newline;
+        if ( !document.getResultComment().empty() ) {
+            _output << "Other:   " << document.getResultComment() << newline;
         }
         if ( document.getSymbolExternalVariableCount() > 0 ) {
             _output << "Variables: ";

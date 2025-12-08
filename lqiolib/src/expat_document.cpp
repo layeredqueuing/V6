@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- * $Id: expat_document.cpp 17535 2025-03-01 13:06:03Z greg $
+ * $Id: expat_document.cpp 17614 2025-12-08 23:38:42Z greg $
  *
  * Read in XML input files.
  *
@@ -420,7 +420,8 @@ namespace LQIO {
 
             if ( strcasecmp( element, Xlqn_model ) == 0 ) {
                 Document::__debugXML = (Document::__debugXML || XML::getBoolAttribute(attributes,Xxml_debug));
-		_document.setResultDescription( XML::getStringAttribute(attributes,Xdescription,"") );
+		_document.setModelName( XML::getStringAttribute(attributes,Xname,"") );
+		_document.setModelDescription( XML::getStringAttribute(attributes,Xdescription,"") );
                 _stack.push( parse_stack_t(element,&Expat_Document::startModelType,nullptr) );
             } else {
                 throw XML::element_error( element );
@@ -2532,8 +2533,8 @@ namespace LQIO {
 	    if ( !LQIO::io_vars.lq_command_line.empty() ) {
 		output << XML::comment( LQIO::io_vars.lq_command_line );
 	    }
-            output << XML::start_element( Xlqn_model ) << XML::attribute( Xname, base_name().string() )
-		   << XML::attribute( Xdescription, _document.getResultDescription() )
+            output << XML::start_element( Xlqn_model ) << XML::attribute( Xname, _document.getModelName() )
+		   << XML::attribute( Xdescription, _document.getModelDescription() )
 		   << " xmlns:xsi=\"" << XMLSchema_instance << "\" xsi:noNamespaceSchemaLocation=\"";
 	
             const char * p = getenv( "LQN_SCHEMA_DIR" );

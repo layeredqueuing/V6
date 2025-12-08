@@ -1,6 +1,6 @@
 /* srvn2eepic.c	-- Greg Franks Sun Jan 26 2003
  *
- * $Id: option.cc 17379 2024-10-16 23:34:31Z greg $
+ * $Id: option.cc 17614 2025-12-08 23:38:42Z greg $
  */
 
 #include "lqn2ps.h"
@@ -26,6 +26,7 @@ bool Flags::exhaustive_toplogical_sort	= false;
 bool Flags::flatten_submodel		= false;
 bool Flags::have_results		= false;
 bool Flags::instantiate			= false;
+bool Flags::normalize_utilization	= false;
 bool Flags::output_coefficient_of_variation = true;
 bool Flags::output_phase_type		= true;
 bool Flags::print_alignment_box		= true;

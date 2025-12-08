@@ -10,7 +10,7 @@
  * January 2001
  *
  * ------------------------------------------------------------------------
- * $Id: task.cc 17379 2024-10-16 23:34:31Z greg $
+ * $Id: task.cc 17614 2025-12-08 23:38:42Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -54,9 +54,6 @@ std::set<Task *,LT<Task> > Task::__tasks;
 std::map<std::string,unsigned> Task::__key_table;		/* For squishName 	*/
 std::map<std::string,std::string> Task::__symbol_table;		/* For rename		*/
 const std::string ReferenceTask::__BCMP_station_name("terminal");	/* No more than 8 characters -- qnap2 limit. */
-
-bool Task::holdingTimePresent           = false;
-bool Task::holdingVariancePresent       = false;
 
 const double Task::JLQNDEF_TASK_BOX_SCALING = 1.2;
 
@@ -114,21 +111,6 @@ Task::~Task()
     std::for_each( activities().begin(), activities().end(), []( Activity * activity ){ delete activity; } );
     std::for_each( precedences().begin(), precedences().end(), []( ActivityList * activitylist ){ delete activitylist; } );
 }
-
-
-
-/*
- * Reset globals.
- */
-
-void
-Task::reset()
-{
-    holdingTimePresent = false;
-    holdingVariancePresent = false;
-}
-
-
 
 /* ------------------------ Instance Methods -------------------------- */
 
@@ -169,17 +151,6 @@ Task::throughput() const
     return dynamic_cast<const LQIO::DOM::Task *>(getDOM())->getResultThroughput();
 }
 
-/* -- */
-
-double
-Task::utilization( const unsigned p ) const
-{
-    assert( 0 < p && p <= LQIO::DOM::Phase::MAX_PHASE );
-
-    return dynamic_cast<const LQIO::DOM::Task *>(getDOM())->getResultPhasePUtilization(p);
-}
-
-
 /* --- */
 
 double
@@ -203,12 +174,11 @@ Task::processorUtilization() const
  */
 
 double
-Task::idleTime() const
+Task::computeThinkTime() const
 {
-    const LQIO::DOM::Task * dom = dynamic_cast<const LQIO::DOM::Task *>(getDOM());
-    const double util = dom->getResultUtilization();
-    const double tput = dom->getResultThroughput();
-    const double n    = static_cast<double>(dom->getCopiesValue());
+    const double util = utilization();
+    const double tput = throughput();
+    const double n    = static_cast<double>(copiesValue());
     return ( util >= n || tput == 0 ) ? 0 : (n - util) / tput;
 }
 
@@ -1057,25 +1027,18 @@ Task::isInClosedModel( const std::vector<Entity *>& servers ) const
 size_t
 Task::findChildren( CallStack& callStack, const unsigned directPath )
 {
-    const size_t depth = std::max( callStack.size(), level() );
-    size_t max_depth = depth;
+    const size_t this_depth = std::max( callStack.size(), level() );
 
-    setLevel( depth ).addPath( directPath );
+    setLevel( this_depth ).addPath( directPath );
 
-    for ( std::set<const Processor *>::const_iterator processor = processors().begin(); processor != processors().end(); ++processor ) {
-	const_cast<Processor *>(*processor)->setLevel( std::max( (*processor)->level(), depth + 1 ) ).addPath( directPath );
-	max_depth = std::max( max_depth, (*processor)->level() );	
-    }
+    size_t max_depth = std::accumulate( processors().begin(), processors().end(), this_depth + 1, [&]( size_t depth, const Processor * processor ) {
+	const_cast<Processor *>(processor)->setLevel( std::max( processor->level(), this_depth + 1 ) ).addPath( directPath );
+	return std::max( depth, processor->level() );
+    } );
 
     const Entry * dstEntry = callStack.back() ? callStack.back()->dstEntry() : nullptr;
-    for ( std::vector<Entry *>::const_iterator entry = entries().begin(); entry != entries().end(); ++entry ) {
-	max_depth = std::max( max_depth,
-			      (*entry)->findChildren( callStack,
-						      (((*entry) == dstEntry) || (*entry)->hasOpenArrivalRate())
-						      ? directPath : 0  ) );
-    }
-
-    return max_depth;
+    return std::accumulate( entries().begin(), entries().end(), max_depth, [&]( size_t depth, const Entry * entry )
+	{ return std::max( depth, entry->findChildren( callStack, ((entry == dstEntry) || entry->hasOpenArrivalRate()) ? directPath : 0  ) ); } );
 }
 
 
@@ -1219,9 +1182,9 @@ Task::create_chain::operator()( const Task * task ) const
 #if 0
 	    think_time = divideLQXExpressions( subtractLQXExpressions( getLQXVariable( dom->getCopies(), 1. ), new LQX::ConstantValueExpression( task->utilization() ) ), 
 					       new LQX::ConstantValueExpression( task->throughput() ) );
-// 	    std::cerr << "Task::create_chain::operator()( " << name << " ): think_time = " << ( task->copiesValue() - task->utilization() ) / task->throughput() << std::endl;
+// 	    std::cerr << "Task::create_chain::operator()( " << name << " ): think_time = " << task->computeThinkTime() << std::endl;
 #endif
-	    think_time = new LQX::ConstantValueExpression( ( task->copiesValue() - task->utilization() ) / task->throughput() );
+	    think_time = new LQX::ConstantValueExpression( task->computeThinkTime() );
 	}
 	_model.insertClosedChain( name, getLQXVariable( dom->getCopies(), 1. ), think_time );
     }
@@ -1626,7 +1589,9 @@ Task::moveTo( const double x, const double y )
 
     if ( Flags::aggregation() == Aggregate::ENTRIES ) {
 	_label->moveTo( bottomCenter() ).moveBy( 0, height() / 2 );
-    } else if ( !queueing_output() ) {
+    } else if ( queueing_output() ) {
+	_label->moveTo( bottomCenter() ).moveBy( 0, height() / 5 );
+    } else {
 
 	/* Move Label -- do after X extent recalculated */
 
@@ -1635,10 +1600,8 @@ Task::moveTo( const double x, const double y )
 	} else if ( _layers.size() ) {
 	    _label->moveTo( topCenter() ).moveBy( 0, -entries().front()->height() - 10 );
 	} else {
-	    _label->moveTo( bottomCenter() ).moveBy( 0, height() / 5 );
+	    _label->moveTo( bottomCenter() ).moveBy( 0, (height() - entries().front()->height()) / 2 );	// Half way from bottom of entry
 	}
-    } else {
-	_label->moveTo( bottomCenter() ).moveBy( 0, height() / 5 );
     }
 
     return *this;
@@ -1806,12 +1769,12 @@ Task::label()
 		labelQueueingNetwork( &Entry::labelQueueingNetworkTaskResponseTime, *_label );
 	    } else if ( throughput() > 0 ) {
 		/* We have results so derive */
-		_label->newLine() << " Z=" << (copiesValue() - utilization()) / throughput();
+		_label->newLine() << " Z=" << computeThinkTime();
 	    } else {
 		labelQueueingNetwork( &Entry::labelQueueingNetworkTaskServiceTime, *_label );
 	    }
 	} else {
-	    if ( Flags::aggregation() == Aggregate::ENTRIES && Flags::print[PRINT_AGGREGATE].opts.value.b ) {
+	    if ( Flags::aggregation() == Aggregate::ENTRIES && Flags::print[TASK_SERVICE_TIME].opts.value.b ) {
 		_label->newLine() << " [" << service_time( *entries().front() ) << ']';
 	    }
 	    if ( hasThinkTime()  ) {
@@ -1837,7 +1800,7 @@ Task::label()
 		_label->newLine() << begin_math();
 		print_goop = true;
 	    }
-	    *_label << _rho() << "=" << opt_pct(utilization());
+	    *_label << _rho() << "=" << opt_pct(Flags::normalize_utilization ? normalizedUtilization() : utilization());
 	    if ( hasBogusUtilization() && Flags::colouring() != Colouring::NONE ) {
 		_label->colour(Graphic::Colour::RED);
 	    }
@@ -2227,16 +2190,16 @@ Task::expandActivities( const Task& src, int replica )
 
 
 LQIO::DOM::Task *
-Task::cloneDOM( const std::string& name, LQIO::DOM::Processor * dom_processor ) const
+Task::cloneDOM( const std::string& name, LQIO::DOM::Processor * processor ) const
 {
-    LQIO::DOM::Task * dom_task = new LQIO::DOM::Task( *dynamic_cast<const LQIO::DOM::Task*>(getDOM()) );
+    LQIO::DOM::Task * task = new LQIO::DOM::Task( *dynamic_cast<const LQIO::DOM::Task*>(getDOM()) );
 
-    dom_task->setName( name );
-    dom_task->setProcessor( dom_processor );
-    const_cast<LQIO::DOM::Document *>(getDOM()->getDocument())->addTaskEntity( dom_task );	    /* Reconnect all of the dom stuff. */
-    dom_processor->addTask( dom_task );
+    task->setName( name );
+    task->setProcessor( processor );
+    const_cast<LQIO::DOM::Document *>(getDOM()->getDocument())->addTaskEntity( task );	    /* Reconnect all of the dom stuff. */
+    processor->addTask( task );
 
-    return dom_task;
+    return task;
 }
 
 
@@ -2270,7 +2233,7 @@ static struct {
 Task&
 Task::replicateTask( LQIO::DOM::DocumentObject ** root )
 {
-    unsigned int replica = 0;
+    unsigned int replica = 0;		// set by baseReplicaName
     std::string root_name = baseReplicaName( replica );
     LQIO::DOM::Task * task = dynamic_cast<LQIO::DOM::Task *>(*root);
     if ( replica == 1 ) {
@@ -2311,7 +2274,7 @@ Task::replicateTask( LQIO::DOM::DocumentObject ** root )
 Task&
 Task::replicateCall() 
 {
-    unsigned int replica = 0;
+    unsigned int replica = 0;		// set by baseReplicaName
     std::string root_name = baseReplicaName( replica );
     if ( replica == 1 ) {
 	std::for_each( activities().begin(), activities().end(), std::mem_fn( &Activity::replicateCall ) );
@@ -2347,7 +2310,7 @@ Task::UpdateFanInOut::updateFanInOut( const std::vector<Call *>& calls ) const
 	const unsigned dst_replicas = dst.getReplicasValue();
 	if ( dst_replicas > src_replicas ) {
 	    double fan_out = static_cast<double>(dst_replicas) / static_cast<double>(src_replicas);
-	    if ( fan_out == rint( fan_out ) ) {
+	    if ( fan_out == std::rint( fan_out ) ) {
 		_src.setFanOutValue( dst.getName(), static_cast<unsigned>(fan_out) );
 	    } else {
 		_src.setFanOutValue( dst.getName(), dst_replicas );
@@ -2355,7 +2318,7 @@ Task::UpdateFanInOut::updateFanInOut( const std::vector<Call *>& calls ) const
 	    }
 	} else if ( src_replicas > dst_replicas ) {
 	    double fan_in = static_cast<double>(src_replicas) / static_cast<double>(dst_replicas);
-	    if ( fan_in == rint( fan_in ) ) {
+	    if ( fan_in == std::rint( fan_in ) ) {
 		dst.setFanInValue( _src.getName(), static_cast<unsigned>(fan_in) );
 	    } else {
 		_src.setFanOutValue( dst.getName(), dst_replicas );
@@ -2392,17 +2355,17 @@ Task::draw( std::ostream& output ) const
 	{ SCHEDULE_UNIFORM,     'u' }
     };
 
-    std::ostringstream aComment;
-    aComment << "Task " << name()
+    std::ostringstream comment;
+    comment << "Task " << name()
 	     << task_scheduling.at( scheduling() )
 	     << " " << entries_of( *this );
     if ( processor() ) {
-	aComment << " " << processor()->name();
+	comment << " " << processor()->name();
     }
 #if defined(BUG_375)
-    aComment << " span=" << span() << ", index=" << index();
+    comment << " span=" << span() << ", index=" << index();
 #endif
-    _node->comment( output, aComment.str() );
+    _node->comment( output, comment.str() );
     _node->fillColour( colour() );
     if ( Flags::colouring() == Colouring::NONE ) {
 	_node->penColour( Graphic::Colour::DEFAULT );			// No colour.
@@ -2440,7 +2403,7 @@ Task::draw( std::ostream& output ) const
     }
     _node->polygon( output, points );
 
-    _label->backgroundColour( colour() ).comment( output, aComment.str() );
+    _label->backgroundColour( colour() ).comment( output, comment.str() );
     output << *_label;
 
     if ( Flags::aggregation() != Aggregate::ENTRIES ) {
@@ -2465,11 +2428,11 @@ Task::draw( std::ostream& output ) const
 std::ostream&
 Task::drawClient( std::ostream& output, const bool is_in_open_model, const bool is_in_closed_model ) const
 {
-    std::string aComment;
-    aComment += "========== ";
-    aComment += name();
-    aComment += " ==========";
-    _node->comment( output, aComment );
+    std::string comment;
+    comment += "========== ";
+    comment += name();
+    comment += " ==========";
+    _node->comment( output, comment );
     _node->penColour( colour() == Graphic::Colour::GREY_10 ? Graphic::Colour::BLACK : colour() ).fillColour( colour() );
 
     _label->moveTo( bottomCenter() )
@@ -2520,12 +2483,12 @@ ReferenceTask::ReferenceTask( const LQIO::DOM::Task* dom, const Processor * proc
 ReferenceTask *
 ReferenceTask::clone( unsigned int replica, const std::string& name, const Processor * processor, const Share * share ) const
 {
-    LQIO::DOM::Task * dom_task = cloneDOM( name, const_cast<LQIO::DOM::Processor *>(dynamic_cast<const LQIO::DOM::Processor *>(processor->getDOM()) ) );
+    LQIO::DOM::Task * task = cloneDOM( name, const_cast<LQIO::DOM::Processor *>(dynamic_cast<const LQIO::DOM::Processor *>(processor->getDOM()) ) );
 
 //	.setGroup( share->getDOM() );
 
     std::vector<Entry *> entries;
-    return new ReferenceTask( dom_task, processor, share, groupEntries( replica, entries ) );
+    return new ReferenceTask( task, processor, share, groupEntries( replica, entries ) );
 }
 
 
@@ -2552,7 +2515,7 @@ ReferenceTask::hasBogusUtilization() const
 {
     if ( !Flags::have_results ) return false;
 
-    const double u = utilization() / copiesValue();
+    const double u = normalizedUtilization();
     const double z = dynamic_cast<const LQIO::DOM::Task *>(getDOM())->getThinkTimeValue();
     return (z == 0. && u < 0.99) || 1.01 < u;
 }
@@ -2647,12 +2610,12 @@ ServerTask::ServerTask( const LQIO::DOM::Task* dom, const Processor * processor,
 ServerTask*
 ServerTask::clone( unsigned int replica, const std::string& name, const Processor * processor, const Share * share ) const
 {
-    LQIO::DOM::Task * dom_task = cloneDOM( name, const_cast<LQIO::DOM::Processor *>(dynamic_cast<const LQIO::DOM::Processor *>(processor->getDOM()) ) );
+    LQIO::DOM::Task * task = cloneDOM( name, const_cast<LQIO::DOM::Processor *>(dynamic_cast<const LQIO::DOM::Processor *>(processor->getDOM()) ) );
 
 //	.setGroup( share->getDOM() );
 
     std::vector<Entry *> entries;
-    return new ServerTask( dom_task, processor, share, groupEntries( replica, entries ) );
+    return new ServerTask( task, processor, share, groupEntries( replica, entries ) );
 }
 
 
@@ -2685,10 +2648,10 @@ SemaphoreTask::SemaphoreTask( const LQIO::DOM::Task* dom, const Processor * proc
 SemaphoreTask*
 SemaphoreTask::clone( unsigned int replica, const std::string& name, const Processor * processor, const Share * share ) const
 {
-    LQIO::DOM::Task * dom_task = cloneDOM( name, const_cast<LQIO::DOM::Processor *>(dynamic_cast<const LQIO::DOM::Processor *>(processor->getDOM()) ) );
+    LQIO::DOM::Task * task = cloneDOM( name, const_cast<LQIO::DOM::Processor *>(dynamic_cast<const LQIO::DOM::Processor *>(processor->getDOM()) ) );
 
     std::vector<Entry *> entries;
-    return new SemaphoreTask( dom_task, processor, share, groupEntries( replica, entries ) );
+    return new SemaphoreTask( task, processor, share, groupEntries( replica, entries ) );
 }
 
 
@@ -2703,10 +2666,10 @@ RWLockTask::RWLockTask( const LQIO::DOM::Task* dom, const Processor * processor,
 RWLockTask*
 RWLockTask::clone( unsigned int replica, const std::string& name, const Processor * processor, const Share * share ) const
 {
-    LQIO::DOM::Task * dom_task = cloneDOM( name, const_cast<LQIO::DOM::Processor *>(dynamic_cast<const LQIO::DOM::Processor *>(processor->getDOM()) ) );
+    LQIO::DOM::Task * task = cloneDOM( name, const_cast<LQIO::DOM::Processor *>(dynamic_cast<const LQIO::DOM::Processor *>(processor->getDOM()) ) );
 
     std::vector<Entry *> entries;
-    return new RWLockTask( dom_task, processor, share, groupEntries( replica, entries ) );
+    return new RWLockTask( task, processor, share, groupEntries( replica, entries ) );
 }
 
 

@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: model.cc 17349 2024-10-09 19:00:02Z greg $
+ * $Id: model.cc 17614 2025-12-08 23:38:42Z greg $
  *
  * Command line processing.
  *
@@ -42,11 +42,12 @@
 
 const std::map<Model::Result::Type,Model::Result::result_fields> Model::Result::__results =
 {
+    { Model::Result::Type::NONE,		       { Model::Object::Type::NONE,          "",            "",     nullptr } },
     { Model::Result::Type::ACTIVITY_DEMAND,            { Model::Object::Type::ACTIVITY,      "Demand",      "demd", &LQIO::DOM::DocumentObject::getServiceTimeValue          } },
     { Model::Result::Type::ACTIVITY_PROCESSOR_WAITING, { Model::Object::Type::ACTIVITY,      "Waiting",     "wait", &LQIO::DOM::DocumentObject::getResultProcessorWaiting    } },
     { Model::Result::Type::ACTIVITY_PR_RQST_LOST,      { Model::Object::Type::ACTIVITY_CALL, "Drop Prob",   "pdrp", &LQIO::DOM::DocumentObject::getResultDropProbability     } },
     { Model::Result::Type::ACTIVITY_PR_SVC_EXCD,       { Model::Object::Type::ACTIVITY,      "Pr. Exceed",  "pxcd", &LQIO::DOM::DocumentObject::getResultMaxServiceTimeExceeded } },
-    { Model::Result::Type::ACTIVITY_REQUEST_RATE,      { Model::Object::Type::ACTIVITY_CALL, "Request",     "requ", &LQIO::DOM::DocumentObject::getCallMeanValue             } },
+    { Model::Result::Type::ACTIVITY_CALLS,             { Model::Object::Type::ACTIVITY_CALL, "Calls",       "call", &LQIO::DOM::DocumentObject::getCallMeanValue             } },
     { Model::Result::Type::ACTIVITY_SERVICE,           { Model::Object::Type::ACTIVITY,      "Service",     "serv", &LQIO::DOM::DocumentObject::getResultServiceTime         } },
     { Model::Result::Type::ACTIVITY_THROUGHPUT,        { Model::Object::Type::ACTIVITY,      "Throughput",  "tput", &LQIO::DOM::DocumentObject::getResultThroughput          } },
     { Model::Result::Type::ACTIVITY_VARIANCE,          { Model::Object::Type::ACTIVITY,      "Variance",    "vari", &LQIO::DOM::DocumentObject::getResultServiceTimeVariance } },
@@ -57,37 +58,47 @@ const std::map<Model::Result::Type,Model::Result::result_fields> Model::Result::
     { Model::Result::Type::HOLD_TIMES,                 { Model::Object::Type::JOIN,          "Hold Time",   "hold", &LQIO::DOM::DocumentObject::getResultHoldingTime         } },
     { Model::Result::Type::JOIN_DELAYS,                { Model::Object::Type::JOIN,          "Join Delay",  "join", &LQIO::DOM::DocumentObject::getResultJoinDelay           } },
     { Model::Result::Type::MARGINAL_PROBABILITIES,     { Model::Object::Type::ENTITY,        "Probability", "prob", nullptr } },
-    { Model::Result::Type::MVA_STEPS,                  { Model::Object::Type::DOCUMENT,      "step()",      "step", nullptr } },
+    { Model::Result::Type::MVA_STEPS,                  { Model::Object::Type::SOLVER,        "step()",      "step", nullptr } },
+    { Model::Result::Type::MVA_WAITS,                  { Model::Object::Type::SOLVER,        "wait()",      "wait", nullptr } },
     { Model::Result::Type::OPEN_ARRIVAL_RATE,          { Model::Object::Type::ENTRY,         "Rate",        "rate", &LQIO::DOM::DocumentObject::getOpenArrivalRateValue      } },
     { Model::Result::Type::OPEN_ARRIVAL_WAIT,          { Model::Object::Type::ENTRY,         "Waiting",     "wait", &LQIO::DOM::DocumentObject::getResultWaitingTime         } },
     { Model::Result::Type::PHASE_DEMAND,               { Model::Object::Type::PHASE,         "Demand",      "demd", &LQIO::DOM::DocumentObject::getServiceTimeValue          } },
     { Model::Result::Type::PHASE_PROCESSOR_WAITING,    { Model::Object::Type::PHASE,         "Waiting",     "wait", &LQIO::DOM::DocumentObject::getResultProcessorWaiting    } },
     { Model::Result::Type::PHASE_PR_RQST_LOST,         { Model::Object::Type::PHASE_CALL,    "Drop Prob",   "pdrp", &LQIO::DOM::DocumentObject::getResultDropProbability     } },
     { Model::Result::Type::PHASE_PR_SVC_EXCD,          { Model::Object::Type::PHASE,         "Pr. Exceed",  "pxcd", &LQIO::DOM::DocumentObject::getResultMaxServiceTimeExceeded } },
-    { Model::Result::Type::PHASE_REQUEST_RATE,         { Model::Object::Type::PHASE_CALL,    "Request",     "reqs", &LQIO::DOM::DocumentObject::getCallMeanValue             } },
+    { Model::Result::Type::PHASE_CALLS,                { Model::Object::Type::PHASE_CALL,    "Calls",       "call", &LQIO::DOM::DocumentObject::getCallMeanValue             } },
     { Model::Result::Type::PHASE_SERVICE,              { Model::Object::Type::PHASE,         "Service",     "serv", &LQIO::DOM::DocumentObject::getResultServiceTime         } },
     { Model::Result::Type::PHASE_VARIANCE,             { Model::Object::Type::PHASE,         "Variance",    "vari", &LQIO::DOM::DocumentObject::getResultVarianceServiceTime } },
     { Model::Result::Type::PHASE_WAITING,              { Model::Object::Type::PHASE_CALL,    "Waiting",     "wait", &LQIO::DOM::DocumentObject::getResultWaitingTime         } },
     { Model::Result::Type::PROCESSOR_MULTIPLICITY,     { Model::Object::Type::PROCESSOR,     "Copies",      "mult", &LQIO::DOM::DocumentObject::getCopiesValueAsDouble       } },
+    { Model::Result::Type::PROCESSOR_REPLICATION,      { Model::Object::Type::PROCESSOR,     "Replicas",    "repl", &LQIO::DOM::DocumentObject::getReplicasValueAsDouble     } },
     { Model::Result::Type::PROCESSOR_UTILIZATION,      { Model::Object::Type::PROCESSOR,     "Utilization", "util", &LQIO::DOM::DocumentObject::getResultUtilization         } },
     { Model::Result::Type::SOLVER_VERSION,	       { Model::Object::Type::DOCUMENT,      "Version",     "vrsn", nullptr } },
     { Model::Result::Type::TASK_MULTIPLICITY,          { Model::Object::Type::TASK,          "Copies",      "mult", &LQIO::DOM::DocumentObject::getCopiesValueAsDouble       } },
+    { Model::Result::Type::TASK_REPLICATION,           { Model::Object::Type::TASK,          "Replicas",    "repl", &LQIO::DOM::DocumentObject::getReplicasValueAsDouble     } },
     { Model::Result::Type::TASK_THINK_TIME,            { Model::Object::Type::TASK,          "Think Time",  "thnk", &LQIO::DOM::DocumentObject::getThinkTimeValue            } },
     { Model::Result::Type::TASK_THROUGHPUT,            { Model::Object::Type::TASK,          "Throughput",  "tput", &LQIO::DOM::DocumentObject::getResultThroughput          } },
     { Model::Result::Type::TASK_UTILIZATION,           { Model::Object::Type::TASK,          "Utilization", "util", &LQIO::DOM::DocumentObject::getResultUtilization         } },
     { Model::Result::Type::THROUGHPUT_BOUND,           { Model::Object::Type::ENTRY,         "Bound",       "bond", &LQIO::DOM::DocumentObject::getResultThroughputBound     } }
 };
 
-const std::map<Model::Result::Type,Model::Result::sfptr> Model::Result::__document_results =
+const std::map<Model::Result::Type,Model::Result::sfptr> Model::Result::__document_results =		/* Returns a string */
 {
-    { Model::Result::Type::MVA_STEPS,                  nullptr },		/* Returns a double */
     { Model::Result::Type::COMMENT,		       &LQIO::DOM::Document::getModelComment },
     { Model::Result::Type::SOLVER_VERSION,	       &LQIO::DOM::Document::getResultSolverInformation }
 };
 
+const std::map<Model::Result::Type,Model::Result::dfptr> Model::Result::__solver_results =		/* Returns a double */
+{
+    { Model::Result::Type::MVA_STEPS,                  &LQIO::DOM::Document::getResultMVAStep },
+    { Model::Result::Type::MVA_WAITS,                  &LQIO::DOM::Document::getResultMVAWait }
+};
+
 const std::map<const Model::Object::Type,const std::pair<const std::string,const std::string>> Model::Object::__object_type = {
+    { Model::Object::Type::NONE,      { "",          ""      } },
     { Model::Object::Type::ACTIVITY,  { "Activity",  "Act"   } },
     { Model::Object::Type::DOCUMENT,  { "Document",  "Doc"   } },
+    { Model::Object::Type::SOLVER,    { "Solver",    "MVA"   } },
     { Model::Object::Type::ENTITY,    { "Entity",    "Ta/Pr" } },
     { Model::Object::Type::ENTRY,     { "Entry",     "Entry" } },
     { Model::Object::Type::JOIN,      { "Join",      "Join"  } },
@@ -95,29 +106,35 @@ const std::map<const Model::Object::Type,const std::pair<const std::string,const
     { Model::Object::Type::PROCESSOR, { "Processor", "Proc"  } },
     { Model::Object::Type::TASK,      { "Task",      "Task"  } }
 };
+
+Model::Value::Value( const std::filesystem::path& path ) : _type(Type::PATHNAME)
+{
+    _u._string = strdup( path.c_str() );
+}
 
-
-Model::Output& Model::Output::operator=( const Output& src )
+Model::Value& Model::Value::operator=( const Value& src )
 {
     std::memcpy( reinterpret_cast<char *>(this), reinterpret_cast<const char *>(&src), sizeof( *this ) );
     return *this;
 }
 
-bool Model::Output::operator!=( const Output& dst ) const
+bool Model::Value::operator!=( const Value& dst ) const
 {
     return std::memcmp( reinterpret_cast<const char *>(this), reinterpret_cast<const char *>(&dst), sizeof( *this ) ) != 0;
 }
-
+
 bool Model::Result::isIndependentVariable( Model::Result::Type type )
 {
     static const std::set<Result::Type> independent = {
 	Type::ACTIVITY_DEMAND,
-	Type::ACTIVITY_REQUEST_RATE,
+	Type::ACTIVITY_CALLS,
 	Type::OPEN_ARRIVAL_RATE,
 	Type::PHASE_DEMAND,
-	Type::PHASE_REQUEST_RATE,
+	Type::PHASE_CALLS,
 	Type::PROCESSOR_MULTIPLICITY,
+	Type::PROCESSOR_REPLICATION,
 	Type::TASK_MULTIPLICITY,
+	Type::TASK_REPLICATION,
 	Type::TASK_THINK_TIME };
 
     return independent.find( type ) != independent.end();
@@ -128,117 +145,83 @@ bool Model::Result::isDependentVariable( Model::Result::Type type )
     return type != Type::NONE && !isIndependentVariable( type );
 }
 
-void Model::Result::printHeader( std::ostream& output, const std::string& name, const std::vector<Model::Result::result_t>& results, Result::get_field f, size_t header_column_width )
+void Model::Result::insertHeader( std::vector<std::vector<Model::Value>>& data, const std::string& name, const std::vector<Model::Result::result_t>& results, Result::get_field f )
 {
-    if ( width == 0 ) {
-	output << "\"" << name << "\"";
-    } else {
-	const std::ios_base::fmtflags flags = output.setf( std::ios::left, std::ios::adjustfield );
-	output << std::setw( header_column_width ) << name;
-	output.flags(flags);
-    }
-    std::for_each( results.begin(), results.end(), Model::PrintHeader( output, f ) );
-    output << std::endl;
-}
-
-
-void
-Model::PrintHeader::operator()( const std::pair<std::string,Model::Result::Type>& result ) const
-{
-    if ( width == 0 ) {
-	_output << ",\"" << (*_f)( result ) << "\"";
-    } else {
-	_output << " " << std::setw( width-1 ) << (*_f)( result );
-    }
+    data.emplace_back( std::vector<Model::Value>() );
+    std::vector<Model::Value>& row = data.back();
+    row.emplace_back( std::filesystem::path( data.size() == 1 ? "Model" : " " ));
+    std::for_each( results.begin(), results.end(), Model::InsertHeader( row, f ) );
 }
 
 /*
  * Load a file then extract results using Model::Result::operator().
  */
 
-void Model::Process::operator()( const std::string& pathname )
+void Model::Process::operator()( const std::filesystem::path& pathname )
 {
-    if ( _limit > 0 && _i >= _limit ) return;
+    if ( _limit > 0 && _model_no >= _limit ) return;
     
     /* Load results */
     unsigned int error_code = 0;
     LQIO::DOM::Document * dom = LQIO::DOM::Document::load( pathname, LQIO::DOM::Document::InputFormat::AUTOMATIC, error_code, true );
     if ( !dom ) {
-	throw std::runtime_error( "Input model was not loaded successfully." );
+	throw std::runtime_error( std::string(pathname) + ": not loaded successfully." );
     }
-    _i += 1;
+    _model_no += 1;
+    _data.emplace_back( std::vector<Model::Value>() );
+    std::vector<Model::Value>& row = _data.back();
+
+    switch ( _mode ) {
+    case Mode::DIRECTORY:	row.emplace_back( _model_no ); break;		// File (record) number
+    case Mode::DIRECTORY_ONLY:	row.emplace_back( pathname.parent_path() ); break;
+    case Mode::FILENAME_ONLY:	row.emplace_back( pathname.stem() ); break;
+    case Mode::EXTENSION_ONLY:	row.emplace_back( pathname.extension() ); break;
+    default: 			row.emplace_back( pathname ); break;
+    }
 
     /* Extract into vector of doubles */
 
-    std::vector<Model::Output> data;
-    data = std::accumulate( _results.begin(), _results.end(), data, Model::Result( *dom ) );
+    row = std::accumulate( _results.begin(), _results.end(), row, Model::Result( *dom ) );
 
     /* We now have a vector of doubles */
     /* if splot, and data.x2 changes, then output newline if not first record */
 
-    if ( x_index() != 0 && x_value() != data.at( x_index() ) ) {
-	set_x_value( data.at( x_index() ) );
-	if ( _i != 1 ) {
-	    _output << std::endl;
+    if ( x_index() != 0 && x_value() != row.at( x_index() ) ) {
+	set_x_value( row.at( x_index() ) );
+	if ( _model_no != 1 ) {
+	    _data.emplace_back( std::vector<Model::Value>() );
 	}
     }
-
-
-    if ( _mode == Mode::DIRECTORY ) {
-	_output << _i;				// File (record) number
-    } else if ( _mode == Mode::FILENAME_STRIP ) {
-	const std::string dirname = pathname.substr( 0, pathname.find_last_of( "/" ) );
-	print_filename( dirname );		// Directory name
-    } else if ( _mode == Mode::DIRECTORY_STRIP ) {
-	const std::string filename = pathname.substr(pathname.find_last_of( "/" ) + 1);
-	print_filename( filename );		// File name
-    } else {
-	print_filename( pathname );
-    }
-
-    std::for_each( data.begin(), data.end(), Model::PrintLine( _output ) );
-
-    _output << std::endl;
-}
-
-
-void
-Model::Process::print_filename( const std::string& filename ) const
-{
-    const std::ios_base::fmtflags flags = _output.setf( std::ios::left, std::ios::adjustfield );
-    if ( width != 0 ) {
-	_output << std::setw(_header_column_width) << filename;
-    } else {
-	_output << "\"" << filename << "\"";
-    }
-    _output.flags(flags);
 }
 
 /*
  * Get the value of the result and append it to the string "in" (fold operation for std::accumulate).
  */
 
-std::vector<Model::Output>
-Model::Result::operator()( const std::vector<Model::Output>& in, const std::pair<std::string,Model::Result::Type>& arg ) const
+std::vector<Model::Value>
+Model::Result::operator()( const std::vector<Model::Value>& in, const std::pair<std::string,Model::Result::Type>& arg ) const
 {
     const Model::Result::result_fields& result = __results.at( arg.second );
-    std::vector<Model::Output> out = in;
+    std::vector<Model::Value> out = in;
 
     if ( result.type == Model::Object::Type::DOCUMENT ) {
 	const Model::Result::sfptr f = __document_results.at( arg.second );
-	if ( f != nullptr ) {
-	    out.emplace_back( Model::Output( ((_dom.*f)()).c_str() ) );
-	} else {
-	    out.emplace_back( Model::Output( dom().getResultMVAStep() ) );
-	}
+	out.emplace_back( ((_dom.*f)()).c_str() );
+
+    } else if ( result.type == Model::Object::Type::SOLVER ) {
+	const Model::Result::dfptr f = __solver_results.at( arg.second );
+	out.emplace_back( (dom().*f)() );
 	
+    } else if ( result.type == Model::Object::Type::NONE ) {
+	out.emplace_back( "" );
+
     } else {
 	const LQIO::DOM::DocumentObject * object = findObject( arg.first, result.type );
 
 	if ( object == nullptr ) {
-	    out.emplace_back( Model::Output( std::numeric_limits<double>::quiet_NaN() ) );
+	    out.emplace_back( std::numeric_limits<double>::quiet_NaN() );
 	} else if ( result.f != nullptr ) {
-	    out.emplace_back( Model::Output( (object->*(result.f))() ) );		/* Invoke function to find value	*/
+	    out.emplace_back( (object->*(result.f))() );		/* Invoke function to find value	*/
 	} else if ( arg.second == Result::Type::MARGINAL_PROBABILITIES && dynamic_cast<const LQIO::DOM::Entity *>(object) != nullptr ) {
 	    const std::vector<double>& marginals = dynamic_cast<const LQIO::DOM::Entity *>(object)->getResultMarginalQueueProbabilities();
 	    copy(marginals.begin(), marginals.end(), back_inserter( out ));
@@ -397,31 +380,4 @@ Model::Result::getTypeName( const std::pair<std::string,Model::Result::Type>& re
 {
     if ( precision == 0 || 5 < precision ) return __results.at(result.second).name;
     else return __results.at(result.second).abbreviation;
-}
-
-/* Output an item, separated by commas. */
-
-void
-Model::PrintLine::operator()( const Model::Output& item ) const
-{
-    if ( width == 0 ) {
-	_output << ",";
-    } else {
-	_output << " ";
-	_output.width( width-1 );
-    }
-
-    if ( precision > 0 ) {
-	_output.precision(precision);
-    } 
-    _output << item;
-}
-
-
-std::ostream& Model::operator<<( std::ostream& output, const Model::Output& item )
-{
-    if ( item._type == Model::Output::Type::DOUBLE && !std::isnan( item._u._double ) ) output << item._u._double;
-    else if ( item._type == Model::Output::Type::STRING && item._u._string != nullptr ) output << "\"" << item._u._string << "\"";
-    else output << "NULL";
-    return output;
 }

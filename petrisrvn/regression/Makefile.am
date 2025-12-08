@@ -2,7 +2,7 @@
 # Copyright (C) 2005 Greg Franks <greg@sce.carleton.ca>
 #
 # ------------------------------------------------------------------------
-# $Id: Makefile.am 17409 2024-10-31 13:27:39Z greg $
+# $Id: Makefile.am 17614 2025-12-08 23:38:42Z greg $
 # ------------------------------------------------------------------------
 
 
@@ -45,6 +45,7 @@ ACT=	40-activities.lqxo \
 	46-activities.lqxo 
 REPL=	50-replication.lqxo \
 	52-replication.lqxo \
+	53-replication.lqxo \
 	55-replication.lqxo \
 	56-replication.lqxo 
 SEMA =  60-semaphore.lqxo \
@@ -139,6 +140,14 @@ other:	$(OTHER)
 	$(SRVN) $(OPTS) $*-flat.lqnx
 	@lqn2ps -Oxml -o$*.lqxo --merge-replicas $*-flat.lqxo
 	@rm $*-flat.*
+	@srvndiff $(DIFFOPTS) $@ ../../models/regression/petri-results/$@
+
+53-replication.lqxo:	53-replication.lqnx
+	@lqn2ps --run-lqx -Oxml -o$*.temp $<	# instantiate variables
+	@rep2flat -Oxml -o$*-flat.lqnx $*.temp
+	$(SRVN) $(OPTS) $*-flat.lqnx
+	@lqn2ps -Oxml -o$*.lqxo --merge-replicas $*-flat.lqxo
+	@rm $*-flat.* $*.temp
 	@srvndiff $(DIFFOPTS) $@ ../../models/regression/petri-results/$@
 
 55-replication.lqxo:	55-replication.lqnx

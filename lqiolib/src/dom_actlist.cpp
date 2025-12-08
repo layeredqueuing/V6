@@ -1,5 +1,5 @@
 /*
- *  $Id: dom_actlist.cpp 17354 2024-10-10 13:04:51Z greg $
+ *  $Id: dom_actlist.cpp 17614 2025-12-08 23:38:42Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -223,11 +223,11 @@ namespace LQIO {
 	    : ActivityList(src.getDocument(),src.getTask(),src.getListType()), 
 	      _quorum(src.getQuorumCount()), 
 	      _histogram(nullptr),
-	      _resultJoinDelay(0.0),
-	      _resultJoinDelayVariance(0.0),
-	      _hasResultVarianceJoinDelay(false),
-	      _resultVarianceJoinDelay(0.0),
-	      _resultVarianceJoinDelayVariance(0.0)
+	      _resultJoinDelay(src._resultJoinDelay),
+	      _resultJoinDelayVariance(src._resultJoinDelayVariance),
+	      _hasResultVarianceJoinDelay(src._hasResultVarianceJoinDelay),
+	      _resultVarianceJoinDelay(src._resultVarianceJoinDelay),
+	      _resultVarianceJoinDelayVariance(src._resultVarianceJoinDelayVariance)
 	{
 	}
 	

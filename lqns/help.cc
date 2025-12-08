@@ -1,6 +1,6 @@
 /* help.cc	-- Greg Franks Wed Oct 12 2005
  *
- * $Id: help.cc 17464 2024-11-13 12:55:06Z greg $
+ * $Id: help.cc 17550 2025-10-23 16:41:01Z greg $
  */
 
 #include "lqns.h"
@@ -763,7 +763,7 @@ Help::flagExactMVA( std::ostream& output, bool verbose ) const
 std::ostream&
 Help::flagFast( std::ostream& output, bool verbose ) const
 {
-    output << "This option is used to set options for quick solution of a model using One-Step (Bard-Schweitzer) MVA."  << std::endl
+    output << "This option is used to set options for quick solution of a model using One-Step-Linearizer MVA."  << std::endl
 	   << "It is equivalent to setting " << bold( *this, "pragma" )
 	   << " "  << emph( *this, LQIO::DOM::Pragma::_mva_ ) << "=" << emph( *this, LQIO::DOM::Pragma::_one_step_ )
 	   << ", " << emph( *this, LQIO::DOM::Pragma::_layering_ ) << "=" << emph( *this, LQIO::DOM::Pragma::_batched_ )
@@ -2308,7 +2308,7 @@ HelpTroff::preamble( std::ostream& output ) const
     output << __comment << " t -*- nroff -*-" << std::endl
 	   << ".TH lqns 1 \"" << date << "\" \"" << VERSION << "\"" << std::endl;
 
-    output << __comment << " $Id: help.cc 17464 2024-11-13 12:55:06Z greg $" << std::endl
+    output << __comment << " $Id: help.cc 17550 2025-10-23 16:41:01Z greg $" << std::endl
 	   << __comment << std::endl
 	   << __comment << " --------------------------------" << std::endl;
 
@@ -2607,7 +2607,7 @@ HelpLaTeX::preamble( std::ostream& output ) const
 	   << __comment << " Created:             " << date << std::endl
 	   << __comment << "" << std::endl
 	   << __comment << " ----------------------------------------------------------------------" << std::endl
-	   << __comment << " $Id: help.cc 17464 2024-11-13 12:55:06Z greg $" << std::endl
+	   << __comment << " $Id: help.cc 17550 2025-10-23 16:41:01Z greg $" << std::endl
 	   << __comment << " ----------------------------------------------------------------------" << std::endl << std::endl;
 
     output << "\\chapter{Invoking the Analytic Solver ``lqns''}" << std::endl

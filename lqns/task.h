@@ -1,5 +1,5 @@
 /* -*- c++ -*-
-< * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk-V6/lqns/task.h $
+ * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk-V6/lqns/task.h $
  *
  * Tasks.
  *
@@ -10,7 +10,7 @@
  * November, 1994
  * May 2009.
  *
- * $Id: task.h 17535 2025-03-01 13:06:03Z greg $
+ * $Id: task.h 17550 2025-10-23 16:41:01Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -346,6 +346,8 @@ public:
     
     virtual void initializeClient();
     virtual void reinitializeClient();
+
+    virtual void setSubmodel( const unsigned submodel );
 
     virtual bool check() const;
     virtual void recalculateDynamicValues();

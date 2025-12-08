@@ -8,7 +8,7 @@
 /************************************************************************/
 
 /*
- * $Id: petrisrvn.cc 17409 2024-10-31 13:27:39Z greg $
+ * $Id: petrisrvn.cc 17614 2025-12-08 23:38:42Z greg $
  *
  * Generate a Petri-net from an SRVN description.
  *
@@ -20,6 +20,9 @@
 #include <cstring>
 #include <cassert>
 #include <errno.h>
+#if HAVE_LIBGEN_H
+#include <libgen.h>
+#endif
 #if HAVE_SYS_STAT_H
 #include <sys/stat.h>
 #endif
@@ -27,18 +30,9 @@
 #include <unistd.h>
 #endif
 #include <signal.h>
-#if HAVE_FENV_H
-#include <fenv.h>
-#elif HAVE_IEEEFP_H && !defined(MSDOS)
-#include <ieeefp.h>
-#endif
-#if HAVE_FLOAT_H
-#include <float.h>
-#endif
 #if HAVE_GETOPT_H
 #include <getopt.h>
 #endif
-#include <libgen.h>
 #include <lqio/commandline.h>
 #include <lqio/dom_document.h>
 #include <lqio/error.h>
@@ -53,6 +47,8 @@
 #include "errmsg.h"
 #include "model.h"
 #include "pragma.h"
+
+#pragma STDC FENV_ACCESS ON
 
 static bool copyright_flag	= false; /* Print copyright notice	*/
 
@@ -72,7 +68,6 @@ bool simplify_network		= false; /* Delete single place procs.  */
 double	x_scaling		= 1.0;	 /* Auto-squish if val == 0.	*/
 
 static const char * net_dir_name	= "nets";
-static void my_handler (int);
 
 /*
  * Command options.
@@ -196,13 +191,6 @@ main(int argc, char *argv[])
     inter_proc_delay = 0.0;
     comm_delay_flag  = false;
 #endif
-
-#if defined(HAVE_FENV_H) && defined(HAVE_FEENABLEEXCEPT)
-    feenableexcept( FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW );
-#elif  defined(HAVE_IEEEFP_H) && defined(HAVE_FPSETMASK)
-    fpsetmask( FP_X_INV | FP_X_DZ | FP_X_OFL );
-#endif
-    signal(SIGFPE, my_handler);
 
     pragmas.insert( getenv( "PETRISRVN_PRAGMAS" ) );
 
@@ -356,6 +344,7 @@ main(int argc, char *argv[])
 	    break;
 
 	case 'w':
+	    LQIO::io_vars.severity_level = LQIO::error_severity::ERROR;
 	    pragmas.insert(LQIO::DOM::Pragma::_severity_level_,LQIO::DOM::Pragma::_run_time_);
 	    break;
 
@@ -489,15 +478,4 @@ usage (void)
     }
     fprintf( stderr, " [file ...]\n" );
 #endif
-}
-
-
-/*
- * signal handler for fp errors.
- */
-
-static void
-my_handler (int sig )
-{
-    abort();
 }

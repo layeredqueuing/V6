@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: entity.h 17211 2024-05-13 22:13:11Z greg $
+ * $Id: entity.h 17550 2025-10-23 16:41:01Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -130,7 +130,7 @@ public:
     virtual unsigned int population() const { return copies(); }
     virtual const Processor * getProcessor() const { return nullptr; }
     unsigned submodel() const { return _submodel; }
-    Entity& setSubmodel( const unsigned submodel ) { _submodel = submodel; return *this; }
+    virtual void setSubmodel( const unsigned submodel ) { _submodel = submodel; }
     virtual double thinkTime( const unsigned = 0, const unsigned = 0 ) const { return _thinkTime; }
     virtual Entity& setOverlapFactor( const double ) { return *this; }
     unsigned getReplicaNumber() const { return _replica_number; }

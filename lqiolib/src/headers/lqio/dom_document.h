@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- *  $Id: dom_document.h 17535 2025-03-01 13:06:03Z greg $
+ *  $Id: dom_document.h 17614 2025-12-08 23:38:42Z greg $
  *
  *  Created by Martin Mroz on 24/02/09.
  *  Copyright 2009 __MyCompanyName__. All rights reserved.
@@ -127,8 +127,11 @@ namespace LQIO {
 	    void clearPragmaList();
 
 	    /* Model Parameters */
-	    const std::string& getExtraComment() const;
-	    Document& setExtraComment( const std::string& );
+	    const std::string& getModelName() const { return _modelName; }
+	    Document& setModelName( const std::string& name ) { _modelName = name; return *this; }
+	    const std::string& getModelDescription() const { return _modelDescription; }
+	    Document& setModelDescription();
+	    Document& setModelDescription( const std::string& resultDescription );
 	    const std::string& getModelComment() const;
 	    Document& setModelComment( const std::string& );
 	    const ExternalVariable * getModelConvergence() const { return get( XConvergence );	}
@@ -167,9 +170,6 @@ namespace LQIO {
 	    Document& setResultValid(bool resultValid);
 	    unsigned int getResultInvocationNumber() const { return _resultInvocationNumber; }
 	    Document& setResultInvocationNumber( const unsigned int resultInvocationNumber ) { _resultInvocationNumber = resultInvocationNumber; return *this; }
-	    const std::string& getResultDescription() const { return _resultDescription; }
-	    Document& setResultDescription();
-	    Document& setResultDescription( const std::string& resultDescription );
 	    double getResultConvergenceValue() const { return _resultConvergenceValue; }
 	    Document& setResultConvergenceValue(double resultConvergenceValue);
 	    unsigned int getResultIterations() const { return _resultIterations; }
@@ -183,6 +183,8 @@ namespace LQIO {
 	    const std::string& getResultSolverInformation() const { return _resultSolverInformation; }
 	    Document& setResultSolverInformation();
 	    Document& setResultSolverInformation(const std::string& resultSolverInformation );
+	    const std::string& getResultComment() const;
+	    Document& setResultComment( const std::string& );
 	    double getResultElapsedTime() const { return _resultElapsedTime; }
 	    Document& setResultElapsedTime(double resultElapsedTime);
 	    double getResultSysTime() const { return _resultSysTime; }
@@ -266,8 +268,9 @@ namespace LQIO {
 
 	private:
 	    /* Parameter Information */
+	    std::string _modelName;
+	    std::string _modelDescription;
 	    std::string _modelComment;
-	    std::string _extraComment;
 
 	    /* List of Objects */
 
@@ -310,7 +313,7 @@ namespace LQIO {
 	    unsigned int _resultIterations;
 	    std::string _resultPlatformInformation;
 	    std::string _resultSolverInformation;
-	    std::string _resultDescription;
+	    std::string _resultComment;
 	    double _resultUserTime;
 	    double _resultSysTime;
 	    double _resultElapsedTime;

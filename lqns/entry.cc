@@ -12,7 +12,7 @@
  * July 2007.
  *
  * ------------------------------------------------------------------------
- * $Id: entry.cc 17458 2024-11-12 11:54:17Z greg $
+ * $Id: entry.cc 17550 2025-10-23 16:41:01Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -195,7 +195,7 @@ Entry::check() const
 	    //tomari: disable to allow a quorum use the default reply which is after all threads completes exection.
 	    //(replies == 1 || (replies == 0 && owner->hasQuorum()))
 	    //Only tasks have activity entries.
-	    if ( isCalledUsingRendezvous() && replies != 1.0 && (replies != 0.0 || !dynamic_cast<const Task *>(owner())->hasQuorum()) ) {
+	    if ( isCalledUsing( RequestType::RENDEZVOUS ) && replies != 1.0 && (replies != 0.0 || !dynamic_cast<const Task *>(owner())->hasQuorum()) ) {
 		if ( replies == 0 ) {
 		    getDOM()->runtime_error( LQIO::ERR_REPLY_NOT_GENERATED );		/* redundant, but more explicit. */
 		} else {

@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: model.cc 17535 2025-03-01 13:06:03Z greg $
+ * $Id: model.cc 17614 2025-12-08 23:38:42Z greg $
  *
  * Layer-ization of model.  The basic concept is from the reference
  * below.  However, model partioning is more complex than task vs device.
@@ -828,7 +828,7 @@ Model::reorderOutput() const
     };
     /* For only copying the originals back */
     const struct predicate {
-	bool operator()( const Entity *e ) const { return !e->isReplica() && e->getDOM() != nullptr; }
+	bool operator()( const Entity *e ) const { return e->getReplicaNumber() == 1 && e->getDOM() != nullptr; }
     } predicate;
 
     /* go through all the tasks and processors and save based on their depth. Processor and tasks names can collide. */
@@ -839,7 +839,7 @@ Model::reorderOutput() const
 	       
     /* Change the order in the DOM.  DO NOT clear entities because the vector has to be the right size */
     std::vector<LQIO::DOM::Entity *>& entities = const_cast<std::vector<LQIO::DOM::Entity *>&>(getDOM()->getEntities());
-    assert( mapped.size() == entities.size() );
+    assert(  mapped.size() == entities.size() );
     std::transform( mapped.begin(), mapped.end(), entities.begin(), []( Entity * entity ){ return entity->getDOM(); } );
 }
 
@@ -879,7 +879,7 @@ Model::compute()
 
     /* OK.  It solved. Now save the output. */
 
-    const_cast<LQIO::DOM::Document *>(getDOM())->setResultDescription();
+    const_cast<LQIO::DOM::Document *>(getDOM())->setModelDescription();
     report.insertDOMResults();
     insertDOMResults();
     getDOM()->print( _output_file_name, getDOM()->getResultInvocationNumber() > 0 ? SolverInterface::Solve::customSuffix : std::string(""), _output_format, flags.rtf_output );
@@ -1077,9 +1077,9 @@ Model::topologicalSort()
     for ( std::set<Task *>::const_iterator task = __task.begin(); task != __task.end(); ++task ) {
 	Call::stack callStack;
 	switch ( (*task)->rootLevel() ) {
+	case Task::root_level_t::IS_REFERENCE: (*task)->setSubmodel( 1 ); break;
 	case Task::root_level_t::IS_NON_REFERENCE: continue;
 	case Task::root_level_t::HAS_OPEN_ARRIVALS: callStack.push_back(&null_call); break;	/* Open arrivals start at 1 */
-	default: break;
 	}
 	try {
 	    max_depth = std::max( (*task)->findChildren( callStack, true ), max_depth );

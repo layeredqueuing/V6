@@ -1,6 +1,6 @@
 /* model.cc	-- Greg Franks Mon Feb  3 2003
  *
- * $Id: model.cc 17535 2025-03-01 13:06:03Z greg $
+ * $Id: model.cc 17614 2025-12-08 23:38:42Z greg $
  *
  * Load, slice, and dice the lqn model.
  */
@@ -75,16 +75,16 @@ std::map<unsigned int,double> Model::__offset_layer;
 
 unsigned Model::openArrivalCount  = 0;
 unsigned Model::forwardingCount	  = 0;
-unsigned Model::rendezvousCount[MAX_PHASES+1];
-unsigned Model::sendNoReplyCount[MAX_PHASES+1];
-unsigned Model::phaseCount[MAX_PHASES+1];
+std::array<unsigned,MAX_PHASES+1> Model::rendezvousCount;
+std::array<unsigned,MAX_PHASES+1> Model::sendNoReplyCount;
+std::array<unsigned,MAX_PHASES+1> Model::phaseCount;
 int Model::maxModelNumber = 1;
 
 /* output */
 bool Model::boundsPresent		= false;
 bool Model::variancePresent		= false;
 
-Model::Stats Model::stats[Model::N_STATS];
+std::array<Model::Stats,Model::N_STATS> Model::stats;
 
 static DoubleManip to_inches( const double );
 
@@ -346,7 +346,6 @@ Model::create( const std::filesystem::path& input_file_name, const LQIO::DOM::Pr
 
     LQIO::io_vars.reset();
 
-    Task::reset();
     Entry::reset();
     Call::reset();
     Activity::reset();
@@ -480,6 +479,9 @@ Model::create( const std::filesystem::path& input_file_name, const LQIO::DOM::Pr
 		    if ( Flags::dump_graphviz ) {
 			program->getGraphvizRepresentation( std::cout );
 		    } else if ( status == 0 ) {
+			/* Don't create directories etc if there are no loops (i.e., parameters only) */
+			SolverInterface::Solve::implicitSolve = LQIO::Spex::has_vars() && !LQIO::Spex::has_loops();
+
 			/* Invoke the LQX program itself */
 			if ( !program->invoke() ) {
 			    LQIO::runtime_error( LQIO::ERR_LQX_EXECUTION, input_file_name.c_str() );
@@ -533,11 +535,9 @@ Model::prepare( const LQIO::DOM::Document * document )
 
     openArrivalCount		= 0;
     forwardingCount		= 0;
-    for ( unsigned p = 0; p <= MAX_PHASES; ++p ) {
-	rendezvousCount[p]	= 0;
-	sendNoReplyCount[p] 	= 0;
-	phaseCount[p]		= 0;
-    }
+    rendezvousCount.fill(0);
+    sendNoReplyCount.fill(0);
+    phaseCount.fill(0);
 
     /* We use this to add all calls */
     std::vector<LQIO::DOM::Entry*> allEntries;
@@ -701,7 +701,7 @@ Model::process()
 	std::for_each( _layers.begin(), _layers.end(), std::mem_fn( &Layer::aggregate ) );
     }
 
-    if ( Flags::print[SUMMARY].opts.value.b || Flags::print_submodels ) {
+    if ( Flags::print[PRINT_SUMMARY].opts.value.b || Flags::print_submodels ) {
 	printSummary( std::cerr );
     }
 
@@ -806,7 +806,7 @@ Model::process()
 	}
 	if ( Flags::print[MODEL_DESCRIPTION].opts.value.b ) {
 	    if ( !_label->empty() ) _label->newLine();
-	    *_label << _document->getResultDescription();
+	    *_label << _document->getModelDescription();
 	}
 	if ( Flags::print[MODEL_COMMENT].opts.value.b ) {
 	    if ( !_label->empty() ) _label->newLine();
@@ -864,8 +864,8 @@ Model::store()
 	return true;
     }
 #endif
-    if ( input_output() && _document->getResultDescription().empty() ) {
-	_document->setResultDescription( "Layered Queuening Network Model." );
+    if ( input_output() && _document->getModelDescription().empty() ) {
+	_document->setModelDescription( "Layered Queuening Network Model." );
     }
 
     if ( output_output() && !Flags::have_results ) {
@@ -1095,13 +1095,14 @@ Model::topologicalSort()
 {
     size_t max_depth = 0;
 
-    unsigned int i = 1;			/* Client path number */
+    unsigned int i = 0;			/* Client path number */
     for ( std::set<Task *>::const_iterator task = Task::__tasks.begin(); task != Task::__tasks.end(); ++task ) {
 	if ( (*task)->rootLevel() == Task::root_level_t::IS_NON_REFERENCE
 	     || (Flags::client_tasks != nullptr && regex_match( (*task)->name(), *Flags::client_tasks ) ) ) continue;
 
 	try {
 	    CallStack callStack;	/* Open arrivals start at level 1 */
+	    i += 1;
 	    if ( (*task)->rootLevel() == Task::root_level_t::HAS_OPEN_ARRIVALS ) callStack.push_back( nullptr );
 	    max_depth = std::max( (*task)->findChildren( callStack, i ), max_depth );
 	}
@@ -1109,8 +1110,6 @@ Model::topologicalSort()
 	    max_depth = std::max( error.depth(), max_depth );
 	    (*task)->getDOM()->runtime_error( LQIO::ERR_CYCLE_IN_CALL_GRAPH, error.what() );
 	}
-
-	i += 1;
     }
 
     return max_depth;
@@ -1858,7 +1857,7 @@ Model::printGD( std::ostream& output, outputFuncPtr func ) const
 std::ostream&
 Model::printPostScript( std::ostream& output ) const
 {
-  printPostScriptPrologue( output, getDOM()->getResultDescription(),
+  printPostScriptPrologue( output, getDOM()->getModelDescription(),
 			     static_cast<int>(left()+0.5),
 			     static_cast<int>(bottom()+0.5),
 			     static_cast<int>(right()+0.5),
@@ -1946,7 +1945,7 @@ Model::printModelComment( std::ostream& output, const std::string& head, const s
 {
     output << head << LQIO::DOM::Common_IO::svn_id() << tail << std::endl
 	   << head << "Invoked as: " << command_line << ' ' << _inputFileName << tail << std::endl;
-    const std::string& description = getDOM()->getResultDescription();
+    const std::string& description = getDOM()->getModelDescription();
     if ( !description.empty() ) output << head << "Description: " << description << tail << std::endl;
     const std::string& comment = getDOM()->getModelComment();
     if ( !comment.empty() ) output << head << "Comment: " << comment << tail << std::endl;
@@ -2124,7 +2123,7 @@ Model::printQNAP2( std::ostream& output ) const
 {
     if ( queueing_output() ) {
 	QNIO::QNAP2_Document model( _layers.at(Flags::queueing_model()).getBCMPModel() );
-	model.setComment( _document->getResultDescription() );
+	model.setComment( _document->getModelDescription() );
 	model.exportModel( output );
     }
     return output;

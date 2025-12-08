@@ -3,7 +3,7 @@
  * $HeadURL: http://rads-svn.sce.carleton.ca:8080/svn/lqn/trunk-V6/lqn2ps/share.h $
  *
  * ------------------------------------------------------------------------
- * $Id: share.h 16945 2024-01-26 13:02:36Z greg $
+ * $Id: share.h 17614 2025-12-08 23:38:42Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -45,6 +45,6 @@ private:
     static std::set<Share *,LT<Share> > __share;
 };
 
-
+inline bool operator<( const Share& s1, const Share& s2 ) { return s1.name() < s2.name(); }
 inline std::ostream& operator<<( std::ostream& output, const Share& self ) { return output; }
 #endif

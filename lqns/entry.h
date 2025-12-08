@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: entry.h 17458 2024-11-12 11:54:17Z greg $
+ * $Id: entry.h 17550 2025-10-23 16:41:01Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -283,9 +283,7 @@ public:
     double computeCV_sqr() const;
     int priority() const;
     bool setIsCalledBy( const RequestType callType );
-    bool isCalledUsingRendezvous() const { return _calledBy == RequestType::RENDEZVOUS; }
-    bool isCalledUsingSendNoReply() const { return _calledBy == RequestType::SEND_NO_REPLY; }
-    bool isCalledUsingOpenArrival() const { return _calledBy == RequestType::OPEN_ARRIVAL; }
+    bool isCalledUsing( const RequestType callType ) const { return callType == _calledBy; }
     bool isCalled() const { return _calledBy != RequestType::NOT_CALLED; }
     Entry& setEntryInformation( LQIO::DOM::Entry * entryInfo );
     virtual Entry& setDOM( unsigned phase, LQIO::DOM::Phase* phaseInfo );

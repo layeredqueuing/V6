@@ -9,7 +9,7 @@
  *
  * November, 1994
  *
- * $Id: pop.h 16974 2024-01-29 20:12:36Z greg $
+ * $Id: pop.h 17550 2025-10-23 16:41:01Z greg $
  *
  * ------------------------------------------------------------------------
  */
@@ -83,8 +83,6 @@ public:
 
 private:
     Vector<unsigned> _N;
-
-    
 };
 
 inline std::ostream& operator<<( std::ostream& output, const Population& self ) { return self.print( output ); }

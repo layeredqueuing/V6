@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * $Id: entity.cc 17369 2024-10-15 22:13:09Z greg $
+ * $Id: entity.cc 17614 2025-12-08 23:38:42Z greg $
  *
  * Everything you wanted to know about a task or processor, but were
  * afraid to ask.
@@ -19,9 +19,6 @@
 #include <functional>
 #include <sstream>
 #include <cstdlib>
-#if HAVE_IEEEFP_H
-#include <ieeefp.h>
-#endif
 #include <lqx/SyntaxTree.h>
 #include <lqio/dom_document.h>
 #include <lqio/dom_entity.h>
@@ -239,6 +236,18 @@ Entity::isSelectedIndirectly() const
 
 
 
+/*
+ * Return utilization normalized to the number of copies.
+ */
+ 
+double
+Entity::normalizedUtilization() const
+{
+    return utilization() / copiesValue();
+}
+
+
+
 /* 
  * Return true if the utilization of this task is too high.
  */
@@ -246,8 +255,10 @@ Entity::isSelectedIndirectly() const
 bool
 Entity::hasBogusUtilization() const
 {
-    return !isInfinite() && utilization() / copiesValue() > 1.05;
+    return !isInfinite() && normalizedUtilization() > 1.05;
 }
+
+
 
 /*
  * Return the amount I should move by IFF I can be aligned.
@@ -323,7 +334,6 @@ Entity::count_callers::operator()( unsigned int augend, const Entity * entity ) 
 }
 
 
-
 /*
  * Return the size of the radius for drawing queueing networks.
  */
@@ -350,7 +360,7 @@ Entity::colour() const
 	    } else if ( isInfinite() ) {
 		return Graphic::Colour::DEFAULT;
 	    } else {
-		return colourForUtilization( utilization() / copiesValue() );
+		return colourForUtilization( normalizedUtilization() );
 	    }
 	}
 	break;
@@ -380,15 +390,13 @@ Entity&
 Entity::label()
 {
     *_label << name();
-    if ( Flags::print_input_parameters() ) {
-	if ( isMultiServer() ) {
-	    *_label << " {" << copies() << "}";
-	} else if ( isInfinite() ) {
-	    *_label << " {" << _infty() << "}";
-	}
-	if ( isReplicated() ) {
-	    *_label << " <" << replicas() << ">";
-	}
+    if ( isMultiServer() ) {
+	*_label << " {" << copies() << "}";
+    } else if ( isInfinite() ) {
+	*_label << " {" << _infty() << "}";
+    }
+    if ( isReplicated() ) {
+	*_label << " <" << replicas() << ">";
     }
     return *this;
 }

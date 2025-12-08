@@ -1,5 +1,5 @@
 /*  -*- c++ -*-
- * $Id: call.cc 17369 2024-10-15 22:13:09Z greg $
+ * $Id: call.cc 17614 2025-12-08 23:38:42Z greg $
  *
  * Everything you wanted to know about a call to an entry, but were afraid to ask.
  *
@@ -16,9 +16,6 @@
 #include <cassert>
 #include <cstdlib>
 #include <cmath>
-#if HAVE_IEEEFP_H && !defined(MSDOS)
-#include <ieeefp.h>
-#endif
 #include <lqio/bcmp_to_lqn.h>
 #include <lqio/dom_call.h>
 #include <lqio/dom_activity.h>
@@ -980,12 +977,15 @@ Call::label()
 	    *_label << '(' << print_calls(*this) << ')';
 	}
 	const LQIO::DOM::ExternalVariable& fan_out = srcTask()->fanOut( dstTask() );
-	if ( LQIO::DOM::ExternalVariable::isPresent( &fan_out, 1.0 )  ) {
-	    *_label << ", O=" << fan_out;
-	}
 	const LQIO::DOM::ExternalVariable& fan_in = dstTask()->fanIn( srcTask() );
-	if ( LQIO::DOM::ExternalVariable::isPresent( &fan_in, 1.0 ) ) {
-	    *_label << ", I=" << fan_in;
+	const bool has_fan_out = LQIO::DOM::ExternalVariable::isPresent( &fan_out );
+	const bool has_fan_in = LQIO::DOM::ExternalVariable::isPresent( &fan_in );
+	if ( has_fan_out || has_fan_in ) {
+	    *_label << " <";
+	    if ( has_fan_in ) *_label << fan_in; else *_label << "1";
+	    *_label << ":";
+	    if ( has_fan_out ) *_label << fan_out; else *_label << "1";
+	    *_label << ">";
 	}
     }
     if ( Flags::have_results ) {
@@ -1789,7 +1789,7 @@ TaskCall::label()
 {
     if ( Flags::print_input_parameters() ) {
 	bool print_goop = false;
-	if ( hasRendezvous() && Flags::print[PRINT_AGGREGATE].opts.value.b ) {
+	if ( hasRendezvous() && Flags::print[TASK_SERVICE_TIME].opts.value.b ) {
 	    *_label << "(" << rendezvous() << ")";
 	    print_goop = true;
 	}

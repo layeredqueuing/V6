@@ -8,7 +8,7 @@
 /************************************************************************/
 
 /*
- * $Id: srvn_spex.h 17331 2024-10-03 12:57:24Z greg $
+ * $Id: srvn_spex.h 17614 2025-12-08 23:38:42Z greg $
  */
 
 #ifndef __LQIO_SRVN_SPEX_H__
@@ -263,6 +263,8 @@ namespace LQIO {
 	static bool has_input_var( const std::string& );
 	static bool has_observation_var( const std::string& );
 	static bool has_array_var( const std::string& );
+	static bool has_vars();				/* True if any $var (except control args) set */
+	static bool has_loops();			/* True if any array or convergence variables set */
 	static LQX::SyntaxTreeNode * get_input_var_expr( const std::string& );
 	static void clear_input_variables() { __input_variables.clear(); }
 
@@ -296,7 +298,6 @@ namespace LQIO {
 	Spex(const Spex&) = delete;
 	Spex& operator=( const Spex& ) = delete;
 
-	bool has_vars() const;							/* True if any $var (except control args) set */
 	static bool duplicate_symbol( const std::string& );
 	static bool duplicate_symbol( const ObservationInfo& obs );
 	
@@ -322,8 +323,6 @@ namespace LQIO {
 	static std::ostream& printInputArrayVariable( std::ostream& output, const var_name_and_expr& var );
 	static std::ostream& printVarNameAndExpr( std::ostream& output, const var_name_and_expr& var );
 
-	static std::vector<var_name_and_expr>::const_iterator find( std::vector<var_name_and_expr>::const_iterator, std::vector<var_name_and_expr>::const_iterator, const std::string& );
-
     public:
 	static std::set<std::string> __global_variables;			/* Document global variables. (input) */
 
@@ -336,6 +335,7 @@ namespace LQIO {
 	static std::map<std::string,LQX::SyntaxTreeNode *> __observation_variables;	/* Saves all observations (name, and funky assignment) */
 	static std::map<std::string,ComprehensionInfo> __comprehensions;	/* Saves all comprehensions for $<name> */
 	static expr_list __deferred_assignment;					/* Saves all parameters that depend on a variable for latter assignment */
+	static expr_list __inline_assignment;					/* Saves all parameters that depend on a variable for latter assignment */
 
 	/* For SRVN input output */
 

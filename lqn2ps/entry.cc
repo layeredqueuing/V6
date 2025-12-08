@@ -8,7 +8,7 @@
  * January 2003
  *
  * ------------------------------------------------------------------------
- * $Id: entry.cc 17369 2024-10-15 22:13:09Z greg $
+ * $Id: entry.cc 17614 2025-12-08 23:38:42Z greg $
  * ------------------------------------------------------------------------
  */
 
@@ -141,6 +141,7 @@ Entry::getPhase( unsigned p )
     Phase& phase = j->second;
     if ( i.second ) {
 	phase.initialize( this, p );
+	Model::phaseCount.at(p) += 1;
     }
     return phase;
 }
@@ -290,7 +291,7 @@ Entry::rendezvous( const Entry * toEntry, unsigned int p, const LQIO::DOM::Call 
 {
     if ( value && const_cast<Entry *>(toEntry)->isCalledBy( request_type::RENDEZVOUS ) ) {
  	Model::rendezvousCount[0] += 1;
-	Model::rendezvousCount[p] += 1;
+	Model::rendezvousCount.at(p) += 1;
 	getPhase( p );
 	Call * aCall = findOrAddCall( toEntry, &GenericCall::hasRendezvousOrNone );
 	aCall->rendezvous( p, value );
@@ -347,7 +348,7 @@ Entry::sendNoReply( const Entry * toEntry, unsigned int p, const LQIO::DOM::Call
 {
     if ( value  && const_cast<Entry *>(toEntry)->isCalledBy( request_type::SEND_NO_REPLY ) ) {
 	Model::sendNoReplyCount[0] += 1;
-	Model::sendNoReplyCount[p] += 1;
+	Model::sendNoReplyCount.at(p) += 1;
 	getPhase( p );
 	Call * aCall = findOrAddCall( toEntry, &GenericCall::hasSendNoReplyOrNone );
 	aCall->sendNoReply( p, value );
@@ -576,16 +577,20 @@ Entry::throughputBound() const
 
 
 double
-Entry::utilization( const unsigned p ) const
-{
-    return getPhase(p).utilization();
-}
-
-
-double
 Entry::utilization() const
 {
     return getDOM()->getResultUtilization();
+}
+
+
+/*
+ * Return utilization normalized to the number of copies.
+ */
+ 
+double
+Entry::normalizedUtilization() const
+{
+    return utilization() / owner()->copiesValue();
 }
 
 /*
@@ -1669,7 +1674,7 @@ Entry::colour() const
     switch ( Flags::colouring() ) {
     case Colouring::RESULTS:
 	if ( Flags::have_results && Flags::graphical_output_style == Output_Style::JLQNDEF && !owner()->isReferenceTask() ) {
-	    return colourForUtilization( owner()->isInfinite() ? 0.0 : utilization() / owner()->copiesValue() );
+	    return colourForUtilization( owner()->isInfinite() ? 0.0 : normalizedUtilization() );
 	} else if ( serviceExceeded() > 0. ) {
 	    return Graphic::Colour::RED;
 	}
@@ -1945,7 +1950,7 @@ Entry::label()
 	    _label->newLine() << begin_math( &Label::lambda ) << "=" << opt_pct(throughput()) << end_math();
 	}
 	if ( Flags::print[ENTRY_UTILIZATION].opts.value.b ) {
-	    _label->newLine() << begin_math( &Label::rho ) << "=" << opt_pct(utilization()) << end_math();
+	    _label->newLine() << begin_math( &Label::rho ) << "=" << opt_pct(Flags::normalize_utilization ? normalizedUtilization() : utilization()) << end_math();
 	}
 //	if ( Flags::print[PROCESSOR_UTILIZATION].opts.value.b ) {
 //	    _label->newLine() << begin_math( &Label::rho ) << "=" << opt_pct(processorUtilization()) << end_math();
@@ -2169,7 +2174,6 @@ Entry::remove_from_dst( Call * call )
     if ( call != nullptr ) const_cast<Entry *>(call->dstEntry())->removeDstCall( call );
 }
 #endif
-
 
 
 #if REP2FLAT

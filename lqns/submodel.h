@@ -7,7 +7,7 @@
  *
  * June 2007
  *
- * $Id: submodel.h 17349 2024-10-09 19:00:02Z greg $
+ * $Id: submodel.h 17550 2025-10-23 16:41:01Z greg $
  */
 
 #ifndef _SUBMODEL_H
@@ -259,7 +259,7 @@ public:
 
 private:
     bool hasClosedModel() const { return _closedModel != nullptr; }
-    bool hasOpenModel() const { return _closedModel != nullptr; }
+    bool hasOpenModel() const { return _openModel != nullptr; }
     bool hasThreads() const { return _hasThreads; }
     bool hasSynchs() const { return _hasSynchs; }
     bool hasReplicas() const { return _hasReplicas; }
